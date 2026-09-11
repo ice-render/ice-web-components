@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <meta charset="utf-8" />
+  <title>ice-web-components gallery</title>
+  <style>
+    body { margin: 0; padding: 24px; font: 14px/1.6 sans-serif; background: #f8fafc; color: #0f172a; }
+    canvas { display: block; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff; }
+  </style>
+  <body>
+    <h1>ice-web-components gallery</h1>
+    <canvas id="canvas" width="1400" height="900"></canvas>
+
+    <script src="../node_modules/ice-render/dist/index.umd.js"></script>
+    <script src="../dist/index.umd.js"></script>
+    <script>
+      const ice = new ICE.ICE().init('canvas');
+      const W = ICEWEB;
+
+      const panel = new W.UIPanel({ id: 'panel', left: 40, top: 40, width: 1320, height: 820 });
+      panel.setUILayout(new W.UIFlowLayout({ gap: 20, align: 'left' }));
+
+      panel.addChildren([
+        new W.UIBadge({ id: 'badge', text: '9', width: 32, height: 24 }),
+        new W.UITag({ id: 'tag', text: 'Canvas UI', width: 110, height: 32 }),
+        new W.UIAvatar({ id: 'avatar', text: 'A', size: 48 }),
+        new W.UIIcon({ id: 'icon', icon: '★', size: 28 }),
+        new W.UICheckBox({ id: 'check', width: 24, height: 24 }),
+        new W.UIRadioButton({ id: 'radio', width: 24, height: 24 }),
+        new W.UISwitch({ id: 'switch', width: 52, height: 26 }),
+        new W.UIProgressBar({ id: 'progress', value: 55, width: 200, height: 12 }),
+        new W.UISlider({ id: 'slider', value: 40, width: 220, height: 18 }),
+        new W.UICard({ id: 'card', title: 'Card', width: 260, height: 140 }),
+        new W.UITabs({ id: 'tabs', tabs: ['Home', 'Docs', 'About'], width: 300, height: 44 }),
+      ]);
+
+      ice.addChild(panel);
+      window.__result = { ice, panel };
+    </script>
+  </body>
+</html>
