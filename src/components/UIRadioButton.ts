@@ -11,27 +11,36 @@ export class UIRadioButton extends UIComponent {
   constructor(props: any = {}) {
     const theme = uiManager.getTheme();
     const selected = props.selected === true;
+    const outerSize = props.size || theme.control.radioSize;
+    const width = props.width || outerSize;
+    const height = props.height || outerSize;
+    const outerLeft = (width - outerSize) / 2;
+    const outerTop = (height - outerSize) / 2;
+    const outerRadius = outerSize / 2;
+    const innerRadius = outerSize / 4;
     super({
       fill: false,
       stroke: false,
       draggable: false,
+      width,
+      height,
       ...props,
     });
     this.model = new UIToggleModel({ selected });
     this.outer = new ICECircle({
-      left: 0,
-      top: 0,
-      radius: props.size ? props.size / 2 : 9,
+      left: outerLeft,
+      top: outerTop,
+      radius: outerRadius,
       style: {
         fillStyle: theme.colors.surface,
-        strokeStyle: selected ? theme.colors.primary : theme.colors.border,
-        lineWidth: 1,
+        strokeStyle: selected ? theme.colors.primary : theme.colors.borderSecondary,
+        lineWidth: theme.control.lineWidth,
       },
     });
     this.inner = new ICECircle({
-      left: 4,
-      top: 4,
-      radius: props.size ? props.size / 4 : 5,
+      left: outerLeft + outerSize / 2 - innerRadius,
+      top: outerTop + outerSize / 2 - innerRadius,
+      radius: innerRadius,
       style: {
         fillStyle: selected ? theme.colors.primary : 'transparent',
         strokeStyle: selected ? theme.colors.primary : 'transparent',
@@ -56,20 +65,24 @@ export class UIRadioButton extends UIComponent {
     this.on('mousedown', () => this.model.setSelected(true), this);
   }
 
+  protected __applyHoverState(): void {
+    this.__sync();
+  }
+
   private __sync(): void {
     const theme = uiManager.getTheme();
     const selected = this.model.isSelected();
     this.outer.setState({
       style: {
-        fillStyle: theme.colors.surface,
-        strokeStyle: selected ? theme.colors.primary : theme.colors.border,
-        lineWidth: 1,
+        fillStyle: this.hovered && !selected ? theme.colors.primaryBg : theme.colors.surface,
+        strokeStyle: selected || this.hovered ? theme.colors.primary : theme.colors.borderSecondary,
+        lineWidth: theme.control.lineWidth,
       },
     });
     this.inner.setState({
       style: {
-        fillStyle: selected ? theme.colors.primary : 'transparent',
-        strokeStyle: selected ? theme.colors.primary : 'transparent',
+        fillStyle: selected ? (this.hovered ? theme.colors.primaryHover : theme.colors.primary) : 'transparent',
+        strokeStyle: selected ? (this.hovered ? theme.colors.primaryHover : theme.colors.primary) : 'transparent',
       },
     });
     this.revalidate();

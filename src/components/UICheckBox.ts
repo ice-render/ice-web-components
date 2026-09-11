@@ -1,7 +1,8 @@
-import { ICERect, ICEText } from 'ice-render';
+import { ICERect } from 'ice-render';
 import { UIComponent } from '../core/UIComponent';
 import { uiManager } from '../core/UIManager';
 import { UIToggleModel } from '../model/UIToggleModel';
+import { centerTextNode } from '../util/UIStyle';
 
 export class UICheckBox extends UIComponent {
   private model: UIToggleModel;
@@ -11,36 +12,38 @@ export class UICheckBox extends UIComponent {
   constructor(props: any = {}) {
     const theme = uiManager.getTheme();
     const selected = props.selected === true;
+    const boxSize = props.boxSize || theme.control.checkboxSize;
+    const width = props.width || boxSize;
+    const height = props.height || boxSize;
+    const boxLeft = (width - boxSize) / 2;
+    const boxTop = (height - boxSize) / 2;
     super({
       fill: false,
       stroke: false,
       draggable: false,
+      width,
+      height,
       ...props,
     });
     this.model = new UIToggleModel({ selected });
     this.box = new ICERect({
-      left: 0,
-      top: 0,
-      width: props.boxSize || 18,
-      height: props.boxSize || 18,
-      radius: 4,
+      left: boxLeft,
+      top: boxTop,
+      width: boxSize,
+      height: boxSize,
+      radius: theme.radius.xs,
       style: {
         fillStyle: selected ? theme.colors.primary : theme.colors.surface,
-        strokeStyle: selected ? theme.colors.primary : theme.colors.border,
-        lineWidth: 1,
+        strokeStyle: selected ? theme.colors.primary : theme.colors.borderSecondary,
+        lineWidth: theme.control.lineWidth,
       },
     });
-    this.mark = new ICEText({
-      left: 3,
-      top: 0,
-      text: selected ? '✓' : '',
-      style: {
-        fillStyle: theme.colors.primaryText,
-        fontFamily: theme.font.family,
-        fontSize: 14,
-        fontWeight: theme.font.weightBold,
-      },
+    this.mark = centerTextNode(selected ? '✓' : '', theme, boxSize, boxSize, {
+      fontSize: Math.max(12, boxSize * 0.72),
+      fontWeight: theme.font.weightBold,
+      fillStyle: theme.colors.primaryText,
     });
+    this.mark.setState({ left: boxLeft, top: boxTop, width: boxSize, height: boxSize });
     this.addChild(this.box, false);
     this.addChild(this.mark, false);
     this.model.addChangeListener(() => this.__sync());
@@ -60,14 +63,24 @@ export class UICheckBox extends UIComponent {
     this.on('mousedown', () => this.model.toggle(), this);
   }
 
+  protected __applyHoverState(): void {
+    this.__sync();
+  }
+
   private __sync(): void {
     const theme = uiManager.getTheme();
     const selected = this.model.isSelected();
     this.box.setState({
       style: {
-        fillStyle: selected ? theme.colors.primary : theme.colors.surface,
-        strokeStyle: selected ? theme.colors.primary : theme.colors.border,
-        lineWidth: 1,
+        fillStyle: selected
+          ? this.hovered
+            ? theme.colors.primaryHover
+            : theme.colors.primary
+          : this.hovered
+          ? theme.colors.primaryBg
+          : theme.colors.surface,
+        strokeStyle: selected || this.hovered ? theme.colors.primary : theme.colors.borderSecondary,
+        lineWidth: theme.control.lineWidth,
       },
     });
     this.mark.setText(selected ? '✓' : '');

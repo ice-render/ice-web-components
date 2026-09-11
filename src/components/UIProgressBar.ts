@@ -22,7 +22,7 @@ export class UIProgressBar extends UIComponent {
       max: props.max,
     });
     const width = props.width || 160;
-    const height = props.height || 10;
+    const height = props.height || theme.control.progressHeight;
     this.track = new ICERect({
       left: 0,
       top: 0,
@@ -31,7 +31,8 @@ export class UIProgressBar extends UIComponent {
       radius: height / 2,
       style: {
         fillStyle: theme.colors.disabled,
-        strokeStyle: theme.colors.disabled,
+        strokeStyle: theme.colors.borderSecondary,
+        lineWidth: theme.control.lineWidth,
       },
     });
     this.fill = new ICERect({
@@ -43,6 +44,7 @@ export class UIProgressBar extends UIComponent {
       style: {
         fillStyle: theme.colors.primary,
         strokeStyle: theme.colors.primary,
+        lineWidth: theme.control.lineWidth,
       },
     });
     this.addChild(this.track, false);

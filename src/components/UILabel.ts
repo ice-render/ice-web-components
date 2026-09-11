@@ -7,6 +7,12 @@ export class UILabel extends UIComponent {
 
   constructor(props: any = {}) {
     const theme = uiManager.getTheme();
+    const font = {
+      fillStyle: theme.colors.text,
+      fontFamily: theme.font.family,
+      fontSize: theme.font.size,
+      fontWeight: theme.font.weightNormal,
+    };
     super({
       fill: false,
       stroke: false,
@@ -16,11 +22,9 @@ export class UILabel extends UIComponent {
       left: 0,
       top: 0,
       text: props.text ?? '',
+      stroke: false,
       style: {
-        fillStyle: theme.colors.text,
-        fontFamily: theme.font.family,
-        fontSize: theme.font.size,
-        fontWeight: theme.font.weightNormal,
+        ...font,
         ...(props.style || {}),
       },
     });

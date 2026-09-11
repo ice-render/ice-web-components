@@ -7,12 +7,14 @@ export class UIComponent extends ICEGroup {
   protected preferredWidth: number = 0;
   protected preferredHeight: number = 0;
   protected enabled: boolean = true;
+  protected hovered: boolean = false;
 
   constructor(props: any = {}) {
     super({
       fill: false,
       stroke: false,
-      draggable: true,
+      draggable: false,
+      transformable: false,
       interactive: true,
       ...props,
     });
@@ -27,6 +29,21 @@ export class UIComponent extends ICEGroup {
 
   public isEnabled(): boolean {
     return this.enabled;
+  }
+
+  public isHovered(): boolean {
+    return this.hovered;
+  }
+
+  public setHovered(hovered: boolean): this {
+    const next = !!hovered && this.enabled;
+    if (next === this.hovered) {
+      return this;
+    }
+    this.hovered = next;
+    this.__applyHoverState();
+    this.revalidate();
+    return this;
   }
 
   public setPreferredSize(width: number, height: number): this {
@@ -57,6 +74,24 @@ export class UIComponent extends ICEGroup {
 
   public getPainter(): UIPainter | null {
     return this.painter;
+  }
+
+  protected __applyHoverState(): void {
+    // 默认不改变外观，交互组件按需覆盖。
+  }
+
+  /**
+   * UI 组件内部的图元只负责外观，不参与画布级拖拽、变换、连线。
+   * 只有真正的 UI 组件（UIComponent）保留自己的交互配置。
+   */
+  public addChild(child: any, markDirty: boolean = true): void {
+    if (!(child instanceof UIComponent) && child && child.state) {
+      child.state.interactive = false;
+      child.state.draggable = false;
+      child.state.transformable = false;
+      child.state.linkable = false;
+    }
+    super.addChild(child, markDirty);
   }
 
   public revalidate(): this {

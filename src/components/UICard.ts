@@ -1,6 +1,6 @@
-import { ICEText } from 'ice-render';
 import { UIPanel } from './UIPanel';
 import { uiManager } from '../core/UIManager';
+import { createTextNode } from '../util/UIStyle';
 
 export class UICard extends UIPanel {
   private titleNode: any;
@@ -15,16 +15,14 @@ export class UICard extends UIPanel {
     });
     const theme = uiManager.getTheme();
     if (props.title) {
-      this.titleNode = new ICEText({
-        left: props.paddingLeft ?? 16,
-        top: props.paddingTop ?? 12,
+      this.titleNode = createTextNode({
+        left: props.paddingLeft ?? theme.spacing.md,
+        top: props.paddingTop ?? theme.spacing.sm,
         text: props.title,
-        style: {
-          fillStyle: theme.colors.text,
-          fontFamily: theme.font.family,
-          fontSize: theme.font.sizeLarge,
-          fontWeight: theme.font.weightBold,
-        },
+        fillStyle: theme.colors.text,
+        fontFamily: theme.font.family,
+        fontSize: theme.font.sizeLarge,
+        fontWeight: theme.font.weightSemibold,
       });
       this.addChild(this.titleNode, false);
     }

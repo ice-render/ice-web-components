@@ -25,6 +25,7 @@
     <script src="../dist/index.umd.js"></script>
     <script>
       const ice = new ICE.ICE().init('canvas');
+      new ICEWEB.UIHoverManager(ice).start();
 
       const panel = new ICEWEB.UIPanel({
         id: 'panel',

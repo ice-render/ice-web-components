@@ -1,5 +1,6 @@
 export * from './theme/UITheme';
 export * from './core/UIManager';
+export * from './core/UIHoverManager';
 export * from './core/UIPainter';
 export * from './core/UILayoutManager';
 export * from './core/UIComponent';

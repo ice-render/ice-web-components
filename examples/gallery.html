@@ -3,11 +3,22 @@
   <meta charset="utf-8" />
   <title>ice-web-components gallery</title>
   <style>
-    body { margin: 0; padding: 24px; font: 14px/1.6 sans-serif; background: #f8fafc; color: #0f172a; }
-    canvas { display: block; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff; }
+    body {
+      margin: 0;
+      padding: 24px;
+      font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f5f5;
+      color: rgba(0, 0, 0, 0.88);
+    }
+    canvas {
+      display: block;
+      border-radius: 12px;
+      background: #ffffff;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+    }
   </style>
   <body>
-    <h1>ice-web-components gallery</h1>
+    <h1 style="font-size: 20px; margin: 0 0 16px">ice-web-components gallery</h1>
     <canvas id="canvas" width="1400" height="900"></canvas>
 
     <script src="../node_modules/ice-render/dist/index.umd.js"></script>
@@ -15,22 +26,78 @@
     <script>
       const ice = new ICE.ICE().init('canvas');
       const W = ICEWEB;
+      const theme = W.uiManager.getTheme();
+      new W.UIHoverManager(ice).start();
 
-      const panel = new W.UIPanel({ id: 'panel', left: 40, top: 40, width: 1320, height: 820 });
-      panel.setUILayout(new W.UIFlowLayout({ gap: 20, align: 'left' }));
+      const heading = (text, left, top) =>
+        new W.UILabel({
+          left,
+          top,
+          text,
+          style: {
+            fontSize: 15,
+            fontWeight: '600',
+            fillStyle: theme.colors.text,
+          },
+        });
+
+      const panel = new W.UIPanel({ id: 'panel', left: 24, top: 24, width: 1352, height: 852 });
 
       panel.addChildren([
-        new W.UIBadge({ id: 'badge', text: '9', width: 32, height: 24 }),
-        new W.UITag({ id: 'tag', text: 'Canvas UI', width: 110, height: 32 }),
-        new W.UIAvatar({ id: 'avatar', text: 'A', size: 48 }),
-        new W.UIIcon({ id: 'icon', icon: '★', size: 28 }),
-        new W.UICheckBox({ id: 'check', width: 24, height: 24 }),
-        new W.UIRadioButton({ id: 'radio', width: 24, height: 24 }),
-        new W.UISwitch({ id: 'switch', width: 52, height: 26 }),
-        new W.UIProgressBar({ id: 'progress', value: 55, width: 200, height: 12 }),
-        new W.UISlider({ id: 'slider', value: 40, width: 220, height: 18 }),
-        new W.UICard({ id: 'card', title: 'Card', width: 260, height: 140 }),
-        new W.UITabs({ id: 'tabs', tabs: ['Home', 'Docs', 'About'], width: 300, height: 44 }),
+        heading('Buttons', 32, 28),
+
+        new W.UIButton({ id: 'btn-primary', left: 32, top: 64, text: 'Primary', width: 96 }),
+        new W.UIButton({ id: 'btn-default', left: 140, top: 64, text: 'Default', width: 96, variant: 'default' }),
+        new W.UIButton({ id: 'btn-text', left: 248, top: 64, text: 'Text', width: 72, variant: 'text' }),
+        new W.UIButton({ id: 'btn-link', left: 332, top: 64, text: 'Link', width: 72, variant: 'link' }),
+        new W.UIButton({ id: 'btn-danger', left: 416, top: 64, text: 'Danger', width: 96, danger: true }),
+        new W.UIButton({ id: 'btn-small', left: 524, top: 66, text: 'Small', width: 84, size: 'small' }),
+        new W.UIButton({ id: 'btn-large', left: 620, top: 62, text: 'Large', width: 104, size: 'large' }),
+
+        heading('Badges & tags', 32, 128),
+
+        new W.UIBadge({ id: 'badge-primary', left: 32, top: 166, text: '9', width: 32, height: 24 }),
+        new W.UIBadge({ id: 'badge-success', left: 76, top: 166, text: 'OK', width: 40, height: 24, status: 'success' }),
+        new W.UIBadge({ id: 'badge-warning', left: 128, top: 166, text: 'W', width: 32, height: 24, status: 'warning' }),
+        new W.UIBadge({ id: 'badge-error', left: 172, top: 166, text: '5', width: 32, height: 24, status: 'error' }),
+
+        new W.UITag({ id: 'tag-default', left: 224, top: 168, text: 'Default', width: 82, height: 24 }),
+        new W.UITag({ id: 'tag-success', left: 318, top: 168, text: 'Success', width: 88, height: 24, status: 'success' }),
+        new W.UITag({ id: 'tag-warning', left: 418, top: 168, text: 'Warning', width: 86, height: 24, status: 'warning' }),
+        new W.UITag({ id: 'tag-error', left: 516, top: 168, text: 'Error', width: 76, height: 24, status: 'error' }),
+
+        heading('Avatars & icons', 32, 226),
+
+        new W.UIAvatar({ id: 'avatar-a', left: 32, top: 264, text: 'A', size: 36 }),
+        new W.UIAvatar({ id: 'avatar-b', left: 82, top: 260, text: 'B', size: 44 }),
+        new W.UIAvatar({ id: 'avatar-c', left: 140, top: 254, text: 'C', size: 56, backgroundColor: theme.colors.success }),
+
+        new W.UIIcon({ id: 'icon-star', left: 220, top: 276, icon: '★', size: 24, color: theme.colors.warning }),
+        new W.UIIcon({ id: 'icon-check', left: 258, top: 276, icon: '✓', size: 24, color: theme.colors.success }),
+        new W.UIIcon({ id: 'icon-info', left: 296, top: 276, icon: 'ℹ', size: 24, color: theme.colors.info }),
+
+        heading('Selection & progress', 32, 340),
+
+        new W.UICheckBox({ id: 'check', left: 32, top: 382, width: 24, height: 24, selected: true }),
+        new W.UIRadioButton({ id: 'radio', left: 72, top: 382, width: 24, height: 24, selected: true }),
+        new W.UISwitch({ id: 'switch', left: 116, top: 380, width: 52, height: 26, selected: true }),
+        new W.UIProgressBar({ id: 'progress', left: 192, top: 388, value: 55, width: 220, height: 10 }),
+        new W.UISlider({ id: 'slider', left: 440, top: 384, value: 40, width: 220, height: 18 }),
+
+        heading('Containers', 32, 446),
+
+        new W.UICard({ id: 'card', left: 32, top: 488, title: 'Project summary', width: 300, height: 160 }),
+        new W.UITabs({ id: 'tabs', left: 360, top: 488, tabs: ['Overview', 'Activity', 'Settings'], width: 380, height: 40 }),
+
+        new W.UISeparator({ id: 'separator-v', left: 780, top: 488, width: 1, height: 160 }),
+        new W.UISeparator({ id: 'separator-h', left: 32, top: 700, width: 500, height: 1 }),
+
+        new W.UILabel({
+          left: 812,
+          top: 540,
+          text: 'Canvas-native, Swing-style',
+          style: { fontSize: 14, fillStyle: theme.colors.textSecondary },
+        }),
       ]);
 
       ice.addChild(panel);

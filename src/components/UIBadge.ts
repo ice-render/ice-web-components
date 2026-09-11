@@ -1,31 +1,34 @@
-import { ICEText } from 'ice-render';
 import { UIComponent } from '../core/UIComponent';
 import { uiManager } from '../core/UIManager';
+import { centerTextNode, getStatusColors } from '../util/UIStyle';
 
 export class UIBadge extends UIComponent {
   private textNode: any;
 
   constructor(props: any = {}) {
     const theme = uiManager.getTheme();
+    const status = props.status || props.color || 'primary';
+    const colors = getStatusColors(theme, status);
+    const height = props.height || 20;
+    const width = props.width || Math.max(24, height);
     super({
+      ...props,
       fill: true,
-      stroke: false,
+      stroke: true,
+      width,
+      height,
+      radius: theme.radius.pill,
       style: {
-        fillStyle: theme.colors.primary,
+        fillStyle: colors.background,
+        strokeStyle: colors.border,
+        lineWidth: theme.control.lineWidth,
         ...(props.style || {}),
       },
-      ...props,
     });
-    this.textNode = new ICEText({
-      left: props.paddingLeft ?? 8,
-      top: 0,
-      text: props.text ?? '0',
-      style: {
-        fillStyle: theme.colors.primaryText,
-        fontFamily: theme.font.family,
-        fontSize: theme.font.sizeSmall,
-        fontWeight: theme.font.weightBold,
-      },
+    this.textNode = centerTextNode(props.text ?? '0', theme, width, height, {
+      fontSize: theme.font.sizeSmall,
+      fontWeight: theme.font.weightSemibold,
+      fillStyle: colors.text,
     });
     this.addChild(this.textNode, false);
   }
