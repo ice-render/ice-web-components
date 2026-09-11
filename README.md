@@ -15,6 +15,8 @@ Swing-style Canvas UI components built on `ice-render`.
   `UIPainter`.
 - Build Canvas-native UI components such as `UILabel`, `UIButton`, and
   `UIPanel`.
+- Provide admin-oriented components such as `UITable`, `UIMenu`,
+  `UITextField`, `UIAlert`, and `UIStatCard`.
 
 ## Commands
 
@@ -30,6 +32,9 @@ npm run build
 After building, open `examples/basic.html` with a static server.
 
 `examples/gallery.html` shows the default light theme across all current components.
+
+`examples/admin.html` is a larger admin-dashboard-style composition using the
+current component set.
 
 ## Theme
 

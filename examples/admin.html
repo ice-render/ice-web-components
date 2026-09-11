@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+  <meta charset="utf-8" />
+  <title>ice-web-components admin</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #eef1f5;
+      color: rgba(0, 0, 0, 0.88);
+    }
+    canvas {
+      display: block;
+      border-radius: 14px;
+      background: #f5f5f5;
+      box-shadow: 0 16px 40px rgba(15, 23, 42, 0.12);
+    }
+  </style>
+  <body>
+    <canvas id="canvas" width="1600" height="1000"></canvas>
+
+    <script src="../node_modules/ice-render/dist/index.umd.js"></script>
+    <script src="../dist/index.umd.js"></script>
+    <script>
+      const ice = new ICE.ICE().init('canvas');
+      const W = ICEWEB;
+      const theme = W.uiManager.getTheme();
+      new W.UIHoverManager(ice).start();
+
+      const page = new W.UIPanel({
+        id: 'page',
+        left: 24,
+        top: 24,
+        width: 1552,
+        height: 952,
+        radius: 12,
+        style: { fillStyle: '#f5f5f5', strokeStyle: theme.colors.border, shadow: 'lg' },
+      });
+
+      const sidebar = new W.UIPanel({
+        id: 'sidebar',
+        left: 0,
+        top: 0,
+        width: 264,
+        height: 952,
+        radius: 12,
+        style: { fillStyle: '#ffffff', strokeStyle: theme.colors.border },
+      });
+
+      const brand = new W.UILabel({
+        left: 28,
+        top: 30,
+        text: 'ICE Admin',
+        style: { fontSize: 22, fontWeight: '700', fillStyle: theme.colors.primary },
+      });
+
+      const menu = new W.UIMenu({
+        left: 16,
+        top: 86,
+        width: 232,
+        items: [
+          { key: 'dashboard', label: 'Dashboard', icon: '◧' },
+          { key: 'orders', label: 'Orders', icon: '▤' },
+          { key: 'customers', label: 'Customers', icon: '◉' },
+          { key: 'analytics', label: 'Analytics', icon: '⌁' },
+          { key: 'settings', label: 'Settings', icon: '⚙' },
+        ],
+        selectedKey: 'dashboard',
+        style: { fillStyle: '#ffffff' },
+      });
+
+      const header = new W.UIPanel({
+        id: 'header',
+        left: 264,
+        top: 0,
+        width: 1288,
+        height: 64,
+        radius: 0,
+        style: { fillStyle: '#ffffff', strokeStyle: theme.colors.border },
+      });
+
+      const search = new W.UITextField({
+        id: 'search',
+        left: 28,
+        top: 16,
+        width: 300,
+        placeholder: 'Search orders, customers...',
+      });
+
+      const avatar = new W.UIAvatar({
+        id: 'header-avatar',
+        left: 1172,
+        top: 12,
+        text: 'P',
+        size: 40,
+      });
+
+      const content = new W.UIPanel({
+        id: 'content',
+        left: 264,
+        top: 64,
+        width: 1288,
+        height: 888,
+        radius: 0,
+        style: { fillStyle: '#f5f5f5', strokeStyle: 'rgba(0,0,0,0)' },
+      });
+
+      const stats = [
+        new W.UIStatCard({ left: 28, top: 28, width: 280, height: 128, icon: '◧', title: 'Total Revenue', value: '$128,400', trend: '+12.4%', trendType: 'success' }),
+        new W.UIStatCard({ left: 332, top: 28, width: 280, height: 128, icon: '▤', title: 'New Orders', value: '2,318', trend: '+8.1%', trendType: 'success' }),
+        new W.UIStatCard({ left: 636, top: 28, width: 280, height: 128, icon: '◉', title: 'Active Users', value: '18,204', trend: '-2.7%', trendType: 'warning' }),
+        new W.UIStatCard({ left: 940, top: 28, width: 280, height: 128, icon: '⌁', title: 'Conversion', value: '6.42%', trend: '+1.9%', trendType: 'success' }),
+      ];
+
+      const alert = new W.UIAlert({
+        left: 28,
+        top: 180,
+        width: 1180,
+        height: 64,
+        type: 'info',
+        title: 'Sales campaign is running',
+        message: 'The spring campaign will end in 3 days. Review the latest performance now.',
+      });
+
+      const table = new W.UITable({
+        left: 28,
+        top: 268,
+        width: 1180,
+        columns: [
+          { key: 'order', title: 'Order', width: 160 },
+          { key: 'customer', title: 'Customer', width: 300 },
+          { key: 'date', title: 'Date', width: 200 },
+          { key: 'amount', title: 'Amount', width: 180, align: 'right' },
+          { key: 'status', title: 'Status', width: 340 },
+        ],
+        data: [
+          { order: '#10321', customer: 'Ava Thompson', date: '2026-09-10', amount: '$1,240.00', status: 'Paid' },
+          { order: '#10322', customer: 'Liam Chen', date: '2026-09-10', amount: '$860.50', status: 'Pending' },
+          { order: '#10323', customer: 'Mia Rodriguez', date: '2026-09-09', amount: '$2,190.00', status: 'Shipped' },
+          { order: '#10324', customer: 'Noah Wilson', date: '2026-09-09', amount: '$540.20', status: 'Refunded' },
+          { order: '#10325', customer: 'Emma Brown', date: '2026-09-08', amount: '$3,120.00', status: 'Paid' },
+          { order: '#10326', customer: 'Lucas Martin', date: '2026-09-08', amount: '$1,005.80', status: 'Pending' },
+        ],
+      });
+
+      const progress = new W.UIProgressBar({
+        left: 1260,
+        top: 300,
+        value: 72,
+        width: 220,
+        height: 10,
+      });
+      const toggle = new W.UISwitch({ left: 1260, top: 360, width: 52, height: 26, selected: true });
+
+      sidebar.addChildren([brand, menu]);
+      header.addChildren([search, avatar]);
+      content.addChildren([...stats, alert, table, progress, toggle]);
+      page.addChildren([sidebar, header, content]);
+      ice.addChild(page);
+
+      window.__result = { ice, page, menu, table, search };
+    </script>
+  </body>
+</html>

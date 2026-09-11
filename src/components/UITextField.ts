@@ -1,0 +1,167 @@
+import { UIComponent } from '../core/UIComponent';
+import { uiManager } from '../core/UIManager';
+import { createTextNode } from '../util/UIStyle';
+
+export class UITextField extends UIComponent {
+  private textNode: any;
+  private value: string;
+  private placeholder: string;
+  private focused = false;
+  private maxLength: number;
+  private __bound = false;
+
+  constructor(props: any = {}) {
+    const theme = uiManager.getTheme();
+    const width = props.width || 200;
+    const height = props.height || theme.control.height;
+    const value = props.value === undefined ? '' : String(props.value);
+    const placeholder = props.placeholder || '';
+    const maxLength = Number.isFinite(props.maxLength) ? props.maxLength : 0;
+
+    super({
+      ...props,
+      fill: true,
+      stroke: true,
+      width,
+      height,
+      radius: theme.radius.md,
+      style: {
+        fillStyle: theme.colors.surface,
+        strokeStyle: theme.colors.border,
+        lineWidth: theme.control.lineWidth,
+        ...(props.style || {}),
+      },
+    });
+
+    this.value = value;
+    this.placeholder = placeholder;
+    this.maxLength = Math.max(0, maxLength);
+    this.textNode = createTextNode({
+      left: theme.spacing.sm,
+      top: 0,
+      width: Math.max(0, width - theme.spacing.sm * 2),
+      height,
+      text: value || placeholder,
+      fillStyle: value ? theme.colors.text : theme.colors.textTertiary,
+      fontFamily: theme.font.family,
+      fontSize: theme.font.size,
+      fontWeight: theme.font.weightNormal,
+      align: 'left',
+      verticalAlign: 'middle',
+    });
+    this.addChild(this.textNode, false);
+  }
+
+  public getValue(): string {
+    return this.value;
+  }
+
+  public setValue(value: string): this {
+    this.value = this.__normalize(String(value ?? ''));
+    this.__sync();
+    return this;
+  }
+
+  public getPlaceholder(): string {
+    return this.placeholder;
+  }
+
+  public setPlaceholder(placeholder: string): this {
+    this.placeholder = String(placeholder ?? '');
+    this.__sync();
+    return this;
+  }
+
+  public focus(): this {
+    this.focused = true;
+    this.__sync();
+    return this;
+  }
+
+  public blur(): this {
+    this.focused = false;
+    this.__sync();
+    return this;
+  }
+
+  public isFocused(): boolean {
+    return this.focused;
+  }
+
+  protected afterAddHandler(): void {
+    super.afterAddHandler();
+    this.__bindGlobalEvents();
+  }
+
+  private __bindGlobalEvents(): void {
+    if (this.__bound || !this.ice || !this.ice.evtBus) {
+      return;
+    }
+    this.__bound = true;
+    this.ice.evtBus.on('mousedown', this.__onGlobalMouseDown, this);
+    this.ice.evtBus.on('keydown', this.__onGlobalKeyDown, this);
+  }
+
+  private __onGlobalMouseDown(evt: any): void {
+    if (!this.enabled) return;
+    this.focused = this.__isPointInside(evt);
+    this.__sync();
+  }
+
+  private __onGlobalKeyDown(evt: any): void {
+    if (!this.enabled || !this.focused) {
+      return;
+    }
+    const key = evt && evt.key;
+    if (key === 'Backspace') {
+      this.value = this.value.slice(0, -1);
+      this.__sync();
+    } else if (key === 'Delete') {
+      this.value = this.value.slice(1);
+      this.__sync();
+    } else if (key === 'Escape') {
+      this.blur();
+    } else if (typeof key === 'string' && key.length === 1 && !evt.metaKey && !evt.ctrlKey) {
+      this.value = this.__normalize(this.value + key);
+      this.__sync();
+    }
+  }
+
+  private __isPointInside(evt: any): boolean {
+    if (!evt || typeof evt.offsetX !== 'number' || typeof evt.offsetY !== 'number') {
+      return false;
+    }
+    const [wx, wy] = this.ice.screenToWorld(evt.offsetX, evt.offsetY);
+    const box = this.getMinBoundingBox(true);
+    return wx >= box.tl[0] && wx <= box.br[0] && wy >= box.tl[1] && wy <= box.br[1];
+  }
+
+  private __normalize(value: string): string {
+    return this.maxLength > 0 ? value.slice(0, this.maxLength) : value;
+  }
+
+  private __sync(): void {
+    const theme = uiManager.getTheme();
+    this.setState({
+      style: {
+        ...this.state.style,
+        fillStyle: theme.colors.surface,
+        strokeStyle: this.focused ? theme.colors.primary : theme.colors.border,
+        lineWidth: this.focused ? theme.control.lineWidthFocused : theme.control.lineWidth,
+      },
+    });
+    const text = this.value || this.placeholder;
+    this.textNode.setText(this.focused && this.value ? `${this.value}|` : text);
+    this.textNode.setState({
+      style: {
+        fillStyle: this.value ? theme.colors.text : theme.colors.textTertiary,
+        fontFamily: theme.font.family,
+        fontSize: theme.font.size,
+        fontWeight: theme.font.weightNormal,
+        textAlign: 'left',
+        textBaseline: 'middle',
+      },
+    });
+    this.revalidate();
+  }
+}
