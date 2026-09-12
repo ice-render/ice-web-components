@@ -19,7 +19,7 @@
   </style>
   <body>
     <h1 style="font-size: 20px; margin: 0 0 16px">ice-web-components gallery</h1>
-    <canvas id="canvas" width="1400" height="1200"></canvas>
+    <canvas id="canvas" width="1400" height="1440"></canvas>
 
     <script src="../node_modules/ice-render/dist/index.umd.js"></script>
     <script src="../dist/index.umd.js"></script>
@@ -42,7 +42,7 @@
           },
         });
 
-      const panel = new W.UIPanel({ id: 'panel', left: 24, top: 24, width: 1352, height: 1152 });
+      const panel = new W.UIPanel({ id: 'panel', left: 24, top: 24, width: 1352, height: 1392 });
 
       // 滚动视口演示：内容比视口高，靠引擎的 clipChildren 裁掉溢出部分
       // 注意：容器要先创建、再加子组件（引擎按全局 zIndex 排序渲染）
@@ -301,6 +301,43 @@
         active: true,
       });
 
+      // 数据展示：折叠面板 / 描述列表 / 时间线
+      const collapsePanel = new W.UICollapse({
+        id: 'collapse',
+        left: 32,
+        top: 1256,
+        width: 280,
+        activeKeys: ['a'],
+        items: [
+          { key: 'a', title: '面板 A', content: 'A 的内容（点标题切换）' },
+          { key: 'b', title: '面板 B', content: 'B 的内容' },
+        ],
+      });
+      const descriptions = new W.UIDescriptions({
+        id: 'descriptions',
+        left: 340,
+        top: 1256,
+        width: 330,
+        column: 2,
+        items: [
+          { label: '订单号', value: '#10321' },
+          { label: '状态', value: '已支付' },
+          { label: '客户', value: 'Ava Thompson' },
+          { label: '金额', value: '$1,240.00' },
+        ],
+      });
+      const timeline = new W.UITimeline({
+        id: 'timeline',
+        left: 700,
+        top: 1256,
+        width: 320,
+        items: [
+          { title: '创建订单', description: '用户下单', time: '09:01' },
+          { title: '支付完成', description: '微信支付', time: '09:03' },
+          { title: '已发货', time: '10:20', color: theme.colors.success },
+        ],
+      });
+
       panel.addChildren([
         heading('Buttons', 32, 28),
 
@@ -379,6 +416,10 @@
         rangeSegmented,
         emptyState,
         skeleton,
+        heading('Data display', 32, 1220),
+        collapsePanel,
+        descriptions,
+        timeline,
 
         heading('Scroll pane', 32, 706),
         scrollPane,
@@ -446,7 +487,7 @@
       });
 
       ice.addChild(panel);
-      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton };
+      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline };
     </script>
   </body>
 </html>

@@ -104,8 +104,8 @@
 | 数据展示 | Calendar | ⬜ 阶段 D |
 | 数据展示 | Card | ✅ `UICard`（部分：无 extra / 操作区 / 底部） |
 | 数据展示 | Carousel | ⬜ 阶段 D |
-| 数据展示 | Collapse | ⬜ 阶段 D |
-| 数据展示 | Descriptions | ⬜ 阶段 D |
+| 数据展示 | Collapse | ✅ `UICollapse`（accordion 可选） |
+| 数据展示 | Descriptions | ✅ `UIDescriptions`（1/2 列） |
 | 数据展示 | Empty | ✅ `UIEmpty` |
 | 数据展示 | Image | ⬜ 引擎有 `ICEImage`，缺预览/加载态封装 |
 | 数据展示 | List | ✅ `UIList` |
@@ -116,7 +116,7 @@
 | 数据展示 | Table | ✅ `UITable`（部分：无排序 / 分页 / 滚动 / 列宽拖拽） |
 | 数据展示 | Tabs | ✅ `UITabs`（部分：无溢出滚动 / 关闭 / 卡片态） |
 | 数据展示 | Tag | ✅ `UITag`（部分：无可关闭 / 多彩） |
-| 数据展示 | Timeline | ⬜ 阶段 D |
+| 数据展示 | Timeline | ✅ `UITimeline` |
 | 数据展示 | Tooltip | ⬜ 阶段 B |
 | 数据展示 | Tour | ⊘ 低优先 |
 | 数据展示 | Tree | ✅ `UITree` |
