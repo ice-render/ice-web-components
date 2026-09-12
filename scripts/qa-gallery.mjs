@@ -493,6 +493,50 @@ check('文本框：鼠标点进去也画环（正在输入）', inputBox !== nul
 check('无 console error / pageerror', errors.length === 0, errors.slice(0, 3).join(' | '));
 
 await page.screenshot({ path: '/tmp/qa-gallery.png', fullPage: true });
+
+/* ---------- 虚拟列表：一万行只渲染可视区 ---------- */
+const virtualBoot = await page.evaluate(() => {
+  const list = window.__result.virtualList;
+  return {
+    count: list.getItemCount(),
+    rendered: list.getRenderedCount(),
+    contentHeight: list.getContentHeight(),
+    range: list.getRange(),
+  };
+});
+check(
+  '虚拟列表：一万条数据只渲染可视区（节点数有上界）',
+  virtualBoot.count === 10000 && virtualBoot.rendered <= 16 && virtualBoot.rendered >= 10 && virtualBoot.contentHeight === 280000,
+  JSON.stringify(virtualBoot),
+);
+
+// 真实滚轮：滚过之后窗口跟着走，节点数不涨
+const listBox = await nodeBox('window.__result.virtualList');
+const galleryRect = await canvasRect();
+await page.mouse.move(galleryRect.left + listBox.l + listBox.w / 2, galleryRect.top + listBox.t + listBox.h / 2);
+await page.mouse.wheel(0, 1200);
+await page.waitForTimeout(420);
+const afterWheel = await page.evaluate(() => {
+  const list = window.__result.virtualList;
+  return { rendered: list.getRenderedCount(), range: list.getRange(), scrollTop: list.getScrollTop() };
+});
+check(
+  '虚拟列表：滚轮滚动后窗口跟着换（节点数不增长）',
+  afterWheel.scrollTop > 0 && afterWheel.range.start > 0 && afterWheel.rendered <= 16,
+  JSON.stringify(afterWheel),
+);
+
+const jumped = await page.evaluate(() => {
+  const list = window.__result.virtualList;
+  list.scrollToIndex(9999);
+  return { range: list.getRange(), rendered: list.getRenderedCount() };
+});
+check(
+  '虚拟列表：scrollToIndex 能跳到最后一万条',
+  jumped.range.end === 10000 && jumped.rendered <= 16,
+  JSON.stringify(jumped),
+);
+
 const sectionBox = await nodeBox('window.__result.splitter');
 const shotRect = await canvasRect();
 if (sectionBox) {

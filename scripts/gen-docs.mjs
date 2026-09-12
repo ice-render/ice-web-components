@@ -98,6 +98,7 @@ const GROUPS = [
       'ICEComment',
       'ICEWatermark',
       'ICETileMap',
+      'ICEVirtualList',
     ],
   },
   {

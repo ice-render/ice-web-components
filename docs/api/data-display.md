@@ -682,3 +682,42 @@
 | `getPaintCount()` | `number` |  |
 | `paintBoard()` | `void` | 自绘整块网格。浏览器里由 `doRender()` 自动调用；单测可以直接调来数自绘次数。 |
 | `initEvents()` | `void` |  |
+
+## `ICEVirtualList`
+
+当前该渲染的区间：`[start, end)`。
+
+源码：[`src/components/ICEVirtualList.ts`](../../src/components/ICEVirtualList.ts)
+
+**构造参数** `ICEVirtualListOptions`
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `id?` | `string` | 组件 id（引擎用它做唯一标识；e2e/调试时可按 id 定位） |
+| `left?` | `number` | 相对父容器的左边距 |
+| `top?` | `number` | 相对父容器的上边距 |
+| `width?` | `number` | 宽度（不传用组件默认值） |
+| `height?` | `number` | 视口高度（列表本身的尺寸，内容由它决定滚动范围） |
+| `itemHeight` | `number` | 每行高度（固定行高才谈得上虚拟滚动） |
+| `buffer?` | `number` | 上下缓冲条数，默认 2 |
+| `items?` | `any[]` | 数据项 |
+| `renderItem?` | `(index: number, item: any, node: any) => void` | 渲染一条：拿到的是**数据下标**（不是节点下标），可以复用传入的 node |
+| `scrollbar?` | `boolean` | 是否显示滚动条，默认 true |
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getItemCount()` | `number` |  |
+| `getItemHeight()` | `number` |  |
+| `getBuffer()` | `number` |  |
+| `getItems()` | `any[]` |  |
+| `getContentHeight()` | `number` | 内容总高度（撑开滚动条用）。 |
+| `getScrollTop()` | `number` |  |
+| `getRange()` | `ICEVirtualRange` | 当前窗口（查询前会先同步一次，保证拿到的是最新状态）。 |
+| `getRenderedNodes()` | `Array<{ index: number; node: any }>` | 当前真正渲染出来的节点（按下标升序）。 |
+| `getRenderedCount()` | `number` |  |
+| `getScrollPane()` | `ICEScrollPane` | 对外暴露滚动视口（需要挂滚动监听时用）。 |
+| `setItems(items: any[])` | `this` |  |
+| `setScrollTop(scrollTop: number)` | `this` |  |
+| `scrollToIndex(index: number)` | `this` | 把某一条滚进视口（贴顶对齐），下标会被夹进合法范围。 |

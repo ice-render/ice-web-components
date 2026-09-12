@@ -12,7 +12,7 @@ rings and shadows) is drawn by the engine.
 
 ## Highlights
 
-- **85 components** — buttons, inputs, selects, tables, trees, menus, modals,
+- **86 components** — buttons, inputs, selects, tables, trees, menus, modals,
   drawers, notifications, uploads, date/time pickers, cascader, transfer, carousel,
   colour picker… and the small stuff (tags, badges, avatars, skeletons, spins).
 - **One overlay stack for every popup** — Modal / Drawer / Dropdown / Tooltip /
@@ -27,10 +27,10 @@ rings and shadows) is drawn by the engine.
 - **Bootstrap 5 token theme** (plus a dark theme) — swap with one call.
 - **No name collisions with the engine** — the package’s runtime exports are
   disjoint from `ice-render`’s (there is a regression test for it).
-- **Actually tested** — 629 unit tests (88 suites: form validation, overlay
+- **Actually tested** — 640 unit tests (89 suites: form validation, overlay
   positioning, keyboard navigation, sort/hover/focus edge cases, the Minesweeper,
   Tetris and Snake rule models) plus five browser QA suites (`qa:admin`, `qa:gallery`,
-  `qa:workbench`, `qa:xp`, `qa:arcade` — 181 assertions) that drive the demo pages with
+  `qa:workbench`, `qa:xp`, `qa:arcade` — 184 assertions) that drive the demo pages with
   real mouse and keyboard events and fail on any console error.
 
 ## Quick start
@@ -296,7 +296,7 @@ Under the hood this page is where the engine work happens:
 | Basic | `ICEPanel` `ICEButton` `ICELabel` `ICETypography` `ICEIcon` `ICESvgIcon` `ICESeparator` |
 | Layout | `ICESpace` `ICEGrid` `ICEGridCol` `ICESplitter` `ICEScrollPane` |
 | Data entry | `ICETextField` `ICETextArea` `ICEPasswordField` `ICEInputNumber` `ICESelect` `ICEAutoComplete` `ICECascader` `ICETreeSelect` `ICEDatePicker` `ICETimePicker` `ICECheckBox` `ICECheckboxGroup` `ICERadioButton` `ICERadioGroup` `ICESwitch` `ICESlider` `ICESegmented` `ICERate` `ICEColorPicker` `ICETransfer` `ICEUpload` `ICEForm` `ICEFormItem` |
-| Data display | `ICETable` `ICEList` `ICETree` `ICEStatCard` `ICEStatistic` `ICECard` `ICEComment` `ICEDescriptions` `ICETimeline` `ICEProgressBar` `ICEAvatar` `ICEAvatarGroup` `ICETag` `ICEBadge` `ICEImageView` `ICEImagePreview` `ICECalendar` `ICECarousel` `ICECollapse` `ICEWatermark` |
+| Data display | `ICEVirtualList` `ICETable` `ICEList` `ICETree` `ICEStatCard` `ICEStatistic` `ICECard` `ICEComment` `ICEDescriptions` `ICETimeline` `ICEProgressBar` `ICEAvatar` `ICEAvatarGroup` `ICETag` `ICEBadge` `ICEImageView` `ICEImagePreview` `ICECalendar` `ICECarousel` `ICECollapse` `ICEWatermark` |
 | Feedback & status | `ICEAlert` `ICEModal` `ICEDrawer` `ICEMessage` `ICENotification` `ICETooltip` `ICEPopover` `ICEPopconfirm` `ICETour` `ICEFloatButton` `ICEEmpty` `ICESkeleton` `ICESpin` `ICEResult` `ICESteps` `ICEOverlayManager` |
 | Navigation | `ICEMenu` `ICEBreadcrumb` `ICEAnchor` `ICEBackTop` `ICEDropdown` `ICEPagination` `ICETabs` |
 | Layout & core | `ICEWidget` `ICEContainer` `ICEHoverManager` `ICEFocusManager` `ICEMessageManager` `ICEManager` (`ICEPainter` / `ICELayoutManager` are types) |

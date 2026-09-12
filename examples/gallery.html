@@ -1133,7 +1133,77 @@
 
       // 演示清单：每个 item 要么是单个组件，要么是一组「必须贴在一起」的组件（数组）。
       // 组件自带的 left/top 只是簇内局部坐标，实际位置由 flowSections 统一排。
+      /** 虚拟列表句柄（QA 用它验证「一万行只渲染可视区」） */
+      let virtualList = null;
       const sections = [
+        {
+          title: 'Virtual list（一万行也只渲染可视区）',
+          items: [
+            (() => {
+              const rows = Array.from({ length: 10000 }, (_, i) => ({
+                id: i + 1,
+                name: '订单 ' + String(i + 1).padStart(5, '0'),
+                amount: '¥' + (((i * 37) % 900) + 10),
+              }));
+              const list = new W.ICEVirtualList({
+                id: 'virtual-list',
+                left: 0,
+                top: 0,
+                width: 360,
+                height: 260,
+                itemHeight: 28,
+                buffer: 2,
+                items: rows,
+                renderItem: (index, item, node) => {
+                  const zebra = index % 2 === 0 ? theme.colors.surface : theme.colors.background;
+                  node.addChild(
+                    new W.ICEWidget({
+                      left: 0,
+                      top: 0,
+                      width: 344,
+                      height: 26,
+                      radius: 3,
+                      fill: true,
+                      stroke: false,
+                      interactive: false,
+                      style: { fillStyle: zebra },
+                    }),
+                    false,
+                  );
+                  node.addChild(
+                    new W.ICELabel({
+                      interactive: false,
+                      left: 10,
+                      top: 0,
+                      width: 200,
+                      height: 26,
+                      text: item.name,
+                      verticalAlign: 'middle',
+                      style: { fontSize: 13 },
+                    }),
+                    false,
+                  );
+                  node.addChild(
+                    new W.ICELabel({
+                      interactive: false,
+                      left: 210,
+                      top: 0,
+                      width: 124,
+                      height: 26,
+                      text: item.amount,
+                      align: 'right',
+                      verticalAlign: 'middle',
+                      style: { fontSize: 13, fillStyle: theme.colors.textSecondary },
+                    }),
+                    false,
+                  );
+                },
+              });
+              virtualList = list;
+              return list;
+            })(),
+          ],
+        },
         {
           title: 'Buttons',
           items: [
@@ -1402,7 +1472,7 @@
         requestAnimationFrame(() => syncCanvasToContent(flowSections(panel, sections))),
       );
 
-      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, submitHint, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, timePicker, timeHint, cascader, transfer, upload, carousel, avatarGroup, closableAlert, progressCircle, progressCircleDone, comment, colorPicker, colorHint, imageFill, imageContain, imageCover, breadcrumb, breadcrumbCollapsed, statistic, countdown, radioGroup, checkboxGroup, splitter, watermark, typographyTitle, typographyParagraph, typographyLink, anchorPane, anchor, backTop, calendar, imagePreview, previewTarget, tour, tourTarget, layoutSpace, layoutGrid, fab, pagedTable, crossForm };
+      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, submitHint, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, timePicker, timeHint, cascader, transfer, upload, carousel, avatarGroup, closableAlert, progressCircle, progressCircleDone, comment, colorPicker, colorHint, imageFill, imageContain, imageCover, breadcrumb, breadcrumbCollapsed, statistic, countdown, radioGroup, checkboxGroup, splitter, watermark, typographyTitle, typographyParagraph, typographyLink, anchorPane, anchor, backTop, calendar, imagePreview, previewTarget, tour, tourTarget, layoutSpace, layoutGrid, fab, pagedTable, crossForm, virtualList };
     </script>
   </body>
 </html>

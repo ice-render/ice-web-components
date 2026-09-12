@@ -435,7 +435,9 @@ const snakeBoot = await page.evaluate(() => {
 });
 check(
   '换卡带：点「贪吃蛇」真的插上第二块卡带（棋盘换、HUD 卡片换、整块棋盘仍是单节点）',
-  switched && snakeBoot.game === 'snake' && snakeBoot.length === 3 && snakeBoot.score === 0 && !!snakeBoot.food && snakeBoot.board && snakeBoot.tetrisGone,
+  // 注意：切过去之后贪吃蛇就开始自己走了，等待期间可能已经吃到东西 —— 只断言「是刚开局」的量级
+  switched && snakeBoot.game === 'snake' && snakeBoot.length >= 3 && snakeBoot.length <= 6 && snakeBoot.score < 100 &&
+    !!snakeBoot.food && snakeBoot.board && snakeBoot.tetrisGone && snakeBoot.hudScore === snakeBoot.score,
   JSON.stringify(snakeBoot),
 );
 check(
