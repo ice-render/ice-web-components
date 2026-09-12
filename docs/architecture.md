@@ -193,6 +193,7 @@ docs/           本目录
 | 创建顺序即 zIndex | 后创建的容器把先创建的子组件盖住 | **先建容器，再建子组件**；确实要先建子组件的（如调用方传进来的节点、幻灯片、卡片 extra、弹窗内容），整棵子树 `zIndex` 抬到容器之上（同值即可，别逐个分配不同值） |
 | 内部节点抢点击 | 点按钮没反应 / 点色块要点两次 | 组件内部的纯展示节点一律 `interactive: false` |
 | 布局容器吃掉命中 | 表单里的输入框点不进去、焦点环不出现、`getFocused()` 是 null | **纯布局节点**（`ICEFormItem`/`ICEForm`/`ICESpace`/`ICEGrid`/`ICESplitter`）一律 `interactive: false`；判断标准：这个矩形本身需要响应鼠标吗 |
+| 重排时忘了清空旧子节点 | 文字重影 / 内容重复叠在一起（改宽度、重复 setItems 后尤其明显） | 凡是「按尺寸或数据重排」的 `__render()`，第一件事就是 `removeChildren([...this.childNodes])`；这类组件还要补 `__afterStateMerge` 才能在宽度变化时自动重排 |
 | 鼠标一点就冒蓝框 | 拖 Slider 手柄时整个组件被框住 | 焦点环按 `:focus-visible` 语义：默认只有键盘聚焦才画（`focusRing: 'keyboard'`），文本类控件用 `'always'` |
 | 浮层被“点外关闭”提前关掉 | 下拉里点选项没反应 | `closeOnOutsideClick: false`，自己按 `mousedown` + 自己的命中盒判断 |
 | hover 反馈静默失效 | `isHovered()` 是 true，但底色不动 | 引擎的 `trigger(name, evt, param)` 把载荷放在 `event.param`，读取时用 `readHovered()` 兼容两种形态 |

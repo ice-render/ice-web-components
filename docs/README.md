@@ -14,7 +14,7 @@
 | 做表单、写校验（含异步） | [表单与校验](./guides/forms.md) |
 | 弹窗 / 抽屉 / 下拉 / 提示怎么用 | [浮层指南](./guides/overlays.md) |
 | 自己排布局、被“组件不见了”坑过 | [画布内布局](./guides/layout.md) |
-| 给库加组件、写测试 | [测试](./guides/testing.md) |
+| 给库加组件、写测试（含四套浏览器 QA） | [测试](./guides/testing.md) |
 | 从旧版本升上来 | [迁移说明](./guides/migration.md) |
 
 ## 文档地图

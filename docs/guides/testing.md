@@ -27,7 +27,7 @@ const picker = new ICEDatePicker({ /* … */ });
 (picker as any).afterAddHandler();    // 手动触发“加入场景”钩子，注册全局事件
 ```
 
-覆盖范围（73 个 suite / 480+ 条）：
+覆盖范围（80 个 suite / 520+ 条）：
 
 | 主题 | 例子 |
 |---|---|
@@ -48,7 +48,7 @@ const picker = new ICEDatePicker({ /* … */ });
 3. 有全局事件的（`mousedown`/`keydown`/`wheel`）一定要测**组件被移出场景后不崩**（守卫）；
 4. 有浮层的，断言「打开 / 关闭 / 关闭原因」。
 
-## 浏览器 QA（三套）
+## 浏览器 QA（四套）
 
 浏览器 QA 是「真开 Chromium 点一遍」的验收：慢，但能抓到单测抓不到的问题
 （布局交叠、命中被挡、浮层外观、焦点环这种纯视觉行为）。
@@ -58,6 +58,7 @@ npm run build
 PLAYWRIGHT_PATH=/path/to/playwright npm run qa:admin      # 或不设，脚本会尝试解析
 PLAYWRIGHT_PATH=/path/to/playwright npm run qa:gallery
 PLAYWRIGHT_PATH=/path/to/playwright npm run qa:workbench
+PLAYWRIGHT_PATH=/path/to/playwright npm run qa:xp
 ```
 
 | 脚本 | 页面 | 项数 | 覆盖 |
@@ -65,6 +66,11 @@ PLAYWRIGHT_PATH=/path/to/playwright npm run qa:workbench
 | `qa:admin` | `examples/admin.html` | 44 | 6 个页面顶层零交叠 / 首元素边距一致；逐页新组件（面包屑、浮动按钮+引导、回到顶部、库存分页、履约分栏拖动与锚点、图片预览、订单多选与批量发货、跨字段校验、通知渠道上限）；全部弹层开关 + Esc；零 console error |
 | `qa:gallery` | `examples/gallery.html` | 32 | 顶层零交叠；面包屑折叠、统计倒计时、单选/多选组、分栏拖动、水印、排版折行、锚点、日历、引导、图片预览、Space/Grid、表格换页、跨字段校验、**焦点环策略（拖手柄无环 / Tab 有环 / 文本框点击有环）** |
 | `qa:workbench` | `examples/workbench.html` | 15 | 三栏零交叠、队列→档案联动、筛选（含骨架/空态）、回复发送、快捷回复模板、标签/评分/坐席状态、引导、回到顶部、分栏拖动 |
+| `qa:xp` | `examples/windows-xp.html` | 25 | 桌面/任务栏零交叠；图标选中与双击开窗、拖动标题栏、最小化与任务栏恢复、开始菜单、扫雷（首点安全/插旗循环/难度/计时/胜利）、画图笔画、换壁纸、时钟、**IE 真抓网页 + 404 错误页 + 后退 + about:xp 表格 + 收藏夹** |
+
+> `qa:xp` 会**自己起一个静态服务器用 http 打开页面**（而不是 `file://`）：XP 里的「IE」是真的会
+> `fetch()` 的，而 `fetch` 在 `file://` 下不可用 —— 要演示真导航就必须走 http。用例还会故意访问
+> 一个不存在的地址来验证错误页，那段时间里的 404 资源错误被加进 console 白名单。
 
 失败时退出码非 0，并且会把现场截图落到 `/tmp/qa-*.png`（弹层是逐个截图），外观问题靠人眼看这批图。
 

@@ -261,3 +261,9 @@ isPointInsideICEBox(box: ICEWorldBox, x: number, y: number): boolean
 ### `ICE_DARK_THEME` — 常量
 
 源码：`src/theme/ICETheme.ts`
+
+### `ICE_XP_THEME` — 常量
+
+Windows XP 经典主题（Luna 蓝 + 米灰控件）。  用途：桌面 / 怀旧风格的应用。用 `iceUIManager.registerTheme('xp', ICE_XP_THEME).setTheme('xp')` 切换（主题在组件构造时读取，先切主题再建组件）。  取色要点：
+
+源码：`src/theme/ICETheme.ts`

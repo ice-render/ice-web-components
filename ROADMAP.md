@@ -66,7 +66,7 @@
 >
 > 示例：`gallery.html`（组件总览）、`admin.html`（6 页后台）、`workbench.html`（客服工单工作台）、
 > `windows-xp.html`（全屏 XP 桌面）、`custom-component.html`（自定义组件）——见[示例与场景](./docs/guides/examples.md)。
-> 浏览器回归：`qa:admin` 44 项 + `qa:gallery` 32 项 + `qa:workbench` 15 项 + `qa:xp` 20 项，
+> 浏览器回归：`qa:admin` 44 项 + `qa:gallery` 32 项 + `qa:workbench` 15 项 + `qa:xp` 25 项，
 > 全部走真实鼠标/键盘事件。
 
 ## 阶段 A：底座（先做这个）

@@ -184,6 +184,7 @@ const GROUPS = [
       'iceUIManager',
       'ICE_LIGHT_THEME',
       'ICE_DARK_THEME',
+      'ICE_XP_THEME',
     ],
   },
   {

@@ -339,6 +339,14 @@ events (hit-test path): it asserts no two top-level clusters overlap, drives the
 breadcrumb collapse, the radio / checkbox groups, drags the splitter divider and
 checks the watermark tiling, then screenshots to `/tmp/qa-gallery*.png`.
 
+`npm run qa:workbench` covers the support workbench (queue → profile, reply composer,
+quick replies, tags, rating, tour, back-to-top, splitter drag) and `npm run qa:xp`
+covers the Windows XP desktop: icons, window drag/minimise/restore, Start menu,
+Minesweeper (first-click-safe, flag cycle, difficulty, timer, win), the Paint canvas,
+the wallpaper switch, the clock — and the IE window really fetching pages (plus its
+404 page, back button, `about:xp` table and bookmarks). `qa:xp` starts a small static
+server itself, because `fetch` does not work from `file://`.
+
 See [ROADMAP.md](./ROADMAP.md) for the component backlog and what is still missing
 per component.
 
