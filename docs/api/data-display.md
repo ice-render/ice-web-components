@@ -44,6 +44,16 @@
 | `setColumnWidth(key: string, width: number)` | `boolean` | 手动设置某列宽度（拖拽缩列走的就是它）：宽度按 `minWidth` 夹取，改完重排整张表。 |
 | `isResizable()` | `boolean` |  |
 | `isResizing()` | `boolean` |  |
+| `isVirtual()` | `boolean` |  |
+| `isScrollable()` | `boolean` |  |
+| `getRowRange()` | `{ start: number; end: number; count: number }` | 当前可视行窗口（`[start, end)`，虚拟模式专用；普通模式返回整段）。 |
+| `getRenderedRowCount()` | `number` | 真正建出来的行数（虚拟模式下的节点数上界，QA 拿它守「不会全量渲染」）。 |
+| `getScroll()` | `{ x: number; y: number }` |  |
+| `getContentHeight()` | `number` | 内容总高度（虚拟模式下 = 行数 × 行高）。 |
+| `getFrozenWidth()` | `number` | 固定列的总宽度（没有固定列就是 0）。 |
+| `setScrollTop(y: number)` | `this` |  |
+| `setScrollLeft(x: number)` | `this` |  |
+| `scrollToRow(index: number)` | `this` | 把某一行滚进视口（贴顶）。 |
 
 ## `ICEList`
 

@@ -1138,7 +1138,45 @@
       // 组件自带的 left/top 只是簇内局部坐标，实际位置由 flowSections 统一排。
       /** 虚拟列表句柄（QA 用它验证「一万行只渲染可视区」） */
       let virtualList = null;
+      /** 宽表句柄（QA 用它验证虚拟行 / 固定列 / 横向滚动） */
+      let bigTable = null;
       const sections = [
+        {
+          title: 'Big table（一万行 × 20 列：虚拟行 + 固定列 + 拖拽缩列）',
+          items: [
+            (() => {
+              const bigColumns = Array.from({ length: 20 }, (_, i) => ({
+                key: 'c' + i,
+                title: '列' + (i + 1),
+                width: i < 2 ? 100 : undefined,
+                fixed: i < 2,
+                align: i % 3 === 0 ? 'right' : 'left',
+              }));
+              const bigRows = Array.from({ length: 10000 }, (_, i) => {
+                const row = {};
+                bigColumns.forEach((column, index) => {
+                  row[column.key] = index === 0 ? '行 ' + (i + 1) : String(((i + 1) * (index + 3)) % 9973);
+                });
+                return row;
+              });
+              bigTable = new W.ICETable({
+                id: 'big-table',
+                left: 0,
+                top: 0,
+                width: 420,
+                height: 300,
+                headerHeight: 34,
+                rowHeight: 32,
+                virtual: true,
+                resizable: true,
+                minColumnWidth: 70,
+                columns: bigColumns,
+                data: bigRows,
+              });
+              return bigTable;
+            })(),
+          ],
+        },
         {
           title: 'Virtual list（一万行也只渲染可视区）',
           items: [
@@ -1475,7 +1513,7 @@
         requestAnimationFrame(() => syncCanvasToContent(flowSections(panel, sections))),
       );
 
-      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, submitHint, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, timePicker, timeHint, cascader, transfer, upload, carousel, avatarGroup, closableAlert, progressCircle, progressCircleDone, comment, colorPicker, colorHint, imageFill, imageContain, imageCover, breadcrumb, breadcrumbCollapsed, statistic, countdown, radioGroup, checkboxGroup, splitter, watermark, typographyTitle, typographyParagraph, typographyLink, anchorPane, anchor, backTop, calendar, imagePreview, previewTarget, tour, tourTarget, layoutSpace, layoutGrid, fab, pagedTable, crossForm, virtualList };
+      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, submitHint, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, timePicker, timeHint, cascader, transfer, upload, carousel, avatarGroup, closableAlert, progressCircle, progressCircleDone, comment, colorPicker, colorHint, imageFill, imageContain, imageCover, breadcrumb, breadcrumbCollapsed, statistic, countdown, radioGroup, checkboxGroup, splitter, watermark, typographyTitle, typographyParagraph, typographyLink, anchorPane, anchor, backTop, calendar, imagePreview, previewTarget, tour, tourTarget, layoutSpace, layoutGrid, fab, pagedTable, crossForm, virtualList, bigTable };
     </script>
   </body>
 </html>

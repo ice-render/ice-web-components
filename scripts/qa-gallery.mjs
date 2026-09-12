@@ -565,6 +565,76 @@ await page.waitForTimeout(320);
 const tableClamped = await page.evaluate(() => window.__result.pagedTable.getColumnWidths());
 check('表格：列宽被最小宽度夹住（拖不没）', tableClamped.name === 70, JSON.stringify(tableClamped));
 
+/* ---------- 宽表：虚拟行 + 固定列 + 横向滚动 ---------- */
+const bigBoot = await page.evaluate(() => {
+  const table = window.__result.bigTable;
+  return {
+    virtual: table.isVirtual(),
+    scrollable: table.isScrollable(),
+    rows: table.getRenderedRowCount(),
+    content: table.getContentHeight(),
+    frozen: table.getFrozenWidth(),
+  };
+});
+check(
+  '宽表：一万行只渲染可视行（节点数有上界），内容高度按总行数算',
+  bigBoot.virtual === true && bigBoot.rows <= 16 && bigBoot.content === 320000 && bigBoot.frozen === 200,
+  JSON.stringify(bigBoot),
+);
+
+// 真滚轮：在表体上滚，窗口跟着换。
+// 注意：前面的虚拟列表用例滚过页面，宽表在页面顶部，先滚回顶部再算坐标，否则鼠标会落在视口外。
+await page.evaluate(() => window.scrollTo(0, 0));
+await page.waitForTimeout(200);
+const bigBox = await nodeBox('window.__result.bigTable');
+const galRect3 = await canvasRect();
+await page.mouse.move(galRect3.left + bigBox.l + bigBox.w / 2, galRect3.top + bigBox.t + 200);
+await page.mouse.wheel(0, 900);
+await page.waitForTimeout(420);
+const bigScrolled = await page.evaluate(() => {
+  const table = window.__result.bigTable;
+  return { scroll: table.getScroll(), range: table.getRowRange(), rows: table.getRenderedRowCount() };
+});
+check(
+  '宽表：滚轮滚动后窗口跟着换（节点数不增长）',
+  bigScrolled.scroll.y > 0 && bigScrolled.range.start > 0 && bigScrolled.rows <= 16,
+  JSON.stringify(bigScrolled),
+);
+
+// 横向滚动 + 固定列：冻结层钉在左边不动，表头与表体滚动位置同步
+const bigHorizontal = await page.evaluate(() => {
+  const table = window.__result.bigTable;
+  const worldLeft = (node) => {
+    let l = 0;
+    let cursor = node;
+    while (cursor && cursor.state) {
+      l += Number(cursor.state.left) || 0;
+      cursor = cursor.parentNode;
+    }
+    return l;
+  };
+  const layerLeftBefore = worldLeft(table.frozenLayer);
+  table.setScrollLeft(180);
+  const layerLeftAfter = worldLeft(table.frozenLayer);
+  const headerScroll = table.headerPane.getScroll();
+  const bodyScroll = table.bodyPane.getScroll();
+  void headerScroll;
+  const firstBodyCellLeft = table.bodyContent.childNodes[0].childNodes[0].state.left;
+  return { layerLeftBefore, layerLeftAfter, headerScroll, bodyScroll, firstBodyCellLeft, frozen: table.getFrozenWidth() };
+});
+check(
+  '宽表：横向滚动时表头与表体同步，固定列（冻结层）钉住不动',
+  bigHorizontal.bodyScroll[0] === 180 && bigHorizontal.headerScroll[0] === 180 && bigHorizontal.layerLeftBefore === bigHorizontal.layerLeftAfter,
+  JSON.stringify(bigHorizontal),
+);
+
+const bigJump = await page.evaluate(() => {
+  const table = window.__result.bigTable;
+  table.scrollToRow(9999);
+  return { range: table.getRowRange(), rows: table.getRenderedRowCount() };
+});
+check('宽表：scrollToRow 能跳到最后一万行', bigJump.range.end === 10000 && bigJump.rows <= 16, JSON.stringify(bigJump));
+
 const sectionBox = await nodeBox('window.__result.splitter');
 const shotRect = await canvasRect();
 if (sectionBox) {

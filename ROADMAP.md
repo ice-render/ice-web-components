@@ -11,7 +11,7 @@
 > `focusRing` 聚焦色）；③ `ICETag`/`ICEBadge` 默认改成 Bootstrap 实底 `.text-bg-*`（`variant:'soft'` 保留浅底风格）。
 > 细节见 README 的 Naming / Theme / Colour variants 三节。
 
-## 现状（78 个组件源文件 / 97 个导出类 / 651 条单测 / 186 项浏览器断言）
+## 现状（78 个组件源文件 / 97 个导出类 / 657 条单测 / 190 项浏览器断言）
 
 按分组清点（完整清单与参数见 [`docs/components.md`](./docs/components.md)）：
 
@@ -209,7 +209,14 @@
       `resizable` 拖拽缩列（表头边界透明拖拽条，±4px 命中）、`getColumnWidths()` /
       `setColumnWidth(key, width)` / `columnresize` 事件与 `onColumnResize` 回调。
       11 条单测 + `qa:gallery` 2 条真鼠标拖拽断言（拖 +60 后其余自动列重分、拖到负数被最小宽度夹住）。
-- [ ] P1 大数据量 · 剩余：`ICETable` 的 `virtual` 模式（万行表格）与固定列（宽表横向滚动时左侧列冻结）
+- [x] **P1 大数据量 · 收尾：`ICETable` 的 `virtual` 模式 + 固定列**：表格新增一条「可滚动模式」
+      渲染路径（**旧路径原样保留**，只有 `virtual: true` 或有 `fixed` 列时才走）——
+      表头与表体各是一个 `ICEScrollPane`（横向同步），表体只渲染可视行窗口（复用
+      `computeVirtualRange`），固定列再叠一层不横向滚动的冻结层（`clipChildren` 裁切）。
+      新 API：`getRenderedRowCount / getRowRange / getScroll / getContentHeight / getFrozenWidth /
+      setScrollTop / setScrollLeft / scrollToRow / isVirtual / isScrollable`。6 条单测 +
+      `qa:gallery` 4 条真断言（一万行 × 20 列只渲染 11~13 行、真实滚轮换窗口、
+      横向滚动时表头表体同步且冻结层钉住、scrollToRow 跳末尾）。
 - [ ] P1 拖拽编辑
 - [ ] P1 a11y 与 i18n
 

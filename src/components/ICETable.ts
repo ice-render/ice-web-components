@@ -5,11 +5,15 @@ import { ICEPagination } from './ICEPagination';
 import { iceUIManager } from '../core/ICEManager';
 import { createTextNode, readHovered } from '../util/ICEStyle';
 import { ICERect } from 'ice-render';
+import { ICEScrollPane } from './ICEScrollPane';
+import { computeVirtualRange } from './ICEVirtualList';
 
 export type ICETableColumn = {
   key: string;
   title: string;
   width?: number;
+  /** 固定列：横向滚动时钉在左边不跟着滚（宽表的常用约定） */
+  fixed?: boolean;
   /** 拖拽缩列时的最小宽度（不传用表格的 `minColumnWidth`，默认 60） */
   minWidth?: number;
   align?: 'left' | 'center' | 'right';
@@ -130,6 +134,22 @@ export class ICETable extends ICEWidget {
   private onColumnResize: ((key: string, width: number, widths: Record<string, number>) => void) | null = null;
   /** 拖拽状态：{ key, index, startX, startWidth } */
   private resizeState: { key: string; index: number; startX: number; startWidth: number } | null = null;
+  /** 可滚动模式：虚拟行（`virtual`）或存在固定列时启用；旧路径保持原样 */
+  private scrollable = false;
+  private virtual = false;
+  private bodyPane: ICEScrollPane | null = null;
+  private headerPane: ICEScrollPane | null = null;
+  private bodyContent: any = null;
+  private frozenLayer: any = null;
+  private frozenContent: any = null;
+  private rowWindow: { start: number; end: number; count: number } = { start: 0, end: 0, count: 0 };
+  private virtualScrollTop = 0;
+  private virtualScrollLeft = 0;
+  private rowNodes = new Map<number, any>();
+  private frozenRowNodes = new Map<number, any>();
+  private virtualBuffer = 2;
+  /** 可滚动模式下的内容宽度（列多到装不下时 > 视口宽度） */
+  private renderedContentWidth = 0;
   private __bound = false;
 
   constructor(props: any = {}) {
@@ -137,7 +157,10 @@ export class ICETable extends ICEWidget {
     const width = props.width || 720;
     const rowHeight = props.rowHeight || 40;
     const headerHeight = props.headerHeight || 36;
-    const height = headerHeight + rowHeight * (props.data ? props.data.length : 0);
+    const fixedColumns = (props.columns || []).some((column: ICETableColumn) => column.fixed === true);
+    // 可滚动模式（虚拟行 / 固定列）高度必须由调用方给：按行数算高度会和「只渲染可视区」自相矛盾
+    const scrollable = props.virtual === true || fixedColumns;
+    const height = scrollable ? props.height || 400 : headerHeight + rowHeight * (props.data ? props.data.length : 0);
 
     super({
       ...props,
@@ -164,6 +187,9 @@ export class ICETable extends ICEWidget {
     this.resizable = props.resizable === true;
     this.minColumnWidth = Math.max(20, Math.floor(Number(props.minColumnWidth) || 60));
     this.onColumnResize = typeof props.onColumnResize === 'function' ? props.onColumnResize : null;
+    this.virtual = props.virtual === true;
+    this.virtualBuffer = Math.max(0, Math.floor(Number(props.virtualBuffer === undefined ? 2 : props.virtualBuffer) || 0));
+    this.scrollable = this.virtual || (this.columns || []).some((column: ICETableColumn) => column.fixed === true);
     this.selectionMode =
       props.rowSelection === 'multiple' ? 'multiple' : props.rowSelection === 'none' ? 'none' : 'single';
     this.onSelectionChange = typeof props.onSelectionChange === 'function' ? props.onSelectionChange : null;
@@ -518,6 +544,12 @@ export class ICETable extends ICEWidget {
     this.selectionNodes = [];
     this.headerCheckbox = null;
 
+    // 可滚动模式（虚拟行 / 固定列）：表头与表体各自成滚动视口，走另一条渲染路径
+    if (this.scrollable) {
+      this.__renderScrollable(widths, offset);
+      return;
+    }
+
     const header = new ICEWidget({
       fill: true,
       stroke: false,
@@ -574,58 +606,7 @@ export class ICETable extends ICEWidget {
 
     this.rowPanels = [];
     this.data.forEach((row, rowIndex) => {
-      const panel = new ICEWidget({
-        fill: true,
-        stroke: false,
-        left: 0,
-        top: this.headerHeight + rowIndex * this.rowHeight,
-        width: totalWidth,
-        height: this.rowHeight,
-        style: {
-          fillStyle: rowIndex % 2 === 0 ? theme.colors.surface : theme.colors.background,
-        },
-      });
-      this.addChild(panel, false);
-      this.rowPanels.push(panel);
-      if (this.selectionMode === 'multiple') {
-        const checkbox = new ICECheckBox({
-          left: (offset - 24) / 2,
-          top: (this.rowHeight - 24) / 2,
-          width: 24,
-          height: 24,
-          selected: this.selectedIndexes.indexOf(rowIndex) !== -1,
-        });
-        checkbox.on('change', () => {
-          const selected = checkbox.isSelected();
-          const has = this.selectedIndexes.indexOf(rowIndex) !== -1;
-          if (selected === has) {
-            return;
-          }
-          this.selectedIndexes = selected
-            ? this.selectedIndexes.concat(rowIndex).sort((a, b) => a - b)
-            : this.selectedIndexes.filter((item) => item !== rowIndex);
-          this.__syncSelection();
-          this.__emitSelection();
-        });
-        panel.addChild(checkbox, false);
-        this.selectionNodes.push(checkbox);
-      }
-      // 行悬停反馈：hover 由 ICEHoverManager 打在行面板上，这里只负责换底色
-      panel.on(
-        'hoverchange',
-        (evt: any) => {
-          const hovered = readHovered(evt);
-          if (hovered) {
-            this.hoveredIndex = rowIndex;
-          } else if (this.hoveredIndex === rowIndex) {
-            this.hoveredIndex = -1;
-          }
-          this.__syncSelection();
-        },
-        this,
-      );
-      const values = this.columns.map((column) => this.__format(row[column.key]));
-      this.__placeCells(panel, widths, values, false, this.columns, row, offset);
+    this.__createRowPanel(row, rowIndex, this, this.headerHeight + rowIndex * this.rowHeight, widths, offset);
     });
 
     // 空态：没有数据时给一块 ICEEmpty，而不是留一片空白
@@ -678,6 +659,213 @@ export class ICETable extends ICEWidget {
     if (sizeChanged && width > 0 && this.renderedWidth > 0 && width !== this.renderedWidth) {
       this.__render();
     }
+  }
+
+  /** 建一行（普通模式与虚拟模式共用；top 由调用方给，虚拟模式里相对滚动内容）。 */
+  /**
+   * 可滚动模式的渲染：表头与表体各自一个 `ICEScrollPane`（横向同步），
+   * 表体只渲染可视行窗口（虚拟行），有固定列时再叠一层不横向滚动的冻结层。
+   */
+  private __renderScrollable(baseWidths: number[], offset: number): void {
+    const theme = iceUIManager.getTheme();
+    const viewportWidth = Number(this.state.width) || 720;
+    const viewportHeight = Number(this.state.height) || 400;
+    const frozenIndexes: number[] = [];
+    this.columns.forEach((column, index) => {
+      if (column.fixed === true) frozenIndexes.push(index);
+    });
+    const frozenWidth = frozenIndexes.reduce((sum, index) => sum + baseWidths[index], 0);
+    // 内容宽度：至少铺满视口；列多到最小宽度都装不下时自然溢出（横向滚动）
+    const naturalWidth = baseWidths.reduce((sum, width) => sum + width, 0);
+    const contentWidth = Math.max(viewportWidth, naturalWidth);
+    this.renderedContentWidth = contentWidth;
+    const widths = this.__columnWidths(contentWidth - offset);
+    const bodyHeight = Math.max(0, viewportHeight - this.headerHeight);
+
+    const headerContent = new ICEWidget({ left: 0, top: 0, width: contentWidth, height: this.headerHeight, fill: true, stroke: false, interactive: false, style: { fillStyle: theme.colors.background } });
+    this.__placeCells(headerContent, widths, this.columns.map((column) => this.getHeaderLabel(column.key)), true, this.columns, undefined, offset);
+    this.headerPane = new ICEScrollPane({ left: 0, top: 0, width: viewportWidth, height: this.headerHeight, scrollbar: false });
+    this.headerPane.setContent(headerContent);
+    this.headerPane.setContentSize(contentWidth, this.headerHeight);
+    this.addChild(this.headerPane, false);
+
+    const rows = this.pageSize > 0 ? this.data : this.sortedData;
+    this.data = rows;
+    const contentHeight = rows.length * this.rowHeight;
+    this.bodyContent = new ICEWidget({ left: 0, top: 0, width: contentWidth, height: contentHeight, fill: false, stroke: false, interactive: false });
+    this.bodyPane = new ICEScrollPane({ left: 0, top: this.headerHeight, width: viewportWidth, height: bodyHeight });
+    this.bodyPane.setContent(this.bodyContent);
+    this.bodyPane.setContentSize(contentWidth, contentHeight);
+    this.bodyPane.on('scroll', (evt: any) => {
+      const x = evt && evt.param ? Number(evt.param.x) || 0 : 0;
+      const y = evt && evt.param ? Number(evt.param.y) || 0 : 0;
+      this.virtualScrollLeft = x;
+      this.virtualScrollTop = y;
+      // 表头只跟横向，表体两个方向都能滚
+      if (this.headerPane) this.headerPane.setScroll(x, 0);
+      this.__syncRowWindow();
+    });
+    this.addChild(this.bodyPane, false);
+
+    if (frozenIndexes.length) {
+      this.frozenLayer = new ICEWidget({
+        left: 0,
+        top: 0,
+        width: frozenWidth,
+        height: viewportHeight,
+        fill: false,
+        stroke: false,
+        interactive: false,
+        clipChildren: true,
+      });
+      const frozenHeader = new ICEWidget({
+        left: 0,
+        top: 0,
+        width: frozenWidth,
+        height: this.headerHeight,
+        fill: true,
+        stroke: false,
+        interactive: false,
+        style: { fillStyle: theme.colors.background },
+      });
+      this.frozenLayer.addChild(frozenHeader, false);
+      this.__placeCells(
+        frozenHeader,
+        widths,
+        this.columns.map((column) => this.getHeaderLabel(column.key)),
+        true,
+        this.columns,
+        undefined,
+        offset,
+      );
+      this.frozenContent = new ICEWidget({ left: 0, top: this.headerHeight, width: frozenWidth, height: bodyHeight, fill: false, stroke: false, interactive: false });
+      this.frozenLayer.addChild(this.frozenContent, false);
+      // 固定列的分隔线 + 阴影，让「钉住」这件事看得见
+      const edge = new ICERect({
+        left: frozenWidth - 1,
+        top: 0,
+        width: 1,
+        height: viewportHeight,
+        fill: true,
+        stroke: false,
+        style: { fillStyle: theme.colors.border },
+      });
+      this.frozenLayer.addChild(edge, false);
+      this.addChild(this.frozenLayer, false);
+    }
+
+    this.rowNodes.clear();
+    this.frozenRowNodes.clear();
+    this.__syncRowWindow();
+    this.__syncSelection();
+    if (this.ice && this.ice.ctx) this.__layoutCells();
+    this.revalidate();
+  }
+
+  /** 按当前滚动位置重算可视行窗口：窗口外的行面板拆掉，窗口内的补上。 */
+  private __syncRowWindow(): void {
+    if (!this.scrollable || !this.bodyContent) return;
+    const bodyHeight = Math.max(0, (Number(this.state.height) || 400) - this.headerHeight);
+    const rows = this.data;
+    const range = computeVirtualRange({
+      scrollTop: this.virtualScrollTop,
+      viewportHeight: bodyHeight,
+      itemHeight: this.rowHeight,
+      itemCount: rows.length,
+      buffer: this.virtualBuffer,
+    });
+    this.rowWindow = range;
+    const offset = this.selectionMode === 'multiple' ? ICETable.SELECTION_WIDTH : 0;
+    const widths = this.__columnWidths((this.bodyContent.state.width || 0) - offset);
+    Array.from(this.rowNodes.keys()).forEach((index) => {
+      if (index >= range.start && index < range.end) return;
+      const node = this.rowNodes.get(index);
+      this.rowNodes.delete(index);
+      if (node) this.bodyContent.removeChild(node);
+      this.__forgetRowCells(node);
+      const frozen = this.frozenRowNodes.get(index);
+      if (frozen && this.frozenContent) {
+        this.frozenRowNodes.delete(index);
+        this.frozenContent.removeChild(frozen);
+        this.__forgetRowCells(frozen);
+      }
+    });
+    for (let index = range.start; index < range.end; index += 1) {
+      if (this.rowNodes.has(index)) continue;
+      const panel = this.__createRowPanel(rows[index], index, this.bodyContent, index * this.rowHeight, widths, offset);
+      this.rowNodes.set(index, panel);
+      if (this.frozenContent) {
+        const frozen = this.__createRowPanel(rows[index], index, this.frozenContent, index * this.rowHeight - this.headerHeight, widths, offset, this.frozenContent.state.width);
+        this.frozenRowNodes.set(index, frozen);
+      }
+    }
+    // 新行里的单元格要重新量一次宽度：`__placeCells` 建出来的文字节点宽度是 1，
+    // 不量的话滚动出来的新行会「有格子没字」（这个坑就是 QA 截图盯出来的）。
+    if (this.ice && this.ice.ctx) this.__layoutCells();
+  }
+
+  /** 行被拆掉时，把它名下的单元格记录也清掉（否则 `cellNodes` 会随滚动无限增长）。 */
+  private __forgetRowCells(panel: any): void {
+    if (!panel || !panel.childNodes) return;
+    const owned = new Set(panel.childNodes);
+    this.cellNodes = this.cellNodes.filter((cell) => !owned.has(cell.node));
+  }
+
+  private __createRowPanel(row: ICETableRow, rowIndex: number, parent: any, top: number, widths: number[], offset: number, panelWidth?: number): any {
+    const theme = iceUIManager.getTheme();
+    const panel = new ICEWidget({
+      fill: true,
+      stroke: false,
+      left: 0,
+      top: top,
+      width: panelWidth === undefined ? Number(this.state.width) || 0 : panelWidth,
+      height: this.rowHeight,
+      style: {
+        fillStyle: rowIndex % 2 === 0 ? theme.colors.surface : theme.colors.background,
+      },
+    });
+    parent.addChild(panel, false);
+    this.rowPanels.push(panel);
+    if (this.selectionMode === 'multiple') {
+      const checkbox = new ICECheckBox({
+        left: (offset - 24) / 2,
+        top: (this.rowHeight - 24) / 2,
+        width: 24,
+        height: 24,
+        selected: this.selectedIndexes.indexOf(rowIndex) !== -1,
+      });
+      checkbox.on('change', () => {
+        const selected = checkbox.isSelected();
+        const has = this.selectedIndexes.indexOf(rowIndex) !== -1;
+        if (selected === has) {
+          return;
+        }
+        this.selectedIndexes = selected
+          ? this.selectedIndexes.concat(rowIndex).sort((a, b) => a - b)
+          : this.selectedIndexes.filter((item) => item !== rowIndex);
+        this.__syncSelection();
+        this.__emitSelection();
+      });
+      panel.addChild(checkbox, false);
+      this.selectionNodes.push(checkbox);
+    }
+    // 行悬停反馈：hover 由 ICEHoverManager 打在行面板上，这里只负责换底色
+    panel.on(
+      'hoverchange',
+      (evt: any) => {
+        const hovered = readHovered(evt);
+        if (hovered) {
+          this.hoveredIndex = rowIndex;
+        } else if (this.hoveredIndex === rowIndex) {
+          this.hoveredIndex = -1;
+        }
+        this.__syncSelection();
+      },
+      this,
+    );
+    const values = this.columns.map((column) => this.__format(row[column.key]));
+    this.__placeCells(panel, widths, values, false, this.columns, row, offset);
+    return panel;
   }
 
   private __placeCells(
@@ -783,7 +971,10 @@ export class ICETable extends ICEWidget {
 
   /** 当前各列实际宽度（按列 key 给，方便断言与持久化）。 */
   public getColumnWidths(): Record<string, number> {
-    const totalWidth = this.renderedWidth || Number(this.state.width) || 720;
+    const totalWidth =
+      this.scrollable && this.renderedContentWidth
+        ? this.renderedContentWidth
+        : this.renderedWidth || Number(this.state.width) || 720;
     const offset = this.selectionMode === 'multiple' ? ICETable.SELECTION_WIDTH : 0;
     const widths = this.__columnWidths(totalWidth - offset);
     const result: Record<string, number> = {};
@@ -824,6 +1015,70 @@ export class ICETable extends ICEWidget {
 
   public isResizing(): boolean {
     return !!this.resizeState;
+  }
+
+  // ---------------------------------------------------------------- 滚动 / 虚拟行 API
+
+  public isVirtual(): boolean {
+    return this.virtual;
+  }
+
+  public isScrollable(): boolean {
+    return this.scrollable;
+  }
+
+  /** 当前可视行窗口（`[start, end)`，虚拟模式专用；普通模式返回整段）。 */
+  public getRowRange(): { start: number; end: number; count: number } {
+    if (!this.scrollable) return { start: 0, end: this.data.length, count: this.data.length };
+    this.__syncRowWindow();
+    return { ...this.rowWindow };
+  }
+
+  /** 真正建出来的行数（虚拟模式下的节点数上界，QA 拿它守「不会全量渲染」）。 */
+  public getRenderedRowCount(): number {
+    if (!this.scrollable) return this.data.length;
+    return this.__syncRowWindow(), this.rowNodes.size;
+  }
+
+  public getScroll(): { x: number; y: number } {
+    return { x: this.virtualScrollLeft, y: this.virtualScrollTop };
+  }
+
+  /** 内容总高度（虚拟模式下 = 行数 × 行高）。 */
+  public getContentHeight(): number {
+    return this.scrollable ? this.data.length * this.rowHeight : this.headerHeight + this.data.length * this.rowHeight;
+  }
+
+  /** 固定列的总宽度（没有固定列就是 0）。 */
+  public getFrozenWidth(): number {
+    const widths = this.getColumnWidths();
+    return this.columns.reduce((sum, column) => sum + (column.fixed === true ? widths[column.key] : 0), 0);
+  }
+
+  public setScrollTop(y: number): this {
+    if (!this.scrollable || !this.bodyPane) return this;
+    const maxY = Math.max(0, this.getContentHeight() - Math.max(0, (Number(this.state.height) || 400) - this.headerHeight));
+    const next = Math.min(Math.max(Number(y) || 0, 0), maxY);
+    this.virtualScrollTop = next;
+    this.bodyPane.setScroll(this.virtualScrollLeft, next);
+    this.__syncRowWindow();
+    return this;
+  }
+
+  public setScrollLeft(x: number): this {
+    if (!this.scrollable || !this.bodyPane) return this;
+    const next = Math.max(0, Number(x) || 0);
+    this.virtualScrollLeft = next;
+    this.bodyPane.setScroll(next, this.virtualScrollTop);
+    if (this.headerPane) this.headerPane.setScroll(next, 0);
+    return this;
+  }
+
+  /** 把某一行滚进视口（贴顶）。 */
+  public scrollToRow(index: number): this {
+    if (!this.scrollable) return this;
+    const clamped = Math.min(Math.max(Math.floor(Number(index) || 0), 0), Math.max(0, this.data.length - 1));
+    return this.setScrollTop(clamped * this.rowHeight);
   }
 
   /** 表头边界拖拽句柄：透明条，命中区 ±4px。 */
