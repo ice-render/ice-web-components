@@ -61,11 +61,11 @@
         top: 84,
         width: 232,
         items: [
-          { key: 'dashboard', label: 'Dashboard', icon: '◧' },
-          { key: 'orders', label: 'Orders', icon: '▤' },
-          { key: 'customers', label: 'Customers', icon: '◉' },
-          { key: 'analytics', label: 'Analytics', icon: '⌁' },
-          { key: 'settings', label: 'Settings', icon: '⚙' },
+          { key: 'dashboard', label: 'Dashboard', iconPath: 'M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z' },
+          { key: 'orders', label: 'Orders', iconPath: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M16 13H8M16 17H8' },
+          { key: 'customers', label: 'Customers', iconPath: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75' },
+          { key: 'analytics', label: 'Analytics', iconPath: 'M18 20V10M12 20V4M6 20v-6' },
+          { key: 'settings', label: 'Settings', iconPath: 'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6' },
         ],
         selectedKey: 'dashboard',
         style: { fillStyle: '#ffffff' },
@@ -166,7 +166,7 @@
             width: 204,
             renderCell: (value, row, column, meta) =>
               new W.UIBadge({
-                left: 12,
+                left: 0,
                 top: Math.round((meta.cellHeight - 22) / 2),
                 width: 86,
                 height: 22,
@@ -232,17 +232,17 @@
         title: 'System Status',
         style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border, shadow: 'md' },
       });
-      const cpuLabel = new W.UILabel({ left: 16, top: 48, height: 10, verticalAlign: 'middle', text: 'CPU Load', style: { fontSize: 13, fillStyle: theme.colors.textSecondary } });
-      const cpuBar = new W.UIProgressBar({ left: 16, top: 48, width: 224, value: 72, height: 10 });
-      const memLabel = new W.UILabel({ left: 16, top: 88, height: 10, verticalAlign: 'middle', text: 'Memory', style: { fontSize: 13, fillStyle: theme.colors.textSecondary } });
-      const memBar = new W.UIProgressBar({ left: 16, top: 88, width: 224, value: 54, height: 10 });
-      const diskLabel = new W.UILabel({ left: 16, top: 128, height: 10, verticalAlign: 'middle', text: 'Disk', style: { fontSize: 13, fillStyle: theme.colors.textSecondary } });
-      const diskBar = new W.UIProgressBar({ left: 16, top: 128, width: 224, value: 38, height: 10 });
-      const statusSep = new W.UISeparator({ left: 16, top: 164, width: 224, height: 1 });
-      const emailLabel = new W.UILabel({ left: 16, top: 178, height: 22, verticalAlign: 'middle', text: 'Email notifications', style: { fontSize: 13, fillStyle: theme.colors.textSecondary } });
-      const emailSwitch = new W.UISwitch({ left: 188, top: 178, width: 44, height: 22, selected: true });
-      const pushLabel = new W.UILabel({ left: 16, top: 214, height: 22, verticalAlign: 'middle', text: 'Push notifications', style: { fontSize: 13, fillStyle: theme.colors.textSecondary } });
-      const pushSwitch = new W.UISwitch({ left: 188, top: 214, width: 44, height: 22, selected: false });
+      const cpuLabel = new W.UILabel({ left: 16, top: 42, height: 20, verticalAlign: 'middle', text: 'CPU Load', style: { fontSize: 13, fillStyle: theme.colors.textSecondary } });
+      const cpuBar = new W.UIProgressBar({ left: 16, top: 64, width: 224, value: 72, height: 10 });
+      const memLabel = new W.UILabel({ left: 16, top: 82, height: 20, verticalAlign: 'middle', text: 'Memory', style: { fontSize: 13, fillStyle: theme.colors.textSecondary } });
+      const memBar = new W.UIProgressBar({ left: 16, top: 104, width: 224, value: 54, height: 10 });
+      const diskLabel = new W.UILabel({ left: 16, top: 122, height: 20, verticalAlign: 'middle', text: 'Disk', style: { fontSize: 13, fillStyle: theme.colors.textSecondary } });
+      const diskBar = new W.UIProgressBar({ left: 16, top: 144, width: 224, value: 38, height: 10 });
+      const statusSep = new W.UISeparator({ left: 16, top: 170, width: 224, height: 1 });
+      const emailLabel = new W.UILabel({ left: 16, top: 180, height: 22, verticalAlign: 'middle', text: 'Email notifications', style: { fontSize: 13, fillStyle: theme.colors.textSecondary } });
+      const emailSwitch = new W.UISwitch({ left: 188, top: 180, width: 44, height: 22, selected: true });
+      const pushLabel = new W.UILabel({ left: 16, top: 216, height: 22, verticalAlign: 'middle', text: 'Push notifications', style: { fontSize: 13, fillStyle: theme.colors.textSecondary } });
+      const pushSwitch = new W.UISwitch({ left: 188, top: 216, width: 44, height: 22, selected: false });
 
       const actionsCard = new W.UICard({
         left: 1004,

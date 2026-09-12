@@ -1,6 +1,6 @@
 import { UIComponent } from '../core/UIComponent';
 import { uiManager } from '../core/UIManager';
-import { centerTextNode, getStatusColors } from '../util/UIStyle';
+import { createTextNode, getStatusColors } from '../util/UIStyle';
 
 export class UIBadge extends UIComponent {
   private textNode: any;
@@ -25,10 +25,19 @@ export class UIBadge extends UIComponent {
         ...(props.style || {}),
       },
     });
-    this.textNode = centerTextNode(props.text ?? '0', theme, width, height, {
+    const padX = theme.spacing.sm;
+    this.textNode = createTextNode({
+      left: padX,
+      top: 0,
+      width: Math.max(0, width - padX * 2),
+      height,
+      text: props.text ?? '0',
+      fillStyle: colors.text,
+      fontFamily: theme.font.family,
       fontSize: theme.font.sizeSmall,
       fontWeight: theme.font.weightSemibold,
-      fillStyle: colors.text,
+      align: 'left',
+      verticalAlign: 'middle',
     });
     this.addChild(this.textNode, false);
   }

@@ -4,6 +4,7 @@ import {
   UITable,
   UIMenu,
   UIStatCard,
+  UIBadge,
   uiManager,
 } from '../src';
 import { UI_LIGHT_THEME } from '../src';
@@ -61,6 +62,21 @@ describe('admin UI components', () => {
     expect(table.getSelectedIndex()).toBe(-1);
   });
 
+  it('keeps header and row cell x-alignment for right-aligned columns', () => {
+    const table = new UITable({
+      width: 400,
+      columns: [
+        { key: 'label', title: 'Label', width: 200 },
+        { key: 'amount', title: 'Amount', width: 200, align: 'right' },
+      ],
+      data: [{ label: 'Order', amount: '$1,240.00' }],
+    });
+    const headerCells = table.childNodes[0].childNodes.filter((node: any) => node.state.text);
+    const rowCells = table.childNodes[1].childNodes.filter((node: any) => node.state.text);
+    expect(headerCells[1].state.left).toBe(rowCells[1].state.left);
+    expect(headerCells[1].state.width).toBe(rowCells[1].state.width);
+  });
+
   it('selects menu items and reports selected key', () => {
     const menu = new UIMenu({
       width: 240,
@@ -84,5 +100,12 @@ describe('admin UI components', () => {
     expect(texts).toContain('Orders');
     expect(texts).toContain('3200');
     expect(texts).toContain('-3%');
+  });
+
+  it('left-aligns badge text so table status pills stay flush with headers', () => {
+    const badge = new UIBadge({ text: 'Paid', width: 86, height: 22, status: 'success' });
+    const textNode = badge.childNodes[0];
+    expect(textNode.state.style.textAlign !== 'center').toBe(true);
+    expect(textNode.state.left).toBeGreaterThan(0);
   });
 });

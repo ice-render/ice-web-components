@@ -14,6 +14,7 @@ export * from './components/UIBadge';
 export * from './components/UITag';
 export * from './components/UIAvatar';
 export * from './components/UIIcon';
+export * from './components/UISvgIcon';
 export * from './components/UISeparator';
 export * from './components/UICheckBox';
 export * from './components/UIRadioButton';

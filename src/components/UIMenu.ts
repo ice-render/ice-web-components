@@ -2,18 +2,19 @@ import { UIComponent } from '../core/UIComponent';
 import { UIContainer } from '../core/UIContainer';
 import { uiManager } from '../core/UIManager';
 import { createTextNode } from '../util/UIStyle';
-import { ICERect } from 'ice-render';
+import { UISvgIcon } from './UISvgIcon';
 
 export type UIMenuItem = {
   key: string;
   label: string;
   icon?: string;
+  iconPath?: string;
 };
 
 export class UIMenu extends UIContainer {
   private items: UIMenuItem[];
   private itemPanels: any[] = [];
-  private itemBars: any[] = [];
+  private itemIcons: any[] = [];
   private selectedKey: string | null;
   private itemHeight: number;
   private onSelect: ((item: UIMenuItem, index: number) => void) | null;
@@ -40,7 +41,6 @@ export class UIMenu extends UIContainer {
 
     this.items = items;
     this.itemHeight = itemHeight;
-    this.itemBars = [];
     this.selectedKey = props.selectedKey ?? null;
     this.onSelect = typeof props.onSelect === 'function' ? props.onSelect : null;
     this.__render();
@@ -93,15 +93,18 @@ export class UIMenu extends UIContainer {
     const theme = uiManager.getTheme();
     const width = Number(this.state.width) || 240;
     this.itemPanels = [];
+    this.itemIcons = [];
+    const inset = theme.spacing.xxs;
 
     this.items.forEach((item, index) => {
       const panel = new UIComponent({
         fill: true,
         stroke: false,
-        width,
+        width: width - inset * 2,
         height: this.itemHeight,
-        left: 0,
+        left: inset,
         top: index * this.itemHeight,
+        radius: theme.radius.md,
         style: {
           fillStyle: item.key === this.selectedKey ? theme.colors.primaryBg : 'rgba(0,0,0,0)',
         },
@@ -109,19 +112,18 @@ export class UIMenu extends UIContainer {
       this.addChild(panel, false);
       this.itemPanels.push(panel);
 
-      const bar = new ICERect({
-        left: 0,
-        top: 0,
-        width: 3,
-        height: this.itemHeight,
-        style: {
-          fillStyle: item.key === this.selectedKey ? theme.colors.primary : 'rgba(0,0,0,0)',
-        },
-      });
-      panel.addChild(bar, false);
-      this.itemBars.push(bar);
-
-      if (item.icon) {
+      if (item.iconPath) {
+        const icon = new UISvgIcon({
+          left: theme.spacing.md,
+          top: Math.round((this.itemHeight - 18) / 2),
+          size: 18,
+          d: item.iconPath,
+          color: item.key === this.selectedKey ? theme.colors.primary : theme.colors.textSecondary,
+          strokeWidth: 1.6,
+        });
+        panel.addChild(icon, false);
+        this.itemIcons.push(icon);
+      } else if (item.icon) {
         panel.addChild(
           createTextNode({
             left: theme.spacing.md,
@@ -138,9 +140,12 @@ export class UIMenu extends UIContainer {
           }),
           false,
         );
+        this.itemIcons.push(null);
+      } else {
+        this.itemIcons.push(null);
       }
 
-      const labelLeft = item.icon ? theme.spacing.xl + 8 : theme.spacing.md;
+      const labelLeft = item.icon || item.iconPath ? theme.spacing.xl + 8 : theme.spacing.md;
       panel.addChild(
         createTextNode({
           left: labelLeft,
@@ -170,16 +175,7 @@ export class UIMenu extends UIContainer {
           fillStyle: active ? theme.colors.primaryBg : 'rgba(0,0,0,0)',
         },
       });
-      const bar = this.itemBars[index];
-      if (bar) {
-        bar.setState({
-          style: {
-            fillStyle: active ? theme.colors.primary : 'rgba(0,0,0,0)',
-          },
-        });
-      }
-      const labels = (panel.childNodes || []).filter((c: any) => this.itemBars.indexOf(c) === -1);
-      labels.forEach((label: any) => {
+      (panel.childNodes || []).forEach((label: any) => {
         label.setState({
           style: {
             ...label.state.style,
@@ -187,6 +183,10 @@ export class UIMenu extends UIContainer {
           },
         });
       });
+      const icon = this.itemIcons[index];
+      if (icon && typeof icon.setColor === 'function') {
+        icon.setColor(active ? theme.colors.primary : theme.colors.textSecondary);
+      }
     });
     this.revalidate();
   }

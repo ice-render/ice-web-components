@@ -1,6 +1,6 @@
 import { UIComponent } from '../core/UIComponent';
 import { uiManager } from '../core/UIManager';
-import { centerTextNode, getStatusColors } from '../util/UIStyle';
+import { createTextNode, getStatusColors } from '../util/UIStyle';
 
 export class UITag extends UIComponent {
   private textNode: any;
@@ -27,10 +27,19 @@ export class UITag extends UIComponent {
       },
     });
     this.statusColors = colors;
-    this.textNode = centerTextNode(props.text ?? 'Tag', theme, width, height, {
+    const padX = theme.spacing.sm;
+    this.textNode = createTextNode({
+      left: padX,
+      top: 0,
+      width: Math.max(0, width - padX * 2),
+      height,
+      text: props.text ?? 'Tag',
+      fillStyle: colors.text,
+      fontFamily: theme.font.family,
       fontSize: theme.font.sizeSmall,
       fontWeight: theme.font.weightMedium,
-      fillStyle: colors.text,
+      align: 'left',
+      verticalAlign: 'middle',
     });
     this.addChild(this.textNode, false);
   }

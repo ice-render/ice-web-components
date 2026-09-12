@@ -22,6 +22,13 @@ export class UITable extends UIComponent {
   private columns: UITableColumn[];
   private data: UITableRow[];
   private rowPanels: any[] = [];
+  private cellNodes: Array<{
+    node: any;
+    cellLeft: number;
+    cellWidth: number;
+    cellHeight: number;
+    align: 'left' | 'center' | 'right';
+  }> = [];
   private selectedIndex = -1;
   private rowHeight: number;
   private headerHeight: number;
@@ -78,6 +85,7 @@ export class UITable extends UIComponent {
   protected afterAddHandler(): void {
     super.afterAddHandler();
     this.__bindGlobalEvents();
+    this.__layoutCells();
   }
 
   private __bindGlobalEvents(): void {
@@ -113,6 +121,7 @@ export class UITable extends UIComponent {
     const theme = uiManager.getTheme();
     const totalWidth = Number(this.state.width) || 720;
     const widths = this.__columnWidths(totalWidth);
+    this.cellNodes = [];
 
     const header = new UIComponent({
       fill: true,
@@ -125,7 +134,7 @@ export class UITable extends UIComponent {
       },
     });
     this.addChild(header, false);
-    this.__placeCells(header, widths, this.columns.map((column) => column.title), true);
+    this.__placeCells(header, widths, this.columns.map((column) => column.title), true, this.columns);
     const divider = new ICERect({
       left: 0,
       top: this.headerHeight - 1,
@@ -156,6 +165,9 @@ export class UITable extends UIComponent {
       this.__placeCells(panel, widths, values, false, this.columns, row);
     });
     this.__syncSelection();
+    if (this.ice && this.ice.ctx) {
+      this.__layoutCells();
+    }
     this.revalidate();
   }
 
@@ -170,6 +182,7 @@ export class UITable extends UIComponent {
     const theme = uiManager.getTheme();
     const padX = theme.spacing.sm;
     let left = 0;
+    const cellHeight = header ? this.headerHeight : this.rowHeight;
     values.forEach((value, index) => {
       const column = columns ? columns[index] : undefined;
       const align = column ? column.align || 'left' : 'left';
@@ -178,7 +191,7 @@ export class UITable extends UIComponent {
       if (column && typeof column.renderCell === 'function' && row) {
         const node = column.renderCell(value, row, column, {
           cellWidth: colW,
-          cellHeight: header ? this.headerHeight : this.rowHeight,
+          cellHeight,
           align,
         });
         if (node) {
@@ -191,33 +204,58 @@ export class UITable extends UIComponent {
         }
       }
 
-      let nodeLeft = left;
-      let nodeWidth = colW;
-      if (align === 'left') {
-        nodeLeft = left + padX;
-        nodeWidth = colW - padX;
-      } else if (align === 'right') {
-        nodeWidth = colW - padX;
-      } else if (align === 'center') {
-        nodeLeft = left + padX / 2;
-        nodeWidth = colW - padX;
-      }
       const node = createTextNode({
-        left: nodeLeft,
+        left: left,
         top: 0,
-        width: Math.max(0, nodeWidth),
-        height: header ? this.headerHeight : this.rowHeight,
+        width: 1,
+        height: cellHeight,
         text: value,
         fillStyle: header ? theme.colors.textSecondary : theme.colors.text,
         fontFamily: theme.font.family,
         fontSize: header ? theme.font.sizeSmall : theme.font.size,
         fontWeight: header ? theme.font.weightSemibold : theme.font.weightNormal,
-        align,
+        align: 'left',
         verticalAlign: 'middle',
       });
       parent.addChild(node, false);
+      this.cellNodes.push({
+        node,
+        cellLeft: left,
+        cellWidth: colW,
+        cellHeight,
+        align,
+      });
       left += colW;
     });
+  }
+
+  private __layoutCells(): void {
+    if (!this.ice || !this.ice.ctx || typeof this.ice.ctx.measureText !== 'function') {
+      return;
+    }
+    const theme = uiManager.getTheme();
+    const padX = theme.spacing.sm;
+    const ctx = this.ice.ctx;
+
+    for (const cell of this.cellNodes) {
+      const style = cell.node.state.style || {};
+      const font = style.font || `${style.fontWeight || 'normal'} ${style.fontSize || 14}px ${style.fontFamily || 'Arial'}`;
+      ctx.font = font;
+      const textWidth = ctx.measureText(String(cell.node.state.text || '')).width || 0;
+      let left = cell.cellLeft + padX;
+      if (cell.align === 'right') {
+        left = cell.cellLeft + cell.cellWidth - padX - textWidth;
+      } else if (cell.align === 'center') {
+        left = cell.cellLeft + (cell.cellWidth - textWidth) / 2;
+      }
+      cell.node.setState({
+        left,
+        top: 0,
+        width: Math.max(1, textWidth),
+        height: cell.cellHeight,
+      });
+    }
+    this.revalidate();
   }
 
   private __columnWidths(totalWidth: number): number[] {
