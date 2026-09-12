@@ -99,7 +99,7 @@
 | 数据录入 | Select | ⬜ 阶段 B |
 | 数据录入 | Slider | ✅ `UISlider`（部分：无区间 / 刻度 / tooltip） |
 | 数据录入 | Switch | ✅ `UISwitch` |
-| 数据录入 | Transfer | ⬜ 阶段 D |
+| 数据录入 | Transfer | ✅ `UITransfer`（双栏勾选搬运 + disabled 行；无搜索/分页） |
 | 数据录入 | Upload | ⬜ 阶段 D（画布内需与 DOM input 桥接） |
 | 数据展示 | Avatar | ✅ `UIAvatar`（部分：无 Group / 图片头像） |
 | 数据展示 | Badge | ✅ `UIBadge`（部分：无红点 / 计数封顶） |
