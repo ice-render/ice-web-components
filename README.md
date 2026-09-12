@@ -18,6 +18,9 @@ Swing-style Canvas UI components built on `ice-render`.
 - Provide admin-oriented components such as `UITable`, `UIMenu`,
   `UITextField`, `UIAlert`, and `UIStatCard`.
 
+See [ROADMAP.md](./ROADMAP.md) for the component backlog (业界组件库 对照表)
+and the foundations still to build (scroll container, focus/keyboard, forms).
+
 ## Commands
 
 ```bash
