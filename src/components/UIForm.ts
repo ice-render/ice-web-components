@@ -122,6 +122,13 @@ export class UIForm extends UIContainer {
     return ok;
   }
 
+  /** 同步 + 异步校验全部字段（返回是否通过）。 */
+  public async validateAsync(): Promise<boolean> {
+    const ok = await this.model.validateAsync();
+    this.__syncErrors();
+    return ok;
+  }
+
   public onSubmit(handler: UIFormSubmitHandler): this {
     this.submitHandlers.push(handler);
     return this;
@@ -137,9 +144,23 @@ export class UIForm extends UIContainer {
     return true;
   }
 
+  /** 异步版提交：等异步校验通过才回调 onSubmit。 */
+  public async submitAsync(): Promise<boolean> {
+    if (!(await this.validateAsync())) {
+      return false;
+    }
+    const values = this.getValues();
+    this.submitHandlers.forEach((handler) => handler(values));
+    return true;
+  }
+
   private __syncErrors(): void {
     this.items.forEach((item) => {
-      item.setError(this.model.getError(item.getName()) || null);
+      const validating = this.model.isValidating(item.getName());
+      item.setValidating(validating);
+      if (!validating) {
+        item.setError(this.model.getError(item.getName()) || null);
+      }
     });
   }
 

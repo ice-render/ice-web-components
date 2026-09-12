@@ -34,6 +34,7 @@ export class UIFormItem extends UIComponent {
   private labelText: string;
   private control: any;
   private rules: UIFormRule[];
+  private validating = false;
   private itemLayout: 'vertical' | 'horizontal';
   private labelWidth: number;
   private labelHeight: number;
@@ -129,6 +130,30 @@ export class UIFormItem extends UIComponent {
 
   public getErrorText(): string {
     return this.errorNode.getText();
+  }
+
+  public isValidating(): boolean {
+    return this.validating;
+  }
+
+  /** 异步校验中：错误行显示「校验中…」（错误文案让位，校验完再由 setError 接管）。 */
+  public setValidating(pending: boolean): this {
+    const next = !!pending;
+    if (next === this.validating) {
+      return this;
+    }
+    this.validating = next;
+    if (next) {
+      this.errorNode.setText('校验中…');
+      this.errorNode.setState({ display: true });
+      if (this.control && typeof this.control.setValidateStatus === 'function') {
+        this.control.setValidateStatus('default');
+      }
+    } else if (this.errorNode.getText() === '校验中…') {
+      this.errorNode.setText('');
+      this.errorNode.setState({ display: false });
+    }
+    return this;
   }
 
   /** 设置错误文案（null / '' 表示通过）；同时把控件切到 error / default 状态。 */

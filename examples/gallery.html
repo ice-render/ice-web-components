@@ -73,7 +73,21 @@
       const nameInput = new W.UITextField({ width: 240, height: 32, placeholder: 'Your name' });
       const agreeBox = new W.UICheckBox({ width: 24, height: 24 });
       form.addItems([
-        new W.UIFormItem({ name: 'name', label: 'Name', control: nameInput, rules: [{ required: true }] }),
+        new W.UIFormItem({
+          name: 'name',
+          label: 'Name',
+          control: nameInput,
+          // 同步必填 + 异步唯一性（"admin" 视为已占用；异步校验只在提交时触发）
+          rules: [
+            { required: true },
+            {
+              asyncValidator: (value) =>
+                new Promise((resolve) =>
+                  setTimeout(() => resolve(value === 'admin' ? '名字已被占用' : null), 400),
+                ),
+            },
+          ],
+        }),
         new W.UIFormItem({
           name: 'agree',
           label: 'Agree to terms',
@@ -90,8 +104,8 @@
         style: { fontSize: 12, fillStyle: theme.colors.success },
       });
       submitButton.on('click', () => {
-        const ok = form.submit();
-        submitHint.setText(ok ? 'Submitted ✓' : '');
+        submitHint.setText('校验中…');
+        form.submitAsync().then((ok) => submitHint.setText(ok ? 'Submitted ✓' : ''));
       });
 
       // 反馈类组件演示：Tooltip（悬停）/ Popover（点击）/ Popconfirm（危险确认）
@@ -906,7 +920,7 @@
       });
 
       ice.addChild(panel);
-      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, timePicker, timeHint, cascader, transfer, carousel, avatarGroup, closableAlert, progressCircle, progressCircleDone, comment, colorPicker, colorHint, imageFill, imageContain, imageCover };
+      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, submitHint, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, timePicker, timeHint, cascader, transfer, carousel, avatarGroup, closableAlert, progressCircle, progressCircleDone, comment, colorPicker, colorHint, imageFill, imageContain, imageCover };
     </script>
   </body>
 </html>

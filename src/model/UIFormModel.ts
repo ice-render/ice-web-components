@@ -18,6 +18,13 @@ export interface UIFormRule {
   pattern?: RegExp;
   /** 自定义校验：返回错误文案表示失败，返回 null/undefined 表示通过 */
   validator?: (value: any, values: Record<string, any>) => string | null | undefined;
+  /**
+   * 异步校验（如「用户名是否被占用」）。
+   *
+   * 只在显式调用 `validateFieldAsync` / `validateAsync` 时执行 —— 值变化触发的自动校验
+   * 只跑同步规则，避免每次按键都发请求。
+   */
+  asyncValidator?: (value: any, values: Record<string, any>) => Promise<string | null | undefined>;
 }
 
 export interface UIFormFieldOptions {
@@ -41,6 +48,7 @@ interface UIFormField {
   value: any;
   initialValue: any;
   error: string | null;
+  validating: boolean;
 }
 
 function isMissing(value: any): boolean {
@@ -83,6 +91,7 @@ export class UIFormModel {
       value: options.value,
       initialValue: options.value,
       error: null,
+      validating: false,
     };
     const index = this.fields.findIndex((item) => item.name === options.name);
     if (index === -1) {
@@ -200,6 +209,56 @@ export class UIFormModel {
       field.error = this.__check(field);
     });
     this.__notify();
+    return !this.hasErrors();
+  }
+
+  /** 该字段是否正在异步校验中（UI 可显示「校验中…」）。 */
+  public isValidating(name: string): boolean {
+    const field = this.getField(name);
+    return !!field && field.validating;
+  }
+
+  /**
+   * 单字段异步校验：先跑同步规则（失败即短路、不发请求），再依次跑异步校验器。
+   * 返回错误文案（null 表示通过）。
+   */
+  public async validateFieldAsync(name: string): Promise<string | null> {
+    const field = this.getField(name);
+    if (!field) {
+      return null;
+    }
+    const syncError = this.__check(field);
+    field.error = syncError;
+    if (syncError) {
+      this.__notify();
+      return syncError;
+    }
+    const asyncRules = field.rules.filter((rule) => typeof rule.asyncValidator === 'function');
+    if (!asyncRules.length) {
+      this.__notify();
+      return null;
+    }
+    field.validating = true;
+    this.__notify();
+    try {
+      for (const rule of asyncRules) {
+        const message = await rule.asyncValidator!(field.value, this.getValues());
+        if (message) {
+          field.error = message;
+          return message;
+        }
+      }
+      field.error = null;
+      return null;
+    } finally {
+      field.validating = false;
+      this.__notify();
+    }
+  }
+
+  /** 校验全部字段（同步 + 异步），返回是否全部通过。 */
+  public async validateAsync(): Promise<boolean> {
+    await Promise.all(this.fields.map((field) => this.validateFieldAsync(field.name)));
     return !this.hasErrors();
   }
 
