@@ -290,6 +290,7 @@ XP 扫雷的三档标准难度。
 | `isWon()` | `boolean` |  |
 | `isGameOver()` | `boolean` |  |
 | `isPaused()` | `boolean` |  |
+| `getLastMerged()` | `Array<[number, number]>` | 上一次移动发生合并的格子（`[row, col]`）；没合并就是空数组。 |
 | `pause()` | `void` | 暂停：棋盘类页面（掌机）共用同一套 pause/resume 契约，这里暂停只挡输入。 |
 | `resume()` | `void` |  |
 | `canMove()` | `boolean` | 还有没有任何一个方向推得动。 |

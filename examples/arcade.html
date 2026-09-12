@@ -279,9 +279,9 @@
         };
         const scoreCard = card('arcade-score', COLUMN_X, 200, 300, '得分 SCORE');
         const midCard = card('arcade-mid', 850, 200, 140, '');
-        const rightCard = card('arcade-right', 1000, 200, 150, '');
+        const rightCard = card('arcade-right', 1010, 200, 140, '');
 
-        const progressPanel = new W.ICEPanel({ left: COLUMN_X, top: 320, width: COLUMN_W, height: 76, interactive: false });
+        const progressPanel = new W.ICEPanel({ left: COLUMN_X, top: 324, width: COLUMN_W, height: 76, interactive: false });
         const progressCaption = new W.ICELabel({
           interactive: false,
           left: 16,
@@ -295,7 +295,7 @@
           id: 'arcade-progress',
           left: 16,
           top: 42,
-          width: 420,
+          width: 440,
           height: 14,
           max: 10,
           value: 0,
@@ -305,9 +305,9 @@
         const progressLabel = new W.ICELabel({
           id: 'arcade-progress-label',
           interactive: false,
-          left: 456,
+          left: 496,
           top: 30,
-          width: 148,
+          width: 108,
           height: 38,
           text: '',
           align: 'right',
@@ -318,7 +318,7 @@
         progressPanel.addChild(progressBar, false);
         progressPanel.addChild(progressLabel, false);
 
-        const sidePanel = new W.ICEPanel({ left: COLUMN_X, top: 412, width: 300, height: 196, interactive: false });
+        const sidePanel = new W.ICEPanel({ left: COLUMN_X, top: 420, width: 300, height: 196, interactive: false });
         const sideCaption = new W.ICELabel({
           interactive: false,
           left: 16,
@@ -342,7 +342,7 @@
         sidePanel.addChild(sideCaption, false);
         sidePanel.addChild(sideBody, false);
 
-        const helpPanel = new W.ICEPanel({ left: 850, top: 412, width: 300, height: 196, interactive: false });
+        const helpPanel = new W.ICEPanel({ left: 850, top: 420, width: 300, height: 196, interactive: false });
         const helpCaption = new W.ICELabel({
           interactive: false,
           left: 16,
@@ -391,31 +391,31 @@
           });
         };
 
-        const pauseButton = new W.ICEButton({ id: 'arcade-pause', left: COLUMN_X, top: 630, width: 130, height: 40, text: '暂停 (P)' });
+        const pauseButton = new W.ICEButton({ id: 'arcade-pause', left: COLUMN_X, top: 636, width: 140, height: 40, text: '暂停 (P)' });
         const restartButton = new W.ICEButton({
           id: 'arcade-restart',
-          left: COLUMN_X + 140,
-          top: 630,
-          width: 130,
+          left: COLUMN_X + 160,
+          top: 636,
+          width: 140,
           height: 40,
           text: '重新开始 (R)',
           variant: 'default',
         });
         const leaderboardButton = new W.ICEButton({
           id: 'arcade-leaderboard',
-          left: COLUMN_X + 280,
-          top: 630,
-          width: 130,
+          left: COLUMN_X + 320,
+          top: 636,
+          width: 140,
           height: 40,
           text: '排行榜 (L)',
           variant: 'default',
         });
-        const soundSwitch = new W.ICESwitch({ id: 'arcade-sound', left: 960, top: 640, width: 46, height: 22, selected: true });
+        const soundSwitch = new W.ICESwitch({ id: 'arcade-sound', left: 1010, top: 645, width: 46, height: 22, selected: true });
         const soundLabel = new W.ICELabel({
           interactive: false,
-          left: 1012,
-          top: 640,
-          width: 56,
+          left: 1062,
+          top: 645,
+          width: 88,
           height: 22,
           text: '音效',
           verticalAlign: 'middle',
@@ -437,7 +437,7 @@
         const footer = new W.ICELabel({
           interactive: false,
           left: COLUMN_X,
-          top: 700,
+          top: 696,
           width: COLUMN_W,
           height: 20,
           text: '三个纯逻辑模型（ICETetrisModel / ICESnakeModel / ICE2048Model）+ ICE 组件绘制 · 规则与渲染完全解耦',
@@ -1038,7 +1038,7 @@
               const boardW = COLS * CELL;
               const boardH = ROWS * CELL;
               const originX = Math.round((ctx.screen.state.width - boardW) / 2);
-              const originY = 110;
+              const originY = 122;
               const board = new W.ICETileMap({
                 id: 'game2048-board',
                 left: originX,
@@ -1193,20 +1193,18 @@
                 keydown(key) {
                   const direction = DIRECTIONS[key];
                   if (!direction) return;
-                  const before = model.getCells();
                   if (!model.move(direction)) {
                     playCue('turn');
                     return;
                   }
-                  // 动过的格子闪一下（合并 / 位移都看得见）
-                  const changed = [];
-                  model.getCells().forEach((value, index) => {
-                    if (value !== null && value !== before[index]) {
-                      changed.push({ row: Math.floor(index / COLS), col: index % COLS });
-                    }
-                  });
-                  board.pulse(changed, { duration: 200, color: 'rgba(255,255,255,0.35)' });
-                  playCue('eat');
+                  // 只让**真正发生合并**的格子脉冲一下（模型直接告诉我们落在哪几格）
+                  const merged = model.getLastMerged().map(([row, col]) => ({ row, col }));
+                  if (merged.length) {
+                    board.pulse(merged, { duration: 180, color: 'rgba(255,255,255,0.4)' });
+                    playCue('eat');
+                  } else {
+                    playCue('turn');
+                  }
                 },
                 frame() {
                   // 2048 是回合制，不需要每帧推进
@@ -1266,7 +1264,7 @@
           CART_RIDGE.forEach((item, index) => {
             const button = new W.ICEButton({
               id: `arcade-cart-${item.key}`,
-              left: index * 150,
+              left: index * 160,
               top: 0,
               width: 140,
               height: 32,
@@ -1280,9 +1278,9 @@
           });
           const soonButton = new W.ICEButton({
             id: 'arcade-cart-soon',
-            left: 450,
+            left: 480,
             top: 0,
-            width: 120,
+            width: 140,
             height: 32,
             text: '中国象棋',
             variant: 'default',

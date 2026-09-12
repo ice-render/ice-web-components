@@ -193,7 +193,7 @@ export class ICETileMap extends ICEWidget {
     if (key === this.tileKey) return this;
     this.tileKey = key;
     this.tiles = flat;
-    this.dirty = true;
+    this.requestPaint();
     return this;
   }
 
@@ -208,7 +208,7 @@ export class ICETileMap extends ICEWidget {
     if (key === this.labelKey) return this;
     this.labelKey = key;
     this.labels = flat;
-    this.dirty = true;
+    this.requestPaint();
     return this;
   }
 
@@ -222,7 +222,7 @@ export class ICETileMap extends ICEWidget {
       next[key] = { ...palette[key] };
     });
     this.palette = next;
-    this.dirty = true;
+    this.requestPaint();
     return this;
   }
 
@@ -246,7 +246,7 @@ export class ICETileMap extends ICEWidget {
 
   public setHighlights(highlights: ICETileMapHighlight[]): this {
     this.highlights = (highlights || []).map((item) => ({ ...item }));
-    this.dirty = true;
+    this.requestPaint();
     return this;
   }
 
@@ -263,7 +263,7 @@ export class ICETileMap extends ICEWidget {
     if (this.pulseHandle) this.pulseHandle.cancel();
     this.pulses = cells.map((cell) => ({ ...cell }));
     this.pulseAlpha = 1;
-    this.dirty = true;
+    this.requestPaint();
     if (options.color) this.pulseColor = options.color;
     this.pulseHandle = tween({
       from: 1,
@@ -274,13 +274,13 @@ export class ICETileMap extends ICEWidget {
       driver: options.driver,
       onUpdate: (value) => {
         this.pulseAlpha = value;
-        this.dirty = true;
+        this.requestPaint();
       },
       onFinish: () => {
         this.pulseAlpha = 0;
         this.pulses = [];
         this.pulseHandle = null;
-        this.dirty = true;
+        this.requestPaint();
       },
     });
     return this;
@@ -357,6 +357,19 @@ export class ICETileMap extends ICEWidget {
   }
 
   // ---------------------------------------------------------------- 内部
+
+  /**
+   * 请求重画。
+   *
+   * 只置组件自己的 `dirty` 是**不够的**：引擎的渲染循环看的是 `ice.dirty`
+   * （`CanvasRenderer.frameEvtHandler` 里 `if (this.ice.dirty)` 才排队），组件的 `dirty`
+   * 只决定「这一趟要不要重画我」。自绘动画（比如 `pulse` 的 tween 每帧回调）如果只置自己的
+   * dirty，画面根本不会逐帧更新 —— 表现为白色脉冲**卡在格子上不动**，直到下一次别的原因触发重绘。
+   */
+  private requestPaint(): void {
+    this.dirty = true;
+    if (this.ice) this.ice.dirty = true;
+  }
 
   private __normalize(tiles: Array<string | number | null> | Array<Array<string | number | null>>): Array<string | number | null> {
     const flat: Array<string | number | null> = [];

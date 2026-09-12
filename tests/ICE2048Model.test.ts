@@ -187,6 +187,35 @@ describe('滑动与合并', () => {
     expect(model.getScore()).toBe(0);
     expect(model.getMoves()).toBe(0);
   });
+
+  it('记录本次合并发生在哪些格子（UI 拿它做高亮）', () => {
+    const model = makeModel();
+    setGrid(model, [
+      [2, 2, null, null],
+      [4, null, 4, null],
+      [null, null, null, null],
+      [null, null, null, null],
+    ]);
+    expect(model.getLastMerged()).toEqual([]);
+    model.move('left');
+    // (0,0) 是 2+2 合并出来的 4；(1,0) 是 4+4 合并出来的 8
+    expect(model.getLastMerged()).toEqual([
+      [0, 0],
+      [1, 0],
+    ]);
+  });
+
+  it('只滑动没合并时，合并记录是空的', () => {
+    const model = makeModel();
+    setGrid(model, [
+      [null, 2, null, 4],
+      [null, null, null, null],
+      [null, null, null, null],
+      [null, null, null, null],
+    ]);
+    model.move('left');
+    expect(model.getLastMerged()).toEqual([]);
+  });
 });
 
 describe('生成新块与结束判定', () => {

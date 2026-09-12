@@ -643,6 +643,30 @@ check(
   JSON.stringify(afterMerge),
 );
 
+// 合并后的脉冲必须真的「动」起来：亮起 → 淡出（曾经因为只置组件 dirty 而卡住不动）
+const pulseRightAfter = await page.evaluate(() => {
+  const model = window.__arcade.model;
+  const board = (window.__arcade.nodes.screen.childNodes || []).find((n) => n.state && n.state.id === 'game2048-board');
+  model.setCellsForTest([2, 2, null, null, null, null, null, null, null, null, null, null, null, null, null, null]);
+  return { before: board.getPulseAlpha() };
+});
+await page.keyboard.press('ArrowLeft');
+await page.waitForTimeout(60);
+const pulsePeak = await page.evaluate(() => {
+  const board = (window.__arcade.nodes.screen.childNodes || []).find((n) => n.state && n.state.id === 'game2048-board');
+  return { alpha: board.getPulseAlpha(), merged: window.__arcade.model.getLastMerged() };
+});
+await page.waitForTimeout(420);
+const pulseGone = await page.evaluate(() => {
+  const board = (window.__arcade.nodes.screen.childNodes || []).find((n) => n.state && n.state.id === 'game2048-board');
+  return board.getPulseAlpha();
+});
+check(
+  '2048：合并脉冲真的会亮起再淡出（tween 每帧都要重画）',
+  pulseRightAfter.before === 0 && pulsePeak.alpha > 0 && JSON.stringify(pulsePeak.merged) === JSON.stringify([[0, 0]]) && pulseGone === 0,
+  JSON.stringify({ before: pulseRightAfter.before, peak: pulsePeak, gone: pulseGone }),
+);
+
 const noMove = await page.evaluate(() => {
   const model = window.__arcade.model;
   // 填满且相邻都不相同 → 推不动，也不该计步

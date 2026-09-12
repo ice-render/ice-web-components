@@ -108,6 +108,22 @@ describe('数据与调色板', () => {
     expect(map.dirty).toBe(true);
   });
 
+  it('内部重绘请求要把 ice 也置脏（否则脉冲这类自绘动画不会逐帧重画）', () => {
+    const map = makeMap({ rows: 1, cols: 2, palette: PALETTE });
+    // 假 ICE：只关心 dirty 标志（本仓库「假 ICE + 真组件」的常规套路）
+    const fakeIce: any = { dirty: false };
+    map.ice = fakeIce;
+    map.setTiles(['a', null]);
+    expect(fakeIce.dirty).toBe(true);
+    fakeIce.dirty = false;
+    map.setLabels(['2', null]);
+    expect(fakeIce.dirty).toBe(true);
+    fakeIce.dirty = false;
+    const { driver } = makeDriver();
+    map.pulse([{ row: 0, col: 0 }], { duration: 100, driver });
+    expect(fakeIce.dirty).toBe(true);
+  });
+
   it('设置数据会置 dirty，并且自绘次数随重绘增加', () => {
     const map = makeMap({ rows: 1, cols: 1, palette: PALETTE });
     map.dirty = false;

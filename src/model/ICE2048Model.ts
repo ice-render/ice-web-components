@@ -48,6 +48,8 @@ export class ICE2048Model {
   private won = false;
   private gameOver = false;
   private paused = false;
+  /** 上一次移动里「合并落在哪几格」（UI 拿它做高亮 / 特效） */
+  private lastMerged: Array<[number, number]> = [];
   private listeners = new Set<ICE2048Listener>();
 
   constructor(options: ICE2048Options = {}) {
@@ -109,6 +111,11 @@ export class ICE2048Model {
     return this.paused;
   }
 
+  /** 上一次移动发生合并的格子（`[row, col]`）；没合并就是空数组。 */
+  getLastMerged(): Array<[number, number]> {
+    return this.lastMerged.map(([row, col]) => [row, col] as [number, number]);
+  }
+
   /** 暂停：棋盘类页面（掌机）共用同一套 pause/resume 契约，这里暂停只挡输入。 */
   pause(): void {
     if (this.paused || this.gameOver) return;
@@ -142,6 +149,7 @@ export class ICE2048Model {
     if (this.gameOver || this.paused || ICE_2048_DIRECTIONS.indexOf(direction) === -1) return false;
     const before = this.cells.slice();
     let gained = 0;
+    const mergedAt: Array<[number, number]> = [];
     for (let index = 0; index < this.__lineCount(); index += 1) {
       const line = this.__lineIndices(direction, index);
       const values = line.map((cellIndex) => this.cells[cellIndex]).filter((value) => value !== null) as number[];
@@ -149,6 +157,8 @@ export class ICE2048Model {
       for (let i = 0; i < values.length; i += 1) {
         if (i + 1 < values.length && values[i] === values[i + 1]) {
           const value = values[i] * 2;
+          const target = line[merged.length];
+          if (target !== undefined) mergedAt.push([Math.floor(target / this.cols), target % this.cols]);
           merged.push(value);
           gained += value;
           i += 1; // 跳过被吞掉的那个：同一次移动里不再参与合并
@@ -167,6 +177,7 @@ export class ICE2048Model {
     }
     this.score += gained;
     this.moves += 1;
+    this.lastMerged = mergedAt;
     if (!this.won && this.getBestTile() >= this.target) this.won = true;
     if (this.spawnAfterMove) this.__spawnTile();
     this.__refreshGameOver();
@@ -210,6 +221,7 @@ export class ICE2048Model {
     this.won = false;
     this.gameOver = false;
     this.paused = false;
+    this.lastMerged = [];
     this.__spawnTile();
     this.__spawnTile();
   }
