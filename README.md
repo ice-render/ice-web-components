@@ -90,7 +90,7 @@ Full docs live in [`docs/`](./docs/README.md):
 | | |
 |---|---|
 | [架构思路](./docs/architecture.md) | 分层、组件模型、渲染与重绘、事件与悬停、浮层/焦点/表单/主题，以及一张“踩坑表” |
-| [组件速查](./docs/components.md) | 89 个组件类按分组的一句话说明 + 跳转 API |
+| [组件速查](./docs/components.md) | 90 个组件类按分组的一句话说明 + 跳转 API |
 | [API 参考](./docs/api/README.md) | 每个组件的构造参数与 public 方法（**从源码生成**，不会漂移） |
 | [示例与场景](./docs/guides/examples.md) | 四个示例页分别演示什么、各自用到哪些组件、照着做新场景的清单 |
 | [主题与配色](./docs/guides/theming.md) | token 分组、状态色、`*TextEmphasis`、自定义主题 |
@@ -167,6 +167,13 @@ working clock, a Start menu, and draggable windows with minimise / maximise / cl
 Seven tiny apps are wired up (My Computer, My Documents, Notepad, Paint, Minesweeper,
 Internet Explorer, Display Properties), and switching the wallpaper in Display
 Properties repaints the desktop immediately.
+
+Minesweeper is the full game: beginner / intermediate / expert, first-click-safe mine
+placement, flood fill, right-click flag cycle (🚩 / ❓), chord on double click, LED
+counters, a timer that starts on the first click, and per-difficulty best times. Its
+rules live in a tested pure model (`ICEMinesweeperModel`) — the UI only draws it.
+Right-click works because `ICE.init()` no longer stops the `contextmenu` event on its
+way to the dispatcher (ice-render 1.4.1).
 
 Two new generic components came out of it: `ICEWindow` (window chrome with an XP Luna
 title bar, drag, resize, maximise/restore, activate event) and `ICEIconTile`

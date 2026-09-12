@@ -370,6 +370,10 @@
         windowLayer.addChild(win, false);
         openWindows.set(app.key, { window: win, title: app.title, icon: app.icon, minimized: false });
         focusWindow(app.key);
+        // 应用可以在窗口就绪后调整自身尺寸（例如扫雷按难度换棋盘大小）
+        if (typeof app.onOpened === 'function') {
+          app.onOpened(win);
+        }
       };
 
       /* ============================ 应用：我的电脑 ============================ */
@@ -724,11 +728,9 @@
         return pane;
       };
 
-      /* ============================ 应用：扫雷 ============================ */
+      /* ============================ 应用：扫雷（ICEMinesweeperModel 驱动） ============================ */
       const buildMinesweeper = () => {
-        const COLS = 9;
-        const ROWS = 9;
-        const MINES = 10;
+        const CELL = 22;
         const pane = new W.ICEWidget({
           width: 100,
           height: 100,
@@ -737,152 +739,336 @@
           interactive: false,
           style: { fillStyle: '#ece9d8' },
         });
-        let mines = [];
-        let revealed = [];
-        let flagged = [];
-        let over = false;
-        const cells = [];
-        const counter = new W.ICELabel({
-          left: 10,
-          top: 8,
-          width: 60,
-          height: 22,
-          text: '💣 10',
-          style: { fontSize: 13, fontWeight: '700', fillStyle: '#c1272d' },
-        });
-        const face = new W.ICEButton({ id: 'mine-reset', left: 96, top: 6, width: 32, height: 26, text: '🙂', size: 'small' });
-        const timer = new W.ICELabel({
-          left: 176,
-          top: 8,
-          width: 60,
-          height: 22,
-          text: '⏱ 0',
-          align: 'right',
-          style: { fontSize: 13, fontWeight: '700', fillStyle: '#0a246a' },
-        });
-        const grid = new W.ICEWidget({
-          left: 10,
-          top: 42,
-          width: COLS * 26,
-          height: ROWS * 26,
+
+        /** 每档难度的最佳成绩（存 localStorage，按难度分开记）。 */
+        const bestTimes = {};
+        const BEST_KEY = 'ice-xp-minesweeper-best';
+        const loadBest = () => {
+          try {
+            Object.assign(bestTimes, JSON.parse(localStorage.getItem(BEST_KEY) || '{}'));
+          } catch (err) {
+            /* file:// 下不可用时忽略 */
+          }
+        };
+        const saveBest = () => {
+          try {
+            localStorage.setItem(BEST_KEY, JSON.stringify(bestTimes));
+          } catch (err) {
+            /* 忽略 */
+          }
+        };
+        loadBest();
+
+        let difficulty = 'beginner';
+        let preset = W.ICE_MINESWEEPER_DIFFICULTIES.find((d) => d.key === difficulty);
+        let model = new W.ICEMinesweeperModel({ rows: preset.rows, cols: preset.cols, mines: preset.mines });
+        let cells = [];
+        let timerHandle = null;
+
+        /* ---- 顶部：难度 / LED 计数器 / 笑脸 / 计时 ---- */
+        const difficultyBar = new W.ICEWidget({
+          left: 6,
+          top: 6,
+          width: 100,
+          height: 24,
           fill: false,
           stroke: false,
           interactive: false,
         });
-        const NORMAL = { fillStyle: '#c0c0c0', strokeStyle: '#808080' };
-        const revealedStyle = { fillStyle: '#e6e6e6', strokeStyle: '#a0a0a0' };
-        const numberColors = ['', '#0000ff', '#008000', '#ff0000', '#000080', '#800000', '#008080', '#000000', '#808080'];
-        let seconds = 0;
-        let timerHandle = null;
+        const difficultyButtons = W.ICE_MINESWEEPER_DIFFICULTIES.map((item, index) => {
+          const button = new W.ICEButton({
+            id: 'mine-difficulty-' + item.key,
+            left: index * 62,
+            top: 0,
+            width: 58,
+            height: 22,
+            text: item.label,
+            size: 'small',
+            variant: item.key === difficulty ? 'primary' : 'default',
+          });
+          button.on('click', () => setDifficulty(item.key));
+          difficultyBar.addChild(button, false);
+          return { key: item.key, button };
+        });
+        const bestLabel = new W.ICELabel({
+          id: 'mine-best',
+          interactive: false,
+          left: 196,
+          top: 0,
+          width: 140,
+          height: 22,
+          verticalAlign: 'middle',
+          text: '',
+          style: { fontSize: 11, fillStyle: '#4a4a4a' },
+        });
+        difficultyBar.addChild(bestLabel, false);
 
-        const neighbors = (row, col) => {
-          const out = [];
-          for (let dr = -1; dr <= 1; dr += 1) {
-            for (let dc = -1; dc <= 1; dc += 1) {
-              if (!dr && !dc) continue;
-              const r = row + dr;
-              const c = col + dc;
-              if (r >= 0 && r < ROWS && c >= 0 && c < COLS) out.push([r, c]);
+        const led = (left, width, id) =>
+          new W.ICELabel({
+            id,
+            interactive: false,
+            left,
+            top: 5,
+            width,
+            height: 24,
+            text: '000',
+            align: 'center',
+            verticalAlign: 'middle',
+            style: { fontSize: 18, fontWeight: '700', fillStyle: '#ff2a2a', fontFamily: '"Courier New", monospace' },
+          });
+        const panelTop = new W.ICEWidget({
+          left: 6,
+          top: 36,
+          width: 100,
+          height: 34,
+          radius: 3,
+          fill: true,
+          stroke: true,
+          interactive: false,
+          style: { fillStyle: '#bdbdbd', strokeStyle: '#8a8a8a', lineWidth: 1 },
+        });
+        const counterLed = led(10, 60, 'mine-counter');
+        const timerLed = led(100, 60, 'mine-timer');
+        const counterBack = new W.ICEWidget({
+          left: 8,
+          top: 3,
+          width: 64,
+          height: 28,
+          fill: true,
+          stroke: false,
+          interactive: false,
+          style: { fillStyle: '#1b1b1b' },
+        });
+        const timerBack = new W.ICEWidget({
+          left: 96,
+          top: 3,
+          width: 64,
+          height: 28,
+          fill: true,
+          stroke: false,
+          interactive: false,
+          style: { fillStyle: '#1b1b1b' },
+        });
+        const face = new W.ICEButton({ id: 'mine-reset', left: 60, top: 3, width: 34, height: 28, text: '🙂', size: 'small' });
+        panelTop.addChildren([counterBack, timerBack, counterLed, timerLed, face], { align: 'top' });
+
+        const board = new W.ICEWidget({
+          left: 6,
+          top: 76,
+          width: 100,
+          height: 100,
+          fill: false,
+          stroke: false,
+          interactive: false,
+        });
+        const hint = new W.ICELabel({
+          interactive: false,
+          left: 6,
+          top: 100,
+          width: 100,
+          text: '左键掀开 · 右键插旗（🚩/❓ 循环）· 双击数字快速展开',
+          style: { fontSize: 11, fillStyle: '#5a5a5a' },
+        });
+        pane.addChildren([difficultyBar, panelTop, board, hint], { align: 'top' });
+
+        const NUMBER_COLORS = ['', '#0000ff', '#008000', '#ff0000', '#000080', '#800000', '#008080', '#000000', '#808080'];
+        const pad3 = (value) => {
+          const clamped = Math.max(-99, Math.min(999, Math.round(value)));
+          const text = String(Math.abs(clamped)).padStart(2, '0');
+          return (clamped < 0 ? '-' : '') + text.padStart(clamped < 0 ? 2 : 3, '0');
+        };
+        const smiley = () => {
+          if (model.isWon()) return '😎';
+          if (model.isLost()) return '😵';
+          return '🙂';
+        };
+
+        /** 按模型状态画一个格子（只改必要属性，避免每次全量重建）。 */
+        const paintCell = (entry) => {
+          const cell = model.getCell(entry.row, entry.col);
+          if (!cell) return;
+          const unrevealed = !cell.revealed;
+          entry.node.setState({
+            style: {
+              ...entry.node.state.style,
+              fillStyle: cell.revealed ? (cell.mine ? '#ff6b6b' : '#e6e6e6') : '#c0c0c0',
+              strokeStyle: cell.revealed ? '#b0b0b0' : '#8a8a8a',
+            },
+          });
+          if (cell.flagged) {
+            entry.label.setText('🚩');
+            entry.label.setState({ style: { ...entry.label.state.style, fillStyle: '#c1272d' } });
+          } else if (cell.question) {
+            entry.label.setText('❓');
+            entry.label.setState({ style: { ...entry.label.state.style, fillStyle: '#0a246a' } });
+          } else if (cell.revealed && cell.mine) {
+            entry.label.setText('💣');
+            entry.label.setState({ style: { ...entry.label.state.style, fillStyle: '#1b1b1b' } });
+          } else if (cell.revealed && cell.adjacent > 0) {
+            entry.label.setText(String(cell.adjacent));
+            entry.label.setState({ style: { ...entry.label.state.style, fillStyle: NUMBER_COLORS[cell.adjacent] } });
+          } else {
+            entry.label.setText('');
+          }
+          void unrevealed;
+        };
+
+        /** 全量刷新：LED / 笑脸 / 每个格子。 */
+        const sync = () => {
+          counterLed.setText(pad3(model.getMinesLeft()));
+          timerLed.setText(pad3(model.getElapsed()));
+          face.setText(smiley());
+          cells.forEach(paintCell);
+          if (model.isWon()) {
+            const best = bestTimes[difficulty];
+            const elapsed = model.getElapsed();
+            if (best === undefined || elapsed < best) {
+              bestTimes[difficulty] = elapsed;
+              saveBest();
+            }
+            onWin();
+          }
+          if (model.isLost()) {
+            onLose();
+          }
+          updateBestLabel();
+          ice.dirty = true;
+        };
+
+        let announced = null;
+        const onWin = () => {
+          if (announced === 'won') return;
+          announced = 'won';
+          W.ICENotification.open(ice, {
+            title: '扫雷胜利！',
+            description: `${preset.label} · 用时 ${model.getElapsed()} 秒`,
+            type: 'success',
+          });
+        };
+        const onLose = () => {
+          if (announced === 'lost') return;
+          announced = 'lost';
+          toast('踩到雷了，点笑脸重开', 'error');
+        };
+        const updateBestLabel = () => {
+          const best = bestTimes[difficulty];
+          bestLabel.setText(best === undefined ? '最佳成绩：--' : `最佳成绩：${best} 秒`);
+        };
+
+        /** 按当前难度重建棋盘（难度切换 / 重开都会走这里）。 */
+        const rebuild = () => {
+          board.removeChildren([...board.childNodes]);
+          cells = [];
+          const { rows, cols } = { rows: model.getRows(), cols: model.getCols() };
+          for (let row = 0; row < rows; row += 1) {
+            for (let col = 0; col < cols; col += 1) {
+              const node = new W.ICEWidget({
+                id: `mine-${row}-${col}`,
+                left: col * CELL,
+                top: row * CELL,
+                width: CELL - 1,
+                height: CELL - 1,
+                radius: 0,
+                fill: true,
+                stroke: true,
+                style: { fillStyle: '#c0c0c0', strokeStyle: '#8a8a8a', lineWidth: 1 },
+              });
+              const label = new W.ICELabel({
+                interactive: false,
+                left: 0,
+                top: 0,
+                width: CELL - 1,
+                height: CELL - 1,
+                text: '',
+                align: 'center',
+                verticalAlign: 'middle',
+                style: { fontSize: 13, fontWeight: '700', fillStyle: '#000000', fontFamily: 'Tahoma, sans-serif' },
+              });
+              node.addChild(label, false);
+              const entry = { row, col, node, label };
+              node.on('click', () => {
+                model.reveal(row, col);
+              });
+              node.on('dblclick', () => {
+                model.chord(row, col);
+              });
+              node.on('contextmenu', () => {
+                model.toggleFlag(row, col);
+              });
+              board.addChild(node, false);
+              cells.push(entry);
             }
           }
-          return out;
+          board.setState({ width: cols * CELL, height: rows * CELL });
+          layout();
+          sync();
         };
 
-        const reset = () => {
-          mines = [];
-          revealed = Array.from({ length: ROWS }, () => Array(COLS).fill(false));
-          flagged = Array.from({ length: ROWS }, () => Array(COLS).fill(false));
-          over = false;
-          seconds = 0;
-          timer.setText('⏱ 0');
-          counter.setText('💣 ' + MINES);
-          face.setText('🙂');
-          while (mines.length < MINES) {
-            const index = Math.floor(Math.random() * ROWS * COLS);
-            if (mines.indexOf(index) === -1) mines.push(index);
-          }
-          cells.forEach((cell, index) => {
-            cell.node.setState({ style: { ...NORMAL }, interactive: true });
-            cell.label.setText('');
-          });
-          if (timerHandle) clearInterval(timerHandle);
-          timerHandle = setInterval(() => {
-            if (over || seconds > 500) return;
-            seconds += 1;
-            timer.setText('⏱ ' + seconds);
-          }, 1000);
-        };
-
-        const mineCount = (row, col) => neighbors(row, col).filter(([r, c]) => mines.indexOf(r * COLS + c) !== -1).length;
-
-        const reveal = (row, col) => {
-          if (over || revealed[row][col]) return;
-          revealed[row][col] = true;
-          const cell = cells[row * COLS + col];
-          const isMine = mines.indexOf(row * COLS + col) !== -1;
-          cell.node.setState({ style: { ...revealedStyle } });
-          if (isMine) {
-            cell.label.setText('💥');
-            face.setText('😵');
-            over = true;
-            toast('踩到雷了！点笑脸重开', 'error');
-            return;
-          }
-          const count = mineCount(row, col);
-          cell.label.setText(count ? String(count) : '');
-          cell.label.setState({ style: { ...cell.label.state.style, fillStyle: numberColors[count] || '#000000' } });
-          if (!count) {
-            neighbors(row, col).forEach(([r, c]) => reveal(r, c));
-          }
-          const safeLeft = ROWS * COLS - MINES - revealed.flat().filter(Boolean).length;
-          if (safeLeft <= 0) {
-            over = true;
-            face.setText('😎');
-            W.ICENotification.open(ice, { title: '扫雷胜利', description: `用时 ${seconds} 秒`, type: 'success' });
+        const layout = () => {
+          const rows = model.getRows();
+          const cols = model.getCols();
+          const boardWidth = cols * CELL;
+          const boardHeight = rows * CELL;
+          const width = Math.max(240, boardWidth + 12);
+          const height = 76 + boardHeight + 34;
+          pane.setState({ width, height });
+          panelTop.setState({ width: width - 12 });
+          difficultyBar.setState({ width: width - 12 });
+          timerLed.setState({ left: width - 76 });
+          timerBack.setState({ left: width - 78 });
+          hint.setState({ top: 76 + boardHeight + 8, width: width - 12 });
+          bestLabel.setState({ left: 190 });
+          // 让外面的窗口跟着棋盘尺寸走（XP 的扫雷窗口也是随难度变的）
+          const entry = openWindows.get('minesweeper');
+          if (entry && entry.window) {
+            entry.window.setSize(width + 6, height + 34);
           }
         };
 
-        for (let row = 0; row < ROWS; row += 1) {
-          for (let col = 0; col < COLS; col += 1) {
-            const index = row * COLS + col;
-            const node = new W.ICEWidget({
-              id: 'mine-' + index,
-              left: col * 26,
-              top: row * 26,
-              width: 25,
-              height: 25,
-              radius: 0,
-              fill: true,
-              stroke: true,
-              style: { ...NORMAL, lineWidth: 1 },
-            });
-            const label = new W.ICELabel({
-              interactive: false,
-              left: 0,
-              top: 0,
-              width: 25,
-              height: 25,
-              text: '',
-              align: 'center',
-              verticalAlign: 'middle',
-              style: { fontSize: 13, fontWeight: '700', fillStyle: '#000000' },
-            });
-            node.addChild(label, false);
-            node.on('click', () => reveal(row, col));
-            node.on('contextmenu', () => {
-              if (over || revealed[row][col]) return;
-              flagged[row][col] = !flagged[row][col];
-              label.setText(flagged[row][col] ? '🚩' : '');
-              counter.setText('💣 ' + (MINES - flagged.flat().filter(Boolean).length));
-            });
-            grid.addChild(node, false);
-            cells.push({ node, label });
+        const setDifficulty = (key) => {
+          const next = W.ICE_MINESWEEPER_DIFFICULTIES.find((item) => item.key === key);
+          if (!next || next.key === difficulty) return;
+          difficulty = next.key;
+          preset = next;
+          difficultyButtons.forEach((item) => item.button.setState({ variant: item.key === difficulty ? 'primary' : 'default' }));
+          model.reset({ rows: next.rows, cols: next.cols, mines: next.mines });
+          announced = null;
+          rebuild();
+        };
+
+        const restart = () => {
+          model.reset({ rows: preset.rows, cols: preset.cols, mines: preset.mines });
+          announced = null;
+          rebuild();
+        };
+        face.on('click', restart);
+
+        // 模型变化 → 刷新界面（点击、插旗、胜负都走这里）
+        model.addChangeListener(() => sync());
+        // 计时：每秒 tick 一次；模型结束后自己不再累加
+        timerHandle = setInterval(() => {
+          if (model.getState() === 'playing') {
+            model.tick();
+            timerLed.setText(pad3(model.getElapsed()));
           }
-        }
-        pane.addChildren([counter, face, timer, grid], { align: 'top' });
-        face.on('click', reset);
-        reset();
-        handles.mines = { cells, counter, face, timer, reset, isOver: () => over, mines: () => mines.slice() };
+        }, 1000);
+
+        rebuild();
+        handles.mines = {
+          model,
+          cells: () => cells,
+          counter: counterLed,
+          timer: timerLed,
+          face,
+          board,
+          bestLabel,
+          restart,
+          setDifficulty,
+          getDifficulty: () => difficulty,
+          cellAt: (row, col) => cells.find((entry) => entry.row === row && entry.col === col),
+          stopTimer: () => timerHandle && clearInterval(timerHandle),
+          fit: layout,
+        };
         return pane;
       };
 
@@ -1106,7 +1292,15 @@
         { key: 'documents', title: '我的文档', icon: '📁', width: 640, height: 420, build: buildMyDocuments },
         { key: 'notepad', title: '未命名 - 记事本', icon: '📝', width: 560, height: 420, build: buildNotepad },
         { key: 'paint', title: '未命名 - 画图', icon: '🎨', width: 720, height: 520, build: buildPaint },
-        { key: 'minesweeper', title: '扫雷', icon: '💣', width: 300, height: 340, build: buildMinesweeper },
+        {
+          key: 'minesweeper',
+          title: '扫雷',
+          icon: '💣',
+          width: 260,
+          height: 360,
+          build: buildMinesweeper,
+          onOpened: () => handles.mines && handles.mines.fit(),
+        },
         { key: 'ie', title: 'ICE 桌面 - Microsoft Internet Explorer', icon: '🌐', width: 700, height: 460, build: buildIE },
         { key: 'display', title: '显示 属性', icon: '⚙', width: 500, height: 260, build: buildDisplayProperties },
       ];

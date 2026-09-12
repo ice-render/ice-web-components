@@ -190,7 +190,15 @@ const GROUPS = [
     file: 'models',
     title: '模型',
     intro: '纯逻辑、不碰 canvas：状态与校验规则集中在这里，组件只负责「画出来」。',
-    entries: ['ICEButtonModel', 'ICEToggleModel', 'ICEBoundedRangeModel', 'ICESelectionModel', 'ICEFormModel'],
+    entries: [
+      'ICEButtonModel',
+      'ICEToggleModel',
+      'ICEBoundedRangeModel',
+      'ICESelectionModel',
+      'ICEFormModel',
+      'ICEMinesweeperModel',
+      'ICE_MINESWEEPER_DIFFICULTIES',
+    ],
   },
 ];
 

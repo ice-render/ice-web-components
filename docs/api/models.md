@@ -109,3 +109,48 @@
 | `validateAsync()` | `Promise<boolean>` | 校验全部字段（同步 + 异步），返回是否全部通过。 |
 | `reset()` | `this` | 回到初始值并清空错误。 |
 | `addChangeListener(listener: ICEFormModelListener)` | `() => void` |  |
+
+## `ICEMinesweeperModel`
+
+扫雷的纯逻辑模型（不碰 canvas）。  规则按 Windows XP 扫雷：
+
+- **首次点击安全**：第一次掀开格子时才布雷，且排除该格及其 8 邻域（空间够时）—— 所以第一下永远不会炸，也常常一下展开一片；
+- **揭示**：相邻雷数为 0 时洪水填充展开整片空白；
+- **插旗循环**：无 → 🚩 → ❓ → 无（`questionMarks: false` 时只有旗）；
+- **chord**（双击数字）：周围旗数等于数字时，掀开其余未插旗的邻格（可能炸）；
+- **胜负**：掀开所有非雷格 = 胜；掀开雷 = 负（把所有雷亮出来）；
+- **计时**：由调用方 `tick()`（每秒一次）驱动；**只有 playing 才累加**（XP 的计时从第一次点击开始）， 结束或还没开始都不动 —— 测试里可直接手动推进。 布雷用注入的 `random`（默认 `Math.random`），测试传固定序列即可复现棋局。
+
+源码：[`src/model/ICEMinesweeperModel.ts`](../../src/model/ICEMinesweeperModel.ts)
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getRows()` | `number` |  |
+| `getCols()` | `number` |  |
+| `getMineCount()` | `number` |  |
+| `getState()` | `ICEMinesweeperState` |  |
+| `isWon()` | `boolean` |  |
+| `isLost()` | `boolean` |  |
+| `isOver()` | `boolean` |  |
+| `getElapsed()` | `number` |  |
+| `getFlags()` | `number` |  |
+| `getMinesLeft()` | `number` | 剩余雷数 = 总雷数 - 已插旗数（可能为负，和 XP 一样显示负数）。 |
+| `getRevealedCount()` | `number` |  |
+| `getCells()` | `ICEMinesweeperCell[]` |  |
+| `getCell(row: number, col: number)` | `ICEMinesweeperCell \| null` |  |
+| `areMinesPlaced()` | `boolean` | 雷是否已经布好（首点安全时，第一次 reveal 之后才会布）。 |
+| `neighbors(row: number, col: number)` | `Array<[number, number]>` | 相邻 8 格的坐标。 |
+| `reveal(row: number, col: number)` | `this` | 掀开格子（插旗的会被忽略）。首次掀开时布雷（首点安全）。 |
+| `toggleFlag(row: number, col: number)` | `this` | 右键：无 → 旗 → 问号 → 无。 |
+| `chord(row: number, col: number)` | `this` | 双击已掀开的数字：周围旗数够时掀开其余邻格。 |
+| `tick()` | `this` | 计时 +1 秒（调用方按秒驱动）。只有 `playing` 才累加： |
+| `reset(options: ICEMinesweeperOptions)` | `this` | 重开（可顺带换难度）。 |
+| `addChangeListener(listener: ICEMinesweeperListener)` | `() => void` |  |
+
+### `ICE_MINESWEEPER_DIFFICULTIES` — 常量
+
+XP 扫雷的三档标准难度。
+
+源码：`src/model/ICEMinesweeperModel.ts`

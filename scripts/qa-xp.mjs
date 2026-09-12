@@ -194,22 +194,106 @@ const afterMenu = await page.evaluate(() => ({
 check('点开始菜单项打开程序并收起菜单', afterMenu.mines === true && afterMenu.open === false, JSON.stringify(afterMenu));
 
 /* ---------- 5. 应用交互 ---------- */
-// 扫雷：点第一个格子
-const mineBefore = await page.evaluate(() => {
-  const cell = window.__result.handles.mines.cells[0];
-  return cell.label.getText();
+// 扫雷：左键掀开（首次点击安全）
+const mineClicked = await clickExpr('window.__result.handles.mines.cellAt(4, 4).node');
+const mineAfter = await page.evaluate(() => {
+  const model = window.__result.handles.mines.model;
+  const cell = model.getCell(4, 4);
+  return { revealed: cell.revealed, adjacent: cell.adjacent, state: model.getState(), mines: model.getMineCount() };
 });
-const mineClicked = await clickExpr('window.__result.handles.mines.cells[12].node');
-const mineAfter = await page.evaluate(() => ({
-  text: window.__result.handles.mines.cells[12].label.getText(),
-  over: window.__result.handles.mines.isOver(),
-  mines: window.__result.handles.mines.mines().length,
-}));
 check(
-  '扫雷：点格子会揭示（或踩雷）',
-  mineClicked && mineBefore === '' && (mineAfter.text !== '' || mineAfter.over) && mineAfter.mines === 10,
+  '扫雷：点格子会揭示（首点安全）',
+  mineClicked && mineAfter.revealed === true && mineAfter.adjacent === 0 && mineAfter.state === 'playing' && mineAfter.mines === 10,
   JSON.stringify(mineAfter),
 );
+
+// 扫雷：右键插旗 → 再右键变问号 → 再右键清空；雷数计数器同步
+const flagCell = await page.evaluate(() => {
+  const model = window.__result.handles.mines.model;
+  const hidden = model.getCells().find((cell) => !cell.revealed && !cell.mine);
+  return { row: hidden.row, col: hidden.col };
+});
+const flagBox = await boxOf(`window.__result.handles.mines.cellAt(${flagCell.row}, ${flagCell.col}).node`);
+await page.mouse.click(rect.left + flagBox.l + 10, rect.top + flagBox.t + 10, { button: 'right' });
+await page.waitForTimeout(220);
+const flagOnce = await page.evaluate(
+  (pos) => {
+    const cell = window.__result.handles.mines.model.getCell(pos.row, pos.col);
+    return { flagged: cell.flagged, question: cell.question, counter: window.__result.handles.mines.counter.getText() };
+  },
+  flagCell,
+);
+await page.mouse.click(rect.left + flagBox.l + 10, rect.top + flagBox.t + 10, { button: 'right' });
+await page.waitForTimeout(220);
+const flagTwice = await page.evaluate(
+  (pos) => {
+    const cell = window.__result.handles.mines.model.getCell(pos.row, pos.col);
+    return { flagged: cell.flagged, question: cell.question };
+  },
+  flagCell,
+);
+await page.mouse.click(rect.left + flagBox.l + 10, rect.top + flagBox.t + 10, { button: 'right' });
+await page.waitForTimeout(220);
+const flagThrice = await page.evaluate(
+  (pos) => {
+    const cell = window.__result.handles.mines.model.getCell(pos.row, pos.col);
+    return { flagged: cell.flagged, question: cell.question, counter: window.__result.handles.mines.counter.getText() };
+  },
+  flagCell,
+);
+check(
+  '扫雷：右键插旗循环（🚩 → ❓ → 空）且计数器同步',
+  flagOnce.flagged === true && flagOnce.counter === '009' && flagTwice.question === true && flagThrice.flagged === false && flagThrice.counter === '010',
+  `${JSON.stringify(flagOnce)} → ${JSON.stringify(flagTwice)} → ${JSON.stringify(flagThrice)}`,
+);
+
+// 扫雷：切换难度换棋盘（中级 16×16 / 40 雷）
+const difficultyClicked = await clickExpr('window.__result.handles.mines.face.parentNode.childNodes.find(() => false) || window.__result.desktop && null');
+void difficultyClicked;
+const switched = await page.evaluate(() => {
+  window.__result.handles.mines.setDifficulty('intermediate');
+  const model = window.__result.handles.mines.model;
+  return { rows: model.getRows(), cols: model.getCols(), mines: model.getMineCount(), cells: window.__result.handles.mines.cells().length };
+});
+check(
+  '扫雷：切到中级 → 16×16 / 40 雷且重建棋盘',
+  switched.rows === 16 && switched.cols === 16 && switched.mines === 40 && switched.cells === 256,
+  JSON.stringify(switched),
+);
+await page.evaluate(() => window.__result.handles.mines.setDifficulty('beginner'));
+await page.waitForTimeout(200);
+
+// 扫雷：计时器每秒走
+await page.evaluate(() => window.__result.handles.mines.model.reveal(4, 4)); // 进入 playing 才开始计时
+const timerBefore = await page.evaluate(() => window.__result.handles.mines.model.getElapsed());
+await page.waitForTimeout(1300);
+const timerAfter = await page.evaluate(() => window.__result.handles.mines.model.getElapsed());
+check('扫雷：计时器每秒累加', timerAfter > timerBefore, `${timerBefore} → ${timerAfter}`);
+
+// 扫雷：笑脸重开
+const faceRestart = await clickExpr('window.__result.handles.mines.face');
+const restarted = await page.evaluate(() => {
+  const model = window.__result.handles.mines.model;
+  return { state: model.getState(), elapsed: model.getElapsed(), revealed: model.getRevealedCount(), flags: model.getFlags() };
+});
+check(
+  '扫雷：笑脸重开（复位棋盘与计时）',
+  faceRestart && restarted.state === 'ready' && restarted.elapsed === 0 && restarted.revealed === 0 && restarted.flags === 0,
+  JSON.stringify(restarted),
+);
+
+// 扫雷：胜利路径（用模型直接掀开所有安全格 → 笑脸 😎）
+const won = await page.evaluate(() => {
+  const m = window.__result.handles.mines.model;
+  // 先点一下布雷（首点安全），再掀开所有安全格
+  m.reveal(0, 0);
+  m.getCells()
+    .filter((cell) => !cell.mine)
+    .forEach((cell) => m.reveal(cell.row, cell.col));
+  return { state: m.getState(), face: window.__result.handles.mines.face.getText(), best: window.__result.handles.mines.bestLabel.getText() };
+});
+check('扫雷：掀开所有安全格即胜利（笑脸 😎 + 记录最佳成绩）', won.state === 'won' && won.face === '😎' && /最佳成绩/.test(won.best), JSON.stringify(won));
+await page.evaluate(() => window.__result.handles.mines.restart());
 
 // 画图：开窗后在画布上拖一笔
 await page.evaluate(() => window.__result.openApp(window.__result.APPS.find((a) => a.key === 'paint')));

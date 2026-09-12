@@ -97,7 +97,7 @@ npx serve .
 | 我的文档 | `ICETable` + 分页（`pagination`）+ 工具栏按钮 |
 | 记事本 | `ICETextArea` + 下拉菜单（`attachDropdown`）+ 状态栏 |
 | 画图 | 页面内自定义的 `XPaintCanvas`（继承 `ICEWidget`，用引擎 `ICEPolyLine` 记录每一笔）+ 色板 + `ICESlider` 笔刷粗细 |
-| 扫雷 | 9×9 自绘格子 + 地雷计数 + 计时器 + 笑脸重开（标记模式可扩展） |
+| 扫雷 | `ICEMinesweeperModel`（纯逻辑模型）+ 自绘格子：初级/中级/高级、首点安全、洪水填充、右键插旗（🚩/❓ 循环）、双击数字 chord、LED 计数、计时、笑脸重开、最佳成绩 |
 | Internet Explorer | 地址栏 `ICETextField` + 转到按钮 + 列表链接 + 状态栏 |
 | 显示 属性 | `ICERadioGroup` 选壁纸 + 预览块 + 应用/取消（应用后立即重绘桌面） |
 
@@ -111,6 +111,34 @@ npx serve .
 >
 > 顺带修掉一个库级 bug：`ICETable` 在**只改宽度**（窗口缩放、分栏拖动）时不会重算列宽，
 > 单元格文字会互相重叠 —— 现在宽度变化会触发整表重渲染（`tests/ICETable.resize.test.ts` 守着）。
+
+### 扫雷：一个「游戏级」的例子
+
+扫雷的规则有整整一套，所以逻辑单独抽成了模型 `ICEMinesweeperModel`
+（在[模型 API](../api/models.md#iceminesweepermodel) 里，14 条单测覆盖全部规则），
+UI 只负责把模型画出来：
+
+```ts
+import { ICEMinesweeperModel, ICE_MINESWEEPER_DIFFICULTIES } from 'ice-web-components';
+
+const model = new ICEMinesweeperModel({ ...ICE_MINESWEEPER_DIFFICULTIES[0] });  // 初级 9×9 / 10 雷
+model.addChangeListener(() => render());   // 掀开 / 插旗 / 胜负任意变化后重绘
+model.reveal(row, col);                     // 左键
+model.toggleFlag(row, col);                 // 右键：无 → 🚩 → ❓ → 无
+model.chord(row, col);                      // 双击数字：周围旗数够就展开
+setInterval(() => model.tick(), 1000);      // 计时（只有 playing 会累加）
+```
+
+![扫雷](../images/xp-minesweeper.png)
+
+按 Windows XP 的规则：**首次点击才布雷**（排除首点及其 8 邻域，第一下永远不会炸）、
+相邻雷为 0 时洪水填充、插旗循环、chord、胜负判定（胜利自动给雷插旗并记录最佳成绩）、
+计时从第一次点击开始；三档难度 + 按难度分别保存最佳成绩（localStorage）。
+
+> 右键插旗能生效，靠的是引擎侧一个修复：`ICE.init()` 原来在 canvas 上
+> `preventDefault()` + `stopPropagation()` 屏蔽原生菜单，而 stopPropagation 让事件
+> 到不了 `DOMEventInterceptor`，组件永远收不到 `contextmenu`。现在只 `preventDefault()`，
+> 事件继续冒泡 → 组件能收到右键（ice-render 1.4.1）。
 
 ---
 
