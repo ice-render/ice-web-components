@@ -42,6 +42,9 @@
           },
         });
 
+      const caption = (text, left, top) =>
+        new W.UILabel({ left, top, text, style: { fontSize: 12, fillStyle: theme.colors.textSecondary } });
+
       const panel = new W.UIPanel({ id: 'panel', left: 24, top: 24, width: 1352, height: 1912 });
 
       // 滚动视口演示：内容比视口高，靠引擎的 clipChildren 裁掉溢出部分
@@ -456,8 +459,8 @@
 
       // 颜色选择器：色板网格 + 选中环（表单控件语义）
       const colorHint = new W.UILabel({
-        left: 860,
-        top: 1744,
+        left: 542,
+        top: 1856,
         text: '已选：#1677ff',
         style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
       });
@@ -483,6 +486,45 @@
           '#ffffff',
         ],
         onChange: (color) => colorHint.setText('已选：' + color),
+      });
+
+      // 图片：fill / contain / cover 三种适配（240x120 源图放进 120x90 盒子）
+      const demoImageSrc =
+        'data:image/svg+xml;utf8,' +
+        encodeURIComponent(
+          "<svg xmlns='http://www.w3.org/2000/svg' width='240' height='120'>" +
+            "<rect width='240' height='120' fill='#e6f4ff'/>" +
+            "<circle cx='48' cy='60' r='34' fill='#1677ff'/>" +
+            "<rect x='110' y='18' width='112' height='84' rx='12' fill='#52c41a'/>" +
+            "<text x='132' y='68' font-size='18' fill='#ffffff'>240x120</text>" +
+            '</svg>',
+        );
+      const imageFill = new W.UIImage({
+        id: 'image-fill',
+        left: 900,
+        top: 1740,
+        width: 120,
+        height: 90,
+        fit: 'fill',
+        src: demoImageSrc,
+      });
+      const imageContain = new W.UIImage({
+        id: 'image-contain',
+        left: 1040,
+        top: 1740,
+        width: 120,
+        height: 90,
+        fit: 'contain',
+        src: demoImageSrc,
+      });
+      const imageCover = new W.UIImage({
+        id: 'image-cover',
+        left: 1180,
+        top: 1740,
+        width: 120,
+        height: 90,
+        fit: 'cover',
+        src: demoImageSrc,
       });
 
       panel.addChildren([
@@ -584,6 +626,13 @@
         heading('Color picker', 540, 1700),
         colorPicker,
         colorHint,
+        heading('Images', 900, 1700),
+        imageFill,
+        caption('fill', 900, 1836),
+        imageContain,
+        caption('contain', 1040, 1836),
+        imageCover,
+        caption('cover', 1180, 1836),
 
         heading('Scroll pane', 32, 706),
         scrollPane,
@@ -651,7 +700,7 @@
       });
 
       ice.addChild(panel);
-      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, comment, colorPicker, colorHint };
+      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, comment, colorPicker, colorHint, imageFill, imageContain, imageCover };
     </script>
   </body>
 </html>

@@ -109,7 +109,7 @@
 | 数据展示 | Collapse | ✅ `UICollapse`（accordion 可选） |
 | 数据展示 | Descriptions | ✅ `UIDescriptions`（1/2 列） |
 | 数据展示 | Empty | ✅ `UIEmpty` |
-| 数据展示 | Image | ⬜ 引擎有 `ICEImage`，缺预览/加载态封装 |
+| 数据展示 | Image | ✅ `UIImage`（fill/contain/cover 适配 + clipChildren 裁剪 + 加载/错误态；无预览浮层） |
 | 数据展示 | List | ✅ `UIList` |
 | 数据展示 | Popover | ⬜ 阶段 B |
 | 数据展示 | QRCode | ⊘ 需要编码器，收益低 |
