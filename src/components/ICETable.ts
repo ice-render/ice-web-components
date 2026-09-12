@@ -7,6 +7,7 @@ import { createTextNode, readHovered } from '../util/ICEStyle';
 import { ICERect } from 'ice-render';
 import { ICEScrollPane } from './ICEScrollPane';
 import { computeVirtualRange } from './ICEVirtualList';
+import { ICEDropTarget, computeDropTarget, moveItem } from '../util/ICEDragReorder';
 
 export type ICETableColumn = {
   key: string;
@@ -150,6 +151,11 @@ export class ICETable extends ICEWidget {
   private virtualBuffer = 2;
   /** 可滚动模式下的内容宽度（列多到装不下时 > 视口宽度） */
   private renderedContentWidth = 0;
+  /** 行拖拽排序：开启后按住行上下拖就能改顺序 */
+  private rowDraggable = false;
+  private onRowReorder: ((from: number, to: number, rows: ICETableRow[]) => void) | null = null;
+  /** 拖拽状态：源行下标 + 当前落点 + 指示线节点 */
+  private dragRow: { from: number; target: ICEDropTarget | null; indicator: any } | null = null;
   private __bound = false;
 
   constructor(props: any = {}) {
@@ -190,6 +196,8 @@ export class ICETable extends ICEWidget {
     this.virtual = props.virtual === true;
     this.virtualBuffer = Math.max(0, Math.floor(Number(props.virtualBuffer === undefined ? 2 : props.virtualBuffer) || 0));
     this.scrollable = this.virtual || (this.columns || []).some((column: ICETableColumn) => column.fixed === true);
+    this.rowDraggable = props.rowDraggable === true;
+    this.onRowReorder = typeof props.onRowReorder === 'function' ? props.onRowReorder : null;
     this.selectionMode =
       props.rowSelection === 'multiple' ? 'multiple' : props.rowSelection === 'none' ? 'none' : 'single';
     this.onSelectionChange = typeof props.onSelectionChange === 'function' ? props.onSelectionChange : null;
@@ -467,6 +475,11 @@ export class ICETable extends ICEWidget {
     }
     const index = Math.floor((localY - this.headerHeight) / this.rowHeight);
     if (index >= 0 && index < this.data.length) {
+      // 行拖拽排序：按住行往下拖。多选列那 40px 不参与（那是勾选框的地盘）
+      if (this.rowDraggable && !(this.selectionMode === 'multiple' && localX < ICETable.SELECTION_WIDTH)) {
+        this.__startRowDrag(index);
+        this.__updateRowDrag(localY);
+      }
       // 点在行内的交互控件上（例如「详情 / 删除」按钮）：交给控件自己处理，不做整行选中。
       // 否则点按钮会同时触发选中回调（弹窗/抽屉会莫名其妙弹两层）。
       const hit = evt.target;
@@ -1081,6 +1094,104 @@ export class ICETable extends ICEWidget {
     return this.setScrollTop(clamped * this.rowHeight);
   }
 
+  // ---------------------------------------------------------------- 行拖拽排序
+
+  public isRowDraggable(): boolean {
+    return this.rowDraggable;
+  }
+
+  public isRowDragging(): boolean {
+    return !!this.dragRow;
+  }
+
+  /** 当前落点（拖拽中才有值；QA 用它断言指示线跟手）。 */
+  public getDropTarget(): ICEDropTarget | null {
+    return this.dragRow ? this.dragRow.target : null;
+  }
+
+  /**
+   * 把第 `from` 行移到落点处（拖拽松手时调用；也可以直接调它做「上移/下移」按钮）。
+   *
+   * 移动的是**当前渲染顺序**（`sortedData`）；没有激活排序时同步 `sourceData`，
+   * 这样第 n 次点表头恢复原序时拿到的是新顺序。返回是否真的动了。
+   */
+  public moveRow(from: number, target: ICEDropTarget): boolean {
+    // 拖拽给的是「当前页内的下标」，而数据在 sortedData 里是绝对下标 —— 分页时必须换算，
+    // 否则会去动别的页的数据（QA 里就抓到过：事件抛了 [0,2]，但当前页顺序没变）。
+    const pageOffset = this.pageSize > 0 ? (this.page - 1) * this.pageSize : 0;
+    const result = moveItem(this.sortedData, pageOffset + from, { index: pageOffset + target.index, position: target.position });
+    if (!result.moved) return false;
+    this.sortedData = result.items;
+    if (!this.sortKey) this.sourceData = result.items.slice();
+    this.data = this.pageSize > 0 ? this.sortedData.slice((this.page - 1) * this.pageSize, this.page * this.pageSize) : this.sortedData;
+    this.__render();
+    const to = result.to - pageOffset;
+    this.trigger('rowreorder', null, { from, to, rows: this.sortedData.slice() });
+    if (this.onRowReorder) this.onRowReorder(from, to, this.sortedData.slice());
+    return true;
+  }
+
+  /** 指针在行区域里的纵向坐标 → 行下标（可滚动模式要把滚动偏移加回来）。 */
+  private __rowIndexAt(localY: number): number {
+    const y = localY - this.headerHeight + (this.scrollable ? this.virtualScrollTop : 0);
+    return Math.min(Math.max(Math.floor(y / this.rowHeight), 0), Math.max(0, this.data.length - 1));
+  }
+
+  private __startRowDrag(from: number): void {
+    const theme = iceUIManager.getTheme();
+    const indicator = new ICEWidget({
+      left: 0,
+      top: 0,
+      width: Number(this.state.width) || 0,
+      height: 2,
+      fill: true,
+      stroke: false,
+      display: false,
+      interactive: false,
+      style: { fillStyle: theme.colors.primary },
+    });
+    this.__dropHost().addChild(indicator, false);
+    this.dragRow = { from, target: null, indicator };
+    this.trigger('rowdragstart', null, { from });
+  }
+
+  /** 指示线挂在哪：可滚动模式挂内容盒（跟着滚动走），否则挂表格自己。 */
+  private __dropHost(): any {
+    return this.scrollable && this.bodyContent ? this.bodyContent : this;
+  }
+
+  private __updateRowDrag(localY: number): void {
+    if (!this.dragRow) return;
+    const pointerY = localY - this.headerHeight + (this.scrollable ? this.virtualScrollTop : 0);
+    const target = computeDropTarget({ pointerY, itemHeight: this.rowHeight, itemCount: this.data.length });
+    this.dragRow.target = target;
+    const indicator = this.dragRow.indicator;
+    if (!target) {
+      indicator.setState({ display: false });
+      return;
+    }
+    const top = target.index * this.rowHeight + (target.position === 'after' ? this.rowHeight : 0);
+    indicator.setState({
+      display: true,
+      top: this.scrollable ? top : this.headerHeight + top,
+      left: 0,
+      width: this.scrollable ? Number(this.bodyContent.state.width) || 0 : Number(this.state.width) || 0,
+    });
+  }
+
+  private __endRowDrag(commit: boolean): void {
+    const drag = this.dragRow;
+    if (!drag) return;
+    this.dragRow = null;
+    if (drag.indicator) drag.indicator.setState({ display: false });
+    if (commit && drag.target) {
+      const moved = this.moveRow(drag.from, drag.target);
+      this.trigger('rowdragend', null, { from: drag.from, to: drag.target, moved });
+    } else {
+      this.trigger('rowdragend', null, { from: drag.from, to: null, moved: false });
+    }
+  }
+
   /** 表头边界拖拽句柄：透明条，命中区 ±4px。 */
   private __createResizeHandles(parent: any, widths: number[], offset: number): void {
     let left = offset;
@@ -1117,17 +1228,28 @@ export class ICETable extends ICEWidget {
   }
 
   private __onGlobalMouseMove(evt: any): void {
-    if (!this.resizeState || !this.ice || typeof this.ice.screenToWorld !== 'function') return;
-    const [wx] = this.ice.screenToWorld(evt.offsetX, evt.offsetY);
-    const next = this.resizeState.startWidth + (wx - this.resizeState.startX);
-    this.setColumnWidth(this.resizeState.key, next);
+    if (!this.ice || typeof this.ice.screenToWorld !== 'function') return;
+    const [wx, wy] = this.ice.screenToWorld(evt.offsetX, evt.offsetY);
+    if (this.resizeState) {
+      const next = this.resizeState.startWidth + (wx - this.resizeState.startX);
+      this.setColumnWidth(this.resizeState.key, next);
+      return;
+    }
+    if (this.dragRow) {
+      const box = this.getMinBoundingBox(true);
+      this.__updateRowDrag(wy - box.tl[1]);
+    }
   }
 
   private __onGlobalMouseUp(): void {
-    if (!this.resizeState) return;
-    const key = this.resizeState.key;
-    this.resizeState = null;
-    this.trigger('columnresizeend', null, { key, widths: this.getColumnWidths() });
+    if (this.resizeState) {
+      const key = this.resizeState.key;
+      this.resizeState = null;
+      this.trigger('columnresizeend', null, { key, widths: this.getColumnWidths() });
+    }
+    if (this.dragRow) {
+      this.__endRowDrag(true);
+    }
   }
 
   private __format(value: any): string {

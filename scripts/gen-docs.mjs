@@ -151,6 +151,10 @@ const GROUPS = [
     entries: [
       'attachTooltip',
       'ICENativeInput',
+      'computeVirtualRange',
+      'resolveColumnWidths',
+      'computeDropTarget',
+      'moveItem',
       'attachPopover',
       'attachPopconfirm',
       'attachDropdown',

@@ -11,7 +11,7 @@
 > `focusRing` 聚焦色）；③ `ICETag`/`ICEBadge` 默认改成 Bootstrap 实底 `.text-bg-*`（`variant:'soft'` 保留浅底风格）。
 > 细节见 README 的 Naming / Theme / Colour variants 三节。
 
-## 现状（78 个组件源文件 / 97 个导出类 / 657 条单测 / 190 项浏览器断言）
+## 现状（78 个组件源文件 / 97 个导出类 / 673 条单测 / 192 项浏览器断言）
 
 按分组清点（完整清单与参数见 [`docs/components.md`](./docs/components.md)）：
 
@@ -217,7 +217,13 @@
       setScrollTop / setScrollLeft / scrollToRow / isVirtual / isScrollable`。6 条单测 +
       `qa:gallery` 4 条真断言（一万行 × 20 列只渲染 11~13 行、真实滚轮换窗口、
       横向滚动时表头表体同步且冻结层钉住、scrollToRow 跳末尾）。
-- [ ] P1 拖拽编辑
+- [~] **P1 拖拽编辑**：先把地基做出来 —— `computeDropTarget`（指针 → 落点：上半格 before /
+      下半格 after、越界夹取、空列表返回 null）与 `moveItem`（移动到落点、返回新数组 +
+      新下标、拖回原位/越界算没动）两个纯函数，16 条单测把「差一位 / 往回拖错位」这类经典坑钉死；
+      `ICETable` 接上 `rowDraggable`：按住行拖动出现指示线，松手 `rowreorder` 事件 +
+      `onRowReorder` 回调，`moveRow(from, target)` 也可直接调（做「上移/下移」按钮）；
+      **分页表按「当前页内下标」换算成绝对下标**（QA 抓到过事件抛了但当前页没变）。
+      还剩：树节点拖拽（含跨层级落点）与看板卡拖拽。
 - [ ] P1 a11y 与 i18n
 
 ## 业界组件库 组件对照表（v5 全量 → 本库）

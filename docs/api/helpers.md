@@ -48,6 +48,38 @@ attachTooltip(ice: any, target: any, options: ICETooltipOptions): ICETooltip
 | `setValue(value: string)` | `this` | 外部改值（例如 setValue）：同步到元素并把光标移到末尾。 |
 | `focus()` | `this` |  |
 
+### `computeVirtualRange` — 函数
+
+纯窗口计算：给定滚动位置、视口高度、行高与总数，算出该渲染哪一段。
+
+```ts
+computeVirtualRange(options: ICEVirtualWindowOptions): ICEVirtualRange
+```
+
+### `resolveColumnWidths` — 函数
+
+列宽求解（纯函数，方便单测）。
+
+```ts
+resolveColumnWidths(columns: Array<{ width?: number; minWidth?: number }>, totalWidth: number, defaultMinWidth: number): number[]
+```
+
+### `computeDropTarget` — 函数
+
+指针坐标 → 落点。
+
+```ts
+computeDropTarget(options: ICEDropTargetOptions): ICEDropTarget | null
+```
+
+### `moveItem` — 函数
+
+把第 `from` 项移到落点处，返回新数组。
+
+```ts
+moveItem(items: T[], from: number, target: ICEDropTarget): ICEMoveResult<T>
+```
+
 ### `attachPopover` — 函数
 
 ```ts

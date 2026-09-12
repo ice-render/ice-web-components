@@ -565,6 +565,60 @@ await page.waitForTimeout(320);
 const tableClamped = await page.evaluate(() => window.__result.pagedTable.getColumnWidths());
 check('表格：列宽被最小宽度夹住（拖不没）', tableClamped.name === 70, JSON.stringify(tableClamped));
 
+/* ---------- 表格：拖行排序 ---------- */
+await page.evaluate(() => {
+  // 缩列之后列宽变了，坐标会跟着变；先把页面滚回顶部再算鼠标位置
+  window.scrollTo(0, 0);
+});
+await page.waitForTimeout(200);
+const dragTable = await page.evaluate(() => {
+  const table = window.__result.pagedTable;
+  window.__reorders = [];
+  table.on('rowreorder', (evt) => window.__reorders.push([evt.param.from, evt.param.to]));
+  const rows = table.getRows().map((row) => row.name);
+  let l = 0;
+  let t = 0;
+  let cursor = table;
+  while (cursor && cursor.state) {
+    l += Number(cursor.state.left) || 0;
+    t += Number(cursor.state.top) || 0;
+    cursor = cursor.parentNode;
+  }
+  return { rows, l, t, headerHeight: 36, rowHeight: 34 };
+});
+const reorderRect = await canvasRect();
+const dragX = reorderRect.left + dragTable.l + 120;
+const fromY = reorderRect.top + dragTable.t + dragTable.headerHeight + dragTable.rowHeight / 2;
+const toY = reorderRect.top + dragTable.t + dragTable.headerHeight + dragTable.rowHeight * 2 + dragTable.rowHeight * 0.8;
+await page.mouse.move(dragX, fromY);
+await page.mouse.down();
+await page.mouse.move(dragX, toY, { steps: 10 });
+await page.waitForTimeout(200);
+const midDrag = await page.evaluate(() => ({
+  dragging: window.__result.pagedTable.isRowDragging(),
+  target: window.__result.pagedTable.getDropTarget(),
+}));
+check(
+  '表格：按住行拖动时进入拖拽态并给出落点（指示线跟手）',
+  midDrag.dragging === true && !!midDrag.target && midDrag.target.index === 2 && midDrag.target.position === 'after',
+  JSON.stringify(midDrag),
+);
+await page.mouse.up();
+await page.waitForTimeout(320);
+const dropped = await page.evaluate(() => ({
+  rows: window.__result.pagedTable.getRows().map((row) => row.name),
+  events: window.__reorders,
+  dragging: window.__result.pagedTable.isRowDragging(),
+}));
+check(
+  '表格：松手后行顺序真的变了（A 拖到 C 之后），并抛出 rowreorder',
+  // 注意：这张表分页且前面的用例点过下一页，所以按「拖动前的当前页顺序」推算期望值
+  JSON.stringify(dropped.rows) === JSON.stringify([dragTable.rows[1], dragTable.rows[2], dragTable.rows[0]]) &&
+    dropped.dragging === false &&
+    dropped.events.length === 1,
+  JSON.stringify({ before: dragTable.rows, after: dropped.rows, events: dropped.events }),
+);
+
 /* ---------- 宽表：虚拟行 + 固定列 + 横向滚动 ---------- */
 const bigBoot = await page.evaluate(() => {
   const table = window.__result.bigTable;

@@ -54,6 +54,10 @@
 | `setScrollTop(y: number)` | `this` |  |
 | `setScrollLeft(x: number)` | `this` |  |
 | `scrollToRow(index: number)` | `this` | 把某一行滚进视口（贴顶）。 |
+| `isRowDraggable()` | `boolean` |  |
+| `isRowDragging()` | `boolean` |  |
+| `getDropTarget()` | `ICEDropTarget \| null` | 当前落点（拖拽中才有值；QA 用它断言指示线跟手）。 |
+| `moveRow(from: number, target: ICEDropTarget)` | `boolean` | 把第 `from` 行移到落点处（拖拽松手时调用；也可以直接调它做「上移/下移」按钮）。 |
 
 ## `ICEList`
 
