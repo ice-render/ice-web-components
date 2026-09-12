@@ -40,6 +40,7 @@ export * from './components/UISteps';
 export * from './components/UIResult';
 export * from './components/UIInputNumber';
 export * from './components/UIAutoComplete';
+export * from './components/UITreeSelect';
 export * from './components/UIAvatar';
 export * from './components/UIIcon';
 export * from './components/UISvgIcon';

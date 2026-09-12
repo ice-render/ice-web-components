@@ -394,6 +394,33 @@
         options: ['杭州', '上海', '深圳', '北京', '广州', '成都'],
       });
 
+      const treeSelectHint = new W.UILabel({
+        left: 1300,
+        top: 1232,
+        text: '未选择',
+        style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+      });
+      const dataTreeSelect = new W.UITreeSelect({
+        id: 'tree-select',
+        left: 1060,
+        top: 1364,
+        width: 220,
+        placeholder: '选择数据源…',
+        defaultExpandAll: true,
+        nodes: [
+          {
+            key: 'db',
+            label: '数据库',
+            children: [
+              { key: 'mysql', label: 'MySQL' },
+              { key: 'pg', label: 'PostgreSQL' },
+            ],
+          },
+          { key: 'cache', label: '缓存' },
+        ],
+        onChange: (key, node) => treeSelectHint.setText('已选：' + node.label),
+      });
+
       panel.addChildren([
         heading('Buttons', 32, 28),
 
@@ -479,6 +506,8 @@
         inputsLabel,
         quantity,
         cityAuto,
+        dataTreeSelect,
+        treeSelectHint,
         heading('Feedback & status', 32, 1500),
         spin,
         rate,
@@ -551,7 +580,7 @@
       });
 
       ice.addChild(panel);
-      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto };
+      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint };
     </script>
   </body>
 </html>
