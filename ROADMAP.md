@@ -129,7 +129,7 @@
 | 反馈 | Modal | ⬜ 阶段 B |
 | 反馈 | Notification | ⬜ 阶段 B |
 | 反馈 | Popconfirm | ⬜ 阶段 B |
-| 反馈 | Progress | ✅ `UIProgressBar`（部分：无环形 / 仪表盘） |
+| 反馈 | Progress | ✅ `UIProgressBar`（线形 + 环形 `type:'circle'`，含百分比文字 / 状态色；无仪表盘） |
 | 反馈 | Result | ✅ `UIResult` |
 | 反馈 | Skeleton | ✅ `UISkeleton`（呼吸动画） |
 | 反馈 | Spin | ✅ `UISpin`（旋转弧线，复用引擎动画） |
@@ -147,7 +147,7 @@
 - `UIMenu`：子菜单、键盘操作、折叠
 - `UITabs`：溢出滚动、关闭、位置（上下左右）
 - `UIAlert`：图标、banner 形态（关闭按钮 ✅）
-- `UIProgressBar`：环形 / 仪表盘 / 状态色
+- `UIProgressBar`：仪表盘形态（环形 + 状态色 ✅ 已做）
 - `UISlider`：区间选择、刻度、拖拽 tooltip
 - `UICard`：extra 区、操作区、封面、底部
 - `UIBadge`：计数封顶（99+）（红点 ✅）

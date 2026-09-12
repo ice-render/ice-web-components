@@ -583,6 +583,27 @@
         onClose: () => console.log('alert closed'),
       });
 
+      // 环形进度：底环 + 进度弧 + 居中百分比（66% 主色 / 100% 成功色）
+      const progressCircle = new W.UIProgressBar({
+        id: 'progress-circle',
+        type: 'circle',
+        left: 1080,
+        top: 1560,
+        size: 88,
+        strokeWidth: 8,
+        value: 66,
+      });
+      const progressCircleDone = new W.UIProgressBar({
+        id: 'progress-circle-done',
+        type: 'circle',
+        left: 1190,
+        top: 1560,
+        size: 88,
+        strokeWidth: 8,
+        value: 100,
+        status: 'success',
+      });
+
       // 评论区（含嵌套回复与操作）
       const comment = new W.UIComment({
         id: 'comment',
@@ -789,6 +810,8 @@
         colorHint,
         heading('Transfer', 880, 100),
         transfer,
+        progressCircle,
+        progressCircleDone,
         heading('Carousel', 360, 866),
         carousel,
         heading('Images', 900, 1700),
@@ -865,7 +888,7 @@
       });
 
       ice.addChild(panel);
-      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, timePicker, timeHint, cascader, transfer, carousel, avatarGroup, closableAlert, comment, colorPicker, colorHint, imageFill, imageContain, imageCover };
+      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, timePicker, timeHint, cascader, transfer, carousel, avatarGroup, closableAlert, progressCircle, progressCircleDone, comment, colorPicker, colorHint, imageFill, imageContain, imageCover };
     </script>
   </body>
 </html>
