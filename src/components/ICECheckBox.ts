@@ -29,6 +29,10 @@ export class ICECheckBox extends ICEWidget {
       ...props,
     });
     this.focusable = props.focusable !== false;
+    // 无障碍：勾选框的可读名称是它的标签文本
+    if (props.ariaLabel !== undefined || props.label !== undefined) {
+      this.setAriaLabel(String(props.ariaLabel !== undefined ? props.ariaLabel : props.label));
+    }
     this.model = new ICEToggleModel({ selected });
     this.box = new ICERect({
       left: boxLeft,

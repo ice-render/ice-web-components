@@ -80,6 +80,12 @@ computeDropTarget(options: ICEDropTargetOptions): ICEDropTarget | null
 moveItem(items: T[], from: number, target: ICEDropTarget): ICEMoveResult<T>
 ```
 
+### `mountICEAccessibilityMirror` — 函数
+
+```ts
+mountICEAccessibilityMirror(ice: any, options: ICEA11yMirrorOptions): ICEA11yMirrorHandle
+```
+
 ### `attachPopover` — 函数
 
 ```ts

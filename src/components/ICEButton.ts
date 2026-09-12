@@ -79,6 +79,8 @@ function textColor(theme: any, variant: ICEButtonVariant, danger: boolean, enabl
  * 自带 hover / 焦点 / 禁用态，点击时触发 `click`。
  */
 export class ICEButton extends ICEWidget {
+  /** 调用方显式设过 ariaLabel 之后，setText 不再覆盖它 */
+  private explicitAriaLabel = false;
   private label: any;
   private variant: ICEButtonVariant;
   private size: ICEButtonSize;
@@ -125,10 +127,26 @@ export class ICEButton extends ICEWidget {
       fillStyle: textColor(theme, variant, danger, true, false),
     });
     this.addChild(this.label, false);
+    // 无障碍：默认用按钮文字当可读名称
+    if (props.ariaLabel !== undefined) {
+      this.explicitAriaLabel = true;
+      super.setAriaLabel(String(props.ariaLabel));
+    } else {
+      super.setAriaLabel(String(props.text ?? 'Button'));
+    }
+  }
+
+  /** 覆盖可读名称（之后 setText 不会再把名字改回去）。 */
+  public override setAriaLabel(label: string): this {
+    super.setAriaLabel(label);
+    this.explicitAriaLabel = true;
+    return this;
   }
 
   public setText(text: string): this {
     this.label.setText(text ?? '');
+    // 无障碍：按钮的可读名称就是它的文字（否则屏幕阅读器会念 id）
+    if (!this.explicitAriaLabel) super.setAriaLabel(text ?? '');
     this.revalidate();
     return this;
   }

@@ -205,7 +205,7 @@
         }),
       ]);
       const submitTop = 656 + form.state.height + 10;
-      const submitButton = new W.ICEButton({ left: 420, top: submitTop, width: 120, height: 32, text: 'Submit' });
+      const submitButton = new W.ICEButton({ id: 'submit-button', left: 420, top: submitTop, width: 120, height: 32, text: 'Submit' });
       const submitHint = new W.ICELabel({
         left: 552,
         top: submitTop + 8,
@@ -1515,7 +1515,11 @@
         requestAnimationFrame(() => syncCanvasToContent(flowSections(panel, sections))),
       );
 
-      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, submitHint, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, timePicker, timeHint, cascader, transfer, upload, carousel, avatarGroup, closableAlert, progressCircle, progressCircleDone, comment, colorPicker, colorHint, imageFill, imageContain, imageCover, breadcrumb, breadcrumbCollapsed, statistic, countdown, radioGroup, checkboxGroup, splitter, watermark, typographyTitle, typographyParagraph, typographyLink, anchorPane, anchor, backTop, calendar, imagePreview, previewTarget, tour, tourTarget, layoutSpace, layoutGrid, fab, pagedTable, crossForm, virtualList, bigTable };
+      // 无障碍镜像层：把 canvas 里「有哪些控件、叫什么名字、在什么位置」暴露成隐藏 DOM，
+      // 屏幕阅读器/键盘用户才够得着（canvas 本身对辅助技术是完全不可见的）。
+      const a11yMirror = W.mountICEAccessibilityMirror(ice, { id: 'gallery-a11y-mirror' });
+
+      window.__result = { ice, panel, form, a11yMirror, nameInput, agreeBox, submitButton, submitHint, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, timePicker, timeHint, cascader, transfer, upload, carousel, avatarGroup, closableAlert, progressCircle, progressCircleDone, comment, colorPicker, colorHint, imageFill, imageContain, imageCover, breadcrumb, breadcrumbCollapsed, statistic, countdown, radioGroup, checkboxGroup, splitter, watermark, typographyTitle, typographyParagraph, typographyLink, anchorPane, anchor, backTop, calendar, imagePreview, previewTarget, tour, tourTarget, layoutSpace, layoutGrid, fab, pagedTable, crossForm, virtualList, bigTable };
     </script>
   </body>
 </html>

@@ -67,6 +67,9 @@ export class ICETextField extends ICEWidget {
     });
     this.addChild(this.textNode, false);
     this.focusable = props.focusable !== false;
+    // 无障碍：没显式给 ariaLabel 时用占位符当可读名称（比念 id 强得多）
+    if (props.ariaLabel !== undefined) this.setAriaLabel(String(props.ariaLabel));
+    else if (placeholder) this.setAriaLabel(placeholder);
     // 文本类控件：鼠标点进去也要有「正在输入」的焦点反馈（:focus 语义）
     this.focusRingMode = 'always';
   }

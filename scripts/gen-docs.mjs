@@ -155,6 +155,7 @@ const GROUPS = [
       'resolveColumnWidths',
       'computeDropTarget',
       'moveItem',
+      'mountICEAccessibilityMirror',
       'attachPopover',
       'attachPopconfirm',
       'attachDropdown',

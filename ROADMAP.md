@@ -11,7 +11,7 @@
 > `focusRing` 聚焦色）；③ `ICETag`/`ICEBadge` 默认改成 Bootstrap 实底 `.text-bg-*`（`variant:'soft'` 保留浅底风格）。
 > 细节见 README 的 Naming / Theme / Colour variants 三节。
 
-## 现状（78 个组件源文件 / 97 个导出类 / 673 条单测 / 192 项浏览器断言）
+## 现状（78 个组件源文件 / 97 个导出类 / 682 条单测 / 195 项浏览器断言）
 
 按分组清点（完整清单与参数见 [`docs/components.md`](./docs/components.md)）：
 
@@ -224,7 +224,12 @@
       `onRowReorder` 回调，`moveRow(from, target)` 也可直接调（做「上移/下移」按钮）；
       **分页表按「当前页内下标」换算成绝对下标**（QA 抓到过事件抛了但当前页没变）。
       还剩：树节点拖拽（含跨层级落点）与看板卡拖拽。
-- [ ] P1 a11y 与 i18n
+- [~] **P1 a11y 与 i18n**：a11y 这一半先做了 —— 组件侧 `ariaLabel`（按钮用文字、
+      输入框用占位符、勾选用标签，`setAriaLabel` 可显式覆盖）+ 可插拔的 DOM 镜像层
+      `mountICEAccessibilityMirror(ice)`（把引擎快照渲染成定位好的 `role`/`aria-label`/`tabindex`
+      元素；点它 = 聚焦并激活画布组件，focus 也能映射回组件）。9 条单测 + `qa:gallery` 3 条真断言
+      （1615 个语义元素 / 点镜像按钮真的弹出浮层 / DOM 焦点映射回组件）。
+      还剩 i18n（locale 包 + 内置文案走它）。
 
 ## 业界组件库 组件对照表（v5 全量 → 本库）
 

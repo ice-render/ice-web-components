@@ -689,6 +689,51 @@ const bigJump = await page.evaluate(() => {
 });
 check('宽表：scrollToRow 能跳到最后一万行', bigJump.range.end === 10000 && bigJump.rows <= 16, JSON.stringify(bigJump));
 
+/* ---------- 无障碍镜像层 ---------- */
+const a11yBoot = await page.evaluate(() => {
+  const mirror = window.__result.a11yMirror;
+  mirror.refresh();
+  const elements = mirror.getElements();
+  const submit = document.querySelector('[data-ice-id="submit-button"]');
+  return {
+    mounted: mirror.isMounted(),
+    count: elements.length,
+    buttons: elements.filter((element) => element.getAttribute('role') === 'button').length,
+    submitLabel: submit ? submit.getAttribute('aria-label') : null,
+    submitRole: submit ? submit.getAttribute('role') : null,
+    submitBox: submit ? [submit.style.left, submit.style.top, submit.style.width, submit.style.height] : null,
+  };
+});
+check(
+  '无障碍镜像：把画布语义渲染成定位好的 role 元素（带 aria-label）',
+  a11yBoot.mounted === true && a11yBoot.count > 20 && a11yBoot.buttons > 5 && a11yBoot.submitLabel === 'Submit' && a11yBoot.submitRole === 'button',
+  JSON.stringify(a11yBoot),
+);
+
+// 点镜像元素 = 激活画布组件。挑一个副作用确定的按钮：点 pop-btn 会弹浮层
+const a11yClicked = await page.evaluate(() => {
+  const target = document.querySelector('[data-ice-id="pop-btn"]');
+  target.click();
+  return { focused: window.__result.ice.getFocusedComponent() ? window.__result.ice.getFocusedComponent().state.id : null };
+});
+await page.waitForTimeout(360);
+const a11yOverlay = await page.evaluate(() => window.ICEWEB.getICEOverlayManager(window.__result.ice).isOpen());
+check(
+  '无障碍镜像：点镜像按钮 = 聚焦并激活画布组件（屏幕阅读器用户点得动）',
+  a11yClicked.focused === 'pop-btn' && a11yOverlay === true,
+  JSON.stringify({ focused: a11yClicked.focused, overlayOpen: a11yOverlay }),
+);
+await page.keyboard.press('Escape');
+await page.waitForTimeout(240);
+
+const a11yFocus = await page.evaluate(() => {
+  const target = document.querySelector('[data-ice-id="tip-btn"]');
+  target.focus();
+  const focused = window.__result.ice.getFocusedComponent();
+  return focused ? focused.state.id : null;
+});
+check('无障碍镜像：DOM 焦点映射回画布组件（Tab 进得去）', a11yFocus === 'tip-btn', String(a11yFocus));
+
 const sectionBox = await nodeBox('window.__result.splitter');
 const shotRect = await canvasRect();
 if (sectionBox) {

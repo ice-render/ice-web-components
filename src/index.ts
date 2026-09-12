@@ -17,6 +17,7 @@ export * from './util/ICEOverlayPosition';
 export * from './util/ICEWorldBox';
 export * from './util/ICEAnimation';
 export * from './util/ICEDragReorder';
+export * from './util/ICEAccessibilityMirror';
 // 写自定义组件常用的小工具：文本节点工厂、状态色解析、文本宽度估算…
 // （之前只有内部使用，外部拿不到，写自己的组件时会卡住）
 export * from './util/ICEStyle';

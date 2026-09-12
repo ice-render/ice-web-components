@@ -27,10 +27,10 @@ rings and shadows) is drawn by the engine.
 - **Bootstrap 5 token theme** (plus a dark theme) — swap with one call.
 - **No name collisions with the engine** — the package’s runtime exports are
   disjoint from `ice-render`’s (there is a regression test for it).
-- **Actually tested** — 673 unit tests (93 suites: form validation, overlay
+- **Actually tested** — 682 unit tests (94 suites: form validation, overlay
   positioning, keyboard navigation, sort/hover/focus edge cases, the Minesweeper,
   Tetris and Snake rule models) plus five browser QA suites (`qa:admin`, `qa:gallery`,
-  `qa:workbench`, `qa:xp`, `qa:arcade` — 192 assertions) that drive the demo pages with
+  `qa:workbench`, `qa:xp`, `qa:arcade` — 195 assertions) that drive the demo pages with
   real mouse and keyboard events and fail on any console error.
 
 ## Quick start
@@ -388,6 +388,14 @@ panel.setLayout(new ICEFlowLayout({ gap: 8 }));
   manager can't focus it (no ring, and `getFocused()` returns null while the field
   still accepts typing through its own point-in-box check). `ICEFormItem`,
   `ICEForm`, `ICESpace`, `ICEGrid` and `ICESplitter` are all `interactive: false`.
+- **Accessibility** — the engine hands you an accessibility snapshot
+  (`getAccessibilityTree()`: role suggestion, `state.ariaLabel`, screen box, tab order);
+  this library wires the other half: controls carry meaningful labels (buttons use their text,
+  text fields fall back to the placeholder, checkboxes to their label), and
+  `mountICEAccessibilityMirror(ice)` renders that snapshot into invisible-but-real DOM
+  (`role` / `aria-label` / `tabindex`, positioned over the canvas). Clicking or focusing a
+  mirror element focuses and activates the canvas component, so screen readers and keyboard
+  users can drive a canvas UI.
 - **Text input & IME** — focusing a text field mounts a **fully transparent native
   `<input>` / `<textarea>`** over it (`ICENativeInput`): the browser and the IME do the
   typing, `input` / `compositionend` write the value back, and `change` / form binding

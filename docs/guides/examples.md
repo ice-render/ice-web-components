@@ -42,6 +42,11 @@ npx serve .
 > 拖过头也不会把列拖没），拖完其余自动列会重新分配。列宽求解同样是纯函数
 > `resolveColumnWidths`，交互那条链路由 QA 用真实鼠标拖出来。
 >
+> 页面末尾还挂了**无障碍镜像层**：`mountICEAccessibilityMirror(ice)` 把 canvas 里
+> 「有哪些控件、叫什么名字、在什么位置」渲染成透明但真实存在的 DOM（`role` / `aria-label` /
+> `tabindex`），点它等于点画布组件、focus 也会映射回组件 —— 屏幕阅读器和键盘用户才够得着
+> canvas UI（canvas 本身对辅助技术完全不可见）。
+>
 > 「表格」那格还开了 `rowDraggable`：**按住行上下拖就能排序**，拖动时有落点指示线，
 > 松手抛 `rowreorder`（分页表拖的是当前页内的行，内部会换算成绝对下标）。
 >

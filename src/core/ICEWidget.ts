@@ -76,6 +76,23 @@ export class ICEWidget extends ICEGroup {
     return this;
   }
 
+  /**
+   * 无障碍：可读名称。
+   *
+   * 引擎的 a11y 快照优先读 `state.ariaLabel`（见 ice-render 的 `a11y/accessibility.ts`），
+   * 拿不到才回退到文本 / id。控件应当给出有意义的名称（按钮用文字、输入框用占位符……），
+   * 否则屏幕阅读器会念出一串 id。
+   */
+  public setAriaLabel(label: string): this {
+    this.setState({ ariaLabel: String(label ?? '') });
+    return this;
+  }
+
+  public getAriaLabel(): string {
+    const value = this.state && this.state.ariaLabel;
+    return typeof value === 'string' ? value : '';
+  }
+
   public isEnabled(): boolean {
     return this.enabled;
   }

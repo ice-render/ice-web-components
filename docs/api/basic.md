@@ -16,6 +16,8 @@
 | `setFocusRingMode(mode: 'keyboard' \| 'always' \| 'never')` | `this` |  |
 | `shouldShowFocusRing(origin: 'mouse' \| 'keyboard' \| 'api')` | `boolean` | 按聚焦来源判断要不要画焦点环（ICEFocusManager 调用）。 |
 | `setEnabled(enabled: boolean)` | `this` |  |
+| `setAriaLabel(label: string)` | `this` | 无障碍：可读名称。 |
+| `getAriaLabel()` | `string` |  |
 | `isEnabled()` | `boolean` |  |
 | `isHovered()` | `boolean` |  |
 | `isFocusable()` | `boolean` | 是否可聚焦：显式声明 + 启用 + 可交互 + 最终可见（祖先 display:false 时不可聚焦）。 |
@@ -150,6 +152,7 @@
 
 | 方法 | 返回 | 说明 |
 |---|---|---|
+| `setAriaLabel(label: string)` | `this` | 覆盖可读名称（之后 setText 不会再把名字改回去）。 |
 | `setText(text: string)` | `this` |  |
 | `getText()` | `string` |  |
 | `initEvents()` | `void` |  |
