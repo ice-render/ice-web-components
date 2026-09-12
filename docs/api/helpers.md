@@ -86,6 +86,68 @@ moveItem(items: T[], from: number, target: ICEDropTarget): ICEMoveResult<T>
 mountICEAccessibilityMirror(ice: any, options: ICEA11yMirrorOptions): ICEA11yMirrorHandle
 ```
 
+### `setICELocale` — 函数
+
+切换语言；未注册的语言会被忽略。
+
+```ts
+setICELocale(locale: string): void
+```
+
+### `getICELocale` — 函数
+
+```ts
+getICELocale(): string
+```
+
+### `getICELocaleNames` — 函数
+
+```ts
+getICELocaleNames(): string[]
+```
+
+### `registerICELocale` — 函数
+
+注册（或覆盖）一个语言包。
+
+```ts
+registerICELocale(locale: string, messages: ICELocaleMessages): void
+```
+
+### `getICELocaleMessages` — 函数
+
+取当前语言的完整包（拷贝，避免外部改坏内置包）。
+
+```ts
+getICELocaleMessages(locale: string): ICELocaleMessages
+```
+
+### `t` — 函数
+
+取文案：当前语言 → 默认语言 → key 本身；`{name}` 会被 `vars` 里的值替换。
+
+```ts
+t(key: string, vars?: Record<string, string | number>): string
+```
+
+### `ICE_DEFAULT_LOCALE` — 常量
+
+默认语言。
+
+源码：`src/i18n/ICEI18n.ts`
+
+### `ICE_LOCALE_ZH_CN` — 常量
+
+内置中文包（组件的默认文案）。
+
+源码：`src/i18n/ICEI18n.ts`
+
+### `ICE_LOCALE_EN_US` — 常量
+
+内置英文包。
+
+源码：`src/i18n/ICEI18n.ts`
+
 ### `attachPopover` — 函数
 
 ```ts

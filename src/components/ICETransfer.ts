@@ -1,5 +1,6 @@
 import { ICELabel } from './ICELabel';
 import { ICEWidget } from '../core/ICEWidget';
+import { t } from '../i18n/ICEI18n';
 import { ICEScrollPane } from './ICEScrollPane';
 import { iceUIManager } from '../core/ICEManager';
 
@@ -71,7 +72,7 @@ export class ICETransfer extends ICEWidget {
       },
     });
     this.dataSource = (props.dataSource || []).slice();
-    this.titles = props.titles || ['待选', '已选'];
+    this.titles = props.titles || [t('transfer.pending'), t('transfer.selected')];
     this.rowHeight = props.rowHeight ?? 28;
     this.onChangeCallback = typeof props.onChange === 'function' ? props.onChange : null;
     this.targetKeys = this.__sanitize(props.targetKeys || []);

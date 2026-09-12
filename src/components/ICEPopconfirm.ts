@@ -1,4 +1,5 @@
 import { ICEButton } from './ICEButton';
+import { t } from '../i18n/ICEI18n';
 import { ICELabel } from './ICELabel';
 import { ICEPanel } from './ICEPanel';
 import { iceUIManager } from '../core/ICEManager';
@@ -32,7 +33,7 @@ export class ICEPopconfirm extends ICEPopover {
     const theme = iceUIManager.getTheme();
     const width = 220;
     const paddingX = 12;
-    const title = this.confirmOptions.title || '确认操作？';
+    const title = this.confirmOptions.title || t('common.confirm');
     const description = this.confirmOptions.description;
     const titleHeight = 20;
     const descHeight = description ? 18 : 0;
@@ -76,7 +77,7 @@ export class ICEPopconfirm extends ICEPopover {
       top: buttonsTop,
       width: 72,
       height: 32,
-      text: this.confirmOptions.cancelText || '取消',
+      text: this.confirmOptions.cancelText || t('common.cancel'),
       variant: 'default',
       size: 'small',
     });
@@ -85,7 +86,7 @@ export class ICEPopconfirm extends ICEPopover {
       top: buttonsTop,
       width: 72,
       height: 32,
-      text: this.confirmOptions.confirmText || '确定',
+      text: this.confirmOptions.confirmText || t('common.ok'),
       variant: 'primary',
       size: 'small',
       danger: this.confirmOptions.danger === true,

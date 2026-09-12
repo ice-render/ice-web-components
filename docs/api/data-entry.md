@@ -345,6 +345,7 @@
 | `isDisabled()` | `boolean` |  |
 | `getLastRejectReason()` | `string \| null` |  |
 | `getDropZoneNode()` | `ICEWidget \| null` |  |
+| `getHintText()` | `string` | 上传区提示文案（测试 / QA 用）。 |
 | `getFileNode(uid: string)` | `ICEWidget \| null` |  |
 | `addFile(file: Partial<ICEUploadFile>)` | `boolean` | 加入一个文件（真实选择结果或调用方构造的数据）；被拒时返回 false。 |
 | `removeFile(uid: string)` | `this` |  |

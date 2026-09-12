@@ -1,4 +1,5 @@
 import { ICEButton } from './ICEButton';
+import { t } from '../i18n/ICEI18n';
 import { ICELabel } from './ICELabel';
 import { ICEPanel } from './ICEPanel';
 import { iceUIManager } from '../core/ICEManager';
@@ -238,7 +239,7 @@ export class ICEModal {
         top: buttonTop,
         width: 80,
         height: 32,
-        text: this.options.cancelText || '取消',
+        text: this.options.cancelText || t('common.cancel'),
         variant: 'default',
         size: 'small',
       });
@@ -247,7 +248,7 @@ export class ICEModal {
         top: buttonTop,
         width: 84,
         height: 32,
-        text: this.options.confirmText || '确定',
+        text: this.options.confirmText || t('common.ok'),
         variant: 'primary',
         size: 'small',
       });

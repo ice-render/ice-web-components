@@ -734,6 +734,33 @@ const a11yFocus = await page.evaluate(() => {
 });
 check('无障碍镜像：DOM 焦点映射回画布组件（Tab 进得去）', a11yFocus === 'tip-btn', String(a11yFocus));
 
+/* ---------- i18n：内置文案跟着语言走 ---------- */
+const i18nState = await page.evaluate(() => {
+  const W = window.ICEWEB;
+  const table = window.__result.pagedTable;
+  const readEmpty = () => {
+    const empty = (table.childNodes || []).find((node) => typeof node.getDescription === 'function');
+    return empty ? empty.getDescription() : '';
+  };
+  const before = { locale: W.getICELocale(), text: readEmpty() };
+  W.setICELocale('en-US');
+  table.setData([]); // 重建空态 → 读英文文案
+  const english = { locale: W.getICELocale(), text: readEmpty() };
+  W.setICELocale('zh-CN');
+  table.setData([
+    { name: 'Ava', city: '杭州', amount: 1240 },
+    { name: 'Bob', city: '上海', amount: 860 },
+    { name: 'Cara', city: '北京', amount: 2310 },
+  ]);
+  const restored = { locale: W.getICELocale(), rows: table.getRows().length };
+  return { before, english, restored };
+});
+check(
+  'i18n：切到英文后内置文案跟着变，切回中文恢复（内置语言包）',
+  i18nState.before.locale === 'zh-CN' && i18nState.english.locale === 'en-US' && i18nState.english.text === 'No data' && i18nState.restored.locale === 'zh-CN' && i18nState.restored.rows === 3,
+  JSON.stringify(i18nState),
+);
+
 const sectionBox = await nodeBox('window.__result.splitter');
 const shotRect = await canvasRect();
 if (sectionBox) {

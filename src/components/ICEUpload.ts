@@ -1,6 +1,7 @@
 import { ICERect } from 'ice-render';
 import { ICELabel } from './ICELabel';
 import { ICEWidget } from '../core/ICEWidget';
+import { t } from '../i18n/ICEI18n';
 import { iceUIManager } from '../core/ICEManager';
 
 /**
@@ -78,7 +79,7 @@ export class ICEUpload extends ICEWidget {
     this.maxCount = Math.max(0, Number(props.maxCount) || Number.MAX_SAFE_INTEGER);
     this.maxSize = Math.max(0, Number(props.maxSize) || Number.MAX_SAFE_INTEGER);
     this.disabled = props.disabled === true;
-    this.text = props.text || '点击或拖拽文件到此处上传';
+    this.text = props.text || t('upload.hint');
     this.hint = props.hint || this.__defaultHint();
     this.rowHeight = Math.max(20, Number(props.rowHeight) || 28);
     this.beforeUpload = typeof props.beforeUpload === 'function' ? props.beforeUpload : null;
@@ -101,6 +102,11 @@ export class ICEUpload extends ICEWidget {
 
   public getDropZoneNode(): ICEWidget | null {
     return this.dropZone;
+  }
+
+  /** 上传区提示文案（测试 / QA 用）。 */
+  public getHintText(): string {
+    return this.text;
   }
 
   public getFileNode(uid: string): ICEWidget | null {

@@ -268,6 +268,7 @@
 | 方法 | 返回 | 说明 |
 |---|---|---|
 | `getActionButton()` | `ICEButton \| null` |  |
+| `getDescription()` | `string` | 空态描述文案（测试 / QA 用；语言包切换后重建组件即变）。 |
 
 ## `ICESkeleton`
 

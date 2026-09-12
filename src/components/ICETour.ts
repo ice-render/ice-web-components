@@ -2,6 +2,7 @@ import { ICEButton } from './ICEButton';
 import { ICELabel } from './ICELabel';
 import { ICEPanel } from './ICEPanel';
 import { ICEWidget } from '../core/ICEWidget';
+import { t } from '../i18n/ICEI18n';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../core/ICEOverlayManager';
 import { ICEFocusManager, getICEFocusManager } from '../core/ICEFocusManager';
@@ -369,7 +370,7 @@ export class ICETour {
       top: footerTop,
       width: 56,
       height: 32,
-      text: '跳过',
+      text: t('tour.skip'),
       variant: 'text',
       size: 'small',
     });
@@ -378,7 +379,7 @@ export class ICETour {
       top: footerTop,
       width: 56,
       height: 32,
-      text: '上一步',
+      text: t('tour.prev'),
       variant: 'default',
       size: 'small',
     });
@@ -387,7 +388,7 @@ export class ICETour {
       top: footerTop,
       width: 78,
       height: 32,
-      text: this.current === this.steps.length - 1 ? '完成' : '下一步',
+      text: this.current === this.steps.length - 1 ? t('tour.done') : t('tour.next'),
       variant: 'primary',
       size: 'small',
     });

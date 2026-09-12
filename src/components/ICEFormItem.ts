@@ -1,4 +1,5 @@
 import { ICEWidget } from '../core/ICEWidget';
+import { t } from '../i18n/ICEI18n';
 import { ICELabel } from './ICELabel';
 import { iceUIManager } from '../core/ICEManager';
 import type { ICEFormRule } from '../model/ICEFormModel';
@@ -161,12 +162,12 @@ export class ICEFormItem extends ICEWidget {
     }
     this.validating = next;
     if (next) {
-      this.errorNode.setText('校验中…');
+      this.errorNode.setText(t('form.validating'));
       this.errorNode.setState({ display: true });
       if (this.control && typeof this.control.setValidateStatus === 'function') {
         this.control.setValidateStatus('default');
       }
-    } else if (this.errorNode.getText() === '校验中…') {
+    } else if (this.errorNode.getText() === t('form.validating')) {
       this.errorNode.setText('');
       this.errorNode.setState({ display: false });
     }

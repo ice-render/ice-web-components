@@ -42,6 +42,9 @@ npx serve .
 > 拖过头也不会把列拖没），拖完其余自动列会重新分配。列宽求解同样是纯函数
 > `resolveColumnWidths`，交互那条链路由 QA 用真实鼠标拖出来。
 >
+> 页面里还接了**国际化**：`setICELocale('en-US')` 之后重建的组件用英文文案（表格空态、
+> 弹窗按钮、上传提示、引导按钮……都走 `t()`），切回 `zh-CN` 即恢复。
+>
 > 页面末尾还挂了**无障碍镜像层**：`mountICEAccessibilityMirror(ice)` 把 canvas 里
 > 「有哪些控件、叫什么名字、在什么位置」渲染成透明但真实存在的 DOM（`role` / `aria-label` /
 > `tabindex`），点它等于点画布组件、focus 也会映射回组件 —— 屏幕阅读器和键盘用户才够得着

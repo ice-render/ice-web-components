@@ -23,6 +23,8 @@ export interface ICEEmptyOptions {
 
 export class ICEEmpty extends ICEWidget {
   private actionButton: ICEButton | null = null;
+  /** 描述文案（构造时确定；语言包切换后重建组件即变） */
+  private descriptionText = '';
 
   constructor(props: ICEEmptyOptions) {
     const theme = iceUIManager.getTheme();
@@ -34,6 +36,7 @@ export class ICEEmpty extends ICEWidget {
     });
     const icon = props.icon ?? '◌';
     const hasAction = !!props.actionText;
+    this.descriptionText = String(props.description ?? '');
 
     this.addChild(
       new ICELabel({
@@ -85,5 +88,10 @@ export class ICEEmpty extends ICEWidget {
 
   public getActionButton(): ICEButton | null {
     return this.actionButton;
+  }
+
+  /** 空态描述文案（测试 / QA 用；语言包切换后重建组件即变）。 */
+  public getDescription(): string {
+    return this.descriptionText;
   }
 }

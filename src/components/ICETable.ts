@@ -6,6 +6,7 @@ import { iceUIManager } from '../core/ICEManager';
 import { createTextNode, readHovered } from '../util/ICEStyle';
 import { ICERect } from 'ice-render';
 import { ICEScrollPane } from './ICEScrollPane';
+import { t } from '../i18n/ICEI18n';
 import { computeVirtualRange } from './ICEVirtualList';
 import { ICEDropTarget, computeDropTarget, moveItem } from '../util/ICEDragReorder';
 
@@ -630,7 +631,7 @@ export class ICETable extends ICEWidget {
           top: this.headerHeight,
           width: totalWidth,
           height: 120,
-          description: this.columns.length ? '暂无数据' : '暂无数据',
+          description: t('table.empty'),
         }),
         false,
       );
