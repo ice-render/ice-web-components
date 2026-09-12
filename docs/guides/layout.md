@@ -14,6 +14,30 @@ panel.setLayout(new ICEFlowLayout({ gap: 8, align: 'left' }));   // 流式
 panel.setLayout(new ICEBoxLayout({ axis: 'y', gap: 12 }));       // 盒式
 ```
 
+本库在引擎布局器之上又封了三个**组件级**的排布工具（它们自己算位置，不用 `setLayout`）：
+
+```ts
+// 1) 间距容器：横/纵排列 + 交叉轴对齐 + 换行，尺寸按内容自适应
+const space = new ICESpace({ direction: 'horizontal', size: 8, align: 'center' });
+space.addItem(saveButton).addItem(cancelButton).addItem(tag);
+
+// 2) 24 栅格：一行放不下 24 格自动换行，gutter 计在列之间
+const grid = new ICEGrid({ width: 480, gutter: 16 });
+grid.addCol(new ICEGridCol({ span: 12, content: leftCard }));
+grid.addCol(new ICEGridCol({ span: 12, content: rightCard }));
+
+// 3) 分栏：可拖的分隔条，size 是第一栏像素宽，min 夹取
+const splitter = new ICESplitter({ width: 900, height: 460, size: 300, first: queue, second: detail });
+```
+
+选型建议：**同一行/列的等距排列用 `ICESpace`**；**页面骨架（12/12、8/8/8）用 `ICEGrid`**；
+**两块内容要手动分配空间用 `ICESplitter`**；`ICEFlowLayout` / `ICEBoxLayout` 留给
+「子组件尺寸由布局决定」的场景（它们直接写子节点的 left/top）。
+
+> ⚠️ 这三个都是**纯布局容器**，构造时 `interactive: false`。自己写布局容器时也要这样：
+> 容器如果晚于内部控件创建（zIndex 更高）又参与命中，会把内部控件的点击整个吃掉
+> （输入框点不进去、焦点环不出现）。
+
 ## zIndex 与创建顺序（最常见的坑）
 
 引擎按 `zIndex` **全局**排序渲染，而 `zIndex` 默认取**创建顺序**。所以：

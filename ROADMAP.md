@@ -11,7 +11,7 @@
 > `focusRing` 聚焦色）；③ `ICETag`/`ICEBadge` 默认改成 Bootstrap 实底 `.text-bg-*`（`variant:'soft'` 保留浅底风格）。
 > 细节见 README 的 Naming / Theme / Colour variants 三节。
 
-## 现状（74 个组件源文件 / 87 个导出类）
+## 现状（74 个组件源文件 / 87 个导出类 / 483 条单测 / 91 项浏览器断言）
 
 按分组清点（完整清单与参数见 [`docs/components.md`](./docs/components.md)）：
 
@@ -46,7 +46,13 @@
 > `ICECalendar`（月视图 + 键盘）。
 > 第四批：`ICESpace` / `ICEGrid` + `ICEGridCol`（24 栅格）/ `ICEFloatButton`，
 > 以及 `ICETable` 的分页 + 空态。
-> 浏览器回归用例：`npm run qa:gallery`（25 项，真实鼠标事件）。
+> 第五批（交互打磨）：`ICETable` 行多选（`rowSelection: 'multiple'`）+ 批量操作；
+> **焦点环改为 `:focus-visible` 语义**（鼠标点击/拖动不再冒蓝框，文本类控件 `focusRing: 'always'`）；
+> 修掉「纯布局容器吃掉内部控件命中」的一类 bug（`ICEFormItem`/`ICEForm`/`ICESpace`/`ICEGrid`/`ICESplitter`）。
+>
+> 示例：`gallery.html`（组件总览）、`admin.html`（6 页后台）、`workbench.html`（客服工单工作台）、
+> `custom-component.html`（自定义组件）——见[示例与场景](./docs/guides/examples.md)。
+> 浏览器回归：`qa:admin` 44 项 + `qa:gallery` 32 项 + `qa:workbench` 15 项，全部走真实鼠标/键盘事件。
 
 ## 阶段 A：底座（先做这个）
 

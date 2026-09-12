@@ -92,6 +92,7 @@ Full docs live in [`docs/`](./docs/README.md):
 | [架构思路](./docs/architecture.md) | 分层、组件模型、渲染与重绘、事件与悬停、浮层/焦点/表单/主题，以及一张“踩坑表” |
 | [组件速查](./docs/components.md) | 80+ 组件按分组的一句话说明 + 跳转 API |
 | [API 参考](./docs/api/README.md) | 每个组件的构造参数与 public 方法（**从源码生成**，不会漂移） |
+| [示例与场景](./docs/guides/examples.md) | 四个示例页分别演示什么、各自用到哪些组件、照着做新场景的清单 |
 | [主题与配色](./docs/guides/theming.md) | token 分组、状态色、`*TextEmphasis`、自定义主题 |
 | [表单与校验](./docs/guides/forms.md) | 三层结构、规则清单、异步校验、自定义控件接入 |
 | [浮层指南](./docs/guides/overlays.md) | 弹窗/抽屉/下拉/提示的三种用法、定位、关闭策略、内容工厂 |

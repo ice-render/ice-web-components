@@ -89,6 +89,10 @@ protected __applyValidateState() // …
   * UI 组件内部的**纯展示节点一律 `interactive: false`**（比如按钮里的文字、色块的标签），
     否则它们会抢走点击；
   * 需要“整行可点”的组件（表格行、菜单项、树行）把行做成可交互节点，子文案交给它。
+* **纯布局容器也要 `interactive: false`**：容器如果晚于内部控件创建（zIndex 更高）、
+  又参与命中，它会先把点击吃掉，内部控件根本收不到事件。`ICEFormItem` / `ICEForm` /
+  `ICESpace` / `ICEGrid` / `ICESplitter` 都属于这类「只负责摆位置」的节点，全部
+  `interactive: false`。判断标准很简单：**这个节点的矩形本身需要响应鼠标吗？**
 * **全局事件**：`keydown` / `wheel` / `mousedown` 这类需要跨组件协调的事件，组件在
   `afterAddHandler()` 里订阅 `ice.evtBus`，并在处理函数开头判空（组件可能已从场景摘掉）。
 * **悬停要显式开启**：引擎为了性能不做 `mousemove` 全量命中，所以组件库提供了
@@ -114,12 +118,25 @@ Select / DatePicker / TimePicker / Cascader / TreeSelect / AutoComplete）都走
 
 ## 六、焦点与键盘
 
-`ICEFocusManager` 负责三件事：
+`ICEFocusManager` 负责四件事：
 
 1. **Tab / Shift+Tab 轮转**：收集场景里所有 `isFocusable()` 的组件，按树序循环；
 2. **激活**：Enter / Space 调用组件的 `activate()`（控件可覆盖成切换/打开）；
-3. **焦点环**：画在工具层，跟着组件位置与视口平移/缩放移动；
-   模态类浮层用 `setFocusScope()` 做焦点陷阱，关闭后把焦点还给打开它的组件。
+3. **焦点环**：画在工具层，跟着组件位置与视口平移/缩放移动。环遵循 **`:focus-visible` 语义** ——
+   只有键盘聚焦才画；鼠标点按钮、拖滑块手柄都不会冒蓝框（否则观感很怪）；
+4. **焦点陷阱**：模态类浮层用 `setFocusScope()` 把 Tab 限制在对话框内，关闭后把焦点还回去。
+
+焦点环显示由控件自己的策略决定（`ICEWidget`）：
+
+| 策略 | 何时画环 | 谁在用 |
+|---|---|---|
+| `keyboard`（默认） | 仅键盘（Tab / Shift+Tab）聚焦 | 按钮、滑块、复选框/单选框、开关、评分、分段控件、上传… |
+| `always` | 鼠标聚焦也画 | 文本类控件：文本框 / 多行 / 密码 / 数字 / 选择器 / 日期时间 / 级联 / 树选择 / 取色器 |
+| `never` | 从不画 | 按需（例如卡片里的小控件） |
+
+声明方式：`new ICEButton({ focusRing: 'never' })`、`setFocusRingMode('always')`，
+或自定义组件里实现 `shouldShowFocusRing(origin)`；调试可用
+`getICEFocusManager(ice).getFocusOrigin()` / `isRingVisible()`。
 
 ## 七、表单
 
@@ -138,6 +155,10 @@ ICEForm        addItem / validate / submit / reset，负责在控件与模型之
 * **异步校验**（`asyncValidator`）只在显式调用 `validateFieldAsync()` / `validateAsync()` / `submitAsync()` 时执行 ——
   值变化触发的自动校验只跑同步规则，避免每敲一个字就发请求；
 * 校验期间 `isValidating()` 为真，`ICEFormItem` 显示“校验中…”。
+* **跨字段依赖**：`ICEFormItem({ dependencies: ['other'] })`（`ICEFormModel.addField` 同名参数）
+  让「被依赖字段变化 → 本字段立刻重算」，用来写“确认密码”“结束日期 ≥ 开始日期”“至少填一个”。
+  配套行为：`getDependents(name)` 反向查依赖者；自定义 `validator` 在空值上**也会执行**
+  （内置的 min/max/长度/pattern 才跳过）——这是“至少填一个”这类规则能写出来的前提。
 
 ## 八、主题
 
@@ -171,6 +192,8 @@ docs/           本目录
 |---|---|---|
 | 创建顺序即 zIndex | 后创建的容器把先创建的子组件盖住 | **先建容器，再建子组件**；确实要先建子组件的（如调用方传进来的节点、幻灯片、卡片 extra、弹窗内容），整棵子树 `zIndex` 抬到容器之上（同值即可，别逐个分配不同值） |
 | 内部节点抢点击 | 点按钮没反应 / 点色块要点两次 | 组件内部的纯展示节点一律 `interactive: false` |
+| 布局容器吃掉命中 | 表单里的输入框点不进去、焦点环不出现、`getFocused()` 是 null | **纯布局节点**（`ICEFormItem`/`ICEForm`/`ICESpace`/`ICEGrid`/`ICESplitter`）一律 `interactive: false`；判断标准：这个矩形本身需要响应鼠标吗 |
+| 鼠标一点就冒蓝框 | 拖 Slider 手柄时整个组件被框住 | 焦点环按 `:focus-visible` 语义：默认只有键盘聚焦才画（`focusRing: 'keyboard'`），文本类控件用 `'always'` |
 | 浮层被“点外关闭”提前关掉 | 下拉里点选项没反应 | `closeOnOutsideClick: false`，自己按 `mousedown` + 自己的命中盒判断 |
 | hover 反馈静默失效 | `isHovered()` 是 true，但底色不动 | 引擎的 `trigger(name, evt, param)` 把载荷放在 `event.param`，读取时用 `readHovered()` 兼容两种形态 |
 | 文本没有裁剪 | 中文标签压出色块 / 面板外面 | 用 `estimateTextWidth()`（中文按 1em）算容器宽度，别用 `length * fontSize * 0.62` |

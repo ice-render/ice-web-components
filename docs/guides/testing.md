@@ -27,7 +27,7 @@ const picker = new ICEDatePicker({ /* … */ });
 (picker as any).afterAddHandler();    // 手动触发“加入场景”钩子，注册全局事件
 ```
 
-覆盖范围（50 个 suite / 350+ 条）：
+覆盖范围（73 个 suite / 480+ 条）：
 
 | 主题 | 例子 |
 |---|---|
@@ -36,6 +36,9 @@ const picker = new ICEDatePicker({ /* … */ });
 | 交互细节 | 表格排序/行悬停/行内按钮不触发行选中、菜单子项选中、树悬停、折叠箭头 |
 | 键盘 | Tab 轮转、Enter 激活、Esc 关闭、方向键调值、下拉 ↑↓ |
 | 数据组件 | 选择器过滤、级联路径、时间/日期取值、穿梭框搬运、上传校验 |
+| 图表/展示 | 统计格式化与倒计时、日历网格、水印平铺、排版折行省略 |
+| 布局与骨架 | `ICESpace` / `ICEGrid` 24 栅格、`ICESplitter` 夹取与拖动、容器不参与命中 |
+| 焦点细节 | 焦点环 `:focus-visible` 策略（鼠标不画 / 键盘画 / 文本类 always） |
 | 命名约定 | 导出与引擎零重名、类级导出必须 ICE 前缀、`id` 转发（`tests/exports.unique.test.ts`、`tests/ICEIdentity.test.ts`） |
 
 ### 写新组件的测试
@@ -45,26 +48,50 @@ const picker = new ICEDatePicker({ /* … */ });
 3. 有全局事件的（`mousedown`/`keydown`/`wheel`）一定要测**组件被移出场景后不崩**（守卫）；
 4. 有浮层的，断言「打开 / 关闭 / 关闭原因」。
 
-## 浏览器 QA（`npm run qa:admin`）
+## 浏览器 QA（三套）
+
+浏览器 QA 是「真开 Chromium 点一遍」的验收：慢，但能抓到单测抓不到的问题
+（布局交叠、命中被挡、浮层外观、焦点环这种纯视觉行为）。
 
 ```bash
 npm run build
-PLAYWRIGHT_PATH=/path/to/playwright npm run qa:admin    # 或不设，脚本会尝试解析
+PLAYWRIGHT_PATH=/path/to/playwright npm run qa:admin      # 或不设，脚本会尝试解析
+PLAYWRIGHT_PATH=/path/to/playwright npm run qa:gallery
+PLAYWRIGHT_PATH=/path/to/playwright npm run qa:workbench
 ```
 
-它会打开 `examples/admin.html` 并逐项断言（22 项，失败退出码非 0）：
+| 脚本 | 页面 | 项数 | 覆盖 |
+|---|---|---|---|
+| `qa:admin` | `examples/admin.html` | 44 | 6 个页面顶层零交叠 / 首元素边距一致；逐页新组件（面包屑、浮动按钮+引导、回到顶部、库存分页、履约分栏拖动与锚点、图片预览、订单多选与批量发货、跨字段校验、通知渠道上限）；全部弹层开关 + Esc；零 console error |
+| `qa:gallery` | `examples/gallery.html` | 32 | 顶层零交叠；面包屑折叠、统计倒计时、单选/多选组、分栏拖动、水印、排版折行、锚点、日历、引导、图片预览、Space/Grid、表格换页、跨字段校验、**焦点环策略（拖手柄无环 / Tab 有环 / 文本框点击有环）** |
+| `qa:workbench` | `examples/workbench.html` | 15 | 三栏零交叠、队列→档案联动、筛选（含骨架/空态）、回复发送、快捷回复模板、标签/评分/坐席状态、引导、回到顶部、分栏拖动 |
 
-* 五个页面「顶层元素两两相交」为 0，且首元素左上边距完全一致；
-* 逐个弹出层：详情抽屉、删除确认弹窗、新建订单弹窗、通知/头像下拉、Tooltip、级联、日期、
-  自动完成、二次确认气泡 —— 都能打开、都能 Esc 关闭；
-* 点表格行内「详情」按钮**不会**触发行选中；
-* 自动完成候选超过一屏时有滚动视口；
-* 设置页三个 Tab 面板都能切换且有正常高度；
-* 全程零 `console.error` / `pageerror`。
+失败时退出码非 0，并且会把现场截图落到 `/tmp/qa-*.png`（弹层是逐个截图），外观问题靠人眼看这批图。
 
-每个弹层会截图到 `/tmp/qa-*.png`，外观问题靠人眼看这批图。
+### 写新用例时的三个工具
+
+`qa-admin.mjs` / `qa-gallery.mjs` 里有几个现成帮手，新页面直接抄：
+
+* `scrollIntoView(source)`：把节点滚进 `ICEScrollPane` 的内容视口 —— **页面里远离首屏的元素，
+  必须先滚进视野再点**，否则 Playwright 的鼠标坐标落在窗口外（这是最常踩的一条）；
+* `clickExpr('window.__result.xxx')` / `dragExpr(...)`：按表达式取节点 → 量世界坐标 → 真鼠标
+  点击/拖动。示例页把关键句柄挂在 `window.__result`（页面再暴露 `state.xxx`）就是给它们用的；
+* `shotOverlay(name)`：把最上层浮层裁剪截图到 `/tmp/qa-<name>.png`。
+
+> **输入文本请用 ASCII**：canvas 文本框目前只处理单字符 `keydown`，IME 组字（中文输入）
+> 尚未接入，`page.keyboard.type('中文')` 不会产生按键事件。中文场景请用
+> `control.setValue('中文')` 驱动，或用例里改成英文。
+
+### 断言什么（经验）
+
+* **布局**：顶层子节点两两不相交（留 1px 容差）；跨页比较“首元素边距”是否一致；
+* **交互**：一律走真实鼠标/键盘（命中检测、焦点、浮层关闭策略都要经过）；
+* **观感**：能用数值表达的尽量数值化（颜色 token、焦点环可见性、分栏尺寸），
+  剩下的靠截图；
+* **零容忍**：`console.error` / `pageerror` 出现即失败 —— 这条抓到过不少“静默失效”。
 
 ## 示例页截图
 
-`docs/images/` 里的图由一次性脚本生成（Playwright 打开示例页 → 逐页截图 → `sips` 压缩宽度）。
-要更新时照着 `scripts/qa-admin.mjs` 的导航/裁剪逻辑改一版即可。
+`docs/images/` 里的图由一次性脚本生成（Playwright 打开示例页 → 逐页截图 → 必要时缩放宽度）。
+要更新时照着 `scripts/qa-admin.mjs` 的导航/裁剪逻辑改一版即可；组件总览那张是
+「整页截图 + 0.64 缩放」，商品/后台各页是逐页 1:1 截图。

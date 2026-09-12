@@ -46,12 +46,19 @@ export class ICEMetric extends ICEWidget {
     this.max = props.max ?? Infinity;
     this.value = this.clamp(Number(props.value) || 0);
     this.focusable = true;      // ③ 参与 Tab 焦点轮转（不需要键盘就别开）
-    this.__render();            // ④ 构造期就把内容画好
+    // ④ 焦点环策略：默认 keyboard（只有 Tab 聚焦才画环）；文本类控件用 'always'，
+    // 不想画就 'never' —— 鼠标点一下/拖一下也冒蓝框会很怪
+    this.focusRingMode = 'keyboard';
+    this.__render();            // ⑤ 构造期就把内容画好
   }
 }
 ```
 
 完整实现里还有下面这些「接入点」，逐条说明。
+
+> 如果你是**写容器**（把别人的组件装进去），把 `interactive: false` 放进 `super({...})`：
+> 纯布局容器如果参与命中，会把内部控件的点击整个吃掉（“输入框点不进去”“焦点环不出现”
+> 基本都是这个原因）。判断标准：这个矩形本身需要响应鼠标吗？
 
 ## 二、必须遵守的四条构造约定
 
@@ -207,5 +214,7 @@ ice.registerType('ICEMetric', ICEMetric);   // 反序列化之前调用
 | 浮层里点击行没反应 | 被 `closeOnOutsideClick` 提前关掉 | `closeOnOutsideClick: false` + 自己判点外 |
 | 用 `length * k` 估算文本宽度 | 中文标签压出色块 | `estimateTextWidth()` |
 | 把组件实例塞进 props | 构造时栈溢出（引擎深拷贝递归） | 用工厂函数，或在构造前把实例从 props 剥离 |
+| 布局容器 `interactive` 没关 | 内部控件点不动 / 焦点环不出现 | 纯布局节点一律 `interactive: false` |
+| 自己画焦点框 | 鼠标点一下、拖滑块都冒蓝框 | 交给 `ICEFocusManager`，只声明 `focusRing: 'keyboard' \| 'always' \| 'never'` |
 
 更多细节见[架构思路](../architecture.md)与[测试指南](./testing.md)。
