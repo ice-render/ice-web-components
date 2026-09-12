@@ -463,9 +463,35 @@
         W.attachTooltip(ice, exportButton, { title: '导出为 CSV', placement: 'left' });
         quickCard.addChildren([newOrderButton, exportButton]);
 
+        // 渠道收入：进度条卡片，和 Quick Actions / Team 同一行铺满
+        const channelCard = new W.ICECard({ left: 0, top: 0, width: 584, height: 200, title: '渠道收入' });
+        const channels = [
+          ['Direct', 82],
+          ['Referral', 64],
+          ['Social', 47],
+          ['Email', 33],
+        ];
+        const channelNodes = [];
+        channels.forEach(([label, value], index) => {
+          const top = 44 + index * 34;
+          channelNodes.push(
+            new W.ICELabel({
+              left: 16,
+              top,
+              width: 76,
+              height: 12,
+              verticalAlign: 'middle',
+              text: String(label),
+              style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+            }),
+            new W.ICEProgressBar({ left: 100, top: top + 1, width: 448, value: Number(value), height: 10 }),
+          );
+        });
+        channelCard.addChildren(channelNodes);
+
         flow(node, [
           { title: '经营概览', items: stats },
-          { title: '运营动态', items: [card('活动与投放', 792, campaign, carousel), statusCard, quickCard, teamCard] },
+          { title: '运营动态', items: [card('活动与投放', 792, campaign, carousel), statusCard, quickCard, teamCard, channelCard] },
           // 这里不再另起小节标题：卡片自带「最近订单」标题，避免重复
           { items: [card('最近订单', 1192, dashboardTable, tableCaption)] },
         ], { align: 'top' });
