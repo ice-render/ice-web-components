@@ -906,6 +906,83 @@
         color: 'rgba(13, 110, 253, 0.16)',
       });
 
+      // 排版 / 锚点 / 回到顶部
+      const typographyTitle = new W.ICETypography({
+        id: 'type-title',
+        left: 0,
+        top: 0,
+        width: 320,
+        text: '订单中心',
+        variant: 'title',
+        level: 1,
+      });
+      const typographyParagraph = new W.ICETypography({
+        id: 'type-paragraph',
+        left: 0,
+        top: 0,
+        width: 320,
+        rows: 2,
+        ellipsis: true,
+        variant: 'paragraph',
+        text: '这里是订单中心的说明文字，内容比较长，用来演示画布里的自动折行与省略号：超过宽度的部分会被截断并在末尾补省略号，不会再压出色块。',
+      });
+      const typographyLink = new W.ICETypography({
+        id: 'type-link',
+        left: 0,
+        top: 0,
+        width: 320,
+        text: '查看全部订单 →',
+        variant: 'link',
+      });
+      const anchorContent = new W.ICEWidget({
+        id: 'anchor-content',
+        left: 0,
+        top: 0,
+        width: 260,
+        height: 700,
+        fill: false,
+        stroke: false,
+      });
+      [
+        ['基本信息', 16],
+        ['订单记录', 266],
+        ['操作日志', 516],
+      ].forEach(([title, top]) => {
+        anchorContent.addChild(
+          new W.ICETypography({
+            left: 12,
+            top,
+            width: 220,
+            text: title,
+            variant: 'title',
+            level: 4,
+          }),
+          false,
+        );
+      });
+      const anchorPane = new W.ICEScrollPane({ id: 'anchor-pane', left: 0, top: 0, width: 260, height: 180 });
+      anchorPane.setContent(anchorContent);
+      anchorPane.setContentSize(260, 700);
+      const anchor = new W.ICEAnchor({
+        id: 'anchor',
+        left: 274,
+        top: 0,
+        width: 110,
+        target: anchorPane,
+        items: [
+          { key: 'basic', label: '基本信息', top: 0 },
+          { key: 'orders', label: '订单记录', top: 250 },
+          { key: 'logs', label: '操作日志', top: 500 },
+        ],
+      });
+      const backTop = new W.ICEBackTop({
+        id: 'back-top',
+        left: 274,
+        top: 120,
+        target: anchorPane,
+        visibilityHeight: 80,
+      });
+
       // 演示清单：每个 item 要么是单个组件，要么是一组「必须贴在一起」的组件（数组）。
       // 组件自带的 left/top 只是簇内局部坐标，实际位置由 flowSections 统一排。
       const sections = [
@@ -1075,6 +1152,10 @@
           title: 'Splitter & watermark',
           items: [splitter, watermark],
         },
+        {
+          title: 'Typography & anchor',
+          items: [typographyTitle, typographyParagraph, typographyLink, [anchorPane, anchor, backTop]],
+        },
       ];
 
       // 画布随内容长高：改元素尺寸 + 同步 ice.canvasWidth/Height（渲染器每帧都读它）
@@ -1157,7 +1238,7 @@
         requestAnimationFrame(() => syncCanvasToContent(flowSections(panel, sections))),
       );
 
-      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, submitHint, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, timePicker, timeHint, cascader, transfer, upload, carousel, avatarGroup, closableAlert, progressCircle, progressCircleDone, comment, colorPicker, colorHint, imageFill, imageContain, imageCover, breadcrumb, breadcrumbCollapsed, statistic, countdown, radioGroup, checkboxGroup, splitter, watermark };
+      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, submitHint, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, timePicker, timeHint, cascader, transfer, upload, carousel, avatarGroup, closableAlert, progressCircle, progressCircleDone, comment, colorPicker, colorHint, imageFill, imageContain, imageCover, breadcrumb, breadcrumbCollapsed, statistic, countdown, radioGroup, checkboxGroup, splitter, watermark, typographyTitle, typographyParagraph, typographyLink, anchorPane, anchor, backTop };
     </script>
   </body>
 </html>

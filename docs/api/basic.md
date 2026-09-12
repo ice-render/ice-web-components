@@ -79,6 +79,49 @@
 | `getText()` | `string` |  |
 | `getPreferredSize()` | `[number, number]` | @overwrite |
 
+## `ICETypography`
+
+排版文本（业界组件库 Typography）：标题层级 / 正文 / 链接，自带省略与折行。
+
+- `variant: 'title'` + `level: 1..5`：五级标题，字号递减；
+- `variant: 'paragraph'`：正文，配合 `rows` 做多行折行（末行补 `…`）；
+- `variant: 'link'`：主色 + 可点击（触发 `click` 与 `onClick`）且可聚焦；
+- `type`：语义色（`secondary` / `success` / `warning` / `danger` / `primary`）；
+- `ellipsis: true`（或给了 `rows`）时按宽度截断——画布不会自动换行，长文案必须显式处理。
+
+源码：[`src/components/ICETypography.ts`](../../src/components/ICETypography.ts)
+
+**构造参数** `ICETypographyOptions` — 排版文本（业界组件库 Typography）：标题层级 / 正文 / 链接，自带省略与折行。
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `id?` | `string` | 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） |
+| `text` | `string` | 文案 |
+| `variant?` | `ICETypographyVariant` | 外观变体 |
+| `level?` | `number` | 标题层级，1 最大（默认 1） |
+| `type?` | `ICETypographyType` |  |
+| `ellipsis?` | `boolean` | 省略：true = 单行省略；配合 rows > 1 = 多行折行省略 |
+| `rows?` | `number` | 行数 |
+| `strong?` | `boolean` |  |
+| `left?` | `number` | 相对父容器的左边距 |
+| `top?` | `number` | 相对父容器的上边距 |
+| `width?` | `number` | 宽度（不传用组件默认值） |
+| `height?` | `number` | 高度（不传用组件默认值） |
+| `fontSize?` | `number` |  |
+| `onClick?` | `() => void` | 点击回调 |
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getText()` | `string` |  |
+| `getLines()` | `string[]` | 当前渲染出来的行（省略/折行后的结果）。 |
+| `getFontSize()` | `number` |  |
+| `getTextColor()` | `string` |  |
+| `getLabelNodes()` | `ICELabel[]` |  |
+| `setText(text: string)` | `this` |  |
+| `setType(type: ICETypographyType)` | `this` |  |
+
 ## `ICEIcon`
 
 图标：一个居中的字形（★ ✓ ℹ …），字号与颜色可配。

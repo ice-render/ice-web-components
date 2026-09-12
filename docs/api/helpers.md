@@ -144,6 +144,14 @@ formatStatisticValue(value: number | string, precision: number, group: boolean):
 formatCountdown(ms: number): string
 ```
 
+### `truncateTextLines` — 函数
+
+按宽度把文本切成若干行，超出部分用 `…` 收尾。
+
+```ts
+truncateTextLines(text: string, options: { maxWidth: number; fontSize: number; maxLines?: number }): string[]
+```
+
 ### `tooltipPanelWidth` — 函数
 
 气泡面板宽度：按文字估算（中文 1em、拉丁 0.6em），避免长中文被压出色块外面。

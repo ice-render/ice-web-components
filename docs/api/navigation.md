@@ -1,6 +1,6 @@
 # 导航
 
-菜单、面包屑、下拉触发、分页与标签页。
+菜单、面包屑、锚点导航、回到顶部、下拉触发、分页与标签页。
 
 ## `ICEMenu`
 
@@ -57,6 +57,66 @@
 | `isCollapsed()` | `boolean` |  |
 | `expand()` | `this` | 展开被折叠的中间项。 |
 | `setItems(items: ICEBreadcrumbItem[])` | `this` |  |
+
+## `ICEAnchor`
+
+锚点导航（业界组件库 Anchor）：一列锚点，点击滚到目标位置，滚动时自动高亮当前项。  与 `ICEScrollPane` 配合使用：`target` 传滚动容器，`items[].top` 是该段落在 **内容坐标系**里的纵向位置。滚动事件由 `ICEScrollPane` 的 `scroll` 事件驱动。
+
+源码：[`src/components/ICEAnchor.ts`](../../src/components/ICEAnchor.ts)
+
+**构造参数** `ICEAnchorOptions`
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `id?` | `string` | 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） |
+| `target` | `any` | 跟随的滚动容器 |
+| `items` | `ICEAnchorItem[]` | 数据项 |
+| `activeKey?` | `string` | 初始活动项，默认第一项 |
+| `left?` | `number` | 相对父容器的左边距 |
+| `top?` | `number` | 相对父容器的上边距 |
+| `width?` | `number` | 宽度（不传用组件默认值） |
+| `itemHeight?` | `number` |  |
+| `fontSize?` | `number` |  |
+| `onChange?` | `(key: string) => void` | 用户点击 / 键盘切换锚点时的回调（滚动带出来的高亮不回调） |
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getActiveKey()` | `string \| null` |  |
+| `getLabelTexts()` | `string[]` |  |
+| `getItemNode(key: string)` | `ICEWidget \| null` |  |
+| `getLabelColor(key: string)` | `string` |  |
+| `setActiveKey(key: string, options: { scroll?: boolean })` | `this` | 程序式切换活动项（默认不滚动，传 scroll: true 才滚）。 |
+| `getItems()` | `ICEAnchorItem[]` |  |
+| `setItems(items: ICEAnchorItem[])` | `this` |  |
+
+## `ICEBackTop`
+
+回到顶部（业界组件库 BackTop）：一个小圆按钮，滚动超过阈值才出现。  用法是把滚动容器交给它：`new ICEBackTop({ target: scrollPane })`。 依赖 `ICEScrollPane` 的 `scroll` 事件（滚动位置变化时派发）， 点击后把目标滚回 `(0, 0)` 并回调 `onClick`。
+
+源码：[`src/components/ICEBackTop.ts`](../../src/components/ICEBackTop.ts)
+
+**构造参数** `ICEBackTopOptions` — 回到顶部（业界组件库 BackTop）：一个小圆按钮，滚动超过阈值才出现。  用法是把滚动容器交给它：`new ICEBackTop({ target: scrollPane })`。 依赖 `ICEScrollPane` 的 `scroll` 事件（滚动位置变化时派发）， 点击后把目标滚回 `(0, 0)` 并回调 `onClick`。
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `id?` | `string` | 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） |
+| `target` | `any` | 跟随的滚动容器（实现 getScroll / setScroll / on('scroll') 即可） |
+| `visibilityHeight?` | `number` | 超过多少滚动量才出现，默认 200 |
+| `size?` | `number` | 圆按钮直径，默认 36 |
+| `icon?` | `string` | 图标字形，默认 ↑ |
+| `left?` | `number` | 相对父容器的左边距 |
+| `top?` | `number` | 相对父容器的上边距 |
+| `onClick?` | `() => void` | 点击回调 |
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `isVisible()` | `boolean` |  |
+| `getButtonColor()` | `string` | 当前按钮底色（悬停态取主色 hover）。 |
+| `setTarget(target: any)` | `this` |  |
 
 ## `ICEDropdown`
 

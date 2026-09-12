@@ -219,6 +219,59 @@ check(
   JSON.stringify(watermark),
 );
 
+// —— 8. 排版：层级 / 折行省略 / 链接 ——
+const typography = await page.evaluate(() => {
+  const title = window.__result.typographyTitle;
+  const paragraph = window.__result.typographyParagraph;
+  const link = window.__result.typographyLink;
+  link.setHovered(true);
+  const hoverColor = link.getLabelNodes()[0].childNodes[0].state.style.fillStyle;
+  link.setHovered(false);
+  return {
+    titleSize: title.getFontSize(),
+    paragraphSize: paragraph.getFontSize(),
+    lines: paragraph.getLines(),
+    linkColor: link.getTextColor(),
+    linkInteractive: link.state.interactive === true,
+    hoverColor,
+  };
+});
+check(
+  '排版：标题层级 + 折行省略 + 链接态',
+  typography.titleSize > typography.paragraphSize &&
+    typography.lines.length === 2 &&
+    typography.lines[1].endsWith('…') &&
+    typography.linkColor === '#0d6efd' &&
+    typography.linkInteractive &&
+    typography.hoverColor === '#0b5ed7',
+  JSON.stringify(typography),
+);
+
+// —— 9. 锚点导航 + 回到顶部（真实点击） ——
+const anchorClicked = await clickExpr("window.__result.anchor.getItemNode('logs')");
+const afterAnchor = await page.evaluate(() => ({
+  y: window.__result.anchorPane.getScroll()[1],
+  active: window.__result.anchor.getActiveKey(),
+  backTopVisible: window.__result.backTop.isVisible(),
+  backTopOpacity: window.__result.backTop.state.opacity,
+}));
+check(
+  '锚点：点击滚动 + 高亮 + 唤起回到顶部',
+  anchorClicked && afterAnchor.y === 500 && afterAnchor.active === 'logs' && afterAnchor.backTopVisible === true && afterAnchor.backTopOpacity === 1,
+  JSON.stringify(afterAnchor),
+);
+const backTopClicked = await clickExpr('window.__result.backTop');
+const afterBackTop = await page.evaluate(() => ({
+  y: window.__result.anchorPane.getScroll()[1],
+  active: window.__result.anchor.getActiveKey(),
+  visible: window.__result.backTop.isVisible(),
+}));
+check(
+  '回到顶部：点击滚回顶端并自我隐藏',
+  backTopClicked && afterBackTop.y === 0 && afterBackTop.active === 'basic' && afterBackTop.visible === false,
+  JSON.stringify(afterBackTop),
+);
+
 check('无 console error / pageerror', errors.length === 0, errors.slice(0, 3).join(' | '));
 
 await page.screenshot({ path: '/tmp/qa-gallery.png', fullPage: true });

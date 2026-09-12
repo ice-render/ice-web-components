@@ -171,6 +171,10 @@ export class ICEScrollPane extends ICEContainer {
     if (changed && this.ice) {
       this.ice.dirty = true;
     }
+    // 滚动位置真的变了才通知外部（BackTop / Anchor 这类「跟着滚动走」的组件靠它驱动）
+    if (changed) {
+      this.trigger('scroll', null, { x: nextX, y: nextY });
+    }
     return this;
   }
 

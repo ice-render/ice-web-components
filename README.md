@@ -143,17 +143,17 @@ keyboard, and participates in `ICEForm` validation.
 
 | Group | Components |
 |---|---|
-| Basic | `ICEPanel` `ICEButton` `ICELabel` `ICEIcon` `ICESvgIcon` `ICESeparator` |
+| Basic | `ICEPanel` `ICEButton` `ICELabel` `ICETypography` `ICEIcon` `ICESvgIcon` `ICESeparator` |
 | Data entry | `ICETextField` `ICETextArea` `ICEPasswordField` `ICEInputNumber` `ICESelect` `ICEAutoComplete` `ICECascader` `ICETreeSelect` `ICEDatePicker` `ICETimePicker` `ICECheckBox` `ICECheckboxGroup` `ICERadioButton` `ICERadioGroup` `ICESwitch` `ICESlider` `ICESegmented` `ICERate` `ICEColorPicker` `ICETransfer` `ICEUpload` `ICEForm` `ICEFormItem` |
 | Data display | `ICETable` `ICEList` `ICETree` `ICEStatCard` `ICEStatistic` `ICECard` `ICEComment` `ICEDescriptions` `ICETimeline` `ICEProgressBar` `ICEAvatar` `ICEAvatarGroup` `ICETag` `ICEBadge` `ICEImageView` `ICECarousel` `ICECollapse` `ICEWatermark` |
 | Feedback & status | `ICEAlert` `ICEModal` `ICEDrawer` `ICEMessage` `ICENotification` `ICETooltip` `ICEPopover` `ICEPopconfirm` `ICEEmpty` `ICESkeleton` `ICESpin` `ICEResult` `ICESteps` `ICEOverlayManager` |
-| Navigation | `ICEMenu` `ICEBreadcrumb` `ICEDropdown` `ICEPagination` `ICETabs` |
+| Navigation | `ICEMenu` `ICEBreadcrumb` `ICEAnchor` `ICEBackTop` `ICEDropdown` `ICEPagination` `ICETabs` |
 | Layout & core | `ICEWidget` `ICEContainer` `ICEScrollPane` `ICESplitter` `ICEHoverManager` `ICEFocusManager` `ICEMessageManager` `ICEManager` (`ICEPainter` / `ICELayoutManager` are types) |
 | Models | `ICEButtonModel` `ICEToggleModel` `ICEBoundedRangeModel` `ICESelectionModel` `ICEFormModel` |
 
 Helper functions: `attachTooltip` `attachPopover` `attachPopconfirm` `attachDropdown`
 `openModal` `openDrawer` `getICEOverlayManager` `getICEFocusManager` `getICEMessageManager`
-`formatStatisticValue` `formatCountdown` `tween` `fadeIn` `fadeOut` `slideIn` `scaleIn` and friends.
+`formatStatisticValue` `formatCountdown` `truncateTextLines` `tween` `fadeIn` `fadeOut` `slideIn` `scaleIn` and friends.
 
 ## Theme
 

@@ -9,6 +9,7 @@
 |  | [`ICEPanel`](./api/basic.md#icepanel) | 面板：带填充、描边、圆角与阴影的基础容器，业务页面的“卡片底座”。 |
 |  | [`ICEButton`](./api/basic.md#icebutton) | 按钮：`primary` / `default` / `text` / `link` 变体，`danger` 与三种尺寸， 自带 hover / 焦点 / 禁用态，点击时触发 `click`。 |
 |  | [`ICELabel`](./api/basic.md#icelabel) | 文本标签：包装引擎 `ICEText`，支持水平（`align`）与垂直（`verticalAlign`）对齐； 未显式给尺寸时采用文字的实测尺寸，便于参与流式/盒式布局。 |
+|  | [`ICETypography`](./api/basic.md#icetypography) | 排版文本（业界组件库 Typography）：标题层级 / 正文 / 链接，自带省略与折行。 |
 |  | [`ICEIcon`](./api/basic.md#iceicon) | 图标：一个居中的字形（★ ✓ ℹ …），字号与颜色可配。 |
 |  | [`ICESvgIcon`](./api/basic.md#icesvgicon) | SVG 路径图标：给一段 `d` 路径数据，按 `viewBox` 缩放到目标尺寸并描边。 |
 |  | [`ICESeparator`](./api/basic.md#iceseparator) | 分隔线：1px 的水平或垂直分隔。 |
@@ -66,6 +67,8 @@
 |  | [`ICESteps`](./api/feedback.md#icesteps) | 步骤条（业界组件库 Steps）：横向序号 + 标题/描述 + 连接线，当前步骤高亮、已完成打勾。 |
 | [导航](./api/navigation.md) | [`ICEMenu`](./api/navigation.md#icemenu) | 菜单：菜单项 +（可选）子菜单内联展开；选中态与悬停态分离，父项在子项选中时只做“当前分组”提示。 |
 |  | [`ICEBreadcrumb`](./api/navigation.md#icebreadcrumb) | 面包屑（业界组件库 Breadcrumb）：一行「路径 + 分隔符」，最后一项是当前页。 |
+|  | [`ICEAnchor`](./api/navigation.md#iceanchor) | 锚点导航（业界组件库 Anchor）：一列锚点，点击滚到目标位置，滚动时自动高亮当前项。  与 `ICEScrollPane` 配合使用：`target` 传滚动容器，`items[].top` 是该段落在 **内容坐标系**里的纵向位置。滚动事件由 `ICEScrollPane` 的 `scroll` 事件驱动。 |
+|  | [`ICEBackTop`](./api/navigation.md#icebacktop) | 回到顶部（业界组件库 BackTop）：一个小圆按钮，滚动超过阈值才出现。  用法是把滚动容器交给它：`new ICEBackTop({ target: scrollPane })`。 依赖 `ICEScrollPane` 的 `scroll` 事件（滚动位置变化时派发）， 点击后把目标滚回 `(0, 0)` 并回调 `onClick`。 |
 |  | [`ICEDropdown`](./api/navigation.md#icedropdown) | 下拉菜单：点击触发组件弹出选项列表。 |
 |  | [`ICEPagination`](./api/navigation.md#icepagination) | 分页器：页码 + 上一页/下一页 + 可选「共 N 条」与每页条数切换。 |
 |  | [`ICETabs`](./api/navigation.md#icetabs) | 标签页：一组互斥按钮，`onChange` 通知切换（程序式 `setActiveIndex` 不触发回调）。 |

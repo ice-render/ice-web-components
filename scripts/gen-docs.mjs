@@ -28,7 +28,17 @@ const GROUPS = [
     file: 'basic',
     title: '基础组件',
     intro: '所有组件的最小构件：面板、按钮、文本、图标与分隔线。',
-    entries: ['ICEWidget', 'ICEContainer', 'ICEPanel', 'ICEButton', 'ICELabel', 'ICEIcon', 'ICESvgIcon', 'ICESeparator'],
+    entries: [
+      'ICEWidget',
+      'ICEContainer',
+      'ICEPanel',
+      'ICEButton',
+      'ICELabel',
+      'ICETypography',
+      'ICEIcon',
+      'ICESvgIcon',
+      'ICESeparator',
+    ],
   },
   {
     file: 'data-entry',
@@ -106,8 +116,8 @@ const GROUPS = [
   {
     file: 'navigation',
     title: '导航',
-    intro: '菜单、面包屑、下拉触发、分页与标签页。',
-    entries: ['ICEMenu', 'ICEBreadcrumb', 'ICEDropdown', 'ICEPagination', 'ICETabs'],
+    intro: '菜单、面包屑、锚点导航、回到顶部、下拉触发、分页与标签页。',
+    entries: ['ICEMenu', 'ICEBreadcrumb', 'ICEAnchor', 'ICEBackTop', 'ICEDropdown', 'ICEPagination', 'ICETabs'],
   },
   {
     file: 'core',
@@ -147,6 +157,7 @@ const GROUPS = [
       'estimateTextWidth',
       'formatStatisticValue',
       'formatCountdown',
+      'truncateTextLines',
       'tooltipPanelWidth',
       'readHovered',
       'createTextNode',
