@@ -176,6 +176,13 @@ Minesweeper is the full game: beginner / intermediate / expert, first-click-safe
 placement, flood fill, right-click flag cycle (🚩 / ❓), chord on double click, LED
 counters, a timer that starts on the first click, and per-difficulty best times. Its
 rules live in a tested pure model (`ICEMinesweeperModel`) — the UI only draws it.
+
+Internet Explorer is a **real** browser too: the address bar `fetch()`es the URL,
+`DOMParser` parses the HTML, and the title / headings / paragraphs / links / images are
+drawn with canvas components inside a scroll pane (with back / forward / refresh).
+Same-origin pages always work; other sites obey CORS like any browser, and failures
+land on an XP-style error page. Serve the folder over http (`npx serve .`) — `fetch`
+does not work from `file://`.
 Right-click works because `ICE.init()` no longer stops the `contextmenu` event on its
 way to the dispatcher (ice-render 1.4.1).
 

@@ -82,6 +82,10 @@ npx serve .
 
 ![Windows XP 桌面](../images/xp-desktop.png)
 
+Windows 里的「IE」是真会抓网页的（下图是它 `fetch()` 本目录 `gallery.html` 后的渲染结果）：
+
+![IE 真的打开了页面](../images/xp-ie.png)
+
 **为此新添的两个通用组件**：
 
 | 组件 | 作用 |
@@ -98,7 +102,7 @@ npx serve .
 | 记事本 | `ICETextArea` + 下拉菜单（`attachDropdown`）+ 状态栏 |
 | 画图 | 页面内自定义的 `XPaintCanvas`（继承 `ICEWidget`，用引擎 `ICEPolyLine` 记录每一笔）+ 色板 + `ICESlider` 笔刷粗细 |
 | 扫雷 | `ICEMinesweeperModel`（纯逻辑模型）+ 自绘格子：初级/中级/高级、首点安全、洪水填充、右键插旗（🚩/❓ 循环）、双击数字 chord、LED 计数、计时、笑脸重开、最佳成绩 |
-| Internet Explorer | 地址栏 `ICETextField` + 转到按钮 + 列表链接 + 状态栏 |
+| Internet Explorer | **真的会 `fetch()` 网页**：地址栏 + ←/→/刷新 + `DOMParser` 解析 HTML，再把标题/段落/链接/图片用 `ICETypography`、`ICEImageView` 画出来；抓不到时给 XP 风格错误页 |
 | 显示 属性 | `ICERadioGroup` 选壁纸 + 预览块 + 应用/取消（应用后立即重绘桌面） |
 
 **外壳交互**：任务栏（开始按钮 / 任务按钮 / 托盘时钟，时钟每秒走）、开始菜单（`ICEOverlayManager`
@@ -161,6 +165,20 @@ setInterval(() => model.tick(), 1000);      // 计时（只有 playing 会累加
 > `preventDefault()` + `stopPropagation()` 屏蔽原生菜单，而 stopPropagation 让事件
 > 到不了 `DOMEventInterceptor`，组件永远收不到 `contextmenu`。现在只 `preventDefault()`，
 > 事件继续冒泡 → 组件能收到右键（ice-render 1.4.1）。
+
+### IE：一个真的能上网的 canvas 浏览器
+
+地址栏回车（或点「转到」）会 `fetch()` 那个 URL，用 `DOMParser` 解析 HTML，
+然后把标题（`<title>`）、`h1~h3`、`p/li/blockquote`、`<a>`、`<img>` 依次用
+`ICETypography`（标题/正文自动折行、链接可点）、`ICEImageView` 渲染进 `ICEScrollPane`，
+并带后退/前进/刷新与状态栏。
+
+浏览器同源策略同样适用（这也是它和真 IE 的差别）：
+
+- **同源页面一定行**：`./gallery.html`、`./workbench.html`、`./admin.html`、本页自身；
+- **CORS 友好的站点行**，其它站点会像"没网"一样失败 → 落到 XP 风格错误页，页面上给出可点的本地示例链接；
+- **必须用 http(s) 打开示例**（`npx serve .`），因为 `fetch` 在 `file://` 下不可用；
+- 换句话说：能不能"真的访问"，取决于目标站点的 CORS 头，不是我们的渲染能力。
 
 ---
 

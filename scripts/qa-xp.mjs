@@ -15,6 +15,8 @@
  * 6. 任务栏时钟是 HH:MM 且会走。
  */
 import { createRequire } from 'node:module';
+import http from 'node:http';
+import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 
@@ -37,7 +39,34 @@ function loadPlaywright() {
 }
 
 const { chromium } = loadPlaywright();
-const URL = 'file://' + path.resolve(process.cwd(), 'examples/windows-xp.html');
+
+/**
+ * 用静态服务器打开页面（而不是 file://）。
+ *
+ * 原因：XP 里的「IE」是真的会 `fetch()` 的 —— 而 fetch 在 file:// 下不可用，
+ * 同源抓取（比如打开本目录的 gallery.html）必须走 http(s) 才能演示。
+ */
+const ROOT = process.cwd();
+const server = http.createServer((req, res) => {
+  const relative = decodeURIComponent(String(req.url || '/').split('?')[0]);
+  const file = path.join(ROOT, relative);
+  if (!file.startsWith(ROOT)) {
+    res.statusCode = 403;
+    res.end('forbidden');
+    return;
+  }
+  fs.readFile(file, (err, data) => {
+    if (err) {
+      res.statusCode = 404;
+      res.end('not found');
+      return;
+    }
+    res.setHeader('content-type', file.endsWith('.html') ? 'text/html; charset=utf-8' : 'application/octet-stream');
+    res.end(data);
+  });
+});
+await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+const URL = `http://127.0.0.1:${server.address().port}/examples/windows-xp.html`;
 
 const failures = [];
 const check = (name, ok, detail = '') => {
@@ -48,9 +77,13 @@ const check = (name, ok, detail = '') => {
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1460, height: 920 }, deviceScaleFactor: 1 });
 const errors = [];
+/** IE 用例会故意访问一个不存在的地址，浏览器必然报 404 —— 那段时间里的资源错误不算失败。 */
+let allowResource404 = false;
 page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
 page.on('console', (m) => {
-  if (m.type() === 'error') errors.push('console: ' + m.text());
+  if (m.type() !== 'error') return;
+  if (allowResource404 && /Failed to load resource/.test(m.text())) return;
+  errors.push('console: ' + m.text());
 });
 await page.goto(URL);
 await page.waitForTimeout(1200);
@@ -333,9 +366,43 @@ check(
 const clock = await page.evaluate(() => window.__result.clockLabel.getText());
 check('任务栏时钟是 HH:MM', /^\d{2}:\d{2}$/.test(clock), clock);
 
+/* ---------- 7. IE：真的会 fetch 网页 ---------- */
+await page.evaluate(() => window.__result.openApp(window.__result.APPS.find((a) => a.key === 'ie')));
+await page.waitForTimeout(1400);
+const ieHome = await page.evaluate(() => {
+  const ie = window.__result.handles.ie;
+  const texts = ie.page.childNodes.map((n) => (n.getText ? n.getText() : '')).join(' | ');
+  return { status: ie.status.getText(), url: ie.getUrl(), hasTitle: /gallery/i.test(texts), blocks: ie.page.childNodes.length };
+});
+check(
+  'IE：打开后真的抓取并渲染了本目录页面',
+  /完成/.test(ieHome.status) && ieHome.hasTitle && ieHome.blocks > 1,
+  JSON.stringify(ieHome),
+);
+
+// 故意访问不存在的地址：浏览器会报 404 资源错误，先放行
+allowResource404 = true;
+const ieMissing = await page.evaluate(async () => {
+  const ie = window.__result.handles.ie;
+  await ie.load('./definitely-not-here.html');
+  const texts = ie.page.childNodes.map((n) => (n.getText ? n.getText() : '')).join(' | ');
+  return { status: ie.status.getText(), hasError: texts.indexOf('无法显示该网页') !== -1 };
+});
+check('IE：抓不到时显示 XP 风格错误页', ieMissing.hasError && /错误|完成/.test(ieMissing.status), JSON.stringify(ieMissing));
+
+const ieBack = await clickExpr('window.__result.handles.ie.backButton');
+await page.waitForTimeout(900);
+const ieBackState = await page.evaluate(() => {
+  const ie = window.__result.handles.ie;
+  const texts = ie.page.childNodes.map((n) => (n.getText ? n.getText() : '')).join(' | ');
+  return { status: ie.status.getText(), hasTitle: /gallery/i.test(texts) };
+});
+check('IE：后退回到上一页', ieBack && ieBackState.hasTitle && /完成/.test(ieBackState.status), JSON.stringify(ieBackState));
+
 check('无 console error / pageerror', errors.length === 0, errors.slice(0, 3).join(' | '));
 
 await page.screenshot({ path: '/tmp/qa-xp.png' });
+server.close();
 await browser.close();
 
 if (failures.length) {
