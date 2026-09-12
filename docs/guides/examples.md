@@ -16,7 +16,7 @@ npx serve .
 | [`workbench.html`](../../examples/workbench.html) | 客服工单工作台（三栏高频操作） | `ICESplitter`、`ICEList`、`ICEComment`、`ICETimeline`… |
 | [`custom-component.html`](../../examples/custom-component.html) | 自己写组件并接进体系 | `ICEWidget` + 表单/焦点/主题约定 |
 | [`windows-xp.html`](../../examples/windows-xp.html) | 全屏 Windows XP 桌面（好玩的那一个） | `ICEWindow`、`ICEIconTile` + 几乎全套组件 |
-| [`arcade.html`](../../examples/arcade.html) | ICE Arcade 掌机（小游戏合集：俄罗斯方块 + 贪吃蛇 + 2048） | `ICETetrisModel` / `ICESnakeModel`（纯逻辑）+ 自绘棋盘/HUD，键盘全接管 |
+| [`arcade.html`](../../examples/arcade.html) | ICE Arcade 掌机（小游戏合集：俄罗斯方块 + 贪吃蛇 + 2048 + CHIP-8 虚拟机） | `ICETetrisModel` / `ICESnakeModel` / `ICE2048Model` / `ICEChip8Model`（纯逻辑）+ 自绘棋盘/HUD，键盘全接管 |
 
 ![组件总览](../images/gallery.png)
 
@@ -287,18 +287,21 @@ setInterval(() => model.tick(), 1000);      // 计时（只有 playing 会累加
 
 ---
 
-## `arcade.html`：ICE Arcade（小游戏合集，两块卡带）
+## `arcade.html`：ICE Arcade（小游戏合集，四块卡带）
 
 同样是「把组件当积木」，但换了个方向：做的不是业务页面，而是一台**掌机**。
 机壳、屏幕框、HUD 卡片（`ICEPanel`）/数值（`ICELabel`）/进度（`ICEProgressBar`）/按钮
 （`ICEButton`）/音效开关（`ICESwitch`）全是组件，画面里没有一个位图资源。顶部是卡带位：
-**俄罗斯方块**（第 1 弹）、**贪吃蛇**（第 2 弹）、**2048**（第 3 弹）都能玩，第四格「中国象棋」先占位禁用。
+**俄罗斯方块**（第 1 弹）、**贪吃蛇**（第 2 弹）、**2048**（第 3 弹）、**CHIP-8**（第 4 弹）
+都能玩，第五格「中国象棋」先占位禁用。
 
-| 俄罗斯方块 | 贪吃蛇 |
-|---|---|
-| ![ICE Arcade 俄罗斯方块](../images/arcade-tetris.png) | ![ICE Arcade 贪吃蛇](../images/arcade-snake.png) |
+| 俄罗斯方块 | 贪吃蛇 | 2048 |
+|---|---|---|
+| ![ICE Arcade 俄罗斯方块](../images/arcade-tetris.png) | ![ICE Arcade 贪吃蛇](../images/arcade-snake.png) | ![ICE Arcade 2048](../images/arcade-2048.png) |
 
-### 两块卡带共用一套契约
+![ICE Arcade · CHIP-8](../images/arcade-chip8.png)
+
+### 四块卡带共用一套契约
 
 卡带写在 `GAMES` 注册表里，每块卡带的 `mount(ctx)` 返回**同一套运行时契约**：
 
@@ -308,6 +311,8 @@ setInterval(() => model.tick(), 1000);      // 计时（只有 playing 会累加
   paint(),                  // 重画自己的棋盘
   hud(),                    // { score, mid, right, progress } → 三张 HUD 卡片 + 进度条
   keydown(key, repeating),  // 键盘（P 暂停 / R 重开由页面统一处理）
+  keyup(key),               // 可选：需要「按下 / 松开」两个事件的卡带（CHIP-8）
+  keys: ['1', 'q', ...],    // 可选：声明这块卡带占用的键，外壳的快捷键让路
   frame(dt, now),           // 每帧：重力 / 步进
   setOverlay(paused, over), // 屏幕上的「已暂停 / GAME OVER」提示层
   destroy(),                // 换卡带时拆掉自己
@@ -315,14 +320,18 @@ setInterval(() => model.tick(), 1000);      // 计时（只有 playing 会累加
 ```
 
 换卡带就是「销毁旧的 → 清空屏幕与侧栏 → 建新的 → 重挂监听 → 重画 HUD」，连卡片标题
-（`消行 LINES` ↔ `长度 LENGTH`）和操作说明都是卡带自己声明的。加第三块卡带只需要：
+（`消行 LINES` ↔ `长度 LENGTH` ↔ `指令 CYCLES`）和操作说明都是卡带自己声明的。加一块卡带只需要：
 写一个可单测的模型 + 在 `GAMES` 里加一项。
+
+> **键盘优先级**：外壳默认把 `P`（暂停）/ `R`（重开）/ `L`（排行榜）留给自己，其余键转发给卡带。
+> CHIP-8 的机器键盘占满 `1234 QWER ASDF ZXCV`，连 `R` 都得让给它（否则那块 ROM 永远按不出 7 号键），
+> 所以卡带可以用 `keys` 声明「这些键归我」——声明过就优先归卡带，外壳的快捷键让路。
 
 ### 这一页用到的引擎 / 组件能力
 
 | 能力 | 用在哪 | 为什么值得看 |
 |---|---|---|
-| `ICETileMap`（自绘格子图） | 三块棋盘各是**一个**节点（2048 的数字走标签层） | 以前「一格一个 ICEWidget」= 400 个节点；现在格子在自己的 `doRender()` 里用引擎 ctx 画，数据没变就不置 dirty。QA 直接断言 `childNodes.length === 0` 且有自绘计数 |
+| `ICETileMap`（自绘格子图） | 四块棋盘各是**一个**节点（2048 的数字走标签层，CHIP-8 的 2048 格显存 + 16 格键盘也是） | 以前「一格一个 ICEWidget」= 400 个节点；现在格子在自己的 `doRender()` 里用引擎 ctx 画，数据没变就不置 dirty。QA 直接断言 `childNodes.length === 0` 且有自绘计数 |
 | `registerTheme('arcade', ICE_ARCADE_THEME)` | HUD + 棋盘配色 | 方块 / 蛇 / 食物的颜色以 `ICE_ARCADE_PALETTE` 形式进 token，不再是页面里的硬编码 hex；换主题整套跟着走 |
 | `tween` / `fadeIn` / `scaleIn` | 消行与吃食物脉冲、换卡带淡入、GAME OVER 弹出 | 动画走库里的 `ICEAnimation`，不再手搓衰减；`ICETileMap.pulse()` 内部就是 tween |
 | `ICEHighScoreModel` | 每块卡带各一份 Top 5 | 纯逻辑（排序 / 截断 / 并列 / 存档容错 / 注入 storage），有单测；页面只负责展示 |
@@ -336,7 +345,7 @@ setInterval(() => model.tick(), 1000);      // 计时（只有 playing 会累加
 > 否则画出来的东西会跑到画布左上角（这条是引擎专门为「super 之后再画」留的口子）。
 
 > 卡带按钮的选中态不靠改属性实现：`ICEButton` 的 `variant` 是构造期定的（没有
-> `setVariant`），所以切换时**重建这一行按钮**最省心 —— 反正只有三格。
+> `setVariant`），所以切换时**重建这一行按钮**最省心 —— 反正只有四五格。
 
 ### 卡带 1：俄罗斯方块
 
@@ -414,6 +423,53 @@ model.pause(); model.resume(); // 和其它卡带共用同一套暂停契约
 依旧只有 **1 个节点**。这一层是这轮为 2048 加的（单测用假 ctx 记 `fillText` 的坐标与字体）。
 
 ![ICE Arcade 2048](../images/arcade-2048.png)
+
+### 卡带 4：CHIP-8（真的模拟器，不是规则模型）
+
+前三块卡带都是「某款游戏的规则」，第四块换了物种：`ICEChip8Model`
+（[模型 API](../api/models.md#icechip8model)，19 条单测）是一台**真的虚拟机** ——
+4KB 内存、`V0`–`VF` 十六个 8 位寄存器、16 位地址寄存器 `I`、64×32 单色显存、
+两个 60Hz 定时器、16 键键盘，实现了 35 条指令（`00E0` / `1NNN` / `2NNN` / `DXYN` /
+`EX9E` / `FX0A` / `FX29` / `FX33` / `FX55` / `FX65` …）：
+
+```ts
+import { ICEChip8Model, ICE_CHIP8_DEMO_ROM } from 'ice-web-components';
+
+const model = new ICEChip8Model();
+model.loadProgram(ICE_CHIP8_DEMO_ROM); // 自带 demo ROM（自写，不依赖任何外部 ROM）
+model.step();                          // 执行一条指令（FX0A 等按键时 PC 不动）
+model.tickTimers();                    // 60Hz：递减延时 / 声音定时器
+model.setKey(5, true);                 // 机器键盘：按下 …
+model.setKey(5, false);                // … 松开（FX0A 就靠这个）
+model.pause(); model.resume();         // 与其它三块卡带共用同一套暂停契约
+```
+
+规则里的坑都写进用例了：
+
+* **`DXYN` 是按位异或**：亮点画上去、碰上已有亮点就擦掉，并把 `VF` 置 1（游戏碰撞的经典做法）；
+  `VX` / `VY` 坐标对 64 / 32 取模，所以精灵会从对边绕回来；
+* **`FX0A` 阻塞等按键**：没按键时 PC 原地不动、也不计周期 —— 页面必须转发 `keyup`，
+  不然按键状态会一直卡住（失焦时也要清）；
+* **自写 demo ROM**：清屏 → 画一个 8×8 笑脸 → 按 `(V2,V3)` 走一步 → **撞边就把速度取反** → 跳回清屏。
+  它顺便把条件跳过（`4XNN`）与补码减法演了一遍。测试断言里有一条很直白：
+  「笑脸的横向 / 纵向跨度永远 ≤ 7 格」——裂到对边（绕回）就说明撞边逻辑坏了；
+* **定时器由页面按真实时间驱动**：`tickTimers()` 不管「过了多久」，页面每帧按 60Hz 扣。
+
+画面上，64×32 的显存和 4×4 的机器键盘各是**一个 `ICETileMap` 节点**（合计 2064 格）。
+键盘不只是装饰：按下去的键会点亮，`keydown` / `keyup` 这条链路因此肉眼可见，
+`FX0A` 卡在哪一眼能看出来。显存的暗像素走单独的 token `chip8Off`（棋盘那种「暗格 + 描边」
+在 2048 格上会糊成摩尔纹）。
+
+> **顺手修的两个引擎问题**（都是这块卡带逼出来的）：
+> 1. **离屏缓存把祖先的不透明度烤进了位图**。位图是 `renderTo()` 用当时的
+>    `getEffectiveOpacity()` 画出来的，而贴图路径只做 `drawImage`（不叠 alpha）——
+>    于是淡入的面板里，文字会永远停在那一刻的透明度：起点 `opacity=0` 的直接烤成空位图
+>    （「暂停底板出来了、‘已暂停’三个字整条不见」，模态 / 抽屉 / 消息全中招）。
+>    现在「有效不透明度 ≠ 1」不进缓存，并且会丢掉烤过旧 alpha 的位图（引擎侧带单测）；
+> 2. **卡带需要声明自己占用的键**。外壳原本把 `P/R/L` 写死成自己的快捷键，
+>    CHIP-8 的 `R` 就永远按不出来；现在卡带用 `keys` 声明优先级，外壳让路。
+
+![ICE Arcade 暂停提示](../images/arcade-paused.png)
 
 > 顺手修的一个真实 UX 问题：`ICEMessage` 默认是**堆叠**的，掌机连着弹三四个提示就会盖住
 > 下面的卡带行 —— QA 里「点卡带」真的被气泡吃掉了。现在掌机只保留**一条状态线**

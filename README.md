@@ -27,10 +27,10 @@ rings and shadows) is drawn by the engine.
 - **Bootstrap 5 token theme** (plus a dark theme) — swap with one call.
 - **No name collisions with the engine** — the package’s runtime exports are
   disjoint from `ice-render`’s (there is a regression test for it).
-- **Actually tested** — 705 unit tests (98 suites: form validation, overlay
-  positioning, keyboard navigation, sort/hover/focus edge cases, the Minesweeper,
-  Tetris and Snake rule models) plus five browser QA suites (`qa:admin`, `qa:gallery`,
-  `qa:workbench`, `qa:xp`, `qa:arcade` — 198 assertions) that drive the demo pages with
+- **Actually tested** — 723 unit tests (99 suites: form validation, overlay
+  positioning, keyboard navigation, sort/hover/focus edge cases, and the Minesweeper,
+  Tetris, Snake, 2048 and CHIP-8 rule/machine models) plus five browser QA suites
+  (`qa:admin`, `qa:gallery`, `qa:workbench`, `qa:xp`, `qa:arcade` — 208 assertions) that drive the demo pages with
   real mouse and keyboard events and fail on any console error.
 
 ## Quick start
@@ -216,8 +216,8 @@ that window is active; closing the window stops its step timer.
 
 Not a web page but a **handheld console**: the shell, the screen bezel, the HUD cards,
 the buttons and the sound switch are all ICE components, and there is not a single
-bitmap asset in the picture. Three cartridges are plugged in, and the cartridge row at
-the top switches between them (a fourth slot, Chinese chess, is disabled for now).
+bitmap asset in the picture. Four cartridges are plugged in, and the cartridge row at
+the top switches between them (a fifth slot, Chinese chess, is disabled for now).
 
 | | |
 |---|---|
@@ -248,10 +248,32 @@ weight and text colour, so a 4×4 board with 16 numbers is still one node.
 
 ![ICE Arcade · 2048](docs/images/arcade-2048.png)
 
-Both games are pure models that never touch the canvas; the page only reads the model
+**Cartridge 4 — CHIP-8** (`ICEChip8Model`, 19 unit tests). The odd one out: instead of
+“the rules of a game” it is **an actual virtual machine** — 4 KB of memory, `V0`–`VF`,
+the 16-bit `I` register, a 64×32 monochrome framebuffer, two 60 Hz timers and a 16-key
+keypad. 35 opcodes are implemented (`00E0` / `1NNN` / `2NNN` / `DXYN` / `EX9E` / `FX0A` /
+`FX29` / `FX33` / `FX55` …), including `DXYN`’s XOR drawing with the classic
+`VF = collision` flag and `FX0A` blocking key waits.
+
+The console ships a **self-written demo ROM** (no external ROM, no copyright questions):
+it clears the screen, draws an 8×8 smiley, moves it, flips its velocity when a wall is
+reached, and loops — which exercises conditional skips and two’s-complement arithmetic
+as well as drawing. Both the 2048-cell framebuffer and the 4×4 machine keypad are single
+`ICETileMap` nodes; the keys light up while pressed, which makes the `keydown` / `keyup`
+path visible. On that cartridge the machine owns its 16 keys (`1 2 3 4 / Q W E R / A S D F
+/ Z X C V`), so the console hands even `R` to the ROM and keeps `P` for pause.
+
+![ICE Arcade · CHIP-8](docs/images/arcade-chip8.png)
+
+All four games are pure models that never touch the canvas; the page only reads the model
 and paints cells. Switching a cartridge tears the old board down, builds the new one
-and re-captions the HUD, so a third game is a registry entry plus a `mount()`.
-Switching away from the tab pauses whatever is running.
+and re-captions the HUD, so another game is a registry entry plus a `mount()`.
+Switching away from the tab pauses whatever is running (CHIP-8 also drops its pressed
+keys, otherwise a lost `keyup` would leave `FX0A` waiting forever).
+
+| Pause overlay (`已暂停`) |
+|---|
+| ![ICE Arcade paused](docs/images/arcade-paused.png) |
 
 Under the hood this page is where the engine work happens:
 
@@ -271,6 +293,10 @@ Under the hood this page is where the engine work happens:
 - Toasts are **replaced, not stacked**: a console only needs one status line, and the QA
   caught a stack of three toasts covering the cartridge row (the click never reached the
   button). `ICEMessage` still supports stacking for pages that want it.
+- CHIP-8 also drove two engine fixes: an offscreen-cache bug where a bitmap baked the
+  *ancestor’s* opacity (so the pause plate faded in but its “已暂停” text never appeared —
+  translucent subtrees are no longer cached, and stale bitmaps are dropped), and
+  keyboard routing that lets a cartridge declare the keys it owns.
 
 | Leaderboard (`ICEModal` + `ICETable` + `ICEScrollPane`) |
 |---|
@@ -292,7 +318,7 @@ Under the hood this page is where the engine work happens:
 | Feedback & status | `ICEAlert` `ICEModal` `ICEDrawer` `ICEMessage` `ICENotification` `ICETooltip` `ICEPopover` `ICEPopconfirm` `ICETour` `ICEFloatButton` `ICEEmpty` `ICESkeleton` `ICESpin` `ICEResult` `ICESteps` `ICEOverlayManager` |
 | Navigation | `ICEMenu` `ICEBreadcrumb` `ICEAnchor` `ICEBackTop` `ICEDropdown` `ICEPagination` `ICETabs` |
 | Layout & core | `ICEWidget` `ICEContainer` `ICEHoverManager` `ICEFocusManager` `ICEMessageManager` `ICEManager` (`ICEPainter` / `ICELayoutManager` are types) |
-| Models | `ICEButtonModel` `ICEToggleModel` `ICEBoundedRangeModel` `ICESelectionModel` `ICEFormModel` |
+| Models | `ICEButtonModel` `ICEToggleModel` `ICEBoundedRangeModel` `ICESelectionModel` `ICEFormModel` `ICETetrisModel` `ICESnakeModel` `ICE2048Model` `ICEChip8Model` `ICEMinesweeperModel` `ICEHighScoreModel` |
 
 Helper functions: `attachTooltip` `attachPopover` `attachPopconfirm` `attachDropdown`
 `openModal` `openDrawer` `getICEOverlayManager` `getICEFocusManager` `getICEMessageManager`
