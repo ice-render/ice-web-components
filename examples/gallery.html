@@ -18,7 +18,8 @@
     }
   </style>
   <body>
-    <h1 style="font-size: 20px; margin: 0 0 16px">ice-web-components gallery</h1>
+    <h1 style="font-size: 20px; margin: 0 0 4px">ice-web-components gallery</h1>
+    <p style="margin: 0 0 16px; color: #6c757d">Canvas-native, Swing-style ICE components</p>
     <canvas id="canvas" width="1400" height="1960"></canvas>
 
     <script src="../node_modules/ice-render/dist/index.umd.js"></script>
@@ -44,6 +45,113 @@
 
       const caption = (text, left, top) =>
         new W.ICELabel({ left, top, text, style: { fontSize: 12, fillStyle: theme.colors.textSecondary } });
+
+      /**
+       * 极简流式布局：把每个演示（cluster = 一组必须放在一起的组件）摆进面板。
+       *
+       * - cluster **内部保持相对位置不变**（作者按局部坐标写，整体平移即可），
+       *   所以「输入框 + 它的提示文字」「图片 + 图注」这类组合不会被打散；
+       * - 一行放不下就换行，行内**垂直居中**（高矮不一的按钮不会被顶歪）；
+       * - 每个 section 自带小标题；面板高度按内容算，不用再手工找空位。
+       *
+       * 之前靠手写绝对坐标排 60+ 个演示，结果是「新演示只能塞进缝里」，最后出现交叠。
+       */
+      const flowSections = (panel, sections, options = {}) => {
+        const padX = options.padX ?? 28;
+        const padTop = options.padTop ?? 24;
+        const padBottom = options.padBottom ?? 26;
+        const gapX = options.gapX ?? 20;
+        const gapY = options.gapY ?? 14;
+        const headingHeight = options.headingHeight ?? 20;
+        const headingGap = options.headingGap ?? 10;
+        const sectionGap = options.sectionGap ?? 22;
+        const width = Number(panel.state.width) || 0;
+        const avail = width - padX * 2;
+        // 幂等：允许重复调用（首帧渲染后再跑一次，让「渲染时才定高」的组件拿到真实尺寸）。
+        // 标题只创建一次；已在面板里的节点不再重复 addChild（否则会重复挂载）。
+        const attach = (node) => {
+          if (node.parentNode !== panel) panel.addChild(node, false);
+        };
+
+        // 量一个 cluster 的包围盒：**含后代**（例如 ICESpin 右侧的 tip 文字），
+        // 但遇到 clipChildren 容器就以它自身为界（否则轮播里排在屏外的幻灯片会撑爆宽度）。
+        const measure = (cluster) => {
+          let l = Infinity;
+          let t = Infinity;
+          let r = -Infinity;
+          let b = -Infinity;
+          const visit = (node, dx, dy) => {
+            const x = dx + (Number(node.state.left) || 0);
+            const y = dy + (Number(node.state.top) || 0);
+            const w = Number(node.state.width) || 0;
+            const h = Number(node.state.height) || 0;
+            l = Math.min(l, x);
+            t = Math.min(t, y);
+            r = Math.max(r, x + w);
+            b = Math.max(b, y + h);
+            if (node.state.clipChildren) return;
+            (node.childNodes || []).forEach((child) => {
+              if (child.state && child.state.display !== false) visit(child, x, y);
+            });
+          };
+          cluster.forEach((node) => visit(node, 0, 0));
+          return { l, t, w: r - l, h: b - t };
+        };
+        const shift = (cluster, dx, dy) =>
+          cluster.forEach((node) =>
+            node.setState({ left: (Number(node.state.left) || 0) + dx, top: (Number(node.state.top) || 0) + dy }),
+          );
+
+        // ① 组行
+        const lines = [];
+        sections.forEach((section, index) => {
+          if (section.title) lines.push({ kind: 'heading', section, title: section.title, first: index === 0 });
+          // 货架式排放（first-fit）：优先回填到「还放得下」的上一行，
+          // 而不是一味往后换行 —— 否则小徽标/小按钮会把页面撑得极高。
+          const shelves = [];
+          section.items.forEach((entry) => {
+            const cluster = Array.isArray(entry) ? entry : [entry];
+            const m = measure(cluster);
+            let shelf = shelves.find((s) => s.used + m.w <= avail);
+            if (!shelf) {
+              shelf = { used: 0, h: 0, items: [] };
+              shelves.push(shelf);
+            }
+            shelf.items.push({ cluster, m });
+            shelf.used += m.w + gapX;
+            shelf.h = Math.max(shelf.h, m.h);
+          });
+          shelves.forEach((shelf) => lines.push({ kind: 'row', row: shelf.items, h: shelf.h }));
+        });
+        lines.forEach((line) => {
+          if (line.h === undefined) line.h = headingHeight;
+        });
+
+        // ② 落位
+        let y = padTop;
+        lines.forEach((line, index) => {
+          if (line.kind === 'heading') {
+            if (index > 0) y += sectionGap;
+            // 标题缓存在 section 上（lines 每次调用都会重建，缓存在行上会重复创建标题）
+            const title = line.section.__heading || (line.section.__heading = heading(line.title, 0, 0));
+            title.setState({ left: padX, top: y, width: avail, height: headingHeight });
+            attach(title);
+            y += line.h + headingGap;
+            return;
+          }
+          let x = padX;
+          line.row.forEach((entry) => {
+            const dy = y + Math.max(0, (line.h - entry.m.h) / 2);
+            shift(entry.cluster, x - entry.m.l, dy - entry.m.t);
+            entry.cluster.forEach(attach);
+            x += entry.m.w + gapX;
+          });
+          y += line.h + gapY;
+        });
+        const height = y - gapY + padBottom;
+        panel.setState({ height });
+        return height;
+      };
 
       const panel = new W.ICEPanel({ id: 'panel', left: 24, top: 24, width: 1352, height: 1912 });
 
@@ -386,12 +494,6 @@
       });
 
       // 高级录入：数字步进框 / 自动完成
-      const inputsLabel = new W.ICELabel({
-        left: 1060,
-        top: 1226,
-        text: 'Inputs',
-        style: { fontSize: 13, fontWeight: '600', fillStyle: theme.colors.text },
-      });
       const quantity = new W.ICEInputNumber({
         id: 'quantity',
         left: 1060,
@@ -679,8 +781,8 @@
         );
       const imageFill = new W.ICEImageView({
         id: 'image-fill',
-        left: 900,
-        top: 1740,
+        left: 0,
+        top: 0,
         width: 120,
         height: 90,
         fit: 'fill',
@@ -688,8 +790,8 @@
       });
       const imageContain = new W.ICEImageView({
         id: 'image-contain',
-        left: 1040,
-        top: 1740,
+        left: 0,
+        top: 0,
         width: 120,
         height: 90,
         fit: 'contain',
@@ -697,175 +799,191 @@
       });
       const imageCover = new W.ICEImageView({
         id: 'image-cover',
-        left: 1180,
-        top: 1740,
+        left: 0,
+        top: 0,
         width: 120,
         height: 90,
         fit: 'cover',
         src: demoImageSrc,
       });
 
-      panel.addChildren([
-        heading('Buttons', 32, 28),
-
-        new W.ICEButton({ id: 'btn-primary', left: 32, top: 64, text: 'Primary', width: 96 }),
-        new W.ICEButton({ id: 'btn-default', left: 140, top: 64, text: 'Default', width: 96, variant: 'default' }),
-        new W.ICEButton({ id: 'btn-text', left: 248, top: 64, text: 'Text', width: 72, variant: 'text' }),
-        new W.ICEButton({ id: 'btn-link', left: 332, top: 64, text: 'Link', width: 72, variant: 'link' }),
-        new W.ICEButton({ id: 'btn-danger', left: 416, top: 64, text: 'Danger', width: 96, danger: true }),
-        new W.ICEButton({ id: 'btn-small', left: 524, top: 66, text: 'Small', width: 84, size: 'small' }),
-        new W.ICEButton({ id: 'btn-large', left: 620, top: 62, text: 'Large', width: 104, size: 'large' }),
-
-        heading('Badges & tags', 32, 128),
-
-        new W.ICEBadge({ id: 'badge-primary', left: 32, top: 166, text: '9', width: 32, height: 24 }),
-        new W.ICEBadge({ id: 'badge-success', left: 76, top: 166, text: 'OK', width: 40, height: 24, status: 'success' }),
-        new W.ICEBadge({ id: 'badge-warning', left: 128, top: 166, text: 'W', width: 32, height: 24, status: 'warning' }),
-        new W.ICEBadge({ id: 'badge-error', left: 172, top: 166, text: '5', width: 32, height: 24, status: 'error' }),
-        new W.ICEBadge({ id: 'badge-dot', left: 604, top: 178, dot: true, dotSize: 10 }),
-        new W.ICEBadge({ id: 'badge-count', left: 624, top: 166, width: 46, height: 24, count: 128 }),
-
-        new W.ICETag({ id: 'tag-default', left: 224, top: 168, text: 'Default', width: 82, height: 24 }),
-        new W.ICETag({ id: 'tag-success', left: 318, top: 168, text: 'Success', width: 88, height: 24, status: 'success' }),
-        new W.ICETag({ id: 'tag-warning', left: 418, top: 168, text: 'Warning', width: 86, height: 24, status: 'warning' }),
-        new W.ICETag({ id: 'tag-error', left: 516, top: 168, text: 'Error', width: 76, height: 24, status: 'error' }),
-
-        heading('Avatars & icons', 32, 226),
-
-        new W.ICEAvatar({ id: 'avatar-a', left: 32, top: 264, text: 'A', size: 36 }),
-        new W.ICEAvatar({ id: 'avatar-b', left: 82, top: 260, text: 'B', size: 44 }),
-        new W.ICEAvatar({ id: 'avatar-c', left: 140, top: 254, text: 'C', size: 56, backgroundColor: theme.colors.success }),
-
-        new W.ICEIcon({ id: 'icon-star', left: 220, top: 276, icon: '★', size: 24, color: theme.colors.warning }),
-        new W.ICEIcon({ id: 'icon-check', left: 258, top: 276, icon: '✓', size: 24, color: theme.colors.success }),
-        new W.ICEIcon({ id: 'icon-info', left: 296, top: 276, icon: 'ℹ', size: 24, color: theme.colors.info }),
-        avatarGroup,
-        closableAlert,
-
-        heading('Selection & progress', 32, 340),
-
-        new W.ICECheckBox({ id: 'check', left: 32, top: 382, width: 24, height: 24, selected: true }),
-        new W.ICERadioButton({ id: 'radio', left: 72, top: 382, width: 24, height: 24, selected: true }),
-        new W.ICESwitch({ id: 'switch', left: 116, top: 380, width: 52, height: 26, selected: true }),
-        new W.ICEProgressBar({ id: 'progress', left: 192, top: 388, value: 55, width: 220, height: 10 }),
-        new W.ICESlider({ id: 'slider', left: 440, top: 384, value: 40, width: 220, height: 18 }),
-        new W.ICESlider({
-          id: 'slider-range',
-          left: 680,
-          top: 384,
-          width: 220,
-          height: 18,
-          range: true,
-          min: 0,
-          max: 100,
-          step: 5,
-          value: [25, 70],
-        }),
-
-        heading('Containers', 32, 446),
-
-        new W.ICECard({
-          id: 'card',
-          left: 32,
-          top: 488,
-          title: 'Project summary',
-          width: 300,
-          height: 160,
-          // extra 传工厂：节点在卡片之后创建，zIndex 天然在上层
-          extra: () =>
-            new W.ICELabel({
+      // 演示清单：每个 item 要么是单个组件，要么是一组「必须贴在一起」的组件（数组）。
+      // 组件自带的 left/top 只是簇内局部坐标，实际位置由 flowSections 统一排。
+      const sections = [
+        {
+          title: 'Buttons',
+          items: [
+            new W.ICEButton({ id: 'btn-primary', left: 0, top: 0, text: 'Primary', width: 96 }),
+            new W.ICEButton({ id: 'btn-default', left: 0, top: 0, text: 'Default', width: 96, variant: 'default' }),
+            new W.ICEButton({ id: 'btn-text', left: 0, top: 0, text: 'Text', width: 72, variant: 'text' }),
+            new W.ICEButton({ id: 'btn-link', left: 0, top: 0, text: 'Link', width: 72, variant: 'link' }),
+            new W.ICEButton({ id: 'btn-danger', left: 0, top: 0, text: 'Danger', width: 96, danger: true }),
+            new W.ICEButton({ id: 'btn-small', left: 0, top: 0, text: 'Small', width: 84, size: 'small' }),
+            new W.ICEButton({ id: 'btn-large', left: 0, top: 0, text: 'Large', width: 104, size: 'large' }),
+          ],
+        },
+        {
+          title: 'Badges & tags',
+          items: [
+            new W.ICEBadge({ id: 'badge-primary', left: 0, top: 0, text: '9', width: 32, height: 24 }),
+            new W.ICEBadge({ id: 'badge-success', left: 0, top: 0, text: 'OK', width: 40, height: 24, status: 'success' }),
+            new W.ICEBadge({ id: 'badge-warning', left: 0, top: 0, text: 'W', width: 32, height: 24, status: 'warning' }),
+            new W.ICEBadge({ id: 'badge-error', left: 0, top: 0, text: '5', width: 32, height: 24, status: 'error' }),
+            new W.ICEBadge({ id: 'badge-dot', left: 0, top: 0, dot: true, dotSize: 10 }),
+            new W.ICEBadge({ id: 'badge-count', left: 0, top: 0, width: 46, height: 24, count: 128 }),
+            new W.ICETag({ id: 'tag-default', left: 0, top: 0, text: 'Default', width: 82, height: 24 }),
+            new W.ICETag({ id: 'tag-success', left: 0, top: 0, text: 'Success', width: 88, height: 24, status: 'success' }),
+            new W.ICETag({ id: 'tag-warning', left: 0, top: 0, text: 'Warning', width: 86, height: 24, status: 'warning' }),
+            new W.ICETag({ id: 'tag-error', left: 0, top: 0, text: 'Error', width: 76, height: 24, status: 'error' }),
+            // soft 变体（Bootstrap subtle 浅底 + 强调文字）与实底对照
+            new W.ICETag({ id: 'tag-soft', left: 0, top: 0, text: 'Soft', width: 76, height: 24, status: 'success', variant: 'soft' }),
+          ],
+        },
+        {
+          title: 'Avatars & icons',
+          items: [
+            [
+              new W.ICEAvatar({ id: 'avatar-a', left: 0, top: 28, text: 'A', size: 36 }),
+              new W.ICEAvatar({ id: 'avatar-b', left: 50, top: 24, text: 'B', size: 44 }),
+              new W.ICEAvatar({ id: 'avatar-c', left: 108, top: 18, text: 'C', size: 56, backgroundColor: theme.colors.success }),
+            ],
+            [
+              new W.ICEIcon({ id: 'icon-star', left: 0, top: 32, icon: '★', size: 24, color: theme.colors.warning }),
+              new W.ICEIcon({ id: 'icon-check', left: 38, top: 32, icon: '✓', size: 24, color: theme.colors.success }),
+              new W.ICEIcon({ id: 'icon-info', left: 76, top: 32, icon: 'ℹ', size: 24, color: theme.colors.info }),
+            ],
+            avatarGroup,
+          ],
+        },
+        {
+          title: 'Selection & progress',
+          items: [
+            new W.ICECheckBox({ id: 'check', left: 0, top: 0, width: 24, height: 24, selected: true }),
+            new W.ICERadioButton({ id: 'radio', left: 0, top: 0, width: 24, height: 24, selected: true }),
+            new W.ICESwitch({ id: 'switch', left: 0, top: 0, width: 52, height: 26, selected: true }),
+            new W.ICEProgressBar({ id: 'progress', left: 0, top: 0, value: 55, width: 220, height: 10 }),
+            new W.ICESlider({ id: 'slider', left: 0, top: 0, value: 40, width: 220, height: 18 }),
+            new W.ICESlider({
+              id: 'slider-range',
               left: 0,
               top: 0,
-              width: 40,
+              width: 220,
               height: 18,
-              text: 'More',
-              style: { fontSize: 12, fillStyle: theme.colors.primary },
+              range: true,
+              min: 0,
+              max: 100,
+              step: 5,
+              value: [25, 70],
             }),
-        }),
-        new W.ICETabs({ id: 'tabs', left: 360, top: 488, tabs: ['Overview', 'Activity', 'Settings'], width: 380, height: 40 }),
+          ],
+        },
+        {
+          title: 'Containers',
+          items: [
+            new W.ICECard({
+              id: 'card',
+              left: 0,
+              top: 0,
+              title: 'Project summary',
+              width: 300,
+              height: 160,
+              // extra 传工厂：节点在卡片之后创建，zIndex 天然在上层
+              extra: () =>
+                new W.ICELabel({
+                  left: 0,
+                  top: 0,
+                  width: 40,
+                  height: 18,
+                  text: 'More',
+                  style: { fontSize: 12, fillStyle: theme.colors.primary },
+                }),
+            }),
+            new W.ICETabs({ id: 'tabs', left: 0, top: 0, tabs: ['Overview', 'Activity', 'Settings'], width: 380, height: 40 }),
+            scrollPane,
+            new W.ICESeparator({ id: 'separator-h', left: 0, top: 0, width: 220, height: 1 }),
+            new W.ICESeparator({ id: 'separator-v', left: 0, top: 0, width: 1, height: 64 }),
+          ],
+        },
+        {
+          title: 'Form',
+          items: [[form, submitButton, submitHint]],
+        },
+        {
+          title: 'Feedback',
+          items: [
+            tipTarget,
+            popoverTarget,
+            [deleteTarget, deleteHint],
+            [modalTarget, modalHint],
+            messageTarget,
+            notifyTarget,
+            drawerTarget,
+            [pageHint, pagination],
+            [cityHint, citySelect],
+            [listHint, cityList],
+            [treeHint, tree],
+            closableAlert,
+          ],
+        },
+        {
+          title: 'More inputs & states',
+          items: [bioArea, passwordField, rangeSegmented, emptyState, skeleton],
+        },
+        {
+          title: 'Data display',
+          items: [collapsePanel, descriptions, timeline],
+        },
+        {
+          title: 'Inputs',
+          items: [
+            quantity,
+            cityAuto,
+            [treeSelectHint, dataTreeSelect],
+            [datePickerHint, datePicker],
+            [timeHint, timePicker],
+            cascader,
+          ],
+        },
+        {
+          title: 'Feedback & status',
+          items: [spin, rate, steps, result, progressCircle, progressCircleDone],
+        },
+        {
+          // 录入类收尾：色板 / 穿梭框 / 上传，宽度接近，放一节里能并排
+          title: 'More form controls',
+          items: [[colorPicker, colorHint], transfer, upload],
+        },
+        {
+          // 展示类收尾：评论 / 轮播 / 图片（图片带图注，各自成列）
+          title: 'Display',
+          items: [
+            comment,
+            carousel,
+            [imageFill, caption('fill', 0, 96)],
+            [imageContain, caption('contain', 0, 96)],
+            [imageCover, caption('cover', 0, 96)],
+          ],
+        },
+      ];
 
-        new W.ICESeparator({ id: 'separator-v', left: 780, top: 488, width: 1, height: 160 }),
-        new W.ICESeparator({ id: 'separator-h', left: 32, top: 700, width: 500, height: 1 }),
-
-        heading('Form', 420, 620),
-        form,
-        submitButton,
-        submitHint,
-
-        heading('Feedback', 820, 620),
-        tipTarget,
-        popoverTarget,
-        deleteTarget,
-        deleteHint,
-        modalTarget,
-        modalHint,
-        messageTarget,
-        notifyTarget,
-        drawerTarget,
-        pagination,
-        pageHint,
-        citySelect,
-        cityHint,
-        cityList,
-        listHint,
-        tree,
-        treeHint,
-        heading('More inputs & states', 32, 1030),
-        bioArea,
-        passwordField,
-        rangeSegmented,
-        emptyState,
-        skeleton,
-        heading('Data display', 32, 1220),
-        collapsePanel,
-        descriptions,
-        timeline,
-        inputsLabel,
-        quantity,
-        cityAuto,
-        dataTreeSelect,
-        treeSelectHint,
-        datePicker,
-        datePickerHint,
-        timePicker,
-        timeHint,
-        cascader,
-        heading('Feedback & status', 32, 1500),
-        spin,
-        rate,
-        steps,
-        result,
-        heading('Comment', 32, 1700),
-        comment,
-        heading('Color picker', 540, 1700),
-        colorPicker,
-        colorHint,
-        heading('Transfer', 880, 100),
-        transfer,
-        heading('Upload', 1000, 360),
-        upload,
-        progressCircle,
-        progressCircleDone,
-        heading('Carousel', 360, 866),
-        carousel,
-        heading('Images', 900, 1700),
-        imageFill,
-        caption('fill', 900, 1836),
-        imageContain,
-        caption('contain', 1040, 1836),
-        imageCover,
-        caption('cover', 1180, 1836),
-
-        heading('Scroll pane', 32, 706),
-        scrollPane,
-
-        new W.ICELabel({
-          left: 812,
-          top: 540,
-          text: 'Canvas-native, Swing-style',
-          style: { fontSize: 14, fillStyle: theme.colors.textSecondary },
-        }),
-      ]);
+      // 画布随内容长高：改元素尺寸 + 同步 ice.canvasWidth/Height（渲染器每帧都读它）
+      const syncCanvasToContent = (height) => {
+        panel.setState({ height });
+        const canvasEl = document.getElementById('canvas');
+        const nextWidth = Math.round(Number(panel.state.width) + 48);
+        const nextHeight = Math.round(height + 48);
+        if (canvasEl.width !== nextWidth || canvasEl.height !== nextHeight) {
+          canvasEl.width = nextWidth;
+          canvasEl.height = nextHeight;
+          canvasEl.style.width = nextWidth + 'px';
+          canvasEl.style.height = nextHeight + 'px';
+        }
+        ice.canvasWidth = nextWidth;
+        ice.canvasHeight = nextHeight;
+        ice.updateCanvasBoundingRect();
+        ice.dirty = true;
+      };
+      syncCanvasToContent(flowSections(panel, sections));
 
       // 下拉菜单演示：点 Default 弹菜单，选中后触发按钮文字更新
       const defaultButton = panel.childNodes.find((node) => node.state && node.state.id === 'btn-default');
@@ -922,6 +1040,12 @@
       });
 
       ice.addChild(panel);
+
+      // 首帧渲染后，个别组件（时间轴 / 描述列表）才算出真实高度 —— 再跑一次流式布局抹平误差
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => syncCanvasToContent(flowSections(panel, sections))),
+      );
+
       window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, submitHint, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, timePicker, timeHint, cascader, transfer, upload, carousel, avatarGroup, closableAlert, progressCircle, progressCircleDone, comment, colorPicker, colorHint, imageFill, imageContain, imageCover };
     </script>
   </body>
