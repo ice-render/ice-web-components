@@ -12,7 +12,7 @@ rings and shadows) is drawn by the engine.
 
 ## Highlights
 
-- **80+ components** — buttons, inputs, selects, tables, trees, menus, modals,
+- **89 components** — buttons, inputs, selects, tables, trees, menus, modals,
   drawers, notifications, uploads, date/time pickers, cascader, transfer, carousel,
   colour picker… and the small stuff (tags, badges, avatars, skeletons, spins).
 - **One overlay stack for every popup** — Modal / Drawer / Dropdown / Tooltip /
@@ -90,7 +90,7 @@ Full docs live in [`docs/`](./docs/README.md):
 | | |
 |---|---|
 | [架构思路](./docs/architecture.md) | 分层、组件模型、渲染与重绘、事件与悬停、浮层/焦点/表单/主题，以及一张“踩坑表” |
-| [组件速查](./docs/components.md) | 80+ 组件按分组的一句话说明 + 跳转 API |
+| [组件速查](./docs/components.md) | 89 个组件类按分组的一句话说明 + 跳转 API |
 | [API 参考](./docs/api/README.md) | 每个组件的构造参数与 public 方法（**从源码生成**，不会漂移） |
 | [示例与场景](./docs/guides/examples.md) | 四个示例页分别演示什么、各自用到哪些组件、照着做新场景的清单 |
 | [主题与配色](./docs/guides/theming.md) | token 分组、状态色、`*TextEmphasis`、自定义主题 |
@@ -159,6 +159,20 @@ reply appends a message, the floating button opens a 3-step tour, and the
 back-to-top button appears once the conversation scrolls.
 
 ![Support workbench](docs/images/workbench.png)
+
+### `windows-xp.html` — a full-screen Windows XP desktop
+
+The fun one: a canvas-only XP desktop — wallpaper, desktop icons, taskbar with a
+working clock, a Start menu, and draggable windows with minimise / maximise / close.
+Seven tiny apps are wired up (My Computer, My Documents, Notepad, Paint, Minesweeper,
+Internet Explorer, Display Properties), and switching the wallpaper in Display
+Properties repaints the desktop immediately.
+
+Two new generic components came out of it: `ICEWindow` (window chrome with an XP Luna
+title bar, drag, resize, maximise/restore, activate event) and `ICEIconTile`
+(selectable icon tile that opens on double click).
+
+![Windows XP desktop](docs/images/xp-desktop.png)
 
 ## Components
 
@@ -283,6 +297,10 @@ npm run qa:gallery
 # browser QA for examples/workbench.html: queue → profile, reply composer,
 # quick replies, tags/rating, tour, back-to-top, splitter drag
 npm run qa:workbench
+
+# browser QA for examples/windows-xp.html: icons, windows (drag/minimise/restore),
+# start menu, minesweeper, paint strokes, wallpaper switch, clock
+npm run qa:xp
 
 # 文档：重新生成 API 参考并检查链接
 npm run docs

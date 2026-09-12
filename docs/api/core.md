@@ -76,6 +76,76 @@
 | `getSecondNode()` | `any` |  |
 | `isDragging()` | `boolean` | 是否可拖动：分隔条自身 + 2px 容错（细条不好瞄）。 |
 
+## `ICEWindow`
+
+通用窗口外壳（桌面 / 多窗口场景的底座）：标题栏 + 按钮 + 客户端区域 + 缩放手柄。
+
+- **拖动**：按住标题栏移动（受 `bounds` 限制，拖不出桌面）；点在按钮上不触发拖动；
+- **焦点**：`active` 决定标题栏配色（XP 蓝 / 灰），点窗口任意位置会 `activate()` 并广播 `activate` 事件 —— 由外部窗口管理器据此抬 zIndex；
+- **最大化 / 还原**：记住还原前的盒子，按 `bounds` 铺满；`minimize()` 只广播事件， 怎么藏（隐藏 or 收到任务栏）交给调用方；
+- **缩放**：右下角手柄（`resizable: false` 可关），受 `minWidth` / `minHeight` 限制；
+- **内容**：`content` 或 `setContent()` 装进客户端区域，自动铺满。 外观默认走 Windows XP Luna 配色（可传 `appearance` 覆盖），与组件库主题无关 —— 这类“拟物外壳”本来就要固定配色。
+
+源码：[`src/components/ICEWindow.ts`](../../src/components/ICEWindow.ts)
+
+**构造参数** `ICEWindowOptions`
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `id?` | `string` | 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） |
+| `title?` | `string` | 标题 |
+| `icon?` | `string` | 标题栏左侧的图标字形 |
+| `left?` | `number` | 相对父容器的左边距 |
+| `top?` | `number` | 相对父容器的上边距 |
+| `width?` | `number` | 宽度（不传用组件默认值） |
+| `height?` | `number` | 高度（不传用组件默认值） |
+| `bounds?` | `{ left: number; top: number; width: number; height: number }` | 拖动 / 最大化的活动范围（一般是桌面工作区） |
+| `titleBarHeight?` | `number` |  |
+| `movable?` | `boolean` |  |
+| `resizable?` | `boolean` |  |
+| `closable?` | `boolean` |  |
+| `minimizable?` | `boolean` |  |
+| `maximizable?` | `boolean` |  |
+| `active?` | `boolean` |  |
+| `minWidth?` | `number` |  |
+| `minHeight?` | `number` |  |
+| `content?` | `any` | 客户端内容（会铺满客户端区域） |
+| `appearance?` | `ICEWindowAppearance` |  |
+| `onClose?` | `() => void` | 关闭回调 |
+| `onMinimize?` | `() => void` |  |
+| `onMaximize?` | `(maximized: boolean) => void` |  |
+| `onActivate?` | `() => void` |  |
+| `onMove?` | `(left: number, top: number) => void` |  |
+| `onResize?` | `(width: number, height: number) => void` |  |
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getTitle()` | `string` |  |
+| `setTitle(title: string)` | `this` |  |
+| `getTitleBar()` | `ICEWidget` |  |
+| `getTitleBarHeight()` | `number` |  |
+| `getClientBox()` | `{ left: number; top: number; width: number; height: number }` | 客户端区域的盒子（相对窗口自身）。 |
+| `getClientNode()` | `ICEWidget` |  |
+| `getCloseButton()` | `ICEWindowButton` |  |
+| `getMinimizeButton()` | `ICEWindowButton` |  |
+| `getMaximizeButton()` | `ICEWindowButton` |  |
+| `getResizeHandle()` | `ICEWidget` |  |
+| `getTitleBarColor()` | `string` | 标题栏当前色（激活/非激活的中间色）——测试与主题调试用。 |
+| `isActive()` | `boolean` |  |
+| `setActive(active: boolean)` | `this` |  |
+| `activate()` | `this` | 激活窗口并广播（外部据此抬 zIndex）。已经激活时也会广播，方便“置顶”）。 |
+| `isMaximized()` | `boolean` |  |
+| `maximize()` | `this` |  |
+| `restore()` | `this` |  |
+| `setContent(node: any)` | `this` |  |
+| `getContent()` | `any` |  |
+| `isDragging()` | `boolean` |  |
+| `isResizing()` | `boolean` |  |
+| `setBounds(bounds: { left: number; top: number; width: number; height: number })` | `this` |  |
+| `setSize(width: number, height: number)` | `this` |  |
+
 ## `ICEOverlayManager`
 
 弹层/浮层底座。  所有需要「浮在其它组件之上」的组件（Modal、Dropdown、Select、Tooltip、Popover、 右键菜单…）都走这一层，避免每个组件各自实现锚点定位、z 序、点外关闭、Esc 关闭。  实现要点：

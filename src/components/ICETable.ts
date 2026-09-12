@@ -80,6 +80,8 @@ export class ICETable extends ICEWidget {
   private onSelectionChange: ((rows: ICETableRow[], indexes: number[]) => void) | null = null;
   /** 选择列宽度（多选时内容列整体右移这么多） */
   private static readonly SELECTION_WIDTH = 40;
+  /** 上一次渲染用的宽度：宽度变了要多渲染一次（否则列宽不更新） */
+  private renderedWidth = 0;
   /** 鼠标悬停行（-1 = 无）；只影响底色，不影响选中 */
   private hoveredIndex = -1;
   private rowHeight: number;
@@ -461,6 +463,7 @@ export class ICETable extends ICEWidget {
     this.removeChildren([...this.childNodes]);
     const theme = iceUIManager.getTheme();
     const totalWidth = Number(this.state.width) || 720;
+    this.renderedWidth = totalWidth;
     const offset = this.selectionMode === 'multiple' ? ICETable.SELECTION_WIDTH : 0;
     const widths = this.__columnWidths(totalWidth - offset);
     this.cellNodes = [];
@@ -608,6 +611,21 @@ export class ICETable extends ICEWidget {
       this.__layoutCells();
     }
     this.revalidate();
+  }
+
+  /**
+   * @overwrite 宽度变化时重算列宽。
+   *
+   * `__render()` 只在 setData / 排序 / 分页时跑，而窗口缩放、分栏拖动只会改 `state.width`；
+   * 引擎在 setState 后只回调 `__afterStateMerge`（不会调 `revalidate`），所以钩子挂在这里。
+   * 不补这次渲染，列宽会停留在旧值 —— 表现为单元格文字互相重叠。
+   */
+  protected __afterStateMerge(sizeChanged: boolean): void {
+    super.__afterStateMerge(sizeChanged);
+    const width = Number(this.state.width) || 0;
+    if (sizeChanged && width > 0 && this.renderedWidth > 0 && width !== this.renderedWidth) {
+      this.__render();
+    }
   }
 
   private __placeCells(

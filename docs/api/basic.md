@@ -236,6 +236,46 @@ SVG 路径图标：给一段 `d` 路径数据，按 `viewBox` 缩放到目标尺
 |---|---|---|
 | `setColor(color: string)` | `this` |  |
 
+## `ICEIconTile`
+
+图标磁贴（桌面图标 / 应用宫格）：大图标字形 + 下方文字标签。
+
+- 单击选中（标签变蓝底白字，XP 桌面的选择样式），再点一下取消；
+- **双击打开**（`dblclick` → `open` 事件 + `onOpen`），Enter/Space 等价（键盘可达）；
+- `selected` 为受控初始值，`setSelected()` 是程序式接口（取消全选时用）。
+
+源码：[`src/components/ICEIconTile.ts`](../../src/components/ICEIconTile.ts)
+
+**构造参数** `ICEIconTileOptions` — 图标磁贴（桌面图标 / 应用宫格）：大图标字形 + 下方文字标签。
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `id?` | `string` | 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） |
+| `icon` | `string` | 图标字形（emoji 或单个符号） |
+| `label` | `string` |  |
+| `left?` | `number` | 相对父容器的左边距 |
+| `top?` | `number` | 相对父容器的上边距 |
+| `width?` | `number` | 宽度（不传用组件默认值） |
+| `height?` | `number` | 高度（不传用组件默认值） |
+| `iconSize?` | `number` |  |
+| `fontSize?` | `number` |  |
+| `selected?` | `boolean` |  |
+| `onSelect?` | `(selected: boolean) => void` | 选中回调 |
+| `onOpen?` | `(label: string) => void` |  |
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getLabel()` | `string` |  |
+| `isSelected()` | `boolean` |  |
+| `setSelected(selected: boolean)` | `this` |  |
+| `toggle()` | `this` | 单击切换选中（桌面图标的标准行为）。 |
+| `open()` | `this` | 打开（双击 / Enter / Space）。 |
+| `activate()` | `void` | 键盘激活 = 打开（与双击同义）。 |
+| `getLabelColor()` | `string` |  |
+| `getLabelBackground()` | `string` |  |
+
 ## `ICESeparator`
 
 分隔线：1px 的水平或垂直分隔。

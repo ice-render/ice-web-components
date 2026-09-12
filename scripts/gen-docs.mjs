@@ -40,6 +40,7 @@ const GROUPS = [
       'ICETypography',
       'ICEIcon',
       'ICESvgIcon',
+      'ICEIconTile',
       'ICESeparator',
     ],
   },
@@ -133,6 +134,7 @@ const GROUPS = [
     entries: [
       'ICEScrollPane',
       'ICESplitter',
+      'ICEWindow',
       'ICEOverlayManager',
       'ICEFocusManager',
       'ICEHoverManager',

@@ -15,6 +15,7 @@
 |  | [`ICETypography`](./api/basic.md#icetypography) | 排版文本（业界组件库 Typography）：标题层级 / 正文 / 链接，自带省略与折行。 |
 |  | [`ICEIcon`](./api/basic.md#iceicon) | 图标：一个居中的字形（★ ✓ ℹ …），字号与颜色可配。 |
 |  | [`ICESvgIcon`](./api/basic.md#icesvgicon) | SVG 路径图标：给一段 `d` 路径数据，按 `viewBox` 缩放到目标尺寸并描边。 |
+|  | [`ICEIconTile`](./api/basic.md#iceicontile) | 图标磁贴（桌面图标 / 应用宫格）：大图标字形 + 下方文字标签。 |
 |  | [`ICESeparator`](./api/basic.md#iceseparator) | 分隔线：1px 的水平或垂直分隔。 |
 | [数据录入](./api/data-entry.md) | [`ICETextField`](./api/data-entry.md#icetextfield) | 单行文本输入：聚焦边框、错误态、表单取值约定与键盘输入； 子类通过覆盖 `__allowNewline()` 等钩子扩展（见 ICETextArea）。 |
 |  | [`ICETextArea`](./api/data-entry.md#icetextarea) | 多行文本框：与 ICETextField 同语义（取值约定 / change 事件 / 错误态 / 焦点）， 差别是允许换行（Enter 插入 `\n`）且默认更高。 |
@@ -81,6 +82,7 @@
 |  | [`ICETabs`](./api/navigation.md#icetabs) | 标签页：一组互斥按钮，`onChange` 通知切换（程序式 `setActiveIndex` 不触发回调）。 |
 | [核心与布局](./api/core.md) | [`ICEScrollPane`](./api/core.md#icescrollpane) | 滚动视口（Swing 的 JScrollPane / 业界组件库 的 overflow:auto 容器）。  依赖引擎的**子树裁剪**（`clipChildren`）：内容超出视口的部分被裁掉，滚出去的子组件 也命不中（命中检测同样尊重裁剪区）。  结构： ``` ICEScrollPane (clipChildren: true)   ├── contentBox   位置 = (-scrollX, -scrollY)，尺寸 = 内容尺寸   │     └── 调用方的内容组件   └── scrollbarTrack + scrollbarThumb   滚动条（内容超出时才显示） ``` 内容盒与滚动条都在构造期创建，保证滚动条的 zIndex 恒高于内容（引擎按 zIndex 排序渲染）。 |
 |  | [`ICESplitter`](./api/core.md#icesplitter) | 分隔面板（业界组件库 Splitter）：两栏 + 可拖动的分隔条。 |
+|  | [`ICEWindow`](./api/core.md#icewindow) | 通用窗口外壳（桌面 / 多窗口场景的底座）：标题栏 + 按钮 + 客户端区域 + 缩放手柄。 |
 |  | [`ICEOverlayManager`](./api/core.md#iceoverlaymanager) | 弹层/浮层底座。  所有需要「浮在其它组件之上」的组件（Modal、Dropdown、Select、Tooltip、Popover、 右键菜单…）都走这一层，避免每个组件各自实现锚点定位、z 序、点外关闭、Esc 关闭。  实现要点： |
 |  | [`ICEFocusManager`](./api/core.md#icefocusmanager) | 键盘焦点与焦点环。  引擎只负责「键盘事件派发给谁」（`ice.setFocusedComponent` + DOMEventDispatcher）， 上层的策略在这里： |
 |  | [`ICEHoverManager`](./api/core.md#icehovermanager) | ICE 内核的移动类事件为了性能不会在 mousemove 时做全量命中检测， 因此 Canvas 组件没有内置 mouseenter/mouseleave 语义。  ICEHoverManager 通过事件总线的 mousemove + ice.hitTest() 自己维护当前 hover 组件， 并把状态同步到带 setHovered() 的 ICEWidget 上，实现接近 HTML 组件的 hover 效果。 |

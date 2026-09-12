@@ -15,6 +15,7 @@ npx serve .
 | [`admin.html`](../../examples/admin.html) | 后台管理（6 页业务闭环） | 布局外壳、表格、表单、浮层、分栏、日历、引导… |
 | [`workbench.html`](../../examples/workbench.html) | 客服工单工作台（三栏高频操作） | `ICESplitter`、`ICEList`、`ICEComment`、`ICETimeline`… |
 | [`custom-component.html`](../../examples/custom-component.html) | 自己写组件并接进体系 | `ICEWidget` + 表单/焦点/主题约定 |
+| [`windows-xp.html`](../../examples/windows-xp.html) | 全屏 Windows XP 桌面（好玩的那一个） | `ICEWindow`、`ICEIconTile` + 几乎全套组件 |
 
 ![组件总览](../images/gallery.png)
 
@@ -73,6 +74,43 @@ npx serve .
 一个手写的 `ICEMetric` 指标卡（点击 +1、聚焦后 ↑/↓ 调值、能进 `ICEForm` 校验），
 把「接入 ICE 体系」的每个接入点都标了序号。完整讲解见
 [写一个自己的组件](./custom-components.md)。
+
+## `windows-xp.html`：全屏 Windows XP 桌面
+
+一个纯 canvas 的 XP 桌面：壁纸、桌面图标、任务栏、开始菜单、可拖动/最小化/最大化/关闭的窗口，
+外加七个能点的小程序 —— 全部用这套组件拼出来（壁纸和「画图」的笔画用的是引擎原语）。
+
+![Windows XP 桌面](../images/xp-desktop.png)
+
+**为此新添的两个通用组件**：
+
+| 组件 | 作用 |
+|---|---|
+| `ICEWindow` | 通用窗口外壳：标题栏（XP Luna 渐变，激活/非激活两套配色）+ 最小化/最大化/关闭 + 可拖动 + 右下角缩放 + 客户端内容区；`bounds` 限制拖动与最大化范围，`activate()` 广播事件给外部窗口管理器抬 zIndex |
+| `ICEIconTile` | 图标磁贴：大图标字形 + 文字标签；单击选中（蓝底白字）、双击打开、Enter/Space 等价 |
+
+**七个应用**（都在 `examples/windows-xp.html` 里，可直接抄）：
+
+| 应用 | 用到的东西 |
+|---|---|
+| 我的电脑 | `ICESplitter` 双栏 + `ICETree` 文件夹树 + `ICETable` 驱动器列表 + `ICEDescriptions` 系统信息 |
+| 我的文档 | `ICETable` + 分页（`pagination`）+ 工具栏按钮 |
+| 记事本 | `ICETextArea` + 下拉菜单（`attachDropdown`）+ 状态栏 |
+| 画图 | 页面内自定义的 `XPaintCanvas`（继承 `ICEWidget`，用引擎 `ICEPolyLine` 记录每一笔）+ 色板 + `ICESlider` 笔刷粗细 |
+| 扫雷 | 9×9 自绘格子 + 地雷计数 + 计时器 + 笑脸重开（标记模式可扩展） |
+| Internet Explorer | 地址栏 `ICETextField` + 转到按钮 + 列表链接 + 状态栏 |
+| 显示 属性 | `ICERadioGroup` 选壁纸 + 预览块 + 应用/取消（应用后立即重绘桌面） |
+
+**外壳交互**：任务栏（开始按钮 / 任务按钮 / 托盘时钟，时钟每秒走）、开始菜单（`ICEOverlayManager`
+定位在开始按钮上方，点外关闭）、窗口焦点（点谁谁的标题栏变蓝、其余变灰）、最小化到任务栏、
+双击桌面图标打开程序、点桌面空白取消图标选中。
+
+> 这个页面也是「容器命中检测」规则的试金石：桌面根容器、任务栏、任务按钮容器、各应用的
+> 布局面板全部 `interactive: false`，只有真正要响应鼠标的节点（图标、窗口、按钮、格子、画布）
+> 才参与命中。第一版没这么做时，任务栏按钮点不动、扫雷格子点不动。
+>
+> 顺带修掉一个库级 bug：`ICETable` 在**只改宽度**（窗口缩放、分栏拖动）时不会重算列宽，
+> 单元格文字会互相重叠 —— 现在宽度变化会触发整表重渲染（`tests/ICETable.resize.test.ts` 守着）。
 
 ---
 

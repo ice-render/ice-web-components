@@ -11,7 +11,7 @@
 > `focusRing` 聚焦色）；③ `ICETag`/`ICEBadge` 默认改成 Bootstrap 实底 `.text-bg-*`（`variant:'soft'` 保留浅底风格）。
 > 细节见 README 的 Naming / Theme / Colour variants 三节。
 
-## 现状（74 个组件源文件 / 87 个导出类 / 483 条单测 / 91 项浏览器断言）
+## 现状（76 个组件源文件 / 89 个导出类 / 497 条单测 / 106 项浏览器断言）
 
 按分组清点（完整清单与参数见 [`docs/components.md`](./docs/components.md)）：
 
@@ -32,6 +32,7 @@
 - **导航**：`ICEMenu` `ICEBreadcrumb` `ICEAnchor` `ICEBackTop` `ICEDropdown` `ICEPagination` `ICETabs`
 - **核心**：`ICEScrollPane` `ICESplitter` `ICEOverlayManager` `ICEFocusManager`
   `ICEHoverManager` `ICEMessageManager` `ICEManager`
+- **桌面外壳**：`ICEWindow`（窗口：标题栏/拖动/最小化/最大化/缩放）、`ICEIconTile`（桌面图标）
 
 配套：5 个模型（`ICEButtonModel` / `ICEToggleModel` / `ICEBoundedRangeModel` /
 `ICESelectionModel` / `ICEFormModel`）、引擎布局（`ICEFlowLayout` / `ICEBoxLayout` / …）、
@@ -50,9 +51,13 @@
 > **焦点环改为 `:focus-visible` 语义**（鼠标点击/拖动不再冒蓝框，文本类控件 `focusRing: 'always'`）；
 > 修掉「纯布局容器吃掉内部控件命中」的一类 bug（`ICEFormItem`/`ICEForm`/`ICESpace`/`ICEGrid`/`ICESplitter`）。
 >
+> 第六批：`ICEWindow` + `ICEIconTile`（桌面/多窗口场景的底座），并修掉 `ICETable`
+> 只改宽度不重算列宽的 bug。
+>
 > 示例：`gallery.html`（组件总览）、`admin.html`（6 页后台）、`workbench.html`（客服工单工作台）、
-> `custom-component.html`（自定义组件）——见[示例与场景](./docs/guides/examples.md)。
-> 浏览器回归：`qa:admin` 44 项 + `qa:gallery` 32 项 + `qa:workbench` 15 项，全部走真实鼠标/键盘事件。
+> `windows-xp.html`（全屏 XP 桌面）、`custom-component.html`（自定义组件）——见[示例与场景](./docs/guides/examples.md)。
+> 浏览器回归：`qa:admin` 44 项 + `qa:gallery` 32 项 + `qa:workbench` 15 项 + `qa:xp` 15 项，
+> 全部走真实鼠标/键盘事件。
 
 ## 阶段 A：底座（先做这个）
 

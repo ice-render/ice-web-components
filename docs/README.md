@@ -7,7 +7,7 @@
 | 你在做什么 | 看这里 |
 |---|---|
 | 第一次接触这个库，想搞懂它怎么运转 | [架构思路](./architecture.md) |
-| 找某个组件怎么用、有哪些参数 | [组件速查](./components.md) → [API 参考](./api/README.md) |
+| 找某个组件怎么用、有哪些参数 | [组件速查](./components.md)（89 个组件类）→ [API 参考](./api/README.md) |
 | **想看完整业务场景怎么搭出来的** | [示例与场景](./guides/examples.md) |
 | **写自己的组件、接进这套体系** | [写一个自己的组件](./guides/custom-components.md) |
 | 想换配色 / 加一套主题 | [主题与配色](./guides/theming.md) |

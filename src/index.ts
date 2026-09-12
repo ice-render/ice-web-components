@@ -89,6 +89,8 @@ export * from './components/ICEAnchor';
 export * from './components/ICEImagePreview';
 export * from './components/ICETour';
 export * from './components/ICECalendar';
+export * from './components/ICEWindow';
+export * from './components/ICEIconTile';
 export * from './components/ICESpace';
 export * from './components/ICEGrid';
 export * from './components/ICEFloatButton';
