@@ -1,6 +1,6 @@
 {
   "name": "ice-web-components",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Swing-style Canvas UI components built on ice-render.",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
