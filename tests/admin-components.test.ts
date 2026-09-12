@@ -1,21 +1,21 @@
 import {
-  UITextField,
-  UIAlert,
-  UITable,
-  UIMenu,
-  UIStatCard,
-  UIBadge,
-  uiManager,
+  ICETextField,
+  ICEAlert,
+  ICETable,
+  ICEMenu,
+  ICEStatCard,
+  ICEBadge,
+  iceUIManager,
 } from '../src';
-import { UI_LIGHT_THEME } from '../src';
+import { ICE_LIGHT_THEME } from '../src';
 
 describe('admin UI components', () => {
   beforeEach(() => {
-    uiManager.setTheme('light');
+    iceUIManager.setTheme('light');
   });
 
   it('updates text field value and placeholder', () => {
-    const input = new UITextField({ value: 'hello', placeholder: 'Type...' });
+    const input = new ICETextField({ value: 'hello', placeholder: 'Type...' });
     expect(input.getValue()).toBe('hello');
     input.setValue('world');
     expect(input.getValue()).toBe('world');
@@ -24,17 +24,17 @@ describe('admin UI components', () => {
   });
 
   it('limits text field maxLength', () => {
-    const input = new UITextField({ maxLength: 3 });
+    const input = new ICETextField({ maxLength: 3 });
     input.setValue('abcdef');
     expect(input.getValue()).toBe('abc');
   });
 
   it('creates alert with title and message', () => {
-    const alert = new UIAlert({ type: 'success', title: 'Saved', message: 'All changes saved' });
+    const alert = new ICEAlert({ type: 'success', title: 'Saved', message: 'All changes saved' });
     // 3 = 类型图标（默认显示，文字整体右移让位）+ 标题 + 正文
     expect(alert.childNodes).toHaveLength(3);
     expect(alert.getIconNode()!.getText()).toBe('✓');
-    expect(alert.state.style.fillStyle).toBe(UI_LIGHT_THEME.colors.successBg);
+    expect(alert.state.style.fillStyle).toBe(ICE_LIGHT_THEME.colors.successBg);
     alert.setTitle('Updated');
     alert.setMessage('Done');
     expect(alert.childNodes[1].state.text).toBe('Updated');
@@ -42,7 +42,7 @@ describe('admin UI components', () => {
   });
 
   it('renders table columns and updates selection', () => {
-    const table = new UITable({
+    const table = new ICETable({
       width: 600,
       columns: [
         { key: 'name', title: 'Name', width: 200 },
@@ -65,7 +65,7 @@ describe('admin UI components', () => {
   });
 
   it('keeps header and row cell x-alignment for right-aligned columns', () => {
-    const table = new UITable({
+    const table = new ICETable({
       width: 400,
       columns: [
         { key: 'label', title: 'Label', width: 200 },
@@ -80,7 +80,7 @@ describe('admin UI components', () => {
   });
 
   it('selects menu items and reports selected key', () => {
-    const menu = new UIMenu({
+    const menu = new ICEMenu({
       width: 240,
       items: [
         { key: 'dashboard', label: 'Dashboard', icon: '●' },
@@ -94,7 +94,7 @@ describe('admin UI components', () => {
   });
 
   it('updates stat card content', () => {
-    const card = new UIStatCard({ title: 'Revenue', value: 1280, trend: '+12%' });
+    const card = new ICEStatCard({ title: 'Revenue', value: 1280, trend: '+12%' });
     card.setValue(3200);
     card.setTitle('Orders');
     card.setTrend('-3%');
@@ -105,7 +105,7 @@ describe('admin UI components', () => {
   });
 
   it('badge text is centered inside the pill (padding kept as an inset)', () => {
-    const badge = new UIBadge({ text: 'Paid', width: 86, height: 22, status: 'success' });
+    const badge = new ICEBadge({ text: 'Paid', width: 86, height: 22, status: 'success' });
     const textNode = badge.childNodes[0];
     // 居中而不是左对齐：固定宽度的胶囊（表格状态列）左对齐会让短标签明显偏左
     // （实测 "Paid" 在 86px 胶囊里偏左 18.5px）。居中后宽度贴合文字的胶囊同样成立。

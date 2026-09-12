@@ -1,8 +1,8 @@
-import { UIButtonModel, UIToggleModel, UIBoundedRangeModel } from '../src';
+import { ICEButtonModel, ICEToggleModel, ICEBoundedRangeModel } from '../src';
 
 describe('UI models', () => {
   it('notifies button model changes', () => {
-    const model = new UIButtonModel();
+    const model = new ICEButtonModel();
     const listener = jest.fn();
     model.addChangeListener(listener);
     model.setPressed(true);
@@ -13,7 +13,7 @@ describe('UI models', () => {
   });
 
   it('toggles boolean model without duplicate notifications', () => {
-    const model = new UIToggleModel();
+    const model = new ICEToggleModel();
     const listener = jest.fn();
     model.addChangeListener(listener);
     model.setSelected(true);
@@ -23,7 +23,7 @@ describe('UI models', () => {
   });
 
   it('clamps bounded range model values', () => {
-    const model = new UIBoundedRangeModel({ value: 20, min: 0, max: 100 });
+    const model = new ICEBoundedRangeModel({ value: 20, min: 0, max: 100 });
     expect(model.getValue()).toBe(20);
     model.setValue(140);
     expect(model.getValue()).toBe(100);

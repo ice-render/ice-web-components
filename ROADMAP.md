@@ -3,64 +3,68 @@
 目标：在 `ice-render` 之上做一套 **Canvas 原生的 Swing 风格 / 业界组件库 风格组件库**。
 组件不是难点，**底座**才是 —— 下面按「底座 → 组件」排。
 
+> **2026-09-12 变更**：① 全库导出统一成 **ICE 前缀**（原 `UI*` 全部改名，文件同名重命名）；
+> ② 主题从 业界组件库 配色换成 **Bootstrap 5** 语义色（含 `*-text-emphasis` 强调文字色 + Bootstrap 三段阴影）。
+> 细节见 README 的 Naming / Theme 两节。
+
 ## 现状（21 个组件）
 
-`UIButton` `UILabel` `UIPanel` `UICard` `UITextField` `UITable` `UIMenu` `UITabs`
-`UIAlert` `UIStatCard` `UITag` `UIBadge` `UIAvatar` `UIIcon` `UISvgIcon`
-`UISeparator` `UICheckBox` `UIRadioButton` `UISwitch` `UIProgressBar` `UISlider`
+`ICEButton` `ICELabel` `ICEPanel` `ICECard` `ICETextField` `ICETable` `ICEMenu` `ICETabs`
+`ICEAlert` `ICEStatCard` `ICETag` `ICEBadge` `ICEAvatar` `ICEIcon` `ICESvgIcon`
+`ICESeparator` `ICECheckBox` `ICERadioButton` `ICESwitch` `ICEProgressBar` `ICESlider`
 
-配套：3 个模型（`UIButtonModel` / `UIToggleModel` / `UIBoundedRangeModel`）、
-2 个布局（`UIFlowLayout` / `UIBoxLayout`）、`UIHoverManager`、`UIOverlayManager`（新增）。
+配套：3 个模型（`ICEButtonModel` / `ICEToggleModel` / `ICEBoundedRangeModel`）、
+2 个布局（`ICEFlowLayout` / `ICEBoxLayout`）、`ICEHoverManager`、`ICEOverlayManager`（新增）。
 
 ## 阶段 A：底座（先做这个）
 
 | # | 底座 | 状态 | 说明 |
 |---|---|---|---|
-| A1 | 弹层 / 浮层 | ✅ 已完成 | `UIOverlayManager`：浮层根节点挂在 ICE **工具层**（递归渲染、绘制在组件之上、不参与 `getComponentById`）；12 种 placement、空间不足自动翻转、夹进可见范围；点外关闭 / Esc / exclusive。带视口缩放平移也正确。 |
-| A2 | 滚动容器 | ✅ 已完成 | 引擎侧新增**子树裁剪** `clipChildren`（ice-render 1.2.0：设备空间裁剪、多层求交、命中检测同样尊重裁剪、被裁剪组件不参与离屏缓存）；组件侧 `UIScrollPane`（内容盒 + 滚动条 + 滚轮/API 滚动）。 |
-| A3 | 焦点与键盘导航 | 🟡 基础已做 | `UIFocusManager`：Tab/Shift+Tab 循环、Esc 取消、Enter/Space 激活（控件自定义 `activate()`）、鼠标点击聚焦（沿父链上溯到最近控件）、焦点环画在工具层并跟随组件移动。**待补**：方向键在组内移动（Radio 组 / Menu / Tabs）、模态焦点陷阱、Slider 方向键调值。 |
-| A4 | 表单与校验 | 🟡 基础已做 | `UIFormModel`（required/min/max/minLength/maxLength/pattern/validator + **asyncValidator** + change 触发 + 监听器）、`UIFormItem`（标签/控件/错误文案，纵向与横向布局，**校验中…态**）、`UIForm`（addItem/validate/**validateAsync**/getValues/setValues/reset/submit/**submitAsync**/onSubmit）；控件统一取值约定 `getFormValue/setFormValue` 与 `change` 事件（UITextField / UICheckBox / UISwitch / UIRadioButton / UISlider）；`setValidateStatus` 提供错误态（文本框边框标红已实现）。**待补**：跨字段依赖重校验、错误态在其它控件上的视觉反馈。 |
-| A5 | 动画/过渡 | 🟡 基础已做 | 引擎侧新增**子树不透明度** `opacity`（1.3.0，整棵子树一起淡入淡出）；组件侧 `UIAnimation`（`tween` + `fadeIn/fadeOut/fadeTo/slideIn/scaleIn`，frame driver 可注入、可取消）；`UIOverlayManager` 支持 `enterAnimation: 'fade'｜'scale'`、`exitAnimation: 'fade'`。**待补**：折叠/展开的高度过渡、消息堆叠的错峰入场。 |
+| A1 | 弹层 / 浮层 | ✅ 已完成 | `ICEOverlayManager`：浮层根节点挂在 ICE **工具层**（递归渲染、绘制在组件之上、不参与 `getComponentById`）；12 种 placement、空间不足自动翻转、夹进可见范围；点外关闭 / Esc / exclusive。带视口缩放平移也正确。 |
+| A2 | 滚动容器 | ✅ 已完成 | 引擎侧新增**子树裁剪** `clipChildren`（ice-render 1.2.0：设备空间裁剪、多层求交、命中检测同样尊重裁剪、被裁剪组件不参与离屏缓存）；组件侧 `ICEScrollPane`（内容盒 + 滚动条 + 滚轮/API 滚动）。 |
+| A3 | 焦点与键盘导航 | 🟡 基础已做 | `ICEFocusManager`：Tab/Shift+Tab 循环、Esc 取消、Enter/Space 激活（控件自定义 `activate()`）、鼠标点击聚焦（沿父链上溯到最近控件）、焦点环画在工具层并跟随组件移动。**待补**：方向键在组内移动（Radio 组 / Menu / Tabs）、模态焦点陷阱、Slider 方向键调值。 |
+| A4 | 表单与校验 | 🟡 基础已做 | `ICEFormModel`（required/min/max/minLength/maxLength/pattern/validator + **asyncValidator** + change 触发 + 监听器）、`ICEFormItem`（标签/控件/错误文案，纵向与横向布局，**校验中…态**）、`ICEForm`（addItem/validate/**validateAsync**/getValues/setValues/reset/submit/**submitAsync**/onSubmit）；控件统一取值约定 `getFormValue/setFormValue` 与 `change` 事件（ICETextField / ICECheckBox / ICESwitch / ICERadioButton / ICESlider）；`setValidateStatus` 提供错误态（文本框边框标红已实现）。**待补**：跨字段依赖重校验、错误态在其它控件上的视觉反馈。 |
+| A5 | 动画/过渡 | 🟡 基础已做 | 引擎侧新增**子树不透明度** `opacity`（1.3.0，整棵子树一起淡入淡出）；组件侧 `ICEAnimation`（`tween` + `fadeIn/fadeOut/fadeTo/slideIn/scaleIn`，frame driver 可注入、可取消）；`ICEOverlayManager` 支持 `enterAnimation: 'fade'｜'scale'`、`exitAnimation: 'fade'`。**待补**：折叠/展开的高度过渡、消息堆叠的错峰入场。 |
 
 ## 阶段 B：第一批组件（A1 已就绪，直接可做）
 
 | 组件 | 缺什么 | 依赖 |
 |---|---|---|
-| ~~`UITooltip`~~ ✅ | 悬停延时、跟随锚点、多行 | A1 |
-| ~~`UIPopover`~~ ✅ | 任意内容浮层 + 点击/悬停触发 | A1 |
-| ~~`UIDropdown`~~ ✅ | 触发按钮 + 菜单浮层 + disabled/选中态 + 键盘 ↑↓/Enter | A1 + A3 |
-| ~~`UISelect`~~ ✅ | 输入框外观 + 下拉选项 + 单选/多选 + 搜索过滤 + 键盘 ↑↓/Enter | A1 + A3 |
-| ~~`UIModal`~~ ✅ | 遮罩层 + 居中 + 焦点陷阱 + 缩放进入 | A1 + A3 + A5 |
-| ~~`UIDrawer`~~ ✅ | 从边缘滑入的面板（四方向 + 遮罩 + 焦点陷阱） | A1 + A3 + A5 |
-| ~~`UIMessage` / `UINotification`~~ ✅ | 顶部/右下角堆叠、自动消失、可单独关闭 | A5 |
-| ~~`UIPagination`~~ ✅ | 页码窗口 + 省略号、每页条数切换、共 N 条 | — |
-| ~~`UIPopconfirm`~~ ✅ | 气泡确认（取消/确定 + danger） | A1 |
+| ~~`ICETooltip`~~ ✅ | 悬停延时、跟随锚点、多行 | A1 |
+| ~~`ICEPopover`~~ ✅ | 任意内容浮层 + 点击/悬停触发 | A1 |
+| ~~`ICEDropdown`~~ ✅ | 触发按钮 + 菜单浮层 + disabled/选中态 + 键盘 ↑↓/Enter | A1 + A3 |
+| ~~`ICESelect`~~ ✅ | 输入框外观 + 下拉选项 + 单选/多选 + 搜索过滤 + 键盘 ↑↓/Enter | A1 + A3 |
+| ~~`ICEModal`~~ ✅ | 遮罩层 + 居中 + 焦点陷阱 + 缩放进入 | A1 + A3 + A5 |
+| ~~`ICEDrawer`~~ ✅ | 从边缘滑入的面板（四方向 + 遮罩 + 焦点陷阱） | A1 + A3 + A5 |
+| ~~`ICEMessage` / `ICENotification`~~ ✅ | 顶部/右下角堆叠、自动消失、可单独关闭 | A5 |
+| ~~`ICEPagination`~~ ✅ | 页码窗口 + 省略号、每页条数切换、共 N 条 | — |
+| ~~`ICEPopconfirm`~~ ✅ | 气泡确认（取消/确定 + danger） | A1 |
 
 ## 阶段 C：Swing 对应物（补齐 README 的定位）
 
 | Swing | 本库计划 | 依赖 |
 |---|---|---|
-| `JScrollPane` | ✅ `UIScrollPane` | A2 |
-| `JList` | ✅ `UIList` + `UISelectionModel` | A2 + A3 |
-| `JComboBox` | 阶段 B 的 `UIComboBox` | A1/A2/A3 |
-| `JSpinner` | `UISpinner`（数值/步进） | A3 |
-| `JTextArea` / `JPasswordField` | ✅ `UITextArea`（Enter 换行）/ `UIPasswordField`（掩码 + 眼睛切换） | A2 |
-| `JTree` | ✅ `UITree`（复用 UISelectionModel） | A2 + A3 |
-| `JSplitPane` | `UISplitPane`（拖拽分隔） | — |
-| `JToolBar` | `UIToolBar` | — |
-| `JForm`（无直接对应） | `UIForm` + `UIFormItem` | A3 + A4 |
+| `JScrollPane` | ✅ `ICEScrollPane` | A2 |
+| `JList` | ✅ `ICEList` + `ICESelectionModel` | A2 + A3 |
+| `JComboBox` | 阶段 B 的 `ICEComboBox` | A1/A2/A3 |
+| `JSpinner` | `ICESpinner`（数值/步进） | A3 |
+| `JTextArea` / `JPasswordField` | ✅ `ICETextArea`（Enter 换行）/ `ICEPasswordField`（掩码 + 眼睛切换） | A2 |
+| `JTree` | ✅ `ICETree`（复用 ICESelectionModel） | A2 + A3 |
+| `JSplitPane` | `ICESplitPane`（拖拽分隔） | — |
+| `JToolBar` | `ICEToolBar` | — |
+| `JForm`（无直接对应） | `ICEForm` + `ICEFormItem` | A3 + A4 |
 
 ## 阶段 D：业界组件库 风格展示类组件
 
 按「投入产出」排序，前两档建议优先：
 
-1. **高价值、实现直接**：`UISegmented`、`UIEmpty`、`UISkeleton`、`UIResult`、`UICollapse`、
-   `UISteps`、`UITimeline`、`UIDescriptions`、`UIRate`、`UIAffix`（画布内由应用控制，低优先）
-2. **依赖表单/弹层**：`UIAutoComplete`、`UIInputNumber`、`UIMentions`、
-   `UIDatePicker` / `UITimePicker`（需要日历浮层 + 日期网格）、`UICascader`、`UITreeSelect`、
-   `UITransfer`、`UIUpload`、`UIColorPicker`
-3. **图形类**：`UICarousel`、`UICalendar`、`UIQRCode`（需要编码器）、`UIWatermark`、
-   `UITour`、`UIComment`
+1. **高价值、实现直接**：`ICESegmented`、`ICEEmpty`、`ICESkeleton`、`ICEResult`、`ICECollapse`、
+   `ICESteps`、`ICETimeline`、`ICEDescriptions`、`ICERate`、`ICEAffix`（画布内由应用控制，低优先）
+2. **依赖表单/弹层**：`ICEAutoComplete`、`ICEInputNumber`、`ICEMentions`、
+   `ICEDatePicker` / `ICETimePicker`（需要日历浮层 + 日期网格）、`ICECascader`、`ICETreeSelect`、
+   `ICETransfer`、`ICEUpload`、`ICEColorPicker`
+3. **图形类**：`ICECarousel`、`ICECalendar`、`ICEQRCode`（需要编码器）、`ICEWatermark`、
+   `ICETour`、`ICEComment`
 
 ## 业界组件库 组件对照表（v5 全量 → 本库）
 
@@ -68,103 +72,103 @@
 
 | 业界组件库 分类 | 组件 | 本库 |
 |---|---|---|
-| 通用 | Button | ✅ `UIButton` |
+| 通用 | Button | ✅ `ICEButton` |
 | 通用 | FloatButton | ⊘ 画布场景收益低 |
-| 通用 | Icon | ✅ `UIIcon`（字形）/ `UISvgIcon`（SVG path） |
-| 通用 | Typography | ✅ `UILabel`（部分：无 Title/Paragraph 语义、省略、可复制） |
-| 布局 | Divider | ✅ `UISeparator` |
+| 通用 | Icon | ✅ `ICEIcon`（字形）/ `ICESvgIcon`（SVG path） |
+| 通用 | Typography | ✅ `ICELabel`（部分：无 Title/Paragraph 语义、省略、可复制） |
+| 布局 | Divider | ✅ `ICESeparator` |
 | 布局 | Flex / Space | ⬜ 可用现有 Flow/Box 布局覆盖，低优先 |
 | 布局 | Grid | ⬜ 引擎已有 `ICEGridLayout`，缺 UI 封装 |
 | 布局 | Layout（Header/Sider/Content/Footer） | ⬜ 阶段 D（画布内更像「模板」而非组件） |
-| 布局 | Splitter | ⬜ 计划 `UISplitPane` |
+| 布局 | Splitter | ⬜ 计划 `ICESplitPane` |
 | 导航 | Anchor | ⊘ 依赖滚动容器与页面语义，低优先 |
 | 导航 | Breadcrumb | ⬜ 阶段 D |
 | 导航 | Dropdown | ⬜ 阶段 B（A1 已就绪） |
-| 导航 | Menu | ✅ `UIMenu`（子菜单内联展开 + 多级嵌套；无键盘导航） |
+| 导航 | Menu | ✅ `ICEMenu`（子菜单内联展开 + 多级嵌套；无键盘导航） |
 | 导航 | Pagination | ⬜ 阶段 B |
-| 导航 | Steps | ✅ `UISteps` |
-| 数据录入 | AutoComplete | ✅ `UIAutoComplete`（输入过滤 + 候选点选/键盘） |
-| 数据录入 | TreeSelect | ✅ `UITreeSelect`（下拉里装 UITree） |
-| 数据录入 | Cascader | ✅ `UICascader`（多列级联 + 路径回显；暂不支持同级多选） |
-| 数据录入 | Checkbox | ✅ `UICheckBox`（部分：无 Group / 不确定态） |
-| 数据录入 | ColorPicker | ✅ `UIColorPicker`（色板网格 + 选中环 + 键盘导航；无取色轮/透明度） |
-| 数据录入 | DatePicker | ✅ `UIDatePicker`（日历浮层，周一开头） |
-| 数据录入 | TimePicker | ✅ `UITimePicker`（时/分/秒滚动列 + 步进 + HH:mm 两列模式；无 12 小时制/范围选择） |
-| 数据录入 | Form | ✅ `UIForm` + `UIFormItem` + `UIFormModel`（含异步校验 / submitAsync；无跨字段依赖重校验） |
-| 数据录入 | Input | ✅ `UITextField`（部分：无多行 / 密码 / 前后缀 / 清空） |
-| 数据录入 | InputNumber | ✅ `UIInputNumber`（步进 + 键盘 + 精度） |
+| 导航 | Steps | ✅ `ICESteps` |
+| 数据录入 | AutoComplete | ✅ `ICEAutoComplete`（输入过滤 + 候选点选/键盘） |
+| 数据录入 | TreeSelect | ✅ `ICETreeSelect`（下拉里装 ICETree） |
+| 数据录入 | Cascader | ✅ `ICECascader`（多列级联 + 路径回显；暂不支持同级多选） |
+| 数据录入 | Checkbox | ✅ `ICECheckBox`（部分：无 Group / 不确定态） |
+| 数据录入 | ColorPicker | ✅ `ICEColorPicker`（色板网格 + 选中环 + 键盘导航；无取色轮/透明度） |
+| 数据录入 | DatePicker | ✅ `ICEDatePicker`（日历浮层，周一开头） |
+| 数据录入 | TimePicker | ✅ `ICETimePicker`（时/分/秒滚动列 + 步进 + HH:mm 两列模式；无 12 小时制/范围选择） |
+| 数据录入 | Form | ✅ `ICEForm` + `ICEFormItem` + `ICEFormModel`（含异步校验 / submitAsync；无跨字段依赖重校验） |
+| 数据录入 | Input | ✅ `ICETextField`（部分：无多行 / 密码 / 前后缀 / 清空） |
+| 数据录入 | InputNumber | ✅ `ICEInputNumber`（步进 + 键盘 + 精度） |
 | 数据录入 | Mentions | ⊘ 低优先 |
-| 数据录入 | Radio | ✅ `UIRadioButton`（部分：无 Group） |
-| 数据录入 | Rate | ✅ `UIRate`（悬停预览 + 键盘） |
+| 数据录入 | Radio | ✅ `ICERadioButton`（部分：无 Group） |
+| 数据录入 | Rate | ✅ `ICERate`（悬停预览 + 键盘） |
 | 数据录入 | Select | ⬜ 阶段 B |
-| 数据录入 | Slider | ✅ `UISlider`（区间双滑块 + `step` 步进 + 方向键；无刻度 / tooltip） |
-| 数据录入 | Switch | ✅ `UISwitch` |
-| 数据录入 | Transfer | ✅ `UITransfer`（双栏勾选搬运 + disabled 行；无搜索/分页） |
-| 数据录入 | Upload | ✅ `UIUpload`（虚线拖拽区 + 隐藏 input 桥接 + accept/maxSize/maxCount/beforeUpload 校验） |
-| 数据展示 | Avatar | ✅ `UIAvatar` + `UIAvatarGroup`（重叠 + `+N` 折叠；无图片头像） |
-| 数据展示 | Badge | ✅ `UIBadge`（红点 `dot` + 计数封顶 `count`/`overflowCount`） |
+| 数据录入 | Slider | ✅ `ICESlider`（区间双滑块 + `step` 步进 + 方向键；无刻度 / tooltip） |
+| 数据录入 | Switch | ✅ `ICESwitch` |
+| 数据录入 | Transfer | ✅ `ICETransfer`（双栏勾选搬运 + disabled 行；无搜索/分页） |
+| 数据录入 | Upload | ✅ `ICEUpload`（虚线拖拽区 + 隐藏 input 桥接 + accept/maxSize/maxCount/beforeUpload 校验） |
+| 数据展示 | Avatar | ✅ `ICEAvatar` + `ICEAvatarGroup`（重叠 + `+N` 折叠；无图片头像） |
+| 数据展示 | Badge | ✅ `ICEBadge`（红点 `dot` + 计数封顶 `count`/`overflowCount`） |
 | 数据展示 | Calendar | ⬜ 阶段 D |
-| 数据展示 | Card | ✅ `UICard`（含 `extra` 右上角插槽；无操作区 / 底部） |
-| 数据展示 | Carousel | ✅ `UICarousel`（轨道滑动 + 箭头/圆点 + 自动播放；无渐变/多图同屏） |
-| 数据展示 | Collapse | ✅ `UICollapse`（accordion 可选） |
-| 数据展示 | Descriptions | ✅ `UIDescriptions`（1/2 列） |
-| 数据展示 | Empty | ✅ `UIEmpty` |
-| 数据展示 | Image | ✅ `UIImage`（fill/contain/cover 适配 + clipChildren 裁剪 + 加载/错误态；无预览浮层） |
-| 数据展示 | List | ✅ `UIList` |
+| 数据展示 | Card | ✅ `ICECard`（含 `extra` 右上角插槽；无操作区 / 底部） |
+| 数据展示 | Carousel | ✅ `ICECarousel`（轨道滑动 + 箭头/圆点 + 自动播放；无渐变/多图同屏） |
+| 数据展示 | Collapse | ✅ `ICECollapse`（accordion 可选） |
+| 数据展示 | Descriptions | ✅ `ICEDescriptions`（1/2 列） |
+| 数据展示 | Empty | ✅ `ICEEmpty` |
+| 数据展示 | Image | ✅ `ICEImage`（fill/contain/cover 适配 + clipChildren 裁剪 + 加载/错误态；无预览浮层） |
+| 数据展示 | List | ✅ `ICEList` |
 | 数据展示 | Popover | ⬜ 阶段 B |
 | 数据展示 | QRCode | ⊘ 需要编码器，收益低 |
-| 数据展示 | Segmented | ✅ `UISegmented` |
-| 数据展示 | Statistic | ✅ `UIStatCard` |
-| 数据展示 | Table | ✅ `UITable`（列排序 `sorter` + ▲▼ 指示；无分页 / 滚动 / 列宽拖拽） |
-| 数据展示 | Tabs | ✅ `UITabs`（部分：无溢出滚动 / 关闭 / 卡片态） |
-| 数据展示 | Tag | ✅ `UITag`（部分：无可关闭 / 多彩） |
-| 数据展示 | Timeline | ✅ `UITimeline` |
-| 数据展示 | Comment | ✅ `UIComment`（嵌套回复 + 操作） |
+| 数据展示 | Segmented | ✅ `ICESegmented` |
+| 数据展示 | Statistic | ✅ `ICEStatCard` |
+| 数据展示 | Table | ✅ `ICETable`（列排序 `sorter` + ▲▼ 指示；无分页 / 滚动 / 列宽拖拽） |
+| 数据展示 | Tabs | ✅ `ICETabs`（部分：无溢出滚动 / 关闭 / 卡片态） |
+| 数据展示 | Tag | ✅ `ICETag`（部分：无可关闭 / 多彩） |
+| 数据展示 | Timeline | ✅ `ICETimeline` |
+| 数据展示 | Comment | ✅ `ICEComment`（嵌套回复 + 操作） |
 | 数据展示 | Tooltip | ⬜ 阶段 B |
 | 数据展示 | Tour | ⊘ 低优先 |
-| 数据展示 | Tree | ✅ `UITree` |
-| 反馈 | Alert | ✅ `UIAlert`（`closable` + onClose + 类型图标；无 banner） |
+| 数据展示 | Tree | ✅ `ICETree` |
+| 反馈 | Alert | ✅ `ICEAlert`（`closable` + onClose + 类型图标；无 banner） |
 | 反馈 | Drawer | ⬜ 阶段 B |
 | 反馈 | Message | ⬜ 阶段 B |
 | 反馈 | Modal | ⬜ 阶段 B |
 | 反馈 | Notification | ⬜ 阶段 B |
 | 反馈 | Popconfirm | ⬜ 阶段 B |
-| 反馈 | Progress | ✅ `UIProgressBar`（线形 + 环形 `type:'circle'`，含百分比文字 / 状态色；无仪表盘） |
-| 反馈 | Result | ✅ `UIResult` |
-| 反馈 | Skeleton | ✅ `UISkeleton`（呼吸动画） |
-| 反馈 | Spin | ✅ `UISpin`（旋转弧线，复用引擎动画） |
+| 反馈 | Progress | ✅ `ICEProgressBar`（线形 + 环形 `type:'circle'`，含百分比文字 / 状态色；无仪表盘） |
+| 反馈 | Result | ✅ `ICEResult` |
+| 反馈 | Skeleton | ✅ `ICESkeleton`（呼吸动画） |
+| 反馈 | Spin | ✅ `ICESpin`（旋转弧线，复用引擎动画） |
 | 其他 | Affix | ⊘ 画布内不需要（应用自己控制位置） |
-| 其他 | App | ⊘ React 概念；本库对应 `uiManager` 主题机制 |
-| 其他 | ConfigProvider | ⊘ 同上（主题/暗色已由 `uiManager` 提供） |
+| 其他 | App | ⊘ React 概念；本库对应 `iceUIManager` 主题机制 |
+| 其他 | ConfigProvider | ⊘ 同上（主题/暗色已由 `iceUIManager` 提供） |
 | 其他 | Watermark | ⊘ 低优先 |
 
 ## 现有组件的「做满」清单
 
 新组件之外，下面这些缺口同样影响观感，按需插空做：
 
-- `UITable`：分页、滚动、列宽拖拽、空态（排序 ✅ 已做）
-- `UITextField`：多行（TextArea）、密码、前后缀、清除按钮、错误态
-- `UIMenu`：键盘操作（子菜单 / 折叠 ✅ 已做）
-- `UITabs`：溢出滚动、关闭、位置（上下左右）
-- `UIAlert`：banner 形态（关闭按钮 / 图标 ✅ 已做）
-- `UIProgressBar`：仪表盘形态（环形 + 状态色 ✅ 已做）
-- `UISlider`：区间选择、刻度、拖拽 tooltip
-- `UICard`：操作区、封面、底部（右上角 extra ✅ 已做）
-- `UIBadge`：红点 / 计数封顶 ✅ 已做
-- `UIAvatar`：图片头像（头像组 ✅ `UIAvatarGroup`）
+- `ICETable`：分页、滚动、列宽拖拽、空态（排序 ✅ 已做）
+- `ICETextField`：多行（TextArea）、密码、前后缀、清除按钮、错误态
+- `ICEMenu`：键盘操作（子菜单 / 折叠 ✅ 已做）
+- `ICETabs`：溢出滚动、关闭、位置（上下左右）
+- `ICEAlert`：banner 形态（关闭按钮 / 图标 ✅ 已做）
+- `ICEProgressBar`：仪表盘形态（环形 + 状态色 ✅ 已做）
+- `ICESlider`：区间选择、刻度、拖拽 tooltip
+- `ICECard`：操作区、封面、底部（右上角 extra ✅ 已做）
+- `ICEBadge`：红点 / 计数封顶 ✅ 已做
+- `ICEAvatar`：图片头像（头像组 ✅ `ICEAvatarGroup`）
 
 ## 工程约定
 
-- 新组件一律：`src/components/UIXxx.ts` + `tests/` 单测 + 在 `examples/gallery.html`（必要时 `admin.html`）里加一行演示。
-- 状态用「模型 + 监听器」（沿用 `UIButtonModel` 等既有模式），不要在组件里散落状态。
-- 涉及浮层的组件**必须**走 `UIOverlayManager`，不要各自实现定位与关闭逻辑。
-- 主题色一律取自 `uiManager.getTheme()`，禁止硬编码色值（示例除外）。
+- 新组件一律：`src/components/ICEXxx.ts` + `tests/` 单测 + 在 `examples/gallery.html`（必要时 `admin.html`）里加一行演示。
+- 状态用「模型 + 监听器」（沿用 `ICEButtonModel` 等既有模式），不要在组件里散落状态。
+- 涉及浮层的组件**必须**走 `ICEOverlayManager`，不要各自实现定位与关闭逻辑。
+- 主题色一律取自 `iceUIManager.getTheme()`，禁止硬编码色值（示例除外）。
 - 提交前跑 `npm run types:check && npm test && npm run build`。
 
 ## 引擎已知约束（组件作者必读）
 
 - **渲染顺序是全局 `zIndex`**（构造时按自增赋值），不是「父先子后」：**先创建子组件、后创建父容器**
   会导致父容器的背景盖住子组件。组装顺序按「容器 → 子组件」写；需要时显式指定 `state.zIndex`
-  （`UIScrollPane` 内部就是这么自保的）。
+  （`ICEScrollPane` 内部就是这么自保的）。
 - **子树裁剪**：容器设 `state.clipChildren = true` 可把后代裁到自己的盒子里（滚动容器在用）。
 - **离屏缓存**：被裁剪的组件不参与缓存；视口变化帧整体不缓存。

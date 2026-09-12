@@ -7,14 +7,14 @@
       margin: 0;
       padding: 24px;
       font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #f5f5f5;
-      color: rgba(0, 0, 0, 0.88);
+      background: #f8f9fa;
+      color: #212529;
     }
     canvas {
       display: block;
       border-radius: 12px;
       background: #ffffff;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
     }
   </style>
   <body>
@@ -26,12 +26,12 @@
     <script>
       const ice = new ICE.ICE().init('canvas');
       const W = ICEWEB;
-      const theme = W.uiManager.getTheme();
-      new W.UIHoverManager(ice).start();
-      W.getUIFocusManager(ice).start();
+      const theme = W.iceUIManager.getTheme();
+      new W.ICEHoverManager(ice).start();
+      W.getICEFocusManager(ice).start();
 
       const heading = (text, left, top) =>
-        new W.UILabel({
+        new W.ICELabel({
           left,
           top,
           text,
@@ -43,16 +43,16 @@
         });
 
       const caption = (text, left, top) =>
-        new W.UILabel({ left, top, text, style: { fontSize: 12, fillStyle: theme.colors.textSecondary } });
+        new W.ICELabel({ left, top, text, style: { fontSize: 12, fillStyle: theme.colors.textSecondary } });
 
-      const panel = new W.UIPanel({ id: 'panel', left: 24, top: 24, width: 1352, height: 1912 });
+      const panel = new W.ICEPanel({ id: 'panel', left: 24, top: 24, width: 1352, height: 1912 });
 
       // 滚动视口演示：内容比视口高，靠引擎的 clipChildren 裁掉溢出部分
       // 注意：容器要先创建、再加子组件（引擎按全局 zIndex 排序渲染）
-      const scrollPane = new W.UIScrollPane({ id: 'scroll-pane', left: 32, top: 736, width: 300, height: 96 });
-      const scrollContent = new W.UIComponent({ width: 268, height: 264 });
+      const scrollPane = new W.ICEScrollPane({ id: 'scroll-pane', left: 32, top: 736, width: 300, height: 96 });
+      const scrollContent = new W.ICEComponent({ width: 268, height: 264 });
       for (let i = 0; i < 12; i++) {
-        const row = new W.UIPanel({
+        const row = new W.ICEPanel({
           left: 0,
           top: i * 22,
           width: 268,
@@ -63,17 +63,17 @@
             strokeStyle: theme.colors.border,
           },
         });
-        row.addChild(new W.UILabel({ left: 8, top: 3, text: 'Row #' + (i + 1), style: { fontSize: 12 } }), false);
+        row.addChild(new W.ICELabel({ left: 8, top: 3, text: 'Row #' + (i + 1), style: { fontSize: 12 } }), false);
         scrollContent.addChild(row, false);
       }
       scrollPane.setContent(scrollContent);
 
       // 表单演示：必填校验 + 提交反馈
-      const form = new W.UIForm({ left: 420, top: 656, width: 320, gap: 12 });
-      const nameInput = new W.UITextField({ width: 240, height: 32, placeholder: 'Your name' });
-      const agreeBox = new W.UICheckBox({ width: 24, height: 24 });
+      const form = new W.ICEForm({ left: 420, top: 656, width: 320, gap: 12 });
+      const nameInput = new W.ICETextField({ width: 240, height: 32, placeholder: 'Your name' });
+      const agreeBox = new W.ICECheckBox({ width: 24, height: 24 });
       form.addItems([
-        new W.UIFormItem({
+        new W.ICEFormItem({
           name: 'name',
           label: 'Name',
           control: nameInput,
@@ -88,7 +88,7 @@
             },
           ],
         }),
-        new W.UIFormItem({
+        new W.ICEFormItem({
           name: 'agree',
           label: 'Agree to terms',
           control: agreeBox,
@@ -96,8 +96,8 @@
         }),
       ]);
       const submitTop = 656 + form.state.height + 10;
-      const submitButton = new W.UIButton({ left: 420, top: submitTop, width: 120, height: 32, text: 'Submit' });
-      const submitHint = new W.UILabel({
+      const submitButton = new W.ICEButton({ left: 420, top: submitTop, width: 120, height: 32, text: 'Submit' });
+      const submitHint = new W.ICELabel({
         left: 552,
         top: submitTop + 8,
         text: '',
@@ -109,10 +109,10 @@
       });
 
       // 反馈类组件演示：Tooltip（悬停）/ Popover（点击）/ Popconfirm（危险确认）
-      const tipTarget = new W.UIButton({ id: 'tip-btn', left: 820, top: 656, width: 110, height: 32, text: 'Hover me' });
+      const tipTarget = new W.ICEButton({ id: 'tip-btn', left: 820, top: 656, width: 110, height: 32, text: 'Hover me' });
       W.attachTooltip(ice, tipTarget, { title: '这是工具提示', placement: 'top' });
 
-      const popoverTarget = new W.UIButton({
+      const popoverTarget = new W.ICEButton({
         id: 'pop-btn',
         left: 946,
         top: 656,
@@ -123,19 +123,19 @@
       });
       W.attachPopover(ice, popoverTarget, { title: '浮层标题', content: '点击外部关闭' });
 
-      const deleteTarget = new W.UIButton({ id: 'del-btn', left: 820, top: 700, width: 140, height: 32, text: 'Delete', danger: true });
-      const deleteHint = new W.UILabel({
+      const deleteTarget = new W.ICEButton({ id: 'del-btn', left: 820, top: 700, width: 140, height: 32, text: 'Delete', danger: true });
+      const deleteHint = new W.ICELabel({
         left: 974,
         top: 708,
         text: '',
         style: { fontSize: 12, fillStyle: theme.colors.success },
       });
-      const messageTarget = new W.UIButton({ id: 'msg-btn', left: 820, top: 744, width: 148, height: 32, text: 'Show message' });
+      const messageTarget = new W.ICEButton({ id: 'msg-btn', left: 820, top: 744, width: 148, height: 32, text: 'Show message' });
       messageTarget.on('click', () => {
-        W.UIMessage.success(ice, '已保存');
-        W.UIMessage.info(ice, '正在同步数据');
+        W.ICEMessage.success(ice, '已保存');
+        W.ICEMessage.info(ice, '正在同步数据');
       });
-      const notifyTarget = new W.UIButton({
+      const notifyTarget = new W.ICEButton({
         id: 'notify-btn',
         left: 974,
         top: 744,
@@ -145,17 +145,17 @@
         variant: 'default',
       });
       notifyTarget.on('click', () => {
-        W.UINotification.open(ice, { title: '部署完成', description: 'v1.4.0 已上线' });
+        W.ICENotification.open(ice, { title: '部署完成', description: 'v1.4.0 已上线' });
       });
 
-      const modalTarget = new W.UIButton({ id: 'modal-btn', left: 1106, top: 656, width: 130, height: 32, text: 'Open modal' });
-      const modalHint = new W.UILabel({
+      const modalTarget = new W.ICEButton({ id: 'modal-btn', left: 1106, top: 656, width: 130, height: 32, text: 'Open modal' });
+      const modalHint = new W.ICELabel({
         left: 1106,
         top: 708,
         text: '',
         style: { fontSize: 12, fillStyle: theme.colors.success },
       });
-      const modal = new W.UIModal(ice, {
+      const modal = new W.ICEModal(ice, {
         title: '确认发布？',
         content: '发布后所有用户立即可见。',
         width: 380,
@@ -170,13 +170,13 @@
         onConfirm: () => deleteHint.setText('已删除 ✓'),
       });
 
-      const pageHint = new W.UILabel({
+      const pageHint = new W.ICELabel({
         left: 820,
         top: 776,
         text: '第 1 页 / 每页 10 条',
         style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
       });
-      const pagination = new W.UIPagination({
+      const pagination = new W.ICEPagination({
         id: 'pagination',
         left: 820,
         top: 800,
@@ -189,13 +189,13 @@
       });
 
       // 选择器演示：单选 + 搜索（放在 Feedback 区下方）
-      const cityHint = new W.UILabel({
+      const cityHint = new W.ICELabel({
         left: 1106,
         top: 776,
         text: '未选择城市',
         style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
       });
-      const citySelect = new W.UISelect({
+      const citySelect = new W.ICESelect({
         id: 'city-select',
         left: 1106,
         top: 800,
@@ -212,22 +212,22 @@
         onChange: (value, option) => cityHint.setText('已选择：' + option.label),
       });
 
-      const drawerTarget = new W.UIButton({ id: 'drawer-btn', left: 1120, top: 744, width: 130, height: 32, text: 'Open drawer' });
-      const drawer = new W.UIDrawer(ice, {
+      const drawerTarget = new W.ICEButton({ id: 'drawer-btn', left: 1120, top: 744, width: 130, height: 32, text: 'Open drawer' });
+      const drawer = new W.ICEDrawer(ice, {
         title: '抽屉',
         content: '从右侧滑入，点遮罩或 ✕ 关闭。',
         width: 300,
       });
       drawerTarget.on('click', () => drawer.open());
 
-      // 列表演示：多选 + 内部滚动（内容超出高度时自动套 UIScrollPane）
-      const listHint = new W.UILabel({
+      // 列表演示：多选 + 内部滚动（内容超出高度时自动套 ICEScrollPane）
+      const listHint = new W.ICELabel({
         left: 820,
         top: 828,
         text: '未选择',
         style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
       });
-      const cityList = new W.UIList({
+      const cityList = new W.ICEList({
         id: 'city-list',
         left: 820,
         top: 860,
@@ -247,13 +247,13 @@
       });
 
       // 树演示：两级结构 + 展开/折叠 + 单选
-      const treeHint = new W.UILabel({
+      const treeHint = new W.ICELabel({
         left: 1140,
         top: 828,
         text: '未选择节点',
         style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
       });
-      const tree = new W.UITree({
+      const tree = new W.ICETree({
         id: 'tree',
         left: 1140,
         top: 856,
@@ -276,8 +276,8 @@
       });
 
       // 更多输入与状态：多行文本框 / 密码框 / 分段控制器 / 空状态 / 骨架屏
-      const bioArea = new W.UITextArea({ id: 'bio', left: 32, top: 1066, width: 240, placeholder: '多行文本…' });
-      const passwordField = new W.UIPasswordField({
+      const bioArea = new W.ICETextArea({ id: 'bio', left: 32, top: 1066, width: 240, placeholder: '多行文本…' });
+      const passwordField = new W.ICEPasswordField({
         id: 'password',
         left: 300,
         top: 1082,
@@ -285,7 +285,7 @@
         value: 'secret123',
         showToggle: true,
       });
-      const rangeSegmented = new W.UISegmented({
+      const rangeSegmented = new W.ICESegmented({
         id: 'range',
         left: 524,
         top: 1082,
@@ -298,7 +298,7 @@
         ],
         onChange: (value) => console.log('segmented ->', value),
       });
-      const emptyState = new W.UIEmpty({
+      const emptyState = new W.ICEEmpty({
         id: 'empty',
         left: 788,
         top: 1050,
@@ -307,7 +307,7 @@
         description: '暂无数据',
         actionText: '新建',
       });
-      const skeleton = new W.UISkeleton({
+      const skeleton = new W.ICESkeleton({
         id: 'skeleton',
         left: 1010,
         top: 1060,
@@ -319,7 +319,7 @@
       });
 
       // 数据展示：折叠面板 / 描述列表 / 时间线
-      const collapsePanel = new W.UICollapse({
+      const collapsePanel = new W.ICECollapse({
         id: 'collapse',
         left: 32,
         top: 1256,
@@ -330,7 +330,7 @@
           { key: 'b', title: '面板 B', content: 'B 的内容' },
         ],
       });
-      const descriptions = new W.UIDescriptions({
+      const descriptions = new W.ICEDescriptions({
         id: 'descriptions',
         left: 340,
         top: 1256,
@@ -343,7 +343,7 @@
           { label: '金额', value: '$1,240.00' },
         ],
       });
-      const timeline = new W.UITimeline({
+      const timeline = new W.ICETimeline({
         id: 'timeline',
         left: 700,
         top: 1256,
@@ -356,8 +356,8 @@
       });
 
       // 反馈与状态：加载指示器 / 评分 / 步骤条 / 结果页
-      const spin = new W.UISpin({ id: 'spin', left: 32, top: 1540, size: 24, tip: '加载中…' });
-      const rate = new W.UIRate({
+      const spin = new W.ICESpin({ id: 'spin', left: 32, top: 1540, size: 24, tip: '加载中…' });
+      const rate = new W.ICERate({
         id: 'rate',
         left: 200,
         top: 1540,
@@ -365,7 +365,7 @@
         value: 3,
         onChange: (value) => console.log('rate ->', value),
       });
-      const steps = new W.UISteps({
+      const steps = new W.ICESteps({
         id: 'steps',
         left: 386,
         top: 1532,
@@ -373,7 +373,7 @@
         current: 1,
         items: [{ title: '填写信息' }, { title: '确认订单', description: '核对商品' }, { title: '完成' }],
       });
-      const result = new W.UIResult({
+      const result = new W.ICEResult({
         id: 'result',
         left: 780,
         top: 1520,
@@ -386,13 +386,13 @@
       });
 
       // 高级录入：数字步进框 / 自动完成
-      const inputsLabel = new W.UILabel({
+      const inputsLabel = new W.ICELabel({
         left: 1060,
         top: 1226,
         text: 'Inputs',
         style: { fontSize: 13, fontWeight: '600', fillStyle: theme.colors.text },
       });
-      const quantity = new W.UIInputNumber({
+      const quantity = new W.ICEInputNumber({
         id: 'quantity',
         left: 1060,
         top: 1256,
@@ -402,7 +402,7 @@
         max: 10,
         step: 1,
       });
-      const cityAuto = new W.UIAutoComplete({
+      const cityAuto = new W.ICEAutoComplete({
         id: 'city-auto',
         left: 1060,
         top: 1310,
@@ -411,13 +411,13 @@
         options: ['杭州', '上海', '深圳', '北京', '广州', '成都'],
       });
 
-      const treeSelectHint = new W.UILabel({
+      const treeSelectHint = new W.ICELabel({
         left: 1300,
         top: 1232,
         text: '未选择',
         style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
       });
-      const dataTreeSelect = new W.UITreeSelect({
+      const dataTreeSelect = new W.ICETreeSelect({
         id: 'tree-select',
         left: 1060,
         top: 1364,
@@ -438,13 +438,13 @@
         onChange: (key, node) => treeSelectHint.setText('已选：' + node.label),
       });
 
-      const datePickerHint = new W.UILabel({
+      const datePickerHint = new W.ICELabel({
         left: 1250,
         top: 1412,
         text: '未选择日期',
         style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
       });
-      const datePicker = new W.UIDatePicker({
+      const datePicker = new W.ICEDatePicker({
         id: 'date-picker',
         left: 1060,
         top: 1406,
@@ -454,13 +454,13 @@
         onChange: (value) => datePickerHint.setText('已选：' + value),
       });
 
-      const timeHint = new W.UILabel({
+      const timeHint = new W.ICELabel({
         left: 1240,
         top: 1462,
         text: '未选择时间',
         style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
       });
-      const timePicker = new W.UITimePicker({
+      const timePicker = new W.ICETimePicker({
         id: 'time-picker',
         left: 1060,
         top: 1454,
@@ -470,7 +470,7 @@
         onChange: (value) => timeHint.setText('已选：' + value),
       });
 
-      const cascader = new W.UICascader({
+      const cascader = new W.ICECascader({
         id: 'cascader',
         left: 1060,
         top: 1502,
@@ -508,7 +508,7 @@
       });
 
       // 穿梭框：勾选后用中间按钮在「待选 / 已选」之间搬运
-      const transfer = new W.UITransfer({
+      const transfer = new W.ICETransfer({
         id: 'transfer',
         left: 880,
         top: 140,
@@ -529,7 +529,7 @@
 
       // 轮播：裁剪视口 + 横向轨道 + 箭头/圆点（切换带补间过渡）
       const makeSlide = (text, bg) => {
-        const slide = new W.UIComponent({
+        const slide = new W.ICEComponent({
           width: 320,
           height: 180,
           radius: theme.radius.md,
@@ -538,7 +538,7 @@
           style: { fillStyle: bg },
         });
         slide.addChild(
-          new W.UILabel({
+          new W.ICELabel({
             interactive: false,
             left: 0,
             top: 0,
@@ -553,7 +553,7 @@
         );
         return slide;
       };
-      const carousel = new W.UICarousel({
+      const carousel = new W.ICECarousel({
         id: 'carousel',
         left: 360,
         top: 900,
@@ -568,7 +568,7 @@
       });
 
       // 组件补全：头像组（重叠 + 折叠 +N）与可关闭提示条
-      const avatarGroup = new W.UIAvatarGroup({
+      const avatarGroup = new W.ICEAvatarGroup({
         id: 'avatar-group',
         left: 360,
         top: 262,
@@ -584,7 +584,7 @@
           { text: 'F' },
         ],
       });
-      const closableAlert = new W.UIAlert({
+      const closableAlert = new W.ICEAlert({
         id: 'closable-alert',
         left: 360,
         top: 1150,
@@ -598,7 +598,7 @@
       });
 
       // 环形进度：底环 + 进度弧 + 居中百分比（66% 主色 / 100% 成功色）
-      const progressCircle = new W.UIProgressBar({
+      const progressCircle = new W.ICEProgressBar({
         id: 'progress-circle',
         type: 'circle',
         left: 1080,
@@ -607,7 +607,7 @@
         strokeWidth: 8,
         value: 66,
       });
-      const progressCircleDone = new W.UIProgressBar({
+      const progressCircleDone = new W.ICEProgressBar({
         id: 'progress-circle-done',
         type: 'circle',
         left: 1190,
@@ -619,7 +619,7 @@
       });
 
       // 上传：点击虚线区唤起系统文件框（accept/maxSize/maxCount 校验 + 文件列表）
-      const upload = new W.UIUpload({
+      const upload = new W.ICEUpload({
         id: 'upload',
         left: 1000,
         top: 400,
@@ -632,7 +632,7 @@
       upload.addFile({ name: 'design.png', size: 348 * 1024 });
 
       // 评论区（含嵌套回复与操作）
-      const comment = new W.UIComment({
+      const comment = new W.ICEComment({
         id: 'comment',
         left: 32,
         top: 1730,
@@ -649,33 +649,20 @@
       });
 
       // 颜色选择器：色板网格 + 选中环（表单控件语义）
-      const colorHint = new W.UILabel({
+      const colorHint = new W.ICELabel({
         left: 542,
         top: 1856,
-        text: '已选：#1677ff',
+        text: '已选：' + theme.colors.primary,
         style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
       });
-      const colorPicker = new W.UIColorPicker({
+      // 不传 colors → 用 ICEColorPicker 的默认色板（Bootstrap 主题色）
+      const colorPicker = new W.ICEColorPicker({
         id: 'color-picker',
         left: 540,
         top: 1740,
         width: 300,
         columns: 6,
-        value: '#1677ff',
-        colors: [
-          '#1677ff',
-          '#13c2c2',
-          '#52c41a',
-          '#faad14',
-          '#fa541c',
-          '#f5222d',
-          '#eb2f96',
-          '#722ed1',
-          '#2f54eb',
-          '#8c8c8c',
-          '#000000',
-          '#ffffff',
-        ],
+        value: theme.colors.primary,
         onChange: (color) => colorHint.setText('已选：' + color),
       });
 
@@ -684,13 +671,13 @@
         'data:image/svg+xml;utf8,' +
         encodeURIComponent(
           "<svg xmlns='http://www.w3.org/2000/svg' width='240' height='120'>" +
-            "<rect width='240' height='120' fill='#e6f4ff'/>" +
-            "<circle cx='48' cy='60' r='34' fill='#1677ff'/>" +
-            "<rect x='110' y='18' width='112' height='84' rx='12' fill='#52c41a'/>" +
+            "<rect width='240' height='120' fill='#cfe2ff'/>" +
+            "<circle cx='48' cy='60' r='34' fill='#0d6efd'/>" +
+            "<rect x='110' y='18' width='112' height='84' rx='12' fill='#198754'/>" +
             "<text x='132' y='68' font-size='18' fill='#ffffff'>240x120</text>" +
             '</svg>',
         );
-      const imageFill = new W.UIImage({
+      const imageFill = new W.ICEImage({
         id: 'image-fill',
         left: 900,
         top: 1740,
@@ -699,7 +686,7 @@
         fit: 'fill',
         src: demoImageSrc,
       });
-      const imageContain = new W.UIImage({
+      const imageContain = new W.ICEImage({
         id: 'image-contain',
         left: 1040,
         top: 1740,
@@ -708,7 +695,7 @@
         fit: 'contain',
         src: demoImageSrc,
       });
-      const imageCover = new W.UIImage({
+      const imageCover = new W.ICEImage({
         id: 'image-cover',
         left: 1180,
         top: 1740,
@@ -721,48 +708,48 @@
       panel.addChildren([
         heading('Buttons', 32, 28),
 
-        new W.UIButton({ id: 'btn-primary', left: 32, top: 64, text: 'Primary', width: 96 }),
-        new W.UIButton({ id: 'btn-default', left: 140, top: 64, text: 'Default', width: 96, variant: 'default' }),
-        new W.UIButton({ id: 'btn-text', left: 248, top: 64, text: 'Text', width: 72, variant: 'text' }),
-        new W.UIButton({ id: 'btn-link', left: 332, top: 64, text: 'Link', width: 72, variant: 'link' }),
-        new W.UIButton({ id: 'btn-danger', left: 416, top: 64, text: 'Danger', width: 96, danger: true }),
-        new W.UIButton({ id: 'btn-small', left: 524, top: 66, text: 'Small', width: 84, size: 'small' }),
-        new W.UIButton({ id: 'btn-large', left: 620, top: 62, text: 'Large', width: 104, size: 'large' }),
+        new W.ICEButton({ id: 'btn-primary', left: 32, top: 64, text: 'Primary', width: 96 }),
+        new W.ICEButton({ id: 'btn-default', left: 140, top: 64, text: 'Default', width: 96, variant: 'default' }),
+        new W.ICEButton({ id: 'btn-text', left: 248, top: 64, text: 'Text', width: 72, variant: 'text' }),
+        new W.ICEButton({ id: 'btn-link', left: 332, top: 64, text: 'Link', width: 72, variant: 'link' }),
+        new W.ICEButton({ id: 'btn-danger', left: 416, top: 64, text: 'Danger', width: 96, danger: true }),
+        new W.ICEButton({ id: 'btn-small', left: 524, top: 66, text: 'Small', width: 84, size: 'small' }),
+        new W.ICEButton({ id: 'btn-large', left: 620, top: 62, text: 'Large', width: 104, size: 'large' }),
 
         heading('Badges & tags', 32, 128),
 
-        new W.UIBadge({ id: 'badge-primary', left: 32, top: 166, text: '9', width: 32, height: 24 }),
-        new W.UIBadge({ id: 'badge-success', left: 76, top: 166, text: 'OK', width: 40, height: 24, status: 'success' }),
-        new W.UIBadge({ id: 'badge-warning', left: 128, top: 166, text: 'W', width: 32, height: 24, status: 'warning' }),
-        new W.UIBadge({ id: 'badge-error', left: 172, top: 166, text: '5', width: 32, height: 24, status: 'error' }),
-        new W.UIBadge({ id: 'badge-dot', left: 604, top: 178, dot: true, dotSize: 10 }),
-        new W.UIBadge({ id: 'badge-count', left: 624, top: 166, width: 46, height: 24, count: 128 }),
+        new W.ICEBadge({ id: 'badge-primary', left: 32, top: 166, text: '9', width: 32, height: 24 }),
+        new W.ICEBadge({ id: 'badge-success', left: 76, top: 166, text: 'OK', width: 40, height: 24, status: 'success' }),
+        new W.ICEBadge({ id: 'badge-warning', left: 128, top: 166, text: 'W', width: 32, height: 24, status: 'warning' }),
+        new W.ICEBadge({ id: 'badge-error', left: 172, top: 166, text: '5', width: 32, height: 24, status: 'error' }),
+        new W.ICEBadge({ id: 'badge-dot', left: 604, top: 178, dot: true, dotSize: 10 }),
+        new W.ICEBadge({ id: 'badge-count', left: 624, top: 166, width: 46, height: 24, count: 128 }),
 
-        new W.UITag({ id: 'tag-default', left: 224, top: 168, text: 'Default', width: 82, height: 24 }),
-        new W.UITag({ id: 'tag-success', left: 318, top: 168, text: 'Success', width: 88, height: 24, status: 'success' }),
-        new W.UITag({ id: 'tag-warning', left: 418, top: 168, text: 'Warning', width: 86, height: 24, status: 'warning' }),
-        new W.UITag({ id: 'tag-error', left: 516, top: 168, text: 'Error', width: 76, height: 24, status: 'error' }),
+        new W.ICETag({ id: 'tag-default', left: 224, top: 168, text: 'Default', width: 82, height: 24 }),
+        new W.ICETag({ id: 'tag-success', left: 318, top: 168, text: 'Success', width: 88, height: 24, status: 'success' }),
+        new W.ICETag({ id: 'tag-warning', left: 418, top: 168, text: 'Warning', width: 86, height: 24, status: 'warning' }),
+        new W.ICETag({ id: 'tag-error', left: 516, top: 168, text: 'Error', width: 76, height: 24, status: 'error' }),
 
         heading('Avatars & icons', 32, 226),
 
-        new W.UIAvatar({ id: 'avatar-a', left: 32, top: 264, text: 'A', size: 36 }),
-        new W.UIAvatar({ id: 'avatar-b', left: 82, top: 260, text: 'B', size: 44 }),
-        new W.UIAvatar({ id: 'avatar-c', left: 140, top: 254, text: 'C', size: 56, backgroundColor: theme.colors.success }),
+        new W.ICEAvatar({ id: 'avatar-a', left: 32, top: 264, text: 'A', size: 36 }),
+        new W.ICEAvatar({ id: 'avatar-b', left: 82, top: 260, text: 'B', size: 44 }),
+        new W.ICEAvatar({ id: 'avatar-c', left: 140, top: 254, text: 'C', size: 56, backgroundColor: theme.colors.success }),
 
-        new W.UIIcon({ id: 'icon-star', left: 220, top: 276, icon: '★', size: 24, color: theme.colors.warning }),
-        new W.UIIcon({ id: 'icon-check', left: 258, top: 276, icon: '✓', size: 24, color: theme.colors.success }),
-        new W.UIIcon({ id: 'icon-info', left: 296, top: 276, icon: 'ℹ', size: 24, color: theme.colors.info }),
+        new W.ICEIcon({ id: 'icon-star', left: 220, top: 276, icon: '★', size: 24, color: theme.colors.warning }),
+        new W.ICEIcon({ id: 'icon-check', left: 258, top: 276, icon: '✓', size: 24, color: theme.colors.success }),
+        new W.ICEIcon({ id: 'icon-info', left: 296, top: 276, icon: 'ℹ', size: 24, color: theme.colors.info }),
         avatarGroup,
         closableAlert,
 
         heading('Selection & progress', 32, 340),
 
-        new W.UICheckBox({ id: 'check', left: 32, top: 382, width: 24, height: 24, selected: true }),
-        new W.UIRadioButton({ id: 'radio', left: 72, top: 382, width: 24, height: 24, selected: true }),
-        new W.UISwitch({ id: 'switch', left: 116, top: 380, width: 52, height: 26, selected: true }),
-        new W.UIProgressBar({ id: 'progress', left: 192, top: 388, value: 55, width: 220, height: 10 }),
-        new W.UISlider({ id: 'slider', left: 440, top: 384, value: 40, width: 220, height: 18 }),
-        new W.UISlider({
+        new W.ICECheckBox({ id: 'check', left: 32, top: 382, width: 24, height: 24, selected: true }),
+        new W.ICERadioButton({ id: 'radio', left: 72, top: 382, width: 24, height: 24, selected: true }),
+        new W.ICESwitch({ id: 'switch', left: 116, top: 380, width: 52, height: 26, selected: true }),
+        new W.ICEProgressBar({ id: 'progress', left: 192, top: 388, value: 55, width: 220, height: 10 }),
+        new W.ICESlider({ id: 'slider', left: 440, top: 384, value: 40, width: 220, height: 18 }),
+        new W.ICESlider({
           id: 'slider-range',
           left: 680,
           top: 384,
@@ -777,7 +764,7 @@
 
         heading('Containers', 32, 446),
 
-        new W.UICard({
+        new W.ICECard({
           id: 'card',
           left: 32,
           top: 488,
@@ -786,7 +773,7 @@
           height: 160,
           // extra 传工厂：节点在卡片之后创建，zIndex 天然在上层
           extra: () =>
-            new W.UILabel({
+            new W.ICELabel({
               left: 0,
               top: 0,
               width: 40,
@@ -795,10 +782,10 @@
               style: { fontSize: 12, fillStyle: theme.colors.primary },
             }),
         }),
-        new W.UITabs({ id: 'tabs', left: 360, top: 488, tabs: ['Overview', 'Activity', 'Settings'], width: 380, height: 40 }),
+        new W.ICETabs({ id: 'tabs', left: 360, top: 488, tabs: ['Overview', 'Activity', 'Settings'], width: 380, height: 40 }),
 
-        new W.UISeparator({ id: 'separator-v', left: 780, top: 488, width: 1, height: 160 }),
-        new W.UISeparator({ id: 'separator-h', left: 32, top: 700, width: 500, height: 1 }),
+        new W.ICESeparator({ id: 'separator-v', left: 780, top: 488, width: 1, height: 160 }),
+        new W.ICESeparator({ id: 'separator-h', left: 32, top: 700, width: 500, height: 1 }),
 
         heading('Form', 420, 620),
         form,
@@ -872,7 +859,7 @@
         heading('Scroll pane', 32, 706),
         scrollPane,
 
-        new W.UILabel({
+        new W.ICELabel({
           left: 812,
           top: 540,
           text: 'Canvas-native, Swing-style',
@@ -897,12 +884,12 @@
       // 浮层演示：点 Primary 弹出 popover（弹层底座 + 入场缩放/出场淡出）
       const primaryButton = panel.childNodes.find((node) => node.state && node.state.id === 'btn-primary');
       const makePopover = () => {
-        const popover = new W.UIPanel({ width: 208, height: 84, radius: 8 });
+        const popover = new W.ICEPanel({ width: 208, height: 84, radius: 8 });
         popover.addChild(
-          new W.UILabel({ left: 12, top: 10, text: 'Popover', style: { fontSize: 13, fontWeight: '600' } }),
+          new W.ICELabel({ left: 12, top: 10, text: 'Popover', style: { fontSize: 13, fontWeight: '600' } }),
         );
         popover.addChild(
-          new W.UILabel({
+          new W.ICELabel({
             left: 12,
             top: 32,
             text: 'Anchored + animated',
@@ -910,7 +897,7 @@
           }),
         );
         popover.addChild(
-          new W.UILabel({
+          new W.ICELabel({
             left: 12,
             top: 54,
             text: 'Click outside to close',
@@ -920,7 +907,7 @@
         return popover;
       };
       primaryButton.on('click', () => {
-        const overlays = W.getUIOverlayManager(ice);
+        const overlays = W.getICEOverlayManager(ice);
         if (overlays.isOpen()) {
           overlays.closeAll();
           return;

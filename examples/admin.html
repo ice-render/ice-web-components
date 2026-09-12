@@ -7,14 +7,14 @@
       margin: 0;
       padding: 24px;
       font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #eef1f5;
-      color: rgba(0, 0, 0, 0.88);
+      background: #f8f9fa;
+      color: #212529;
     }
     canvas {
       display: block;
       border-radius: 14px;
-      background: #f5f5f5;
-      box-shadow: 0 16px 40px rgba(15, 23, 42, 0.12);
+      background: #ffffff;
+      box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175);
     }
   </style>
   <body>
@@ -25,11 +25,11 @@
     <script>
       const ice = new ICE.ICE().init('canvas');
       const W = ICEWEB;
-      const theme = W.uiManager.getTheme();
-      new W.UIHoverManager(ice).start();
-      W.getUIFocusManager(ice).start();
+      const theme = W.iceUIManager.getTheme();
+      new W.ICEHoverManager(ice).start();
+      W.getICEFocusManager(ice).start();
 
-      const page = new W.UIPanel({
+      const page = new W.ICEPanel({
         id: 'page',
         left: 24,
         top: 24,
@@ -40,7 +40,7 @@
       });
 
       /* ---------- Sidebar ---------- */
-      const sidebar = new W.UIPanel({
+      const sidebar = new W.ICEPanel({
         id: 'sidebar',
         left: 0,
         top: 0,
@@ -50,14 +50,14 @@
         style: { fillStyle: '#ffffff', strokeStyle: theme.colors.border },
       });
 
-      const brand = new W.UILabel({
+      const brand = new W.ICELabel({
         left: 28,
         top: 28,
         text: 'ICE Admin',
         style: { fontSize: 22, fontWeight: '700', fillStyle: theme.colors.primary },
       });
 
-      const menu = new W.UIMenu({
+      const menu = new W.ICEMenu({
         left: 16,
         top: 84,
         width: 232,
@@ -82,15 +82,15 @@
         style: { fillStyle: '#ffffff' },
       });
 
-      const sidebarFooterSep = new W.UISeparator({ left: 16, top: 860, width: 232, height: 1 });
-      const sidebarAvatar = new W.UIAvatar({ left: 16, top: 880, text: 'FM', size: 40 });
-      const sidebarName = new W.UILabel({
+      const sidebarFooterSep = new W.ICESeparator({ left: 16, top: 860, width: 232, height: 1 });
+      const sidebarAvatar = new W.ICEAvatar({ left: 16, top: 880, text: 'FM', size: 40 });
+      const sidebarName = new W.ICELabel({
         left: 64,
         top: 884,
         text: 'Felix Morgan',
         style: { fontSize: 14, fontWeight: '600', fillStyle: theme.colors.text },
       });
-      const sidebarRole = new W.UILabel({
+      const sidebarRole = new W.ICELabel({
         left: 64,
         top: 904,
         text: 'Administrator',
@@ -98,7 +98,7 @@
       });
 
       /* ---------- Header ---------- */
-      const header = new W.UIPanel({
+      const header = new W.ICEPanel({
         id: 'header',
         left: 264,
         top: 0,
@@ -108,8 +108,8 @@
         style: { fillStyle: '#ffffff', strokeStyle: theme.colors.border },
       });
 
-      const hamburger = new W.UIIcon({ left: 24, top: 20, size: 24, icon: '☰', color: theme.colors.textSecondary });
-      const pageTitle = new W.UILabel({
+      const hamburger = new W.ICEIcon({ left: 24, top: 20, size: 24, icon: '☰', color: theme.colors.textSecondary });
+      const pageTitle = new W.ICELabel({
         left: 58,
         top: 0,
         height: 64,
@@ -117,12 +117,12 @@
         text: 'Dashboard',
         style: { fontSize: 18, fontWeight: '600', fillStyle: theme.colors.text },
       });
-      const search = new W.UITextField({ id: 'search', left: 340, top: 16, width: 260, placeholder: 'Search orders, customers...' });
-      const headerSep = new W.UISeparator({ left: 1188, top: 16, width: 1, height: 32 });
-      const headerAvatar = new W.UIAvatar({ id: 'header-avatar', left: 1208, top: 12, text: 'FM', size: 40 });
+      const search = new W.ICETextField({ id: 'search', left: 340, top: 16, width: 260, placeholder: 'Search orders, customers...' });
+      const headerSep = new W.ICESeparator({ left: 1188, top: 16, width: 1, height: 32 });
+      const headerAvatar = new W.ICEAvatar({ id: 'header-avatar', left: 1208, top: 12, text: 'FM', size: 40 });
 
       /* ---------- Content ---------- */
-      const content = new W.UIPanel({
+      const content = new W.ICEPanel({
         id: 'content',
         left: 264,
         top: 64,
@@ -132,7 +132,7 @@
         style: { fillStyle: '#f5f5f5', strokeStyle: 'rgba(0,0,0,0)' },
       });
 
-      const overviewTitle = new W.UILabel({
+      const overviewTitle = new W.ICELabel({
         left: 28,
         top: 24,
         text: 'Overview',
@@ -140,20 +140,20 @@
       });
 
       const stats = [
-        new W.UIStatCard({ left: 28, top: 56, width: 224, height: 128, icon: '◧', title: 'Total Revenue', value: '$128,400', trend: '+12.4%', trendType: 'success' }),
-        new W.UIStatCard({ left: 268, top: 56, width: 224, height: 128, icon: '▤', title: 'New Orders', value: '2,318', trend: '+8.1%', trendType: 'success' }),
-        new W.UIStatCard({ left: 508, top: 56, width: 224, height: 128, icon: '◉', title: 'Active Users', value: '18,204', trend: '-2.7%', trendType: 'warning' }),
-        new W.UIStatCard({ left: 748, top: 56, width: 224, height: 128, icon: '⌁', title: 'Conversion', value: '6.42%', trend: '+1.9%', trendType: 'success' }),
+        new W.ICEStatCard({ left: 28, top: 56, width: 224, height: 128, icon: '◧', title: 'Total Revenue', value: '$128,400', trend: '+12.4%', trendType: 'success' }),
+        new W.ICEStatCard({ left: 268, top: 56, width: 224, height: 128, icon: '▤', title: 'New Orders', value: '2,318', trend: '+8.1%', trendType: 'success' }),
+        new W.ICEStatCard({ left: 508, top: 56, width: 224, height: 128, icon: '◉', title: 'Active Users', value: '18,204', trend: '-2.7%', trendType: 'warning' }),
+        new W.ICEStatCard({ left: 748, top: 56, width: 224, height: 128, icon: '⌁', title: 'Conversion', value: '6.42%', trend: '+1.9%', trendType: 'success' }),
       ];
 
-      const ordersTitle = new W.UILabel({
+      const ordersTitle = new W.ICELabel({
         left: 28,
         top: 200,
         text: 'Recent Orders',
         style: { fontSize: 16, fontWeight: '600', fillStyle: theme.colors.text },
       });
 
-      const alert = new W.UIAlert({
+      const alert = new W.ICEAlert({
         left: 28,
         top: 232,
         width: 944,
@@ -164,7 +164,7 @@
       });
 
       const statusMap = { Paid: 'success', Pending: 'warning', Shipped: 'info', Refunded: 'error' };
-      const table = new W.UITable({
+      const table = new W.ICETable({
         left: 28,
         top: 312,
         width: 944,
@@ -178,7 +178,7 @@
             title: 'Status',
             width: 204,
             renderCell: (value, row, column, meta) =>
-              new W.UIBadge({
+              new W.ICEBadge({
                 left: 0,
                 top: Math.round((meta.cellHeight - 22) / 2),
                 width: 86,
@@ -198,7 +198,7 @@
         ],
       });
 
-      const tableCaption = new W.UILabel({
+      const tableCaption = new W.ICELabel({
         left: 28,
         top: 600,
         text: 'Showing 1–6 of 2,318 orders',
@@ -206,7 +206,7 @@
       });
 
       /* ---------- Revenue by Channel (main column bottom) ---------- */
-      const channelCard = new W.UICard({
+      const channelCard = new W.ICECard({
         left: 28,
         top: 632,
         width: 944,
@@ -224,7 +224,7 @@
       channelRows.forEach((row, i) => {
         const barTop = 52 + i * 40;
         channelNodes.push(
-          new W.UILabel({
+          new W.ICELabel({
             left: 16,
             top: barTop,
             height: 10,
@@ -233,11 +233,11 @@
             style: { fontSize: 13, fillStyle: theme.colors.textSecondary },
           }),
         );
-        channelNodes.push(new W.UIProgressBar({ left: 140, top: barTop, width: 756, value: row.value, height: 10 }));
+        channelNodes.push(new W.ICEProgressBar({ left: 140, top: barTop, width: 756, value: row.value, height: 10 }));
       });
 
       /* ---------- Right column ---------- */
-      const statusCard = new W.UICard({
+      const statusCard = new W.ICECard({
         left: 1004,
         top: 56,
         width: 256,
@@ -245,19 +245,19 @@
         title: 'System Status',
         style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border, shadow: 'md' },
       });
-      const cpuLabel = new W.UILabel({ left: 16, top: 42, height: 20, verticalAlign: 'middle', text: 'CPU Load', style: { fontSize: 13, fillStyle: theme.colors.textSecondary } });
-      const cpuBar = new W.UIProgressBar({ left: 16, top: 64, width: 224, value: 72, height: 10 });
-      const memLabel = new W.UILabel({ left: 16, top: 82, height: 20, verticalAlign: 'middle', text: 'Memory', style: { fontSize: 13, fillStyle: theme.colors.textSecondary } });
-      const memBar = new W.UIProgressBar({ left: 16, top: 104, width: 224, value: 54, height: 10 });
-      const diskLabel = new W.UILabel({ left: 16, top: 122, height: 20, verticalAlign: 'middle', text: 'Disk', style: { fontSize: 13, fillStyle: theme.colors.textSecondary } });
-      const diskBar = new W.UIProgressBar({ left: 16, top: 144, width: 224, value: 38, height: 10 });
-      const statusSep = new W.UISeparator({ left: 16, top: 170, width: 224, height: 1 });
-      const emailLabel = new W.UILabel({ left: 16, top: 180, height: 22, verticalAlign: 'middle', text: 'Email notifications', style: { fontSize: 13, fillStyle: theme.colors.textSecondary } });
-      const emailSwitch = new W.UISwitch({ left: 188, top: 180, width: 44, height: 22, selected: true });
-      const pushLabel = new W.UILabel({ left: 16, top: 216, height: 22, verticalAlign: 'middle', text: 'Push notifications', style: { fontSize: 13, fillStyle: theme.colors.textSecondary } });
-      const pushSwitch = new W.UISwitch({ left: 188, top: 216, width: 44, height: 22, selected: false });
+      const cpuLabel = new W.ICELabel({ left: 16, top: 42, height: 20, verticalAlign: 'middle', text: 'CPU Load', style: { fontSize: 13, fillStyle: theme.colors.textSecondary } });
+      const cpuBar = new W.ICEProgressBar({ left: 16, top: 64, width: 224, value: 72, height: 10 });
+      const memLabel = new W.ICELabel({ left: 16, top: 82, height: 20, verticalAlign: 'middle', text: 'Memory', style: { fontSize: 13, fillStyle: theme.colors.textSecondary } });
+      const memBar = new W.ICEProgressBar({ left: 16, top: 104, width: 224, value: 54, height: 10 });
+      const diskLabel = new W.ICELabel({ left: 16, top: 122, height: 20, verticalAlign: 'middle', text: 'Disk', style: { fontSize: 13, fillStyle: theme.colors.textSecondary } });
+      const diskBar = new W.ICEProgressBar({ left: 16, top: 144, width: 224, value: 38, height: 10 });
+      const statusSep = new W.ICESeparator({ left: 16, top: 170, width: 224, height: 1 });
+      const emailLabel = new W.ICELabel({ left: 16, top: 180, height: 22, verticalAlign: 'middle', text: 'Email notifications', style: { fontSize: 13, fillStyle: theme.colors.textSecondary } });
+      const emailSwitch = new W.ICESwitch({ left: 188, top: 180, width: 44, height: 22, selected: true });
+      const pushLabel = new W.ICELabel({ left: 16, top: 216, height: 22, verticalAlign: 'middle', text: 'Push notifications', style: { fontSize: 13, fillStyle: theme.colors.textSecondary } });
+      const pushSwitch = new W.ICESwitch({ left: 188, top: 216, width: 44, height: 22, selected: false });
 
-      const actionsCard = new W.UICard({
+      const actionsCard = new W.ICECard({
         left: 1004,
         top: 328,
         width: 256,
@@ -265,10 +265,10 @@
         title: 'Quick Actions',
         style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border, shadow: 'md' },
       });
-      const newOrderBtn = new W.UIButton({ left: 16, top: 56, width: 224, height: 36, text: 'New Order', variant: 'primary' });
-      const exportBtn = new W.UIButton({ left: 16, top: 100, width: 224, height: 36, text: 'Export Report', variant: 'default' });
+      const newOrderBtn = new W.ICEButton({ left: 16, top: 56, width: 224, height: 36, text: 'New Order', variant: 'primary' });
+      const exportBtn = new W.ICEButton({ left: 16, top: 100, width: 224, height: 36, text: 'Export Report', variant: 'default' });
 
-      const teamCard = new W.UICard({
+      const teamCard = new W.ICECard({
         left: 1004,
         top: 494,
         width: 256,
@@ -286,18 +286,18 @@
       const teamNodes = [];
       teamMembers.forEach((m, i) => {
         const top = 48 + i * 48;
-        teamNodes.push(new W.UIAvatar({ left: 16, top, text: m.initials, size: 32 }));
+        teamNodes.push(new W.ICEAvatar({ left: 16, top, text: m.initials, size: 32 }));
         teamNodes.push(
-          new W.UILabel({ left: 56, top, height: 16, verticalAlign: 'middle', text: m.name, style: { fontSize: 13, fontWeight: '600', fillStyle: theme.colors.text } }),
+          new W.ICELabel({ left: 56, top, height: 16, verticalAlign: 'middle', text: m.name, style: { fontSize: 13, fontWeight: '600', fillStyle: theme.colors.text } }),
         );
         teamNodes.push(
-          new W.UILabel({ left: 56, top: top + 16, height: 16, verticalAlign: 'middle', text: m.role, style: { fontSize: 12, fillStyle: theme.colors.textSecondary } }),
+          new W.ICELabel({ left: 56, top: top + 16, height: 16, verticalAlign: 'middle', text: m.role, style: { fontSize: 12, fillStyle: theme.colors.textSecondary } }),
         );
         if (i < teamMembers.length - 1) {
-          teamNodes.push(new W.UISeparator({ left: 16, top: top + 40, width: 224, height: 1 }));
+          teamNodes.push(new W.ICESeparator({ left: 16, top: top + 40, width: 224, height: 1 }));
         }
       });
-      const teamViewAll = new W.UILabel({
+      const teamViewAll = new W.ICELabel({
         left: 16,
         top: 48 + teamMembers.length * 48 + 4,
         text: 'View all members',
@@ -305,7 +305,7 @@
       });
       teamNodes.push(teamViewAll);
 
-      const footer = new W.UILabel({
+      const footer = new W.ICELabel({
         left: 28,
         top: 856,
         text: 'ICE Admin · Canvas-native UI demo — v0.0.1',

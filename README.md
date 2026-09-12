@@ -11,12 +11,12 @@ Swing-style Canvas UI components built on `ice-render`.
 
 - Keep the `ice-render` component/props/state model.
 - Reuse ICE layout managers for UI layout.
-- Provide Swing-like classes: `UIComponent`, `UIContainer`, `UIManager`, and
-  `UIPainter`.
-- Build Canvas-native UI components such as `UILabel`, `UIButton`, and
-  `UIPanel`.
-- Provide admin-oriented components such as `UITable`, `UIMenu`,
-  `UITextField`, `UIAlert`, and `UIStatCard`.
+- Provide Swing-like classes: `ICEComponent`, `ICEContainer`, `ICEManager`, and
+  `ICEPainter`.
+- Build Canvas-native UI components such as `ICELabel`, `ICEButton`, and
+  `ICEPanel`.
+- Provide admin-oriented components such as `ICETable`, `ICEMenu`,
+  `ICETextField`, `ICEAlert`, and `ICEStatCard`.
 
 See [ROADMAP.md](./ROADMAP.md) for the component backlog (业界组件库 对照表)
 and the foundations still to build (scroll container, focus/keyboard, forms).
@@ -41,32 +41,59 @@ current component set.
 
 ## Theme
 
-`ice-web-components` uses a compact 业界组件库-style token set:
+`ice-web-components` uses a compact **Bootstrap 5-style** token set:
 
-- seed colours: `primary`, `success`, `warning`, `error`, `info`
+- seed colours: `primary` `#0d6efd`, `success` `#198754`, `warning` `#ffc107`,
+  `error` `#dc3545`, `info` `#0dcaf0`
+- subtle pairs for filled-soft surfaces: `primaryBg`/`primaryBorder`, `successBg`/
+  `successBorder`, … plus `*TextEmphasis` (Bootstrap's `*-text-emphasis`) for text
+  sitting on those subtle backgrounds
 - neutral surfaces: `surface`, `elevated`, `border`, `borderSecondary`
 - text hierarchy: `text`, `textSecondary`, `textTertiary`, `textDisabled`
-- spacing/radius/control sizes and shadow presets
+- spacing/radius/control sizes and the three Bootstrap shadows (`sm`/`md`/`lg`,
+  given as explicit `shadowColor/shadowBlur/shadowOffset*` numbers)
 
 Switch the global theme with:
 
 ```ts
-import { uiManager } from 'ice-web-components';
+import { iceUIManager } from 'ice-web-components';
 
-uiManager.setTheme('dark');
+iceUIManager.setTheme('dark');
 ```
 
-Components read tokens from `uiManager.getTheme()` when they are created. The
-light theme is `UI_LIGHT_THEME` and the dark theme is `UI_DARK_THEME`.
+Components read tokens from `iceUIManager.getTheme()` when they are created. The
+light theme is `ICE_LIGHT_THEME` and the dark theme is `ICE_DARK_THEME`.
+
+## Naming
+
+Everything exported by this package uses the **`ICE`** prefix (same convention as
+`ice-render`). Two names intentionally collide with engine exports, because both
+packages describe the same concept with the same word:
+
+| this package | `ice-render` |
+|---|---|
+| `ICEComponent` (UI component base, extends `ICEGroup`) | `ICEComponent` (graphic component base) |
+| `ICEImage` (image widget, wraps the engine primitive) | `ICEImage` (image primitive) |
+
+Import them from one package, or alias one side when you need both:
+
+```ts
+import { ICEComponent as EngineComponent } from 'ice-render';
+import { ICEComponent } from 'ice-web-components';
+```
+
+`ICEFlowLayout`, `ICEBoxLayout` and the `ICELayoutManager` type are **re-exported
+from `ice-render`** (identical classes), so those three names never differ
+between packages.
 
 ## Hover
 
 ICE deliberately skips full hit-testing on `mousemove` for performance, so
 Canvas components do not receive native `mouseenter`/`mouseleave`. Attach
-`UIHoverManager` once to enable lightweight hover states:
+`ICEHoverManager` once to enable lightweight hover states:
 
 ```ts
-import { UIHoverManager } from 'ice-web-components';
+import { ICEHoverManager } from 'ice-web-components';
 
-new UIHoverManager(ice).start();
+new ICEHoverManager(ice).start();
 ```

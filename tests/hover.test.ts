@@ -1,5 +1,5 @@
 import { EventBus } from 'ice-render';
-import { UIHoverManager, UIButton, UIPanel } from '../src';
+import { ICEHoverManager, ICEButton, ICEPanel } from '../src';
 
 function hoverComponent(id: string, zIndex: number, contains: (x: number) => boolean) {
   return {
@@ -10,7 +10,7 @@ function hoverComponent(id: string, zIndex: number, contains: (x: number) => boo
   };
 }
 
-describe('UIHoverManager', () => {
+describe('ICEHoverManager', () => {
   beforeEach(() => {
     jest.useFakeTimers();
   });
@@ -31,7 +31,7 @@ describe('UIHoverManager', () => {
       screenToWorld: (x: number, y: number) => [x, y],
     };
 
-    const manager = new UIHoverManager(ice).start();
+    const manager = new ICEHoverManager(ice).start();
     bus.trigger('mousemove', { offsetX: 5, offsetY: 5 });
     jest.advanceTimersByTime(20);
 
@@ -57,7 +57,7 @@ describe('UIHoverManager', () => {
       screenToWorld: (x: number, y: number) => [x, y],
     };
 
-    const manager = new UIHoverManager(ice).start();
+    const manager = new ICEHoverManager(ice).start();
     bus.trigger('mousemove', { offsetX: 3, offsetY: 3 });
     jest.advanceTimersByTime(20);
     expect(target.setHovered).toHaveBeenCalledWith(true);
@@ -67,7 +67,7 @@ describe('UIHoverManager', () => {
   });
 });
 
-describe('UIHoverManager 工具层遮挡', () => {
+describe('ICEHoverManager 工具层遮挡', () => {
   it('工具层里的可交互组件（遮罩/浮层）优先于组件层的组件', () => {
     const handlers: Record<string, any> = {};
     const ice: any = {
@@ -81,10 +81,10 @@ describe('UIHoverManager 工具层遮挡', () => {
       },
       screenToWorld: (x: number, y: number) => [x, y],
     };
-    const button = new UIButton({ left: 0, top: 0, width: 100, height: 40, text: '下面' });
+    const button = new ICEButton({ left: 0, top: 0, width: 100, height: 40, text: '下面' });
     ice.childNodes = [button];
     button.getMinBoundingBox(true); // 合成矩阵（真实流程里渲染后才做命中检测）
-    const manager = new UIHoverManager(ice).start();
+    const manager = new ICEHoverManager(ice).start();
 
     handlers['mousemove'].handler.call(handlers['mousemove'].ctx, { offsetX: 20, offsetY: 20 });
     // 手动触发 __flush 的等价路径：直接调内部命中（rAF 在 node 环境里不会自动跑）
@@ -92,7 +92,7 @@ describe('UIHoverManager 工具层遮挡', () => {
     expect(button.isHovered()).toBe(true);
 
     // 工具层放一个盖住它的遮罩 → hover 不应再落到按钮上
-    const mask = new UIPanel({ left: 0, top: 0, width: 400, height: 400, radius: 0 });
+    const mask = new ICEPanel({ left: 0, top: 0, width: 400, height: 400, radius: 0 });
     mask.getMinBoundingBox(true);
     ice.toolNodes = [mask];
     (manager as any).__flush();
