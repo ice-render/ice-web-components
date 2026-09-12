@@ -229,6 +229,35 @@
         onChange: (keys) => listHint.setText(keys.length ? '已选：' + keys.join('、') : '未选择'),
       });
 
+      // 树演示：两级结构 + 展开/折叠 + 单选
+      const treeHint = new W.UILabel({
+        left: 1140,
+        top: 828,
+        text: '未选择节点',
+        style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+      });
+      const tree = new W.UITree({
+        id: 'tree',
+        left: 1140,
+        top: 856,
+        width: 200,
+        height: 150,
+        defaultExpandAll: true,
+        nodes: [
+          {
+            key: 'root',
+            label: '数据源',
+            children: [
+              { key: 'mysql', label: 'MySQL' },
+              { key: 'pg', label: 'PostgreSQL' },
+              { key: 'cache', label: '缓存', children: [{ key: 'redis', label: 'Redis' }] },
+            ],
+          },
+          { key: 'logs', label: '日志' },
+        ],
+        onSelect: (keys, node) => treeHint.setText(node ? '已选择：' + node.label : '未选择节点'),
+      });
+
       panel.addChildren([
         heading('Buttons', 32, 28),
 
@@ -299,6 +328,8 @@
         cityHint,
         cityList,
         listHint,
+        tree,
+        treeHint,
 
         heading('Scroll pane', 32, 706),
         scrollPane,
@@ -366,7 +397,7 @@
       });
 
       ice.addChild(panel);
-      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint };
+      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint };
     </script>
   </body>
 </html>

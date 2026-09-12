@@ -45,7 +45,7 @@
 | `JComboBox` | 阶段 B 的 `UIComboBox` | A1/A2/A3 |
 | `JSpinner` | `UISpinner`（数值/步进） | A3 |
 | `JTextArea` / `JPasswordField` | `UITextArea` / `UIPasswordField` | A2 |
-| `JTree` | `UITree` + `UITreeModel` | A2 + A3 |
+| `JTree` | ✅ `UITree`（复用 UISelectionModel） | A2 + A3 |
 | `JSplitPane` | `UISplitPane`（拖拽分隔） | — |
 | `JToolBar` | `UIToolBar` | — |
 | `JForm`（无直接对应） | `UIForm` + `UIFormItem` | A3 + A4 |
@@ -119,7 +119,7 @@
 | 数据展示 | Timeline | ⬜ 阶段 D |
 | 数据展示 | Tooltip | ⬜ 阶段 B |
 | 数据展示 | Tour | ⊘ 低优先 |
-| 数据展示 | Tree | ⬜ 阶段 C（下一个） |
+| 数据展示 | Tree | ✅ `UITree` |
 | 反馈 | Alert | ✅ `UIAlert`（部分：无关闭 / 图标 / banner） |
 | 反馈 | Drawer | ⬜ 阶段 B |
 | 反馈 | Message | ⬜ 阶段 B |

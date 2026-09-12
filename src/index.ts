@@ -27,6 +27,7 @@ export * from './components/UIDropdown';
 export * from './components/UISelect';
 export * from './components/UIDrawer';
 export * from './components/UIList';
+export * from './components/UITree';
 export * from './components/UIAvatar';
 export * from './components/UIIcon';
 export * from './components/UISvgIcon';
