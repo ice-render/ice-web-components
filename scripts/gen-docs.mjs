@@ -202,6 +202,8 @@ const GROUPS = [
       'ICETetrisModel',
       'ICE_TETROMINOES',
       'ICE_TETRIS_LINE_SCORES',
+      'ICESnakeModel',
+      'ICE_SNAKE_DIRECTIONS',
     ],
   },
 ];

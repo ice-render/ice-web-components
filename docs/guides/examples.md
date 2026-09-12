@@ -16,7 +16,7 @@ npx serve .
 | [`workbench.html`](../../examples/workbench.html) | 客服工单工作台（三栏高频操作） | `ICESplitter`、`ICEList`、`ICEComment`、`ICETimeline`… |
 | [`custom-component.html`](../../examples/custom-component.html) | 自己写组件并接进体系 | `ICEWidget` + 表单/焦点/主题约定 |
 | [`windows-xp.html`](../../examples/windows-xp.html) | 全屏 Windows XP 桌面（好玩的那一个） | `ICEWindow`、`ICEIconTile` + 几乎全套组件 |
-| [`tetris.html`](../../examples/tetris.html) | ICE Arcade 掌机（小游戏合集第 1 弹） | `ICETetrisModel`（纯逻辑）+ 自绘棋盘/HUD，键盘全接管 |
+| [`arcade.html`](../../examples/arcade.html) | ICE Arcade 掌机（小游戏合集：俄罗斯方块 + 贪吃蛇） | `ICETetrisModel` / `ICESnakeModel`（纯逻辑）+ 自绘棋盘/HUD，键盘全接管 |
 
 ![组件总览](../images/gallery.png)
 
@@ -240,13 +240,43 @@ setInterval(() => model.tick(), 1000);      // 计时（只有 playing 会累加
 
 ---
 
-## `tetris.html`：ICE Arcade（小游戏合集）
+## `arcade.html`：ICE Arcade（小游戏合集，两块卡带）
 
 同样是「把组件当积木」，但换了个方向：做的不是业务页面，而是一台**掌机**。
 机壳、屏幕框、HUD 卡片（`ICEPanel`）/数值（`ICELabel`）/进度（`ICEProgressBar`）/按钮
-（`ICEButton`）/音效开关（`ICESwitch`）全是组件，画面里没有一个位图资源。
+（`ICEButton`）/音效开关（`ICESwitch`）全是组件，画面里没有一个位图资源。顶部是卡带位：
+**俄罗斯方块**（第 1 弹）与**贪吃蛇**（第 2 弹）都能玩，第三格「中国象棋」先占位禁用。
 
-游戏规则全部落在纯逻辑模型里（[模型 API](../api/models.md#icetetrismodel)，
+| 俄罗斯方块 | 贪吃蛇 |
+|---|---|
+| ![ICE Arcade 俄罗斯方块](../images/arcade-tetris.png) | ![ICE Arcade 贪吃蛇](../images/arcade-snake.png) |
+
+### 两块卡带共用一套契约
+
+卡带写在 `GAMES` 注册表里，每块卡带的 `mount(ctx)` 返回**同一套运行时契约**：
+
+```js
+{
+  model,                    // 主模型（页面负责挂 change 监听 → 重画 HUD）
+  paint(),                  // 重画自己的棋盘
+  hud(),                    // { score, mid, right, progress } → 三张 HUD 卡片 + 进度条
+  keydown(key, repeating),  // 键盘（P 暂停 / R 重开由页面统一处理）
+  frame(dt, now),           // 每帧：重力 / 步进
+  setOverlay(paused, over), // 屏幕上的「已暂停 / GAME OVER」提示层
+  destroy(),                // 换卡带时拆掉自己
+}
+```
+
+换卡带就是「销毁旧的 → 清空屏幕与侧栏 → 建新的 → 重挂监听 → 重画 HUD」，连卡片标题
+（`消行 LINES` ↔ `长度 LENGTH`）和操作说明都是卡带自己声明的。加第三块卡带只需要：
+写一个可单测的模型 + 在 `GAMES` 里加一项。
+
+> 卡带按钮的选中态不靠改属性实现：`ICEButton` 的 `variant` 是构造期定的（没有
+> `setVariant`），所以切换时**重建这一行按钮**最省心 —— 反正只有三格。
+
+### 卡带 1：俄罗斯方块
+
+规则全部落在纯逻辑模型里（[模型 API](../api/models.md#icetetrismodel)，
 16 条单测覆盖 7-bag 随机、移动与踢墙旋转、软/硬降、消行计分与升级、暂停与重置）：
 
 ```ts
@@ -273,10 +303,26 @@ model.pause();     model.resume();          // P
 * **消行闪屏**用棋盘上方一层半透明遮罩 + 帧循环里的衰减值驱动，`ICE_TETRIS_LINE_SCORES`
   给连消提示用（四行消除弹 TETRIS 提示）。
 
-![ICE Arcade](../images/tetris.png)
+### 卡带 2：贪吃蛇
 
-> 「合集」是认真的：页面顶部留了卡带位，第一弹是俄罗斯方块，后面同款模型 + 换渲染的方式
-> 可以继续塞贪吃蛇、棋类这类规则独立的游戏 —— 只要逻辑继续写成可单测的纯模型。
+第二个模型 `ICESnakeModel`（[模型 API](../api/models.md#icesnakemodel)，18 条单测）：
+
+```ts
+import { ICESnakeModel } from 'ice-web-components';
+
+const model = new ICESnakeModel({ rows: 20, cols: 20 });
+model.setDirection('up');     // 可以排队两个转向；180° 掉头会被拒绝
+model.tick();                 // 前进一步：吃食物长身子，撞墙 / 撞自己就结束
+model.getTickInterval();      // 170ms 起、每级变快，下限 70ms
+model.getBody();              // [[row, col], …]，头在最前；getFood() 给食物坐标
+```
+
+几个「不写出来就会踩」的规则细节，都在模型里测过：
+
+* **不能 180° 掉头**：转向先入队（最多两个），一步一步兑现，避免一键急转弯；
+* **撞到「正在移开的尾巴」不算死** —— 不吃食物时尾巴这一步就腾出来了；
+* **食物永远不落在蛇身上**：从所有空格里挑，挑不到（棋盘填满）算通关；
+* 想换玩法的话，`wrap: true` 就是穿墙模式（测试里也覆盖了）。
 
 ---
 

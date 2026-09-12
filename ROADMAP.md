@@ -11,7 +11,7 @@
 > `focusRing` 聚焦色）；③ `ICETag`/`ICEBadge` 默认改成 Bootstrap 实底 `.text-bg-*`（`variant:'soft'` 保留浅底风格）。
 > 细节见 README 的 Naming / Theme / Colour variants 三节。
 
-## 现状（76 个组件源文件 / 90 个导出类 / 539 条单测 / 149 项浏览器断言）
+## 现状（76 个组件源文件 / 92 个导出类 / 557 条单测 / 159 项浏览器断言）
 
 按分组清点（完整清单与参数见 [`docs/components.md`](./docs/components.md)）：
 
@@ -65,10 +65,10 @@
 > 出现文字重影）；`ICEDescriptions` 的标签/值超宽自动省略号。
 >
 > 示例：`gallery.html`（组件总览）、`admin.html`（6 页后台）、`workbench.html`（客服工单工作台）、
-> `windows-xp.html`（全屏 XP 桌面）、`tetris.html`（ICE Arcade 掌机）、
+> `windows-xp.html`（全屏 XP 桌面）、`arcade.html`（ICE Arcade 掌机：两块卡带）、
 > `custom-component.html`（自定义组件）——见[示例与场景](./docs/guides/examples.md)。
 > 浏览器回归：`qa:admin` 44 项 + `qa:gallery` 32 项 + `qa:workbench` 15 项 + `qa:xp` 35 项
-> + `qa:tetris` 23 项，全部走真实鼠标/键盘事件。
+> + `qa:arcade` 33 项，全部走真实鼠标/键盘事件。
 >
 > 第九批（小游戏合集第 1 弹）：`ICETetrisModel`（俄罗斯方块纯逻辑模型：7-bag 随机、踢墙旋转、
 > 软/硬降、消行计分与升级、暂停/重置、变化监听；另导出 `ICE_TETROMINOES` /
@@ -80,6 +80,13 @@
 > / 关闭计算机）→ 桌面；**任意账号任意密码都能进**。音效全是 WebAudio 现场合成的原创音型
 > （开机 / 注销 / 关机 / 咔哒，非微软原版素材），托盘喇叭可一键静音；开始菜单的注销与关机
 > 也接上了，能一路 注销 → 登录 → 关机 → 重新开机 循环。
+>
+> 第十一批（小游戏合集第 2 弹）：`ICESnakeModel`（贪吃蛇纯逻辑模型：转向队列 / 禁止 180°
+> 掉头 / 吃到就长 / 撞墙撞自己结束 / 越吃越快 / 可穿墙模式 / 变化监听）；`examples/tetris.html`
+> 升级成 `examples/arcade.html` —— 一台掌机插**两块卡带**，卡带注册表用同一套运行时契约
+> （model / paint / hud / keydown / frame / setOverlay / destroy）插拔，换卡带连带重写
+> HUD 卡片标题与操作说明；`qa:tetris` 也随之扩成 `qa:arcade`（23 → 33 项，覆盖两块卡带
+> 与切换）。
 
 ## 阶段 A：底座（先做这个）
 

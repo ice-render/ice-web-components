@@ -203,3 +203,42 @@ XP 扫雷的三档标准难度。
 消 1/2/3/4 行的基础分（再乘等级），经典数值。
 
 源码：`src/model/ICETetrisModel.ts`
+
+## `ICESnakeModel`
+
+四个方向。
+
+源码：[`src/model/ICESnakeModel.ts`](../../src/model/ICESnakeModel.ts)
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getRows()` | `number` |  |
+| `getCols()` | `number` |  |
+| `getBody()` | `ICESnakePoint[]` | 蛇身（头在最前）。 |
+| `getHead()` | `ICESnakePoint` | 头的坐标。 |
+| `getLength()` | `number` |  |
+| `getFood()` | `ICESnakePoint \| null` |  |
+| `getDirection()` | `ICESnakeDirection` |  |
+| `getPendingDirections()` | `ICESnakeDirection[]` | 排队中的转向（UI 可以拿它显示「已接收输入」）。 |
+| `getScore()` | `number` |  |
+| `getEaten()` | `number` | 已经吃掉的food个数。 |
+| `getLevel()` | `number` | 每 5 个食物升一级，从 1 开始。 |
+| `getTickInterval()` | `number` | 当前等级下的步进间隔（毫秒），等级越高越短，下限 70ms。 |
+| `isGameOver()` | `boolean` |  |
+| `isPaused()` | `boolean` |  |
+| `addChangeListener(listener: ICESnakeListener)` | `() => void` |  |
+| `setDirection(direction: ICESnakeDirection)` | `boolean` | 掉头请求会被忽略并返回 `false`；重复的「当前方向」算接受（`true`）但不占队列； |
+| `tick()` | `boolean` | 前进一步；撞墙 / 撞自己则进入 game over 并返回 false。 |
+| `pause()` | `void` |  |
+| `resume()` | `void` |  |
+| `reset(options: ICESnakeOptions)` | `void` | 重置：可只覆盖部分选项（行列、随机源、穿墙、初始长度）。 |
+| `setBodyForTest(cells: ICESnakePoint[], direction?: ICESnakeDirection)` | `void` | 直接摆一条蛇（造题、读档、UI demo 都用得上）。 |
+| `setFoodForTest(row: number, col: number)` | `void` | 直接摆一个食物。 |
+
+### `ICE_SNAKE_DIRECTIONS` — 常量
+
+按上、右、下、左顺序排列的方向表（UI 画方向盘可以直接用）。
+
+源码：`src/model/ICESnakeModel.ts`

@@ -101,3 +101,4 @@ export * from './model/ICEFormModel';
 export * from './model/ICESelectionModel';
 export * from './model/ICEMinesweeperModel';
 export * from './model/ICETetrisModel';
+export * from './model/ICESnakeModel';

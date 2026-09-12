@@ -27,10 +27,10 @@ rings and shadows) is drawn by the engine.
 - **Bootstrap 5 token theme** (plus a dark theme) — swap with one call.
 - **No name collisions with the engine** — the package’s runtime exports are
   disjoint from `ice-render`’s (there is a regression test for it).
-- **Actually tested** — 539 unit tests (81 suites: form validation, overlay
-  positioning, keyboard navigation, sort/hover/focus edge cases, the Minesweeper and
-  Tetris rule models) plus five browser QA suites (`qa:admin`, `qa:gallery`,
-  `qa:workbench`, `qa:xp`, `qa:tetris` — 149 assertions) that drive the demo pages with
+- **Actually tested** — 557 unit tests (82 suites: form validation, overlay
+  positioning, keyboard navigation, sort/hover/focus edge cases, the Minesweeper,
+  Tetris and Snake rule models) plus five browser QA suites (`qa:admin`, `qa:gallery`,
+  `qa:workbench`, `qa:xp`, `qa:arcade` — 159 assertions) that drive the demo pages with
   real mouse and keyboard events and fail on any console error.
 
 ## Quick start
@@ -213,25 +213,34 @@ title bar, drag, resize, maximise/restore, activate event) and `ICEIconTile`
 
 ![Windows XP desktop](docs/images/xp-desktop.png)
 
-### `tetris.html` — ICE Arcade (a handheld console)
+### `arcade.html` — ICE Arcade (a handheld console)
 
-The first entry in a small “mini-game collection” — and it is not a web page but a
-**handheld console**: the shell, the screen bezel, the HUD cards, the buttons and the
-sound switch are all ICE components, while the rules live in a pure model
-(`ICETetrisModel`) that never touches the canvas.
+Not a web page but a **handheld console**: the shell, the screen bezel, the HUD cards,
+the buttons and the sound switch are all ICE components, and there is not a single
+bitmap asset in the picture. Two cartridges are plugged in, and the cartridge row at
+the top switches between them (a third slot, Chinese chess, is disabled for now).
 
-The rules are modern-standard Tetris: 7-bag fairness, simple wall kicks (0 / ±1 / ±2),
-a ghost landing preview, soft drop +1/cell, hard drop +2/cell, line scores of
-100/300/500/800 × level, a level-up every 10 lines, and a gravity interval that starts
-at 800 ms and shrinks with the level. Keyboard: `←` / `→` move, `↓` soft drop, `Space`
-hard drop, `↑` / `X` rotate clockwise, `Z` rotate counter-clockwise, `P` pause,
-`R` restart — and switching away from the tab pauses the game for you.
+| | |
+|---|---|
+| ![ICE Arcade · Tetris](docs/images/arcade-tetris.png) | ![ICE Arcade · Snake](docs/images/arcade-snake.png) |
 
-Model and UI are completely separate: `ICETetrisModel` (16 of the repo’s 539 unit
-tests) imports no canvas at all; the page only reads the model and paints cells. That
-keeps the rules testable in node and the rendering swappable.
+**Cartridge 1 — Tetris** (`ICETetrisModel`, 16 unit tests). Modern-standard rules:
+7-bag fairness, simple wall kicks (0 / ±1 / ±2), a ghost landing preview, soft drop
++1/cell, hard drop +2/cell, line scores of 100/300/500/800 × level, a level-up every 10
+lines, and a gravity interval that starts at 800 ms and shrinks with the level.
+Keyboard: `←` / `→` move, `↓` soft drop, `Space` hard drop, `↑` / `X` rotate clockwise,
+`Z` rotate counter-clockwise, `P` pause, `R` restart.
 
-![ICE Arcade tetris](docs/images/tetris.png)
+**Cartridge 2 — Snake** (`ICESnakeModel`, 18 unit tests). Classic rules: the snake grows
+on every meal (+10 points × level), 5 meals per level, an interval that drops from
+170 ms per cell towards 70 ms, a two-deep turn queue that refuses 180° reversals (and
+lets you survive moving into the tail cell that is about to vacate), and walls that
+kill. Keyboard: arrows or `W` / `A` / `S` / `D` to steer, `P` pause, `R` restart.
+
+Both games are pure models that never touch the canvas; the page only reads the model
+and paints cells. Switching a cartridge tears the old board down, builds the new one
+and re-captions the HUD, so a third game is a registry entry plus a `mount()`.
+Switching away from the tab pauses whatever is running.
 
 > This page deliberately does **not** start `ICEFocusManager` — it activates the
 > focused button with Enter/Space, which collides head-on with “Space = hard drop”.
@@ -367,9 +376,9 @@ npm run qa:workbench
 # start menu, minesweeper, paint strokes, wallpaper switch, clock
 npm run qa:xp
 
-# browser QA for examples/tetris.html: keyboard-driven play (move / rotate / soft &
-# hard drop / pause / line clear / game over / restart) + real clicks on the HUD
-npm run qa:tetris
+# browser QA for examples/arcade.html: both cartridges played with real key presses,
+# cartridge switching, and real clicks on the HUD
+npm run qa:arcade
 
 # docs: regenerate the API reference and check relative links
 npm run docs
@@ -401,12 +410,14 @@ the wallpaper switch, the clock — and the IE window really fetching pages (plu
 404 page, back button, `about:xp` table and bookmarks). `qa:xp` starts a small static
 server itself, because `fetch` does not work from `file://`.
 
-`npm run qa:tetris` plays the arcade page with **real key presses**: arrows move and
-rotate the piece, `Space` hard-drops, `P` pauses (and it asserts gravity really stops),
-then it builds a deterministic board to force a line clear, keeps dropping until
-game over (best score lands in `localStorage`), restarts with `R`, and clicks the
-HUD buttons / sound switch with the mouse. Layout assertions keep the board inside
-the screen bezel and the panels from overlapping.
+`npm run qa:arcade` plays the arcade page with **real key presses**. On the Tetris
+cartridge it moves, rotates, soft-drops, hard-drops, asserts that `P` really stops
+gravity, builds a deterministic board to force a line clear, keeps dropping until game
+over (the best score lands in `localStorage`) and restarts with `R`. Then it clicks the
+Snake cartridge and checks the swap (new board, re-captioned HUD, a fresh model), steers
+with arrow keys, feeds the snake to grow it, drives it into a wall, and switches back —
+plus real clicks on the pause / restart buttons and the sound switch. Layout assertions
+keep both boards inside the screen bezel and the panels from overlapping.
 
 See [ROADMAP.md](./ROADMAP.md) for the component backlog and what is still missing
 per component.
