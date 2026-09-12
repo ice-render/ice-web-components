@@ -19,7 +19,7 @@
 | A1 | 弹层 / 浮层 | ✅ 已完成 | `UIOverlayManager`：浮层根节点挂在 ICE **工具层**（递归渲染、绘制在组件之上、不参与 `getComponentById`）；12 种 placement、空间不足自动翻转、夹进可见范围；点外关闭 / Esc / exclusive。带视口缩放平移也正确。 |
 | A2 | 滚动容器 | ✅ 已完成 | 引擎侧新增**子树裁剪** `clipChildren`（ice-render 1.2.0：设备空间裁剪、多层求交、命中检测同样尊重裁剪、被裁剪组件不参与离屏缓存）；组件侧 `UIScrollPane`（内容盒 + 滚动条 + 滚轮/API 滚动）。 |
 | A3 | 焦点与键盘导航 | 🟡 基础已做 | `UIFocusManager`：Tab/Shift+Tab 循环、Esc 取消、Enter/Space 激活（控件自定义 `activate()`）、鼠标点击聚焦（沿父链上溯到最近控件）、焦点环画在工具层并跟随组件移动。**待补**：方向键在组内移动（Radio 组 / Menu / Tabs）、模态焦点陷阱、Slider 方向键调值。 |
-| A4 | 表单与校验 | ⬜ 待做 | 值收集 + 校验规则 + 错误态渲染（依赖 A3）。 |
+| A4 | 表单与校验 | 🟡 基础已做 | `UIFormModel`（required/min/max/minLength/maxLength/pattern/validator + change 触发 + 监听器）、`UIFormItem`（标签/控件/错误文案，纵向与横向布局）、`UIForm`（addItem/validate/getValues/setValues/reset/submit/onSubmit）；控件统一取值约定 `getFormValue/setFormValue` 与 `change` 事件（UITextField / UICheckBox / UISwitch / UIRadioButton / UISlider）；`setValidateStatus` 提供错误态（文本框边框标红已实现）。**待补**：异步校验、跨字段依赖重校验、错误态在其它控件上的视觉反馈。 |
 | A5 | 动画/过渡 | 🟡 基础已做 | 引擎侧新增**子树不透明度** `opacity`（1.3.0，整棵子树一起淡入淡出）；组件侧 `UIAnimation`（`tween` + `fadeIn/fadeOut/fadeTo/slideIn/scaleIn`，frame driver 可注入、可取消）；`UIOverlayManager` 支持 `enterAnimation: 'fade'｜'scale'`、`exitAnimation: 'fade'`。**待补**：折叠/展开的高度过渡、消息堆叠的错峰入场。 |
 
 ## 阶段 B：第一批组件（A1 已就绪，直接可做）

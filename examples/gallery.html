@@ -65,6 +65,32 @@
       }
       scrollPane.setContent(scrollContent);
 
+      // 表单演示：必填校验 + 提交反馈
+      const form = new W.UIForm({ left: 420, top: 656, width: 320, gap: 12 });
+      const nameInput = new W.UITextField({ width: 240, height: 32, placeholder: 'Your name' });
+      const agreeBox = new W.UICheckBox({ width: 24, height: 24 });
+      form.addItems([
+        new W.UIFormItem({ name: 'name', label: 'Name', control: nameInput, rules: [{ required: true }] }),
+        new W.UIFormItem({
+          name: 'agree',
+          label: 'Agree to terms',
+          control: agreeBox,
+          rules: [{ required: true, message: '请先同意条款' }],
+        }),
+      ]);
+      const submitTop = 656 + form.state.height + 10;
+      const submitButton = new W.UIButton({ left: 420, top: submitTop, width: 120, height: 32, text: 'Submit' });
+      const submitHint = new W.UILabel({
+        left: 552,
+        top: submitTop + 8,
+        text: '',
+        style: { fontSize: 12, fillStyle: theme.colors.success },
+      });
+      submitButton.on('click', () => {
+        const ok = form.submit();
+        submitHint.setText(ok ? 'Submitted ✓' : '');
+      });
+
       panel.addChildren([
         heading('Buttons', 32, 28),
 
@@ -113,6 +139,11 @@
 
         new W.UISeparator({ id: 'separator-v', left: 780, top: 488, width: 1, height: 160 }),
         new W.UISeparator({ id: 'separator-h', left: 32, top: 700, width: 500, height: 1 }),
+
+        heading('Form', 420, 620),
+        form,
+        submitButton,
+        submitHint,
 
         heading('Scroll pane', 32, 706),
         scrollPane,
@@ -166,7 +197,7 @@
       });
 
       ice.addChild(panel);
-      window.__result = { ice, panel };
+      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane };
     </script>
   </body>
 </html>

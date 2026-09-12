@@ -49,7 +49,10 @@ export class UIRadioButton extends UIComponent {
     });
     this.addChild(this.outer, false);
     this.addChild(this.inner, false);
-    this.model.addChangeListener(() => this.__sync());
+    this.model.addChangeListener(() => {
+      this.__sync();
+      this.trigger('change', null, { value: this.isSelected() });
+    });
   }
 
   public isSelected(): boolean {
@@ -59,6 +62,14 @@ export class UIRadioButton extends UIComponent {
   public setSelected(selected: boolean): this {
     this.model.setSelected(selected);
     return this;
+  }
+
+  public getFormValue(): any {
+    return this.isSelected();
+  }
+
+  public setFormValue(value: any): void {
+    this.setSelected(!!value);
   }
 
   /** 键盘激活（Enter / Space）与鼠标点击同义：选中本项。 */

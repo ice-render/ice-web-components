@@ -68,7 +68,10 @@ export class UISlider extends UIComponent {
     this.addChild(this.track, false);
     this.addChild(this.fill, false);
     this.addChild(this.thumb, false);
-    this.model.addChangeListener(() => this.__sync());
+    this.model.addChangeListener(() => {
+      this.__sync();
+      this.trigger('change', null, { value: this.getValue() });
+    });
   }
 
   public setValue(value: number): this {
@@ -78,6 +81,14 @@ export class UISlider extends UIComponent {
 
   public getValue(): number {
     return this.model.getValue();
+  }
+
+  public getFormValue(): any {
+    return this.getValue();
+  }
+
+  public setFormValue(value: any): void {
+    this.setValue(Number(value));
   }
 
   protected afterAddHandler(): void {

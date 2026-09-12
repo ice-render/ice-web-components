@@ -56,9 +56,18 @@ export class UITextField extends UIComponent {
     return this.value;
   }
 
+  public getFormValue(): any {
+    return this.value;
+  }
+
+  public setFormValue(value: any): void {
+    this.setValue(value);
+  }
+
   public setValue(value: string): this {
     this.value = this.__normalize(String(value ?? ''));
     this.__sync();
+    this.__emitChange();
     return this;
   }
 
@@ -112,15 +121,22 @@ export class UITextField extends UIComponent {
     if (key === 'Backspace') {
       this.value = this.value.slice(0, -1);
       this.__sync();
+      this.__emitChange();
     } else if (key === 'Delete') {
       this.value = this.value.slice(1);
       this.__sync();
+      this.__emitChange();
     } else if (key === 'Escape') {
       this.blur();
     } else if (typeof key === 'string' && key.length === 1 && !evt.metaKey && !evt.ctrlKey) {
       this.value = this.__normalize(this.value + key);
       this.__sync();
+      this.__emitChange();
     }
+  }
+
+  private __emitChange(): void {
+    this.trigger('change', null, { value: this.value });
   }
 
   private __isPointInside(evt: any): boolean {
@@ -141,14 +157,29 @@ export class UITextField extends UIComponent {
     this.__sync();
   }
 
+  /** 校验失败时边框标红（错误文案由 UIFormItem 渲染在下方）。 */
+  protected __applyValidateState(): void {
+    this.__sync();
+  }
+
   private __sync(): void {
     const theme = uiManager.getTheme();
+    const borderColor =
+      this.validateStatus === 'error'
+        ? theme.colors.error
+        : this.focused
+        ? theme.colors.primary
+        : theme.colors.border;
     this.setState({
       style: {
         ...this.state.style,
         fillStyle: theme.colors.surface,
-        strokeStyle: this.focused ? theme.colors.primary : theme.colors.border,
-        lineWidth: this.focused ? theme.control.lineWidthFocused : theme.control.lineWidth,
+        // 校验失败优先于聚焦态：错误必须一眼可见
+        strokeStyle: borderColor,
+        lineWidth:
+          this.focused || this.validateStatus === 'error'
+            ? theme.control.lineWidthFocused
+            : theme.control.lineWidth,
       },
     });
     const text = this.value || this.placeholder;

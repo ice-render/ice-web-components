@@ -14,6 +14,8 @@ export class UIComponent extends ICEGroup {
    */
   protected focusable: boolean = false;
   protected focused: boolean = false;
+  /** 表单校验状态（由 UIFormItem 设置；控件可覆盖 __applyValidateState 做视觉反馈） */
+  protected validateStatus: 'default' | 'error' | 'warning' | 'success' = 'default';
 
   constructor(props: any = {}) {
     super({
@@ -85,6 +87,36 @@ export class UIComponent extends ICEGroup {
 
   protected __applyFocusState(): void {
     // 默认不改变外观：焦点环由 UIFocusManager 统一绘制。
+  }
+
+  public getValidateStatus(): 'default' | 'error' | 'warning' | 'success' {
+    return this.validateStatus;
+  }
+
+  public setValidateStatus(status: 'default' | 'error' | 'warning' | 'success'): this {
+    const next = status || 'default';
+    if (next === this.validateStatus) {
+      return this;
+    }
+    this.validateStatus = next;
+    this.__applyValidateState();
+    this.revalidate();
+    return this;
+  }
+
+  /** 校验状态变化后的视觉反馈钩子（默认不变，控件按需覆盖）。 */
+  protected __applyValidateState(): void {}
+
+  /**
+   * 表单取值约定：控件覆盖这两个方法即可被 UIForm 直接读写。
+   * 默认读写 `state.value`（对没有值语义的组件无害）。
+   */
+  public getFormValue(): any {
+    return this.state.value;
+  }
+
+  public setFormValue(value: any): void {
+    this.setState({ value });
   }
 
   public setHovered(hovered: boolean): this {
