@@ -43,6 +43,11 @@ docs/
 （`scripts/gen-docs.mjs`）：组件说明取类注释，参数表取 `ICEXxxOptions` 字段，
 方法表取 public 方法。**要改这些内容请改源码里的注释**，不要在生成物上直接改。
 
+> **引擎侧还有一份「应用驱动的评估」**（在 ice-render 仓库）：
+> [docs/architecture/15-app-driven-review.md](https://github.com/ice-render/ice-render/blob/master/docs/architecture/15-app-driven-review.md)
+> —— 用本库的 admin 与 Windows XP 两个案例反推引擎的能力边界、短板归属与优先级。
+> 想知道「哪些能力引擎已经有了、只是本库还没用上」，先看它。
+
 ```bash
 npm run docs:api     # 重新生成 components.md 与 api/*.md
 ```
