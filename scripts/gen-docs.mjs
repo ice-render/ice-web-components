@@ -41,6 +41,8 @@ const GROUPS = [
       'ICEInputNumber',
       'ICECheckBox',
       'ICERadioButton',
+      'ICERadioGroup',
+      'ICECheckboxGroup',
       'ICESwitch',
       'ICESlider',
       'ICESegmented',
@@ -66,6 +68,7 @@ const GROUPS = [
       'ICETree',
       'ICECard',
       'ICEStatCard',
+      'ICEStatistic',
       'ICEDescriptions',
       'ICETimeline',
       'ICEProgressBar',
@@ -77,6 +80,7 @@ const GROUPS = [
       'ICECarousel',
       'ICECollapse',
       'ICEComment',
+      'ICEWatermark',
     ],
   },
   {
@@ -102,8 +106,8 @@ const GROUPS = [
   {
     file: 'navigation',
     title: '导航',
-    intro: '菜单、下拉触发、分页与标签页。',
-    entries: ['ICEMenu', 'ICEDropdown', 'ICEPagination', 'ICETabs'],
+    intro: '菜单、面包屑、下拉触发、分页与标签页。',
+    entries: ['ICEMenu', 'ICEBreadcrumb', 'ICEDropdown', 'ICEPagination', 'ICETabs'],
   },
   {
     file: 'core',
@@ -111,6 +115,7 @@ const GROUPS = [
     intro: '不直接出现在业务页面里，但决定一切的东西：组件基类、滚动视口、浮层/焦点/消息管理器，以及布局与动画工具。',
     entries: [
       'ICEScrollPane',
+      'ICESplitter',
       'ICEOverlayManager',
       'ICEFocusManager',
       'ICEHoverManager',
@@ -140,6 +145,8 @@ const GROUPS = [
       'slideIn',
       'scaleIn',
       'estimateTextWidth',
+      'formatStatisticValue',
+      'formatCountdown',
       'tooltipPanelWidth',
       'readHovered',
       'createTextNode',

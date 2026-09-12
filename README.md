@@ -144,16 +144,16 @@ keyboard, and participates in `ICEForm` validation.
 | Group | Components |
 |---|---|
 | Basic | `ICEPanel` `ICEButton` `ICELabel` `ICEIcon` `ICESvgIcon` `ICESeparator` |
-| Data entry | `ICETextField` `ICETextArea` `ICEPasswordField` `ICEInputNumber` `ICESelect` `ICEAutoComplete` `ICECascader` `ICETreeSelect` `ICEDatePicker` `ICETimePicker` `ICECheckBox` `ICERadioButton` `ICESwitch` `ICESlider` `ICESegmented` `ICERate` `ICEColorPicker` `ICETransfer` `ICEUpload` `ICEForm` `ICEFormItem` |
-| Data display | `ICETable` `ICEList` `ICETree` `ICEStatCard` `ICECard` `ICEComment` `ICEDescriptions` `ICETimeline` `ICEProgressBar` `ICEAvatar` `ICEAvatarGroup` `ICETag` `ICEBadge` `ICEImageView` `ICECarousel` `ICECollapse` |
+| Data entry | `ICETextField` `ICETextArea` `ICEPasswordField` `ICEInputNumber` `ICESelect` `ICEAutoComplete` `ICECascader` `ICETreeSelect` `ICEDatePicker` `ICETimePicker` `ICECheckBox` `ICECheckboxGroup` `ICERadioButton` `ICERadioGroup` `ICESwitch` `ICESlider` `ICESegmented` `ICERate` `ICEColorPicker` `ICETransfer` `ICEUpload` `ICEForm` `ICEFormItem` |
+| Data display | `ICETable` `ICEList` `ICETree` `ICEStatCard` `ICEStatistic` `ICECard` `ICEComment` `ICEDescriptions` `ICETimeline` `ICEProgressBar` `ICEAvatar` `ICEAvatarGroup` `ICETag` `ICEBadge` `ICEImageView` `ICECarousel` `ICECollapse` `ICEWatermark` |
 | Feedback & status | `ICEAlert` `ICEModal` `ICEDrawer` `ICEMessage` `ICENotification` `ICETooltip` `ICEPopover` `ICEPopconfirm` `ICEEmpty` `ICESkeleton` `ICESpin` `ICEResult` `ICESteps` `ICEOverlayManager` |
-| Navigation | `ICEMenu` `ICEDropdown` `ICEPagination` `ICETabs` |
-| Layout & core | `ICEWidget` `ICEContainer` `ICEScrollPane` `ICEHoverManager` `ICEFocusManager` `ICEMessageManager` `ICEManager` (`ICEPainter` / `ICELayoutManager` are types) |
+| Navigation | `ICEMenu` `ICEBreadcrumb` `ICEDropdown` `ICEPagination` `ICETabs` |
+| Layout & core | `ICEWidget` `ICEContainer` `ICEScrollPane` `ICESplitter` `ICEHoverManager` `ICEFocusManager` `ICEMessageManager` `ICEManager` (`ICEPainter` / `ICELayoutManager` are types) |
 | Models | `ICEButtonModel` `ICEToggleModel` `ICEBoundedRangeModel` `ICESelectionModel` `ICEFormModel` |
 
 Helper functions: `attachTooltip` `attachPopover` `attachPopconfirm` `attachDropdown`
 `openModal` `openDrawer` `getICEOverlayManager` `getICEFocusManager` `getICEMessageManager`
-`tween` `fadeIn` `fadeOut` `slideIn` `scaleIn` and friends.
+`formatStatisticValue` `formatCountdown` `tween` `fadeIn` `fadeOut` `slideIn` `scaleIn` and friends.
 
 ## Theme
 
@@ -235,6 +235,11 @@ npm run build            # cjs + esm + umd + d.ts
 # (needs playwright; point PLAYWRIGHT_PATH at an existing install if needed)
 npm run qa:admin
 
+# browser QA for examples/gallery.html: zero overlap + real interactions of the
+# newest components (breadcrumb collapse, countdown, radio/checkbox groups,
+# splitter drag, watermark tiling)
+npm run qa:gallery
+
 # 文档：重新生成 API 参考并检查链接
 npm run docs
 ```
@@ -244,6 +249,11 @@ top-level nodes and identical first-element offsets, opens every popup layer and
 asserts it can be closed again, checks that clicking an in-row action button does
 not select the row, screenshots each popup to `/tmp/qa-*.png`, and fails on any
 console error.
+
+`npm run qa:gallery` does the same for the full gallery page with real mouse
+events (hit-test path): it asserts no two top-level clusters overlap, drives the
+breadcrumb collapse, the radio / checkbox groups, drags the splitter divider and
+checks the watermark tiling, then screenshots to `/tmp/qa-gallery*.png`.
 
 See [ROADMAP.md](./ROADMAP.md) for the component backlog and what is still missing
 per component.

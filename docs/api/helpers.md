@@ -128,6 +128,22 @@ scaleIn(component: any, options: ICEScaleInOptions): ICETweenHandle
 estimateTextWidth(text: string, fontSize: number): number
 ```
 
+### `formatStatisticValue` — 函数
+
+数值格式化：精度 + 可选千分位；非数字（如「暂缺」）原样返回。
+
+```ts
+formatStatisticValue(value: number | string, precision: number, group: boolean): string
+```
+
+### `formatCountdown` — 函数
+
+倒计时格式：`N 天 HH:mm:ss`；不足一天时省略「N 天」。
+
+```ts
+formatCountdown(ms: number): string
+```
+
 ### `tooltipPanelWidth` — 函数
 
 气泡面板宽度：按文字估算（中文 1em、拉丁 0.6em），避免长中文被压出色块外面。

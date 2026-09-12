@@ -18,6 +18,8 @@
 |  | [`ICEInputNumber`](./api/data-entry.md#iceinputnumber) | 数字输入框（业界组件库 InputNumber / Swing JSpinner 的最小版）。 |
 |  | [`ICECheckBox`](./api/data-entry.md#icecheckbox) | 复选框：点击或 Enter/Space 切换勾选，触发 `change`，可直接进表单。 |
 |  | [`ICERadioButton`](./api/data-entry.md#iceradiobutton) | 单选框：点击或 Enter/Space 选中；同组互斥由调用方（表单/业务）维护。 |
+|  | [`ICERadioGroup`](./api/data-entry.md#iceradiogroup) | 单选组（业界组件库 Radio.Group）：一组互斥选项，整行可点，值是选项的 `value`。  与 `ICERadioButton` 的分工：单个按钮只管「选中/未选中」，**互斥与取值由本组件维护**， 因此业务代码不用再自己写「点了 A 要把 B 取消」这类同步逻辑。 |
+|  | [`ICECheckboxGroup`](./api/data-entry.md#icecheckboxgroup) | 多选组（业界组件库 Checkbox.Group）：一组可多选的选项，值是 `string[]`（按选项顺序）。 |
 |  | [`ICESwitch`](./api/data-entry.md#iceswitch) | 开关：点击或 Enter/Space 切换，滑块带过渡动画，触发 `change`。 |
 |  | [`ICESlider`](./api/data-entry.md#iceslider) | 滑块：单值 / 区间双滑块，支持 `step` 量化与方向键微调。 |
 |  | [`ICESegmented`](./api/data-entry.md#icesegmented) | 分段控制器（业界组件库 Segmented / iOS ICESegmentedControl 的最小版）： 一组互斥选项，选中项实心高亮。每个分段是 ICEButton，因此天然可聚焦（Tab/Enter 可操作）。 |
@@ -38,6 +40,7 @@
 |  | [`ICETree`](./api/data-display.md#icetree) | 树（Swing JTree / 业界组件库 Tree 的最小可用版）。 |
 |  | [`ICECard`](./api/data-display.md#icecard) | 卡片：面板 + 标题，并提供右上角 `extra` 插槽（放“更多/操作”）。 |
 |  | [`ICEStatCard`](./api/data-display.md#icestatcard) | 统计卡：图标 + 标题 + 数值 + 涨跌趋势，用于仪表盘顶部指标。 |
+|  | [`ICEStatistic`](./api/data-display.md#icestatistic) | 统计数值（业界组件库 Statistic）：标题 + 大号数字 + 前缀/后缀，支持千分位与精度。  传 `countdown`（剩余毫秒）时进入倒计时模式：按「N 天 HH:mm:ss」显示剩余时间， 归零触发 `finish` 事件与 `onFinish` 回调（业界组件库 的 `Statistic.Countdown`）。 |
 |  | [`ICEDescriptions`](./api/data-display.md#icedescriptions) | 描述列表（业界组件库 Descriptions）：成对的「标签 / 值」，支持单列与多列。 常用于详情页（订单信息、用户资料）。 |
 |  | [`ICETimeline`](./api/data-display.md#icetimeline) | 时间线（业界组件库 Timeline）：竖线 + 节点圆点 + 标题/描述/时间。 |
 |  | [`ICEProgressBar`](./api/data-display.md#iceprogressbar) | 进度环/进度条。 |
@@ -49,6 +52,7 @@
 |  | [`ICECarousel`](./api/data-display.md#icecarousel) | 轮播（业界组件库 Carousel 的最小版）。 |
 |  | [`ICECollapse`](./api/data-display.md#icecollapse) | 折叠面板（业界组件库 Collapse / Swing 无直接对应物）。 |
 |  | [`ICEComment`](./api/data-display.md#icecomment) | 评论（业界组件库 Comment 的最小版）：文字头像 + 作者 + 时间 + 正文 + 操作按钮 + 嵌套回复。  布局自上而下：头像在左，右侧依次是「作者 · 时间」「正文」「操作」「回复（缩进）」。 高度按内容自动累加（正文单行 20px，多行请自行用 content 组件工厂）。 |
+|  | [`ICEWatermark`](./api/data-display.md#icewatermark) | 水印（业界组件库 Watermark）：把一段旋转文字平铺在自己的区域上。 |
 | [反馈与状态](./api/feedback.md) | [`ICEAlert`](./api/feedback.md#icealert) | 提示条：info / success / warning / error 四种状态 + 类型图标，可关闭。 |
 |  | [`ICEModal`](./api/feedback.md#icemodal) | 模态对话框：全屏遮罩 + 居中面板 + 焦点陷阱。 |
 |  | [`ICEDrawer`](./api/feedback.md#icedrawer) | 抽屉：从屏幕某一边滑入的面板（带遮罩与焦点陷阱）。  与 ICEModal 同源（遮罩 + 焦点范围 + 关闭途径），差别只在： |
@@ -61,10 +65,12 @@
 |  | [`ICESpin`](./api/feedback.md#icespin) | 加载指示器（业界组件库 Spin 的最小版）：一段圆弧绕中心旋转。 |
 |  | [`ICESteps`](./api/feedback.md#icesteps) | 步骤条（业界组件库 Steps）：横向序号 + 标题/描述 + 连接线，当前步骤高亮、已完成打勾。 |
 | [导航](./api/navigation.md) | [`ICEMenu`](./api/navigation.md#icemenu) | 菜单：菜单项 +（可选）子菜单内联展开；选中态与悬停态分离，父项在子项选中时只做“当前分组”提示。 |
+|  | [`ICEBreadcrumb`](./api/navigation.md#icebreadcrumb) | 面包屑（业界组件库 Breadcrumb）：一行「路径 + 分隔符」，最后一项是当前页。 |
 |  | [`ICEDropdown`](./api/navigation.md#icedropdown) | 下拉菜单：点击触发组件弹出选项列表。 |
 |  | [`ICEPagination`](./api/navigation.md#icepagination) | 分页器：页码 + 上一页/下一页 + 可选「共 N 条」与每页条数切换。 |
 |  | [`ICETabs`](./api/navigation.md#icetabs) | 标签页：一组互斥按钮，`onChange` 通知切换（程序式 `setActiveIndex` 不触发回调）。 |
 | [核心与布局](./api/core.md) | [`ICEScrollPane`](./api/core.md#icescrollpane) | 滚动视口（Swing 的 JScrollPane / 业界组件库 的 overflow:auto 容器）。  依赖引擎的**子树裁剪**（`clipChildren`）：内容超出视口的部分被裁掉，滚出去的子组件 也命不中（命中检测同样尊重裁剪区）。  结构： ``` ICEScrollPane (clipChildren: true)   ├── contentBox   位置 = (-scrollX, -scrollY)，尺寸 = 内容尺寸   │     └── 调用方的内容组件   └── scrollbarTrack + scrollbarThumb   滚动条（内容超出时才显示） ``` 内容盒与滚动条都在构造期创建，保证滚动条的 zIndex 恒高于内容（引擎按 zIndex 排序渲染）。 |
+|  | [`ICESplitter`](./api/core.md#icesplitter) | 分隔面板（业界组件库 Splitter）：两栏 + 可拖动的分隔条。 |
 |  | [`ICEOverlayManager`](./api/core.md#iceoverlaymanager) | 弹层/浮层底座。  所有需要「浮在其它组件之上」的组件（Modal、Dropdown、Select、Tooltip、Popover、 右键菜单…）都走这一层，避免每个组件各自实现锚点定位、z 序、点外关闭、Esc 关闭。  实现要点： |
 |  | [`ICEFocusManager`](./api/core.md#icefocusmanager) | 键盘焦点与焦点环。  引擎只负责「键盘事件派发给谁」（`ice.setFocusedComponent` + DOMEventDispatcher）， 上层的策略在这里： |
 |  | [`ICEHoverManager`](./api/core.md#icehovermanager) | ICE 内核的移动类事件为了性能不会在 mousemove 时做全量命中检测， 因此 Canvas 组件没有内置 mouseenter/mouseleave 语义。  ICEHoverManager 通过事件总线的 mousemove + ice.hitTest() 自己维护当前 hover 组件， 并把状态同步到带 setHovered() 的 ICEWidget 上，实现接近 HTML 组件的 hover 效果。 |

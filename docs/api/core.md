@@ -35,6 +35,47 @@
 | `isScrollbarVisible()` | `boolean` |  |
 | `getScrollbarThumb()` | `any` | 滚动条滑块（测试与自定义样式用）。 |
 
+## `ICESplitter`
+
+分隔面板（业界组件库 Splitter）：两栏 + 可拖动的分隔条。
+
+- `direction: 'horizontal'`（默认）左右分栏，`'vertical'` 上下分栏；
+- `size` 是第一栏的像素尺寸，夹取范围 `[min, 容器尺寸 - dividerSize - min]`；
+- 拖动分隔条改变尺寸（mousedown 必须落在分隔条上），拖动中触发 `resize` （载荷 `{ size }`）与 `onResize`；
+- 两栏是调用方传进来的组件，本组件只负责摆位置与改尺寸。
+
+源码：[`src/components/ICESplitter.ts`](../../src/components/ICESplitter.ts)
+
+**构造参数** `ICESplitterOptions` — 分隔面板（业界组件库 Splitter）：两栏 + 可拖动的分隔条。
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `id?` | `string` | 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） |
+| `direction?` | `'horizontal' \| 'vertical'` | horizontal = 左右分栏（默认），vertical = 上下分栏 |
+| `size?` | `number` | 第一栏尺寸（像素） |
+| `min?` | `number` | 两栏最小尺寸，默认 40 |
+| `dividerSize?` | `number` | 分隔条粗细，默认 6 |
+| `first?` | `any` | 第一栏组件 |
+| `second?` | `any` | 第二栏组件 |
+| `left?` | `number` | 相对父容器的左边距 |
+| `top?` | `number` | 相对父容器的上边距 |
+| `width?` | `number` | 宽度（不传用组件默认值） |
+| `height?` | `number` | 高度（不传用组件默认值） |
+| `onResize?` | `(size: number) => void` |  |
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getSize()` | `number` | 当前第一栏尺寸。 |
+| `getRatio()` | `number` | 第一栏占比（0..1）。 |
+| `setRatio(ratio: number)` | `this` |  |
+| `setSize(size: number)` | `this` |  |
+| `getDividerNode()` | `ICESplitterDivider` |  |
+| `getFirstNode()` | `any` |  |
+| `getSecondNode()` | `any` |  |
+| `isDragging()` | `boolean` | 是否可拖动：分隔条自身 + 2px 容错（细条不好瞄）。 |
+
 ## `ICEOverlayManager`
 
 弹层/浮层底座。  所有需要「浮在其它组件之上」的组件（Modal、Dropdown、Select、Tooltip、Popover、 右键菜单…）都走这一层，避免每个组件各自实现锚点定位、z 序、点外关闭、Esc 关闭。  实现要点：

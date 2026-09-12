@@ -11,14 +11,33 @@
 > `focusRing` 聚焦色）；③ `ICETag`/`ICEBadge` 默认改成 Bootstrap 实底 `.text-bg-*`（`variant:'soft'` 保留浅底风格）。
 > 细节见 README 的 Naming / Theme / Colour variants 三节。
 
-## 现状（21 个组件）
+## 现状（65 个组件源文件 / 77 个导出类）
 
-`ICEButton` `ICELabel` `ICEPanel` `ICECard` `ICETextField` `ICETable` `ICEMenu` `ICETabs`
-`ICEAlert` `ICEStatCard` `ICETag` `ICEBadge` `ICEAvatar` `ICEIcon` `ICESvgIcon`
-`ICESeparator` `ICECheckBox` `ICERadioButton` `ICESwitch` `ICEProgressBar` `ICESlider`
+按分组清点（完整清单与参数见 [`docs/components.md`](./docs/components.md)）：
 
-配套：3 个模型（`ICEButtonModel` / `ICEToggleModel` / `ICEBoundedRangeModel`）、
-2 个布局（`ICEFlowLayout` / `ICEBoxLayout`）、`ICEHoverManager`、`ICEOverlayManager`（新增）。
+- **基础**：`ICEWidget` `ICEContainer` `ICEPanel` `ICEButton` `ICELabel` `ICEIcon` `ICESvgIcon` `ICESeparator`
+- **数据录入**：`ICETextField` `ICETextArea` `ICEPasswordField` `ICEInputNumber`
+  `ICECheckBox` `ICECheckboxGroup` `ICERadioButton` `ICERadioGroup` `ICESwitch` `ICESlider`
+  `ICESegmented` `ICERate` `ICEUpload` `ICEFormItem` `ICEForm`
+- **录入（浮层）**：`ICESelect` `ICEAutoComplete` `ICECascader` `ICETreeSelect`
+  `ICEDatePicker` `ICETimePicker` `ICEColorPicker` `ICETransfer`
+- **展示**：`ICETable` `ICEList` `ICETree` `ICECard` `ICEStatCard` `ICEStatistic`
+  `ICEDescriptions` `ICETimeline` `ICEProgressBar` `ICEImageView` `ICEAvatar` `ICEAvatarGroup`
+  `ICETag` `ICEBadge` `ICECarousel` `ICECollapse` `ICEComment` `ICEWatermark`
+- **反馈**：`ICEAlert` `ICEModal` `ICEDrawer` `ICEMessage` `ICENotification` `ICETooltip`
+  `ICEPopover` `ICEPopconfirm` `ICEResult` `ICEEmpty` `ICESkeleton` `ICESpin` `ICESteps`
+- **导航**：`ICEMenu` `ICEBreadcrumb` `ICEDropdown` `ICEPagination` `ICETabs`
+- **核心**：`ICEScrollPane` `ICESplitter` `ICEOverlayManager` `ICEFocusManager`
+  `ICEHoverManager` `ICEMessageManager` `ICEManager`
+
+配套：5 个模型（`ICEButtonModel` / `ICEToggleModel` / `ICEBoundedRangeModel` /
+`ICESelectionModel` / `ICEFormModel`）、引擎布局（`ICEFlowLayout` / `ICEBoxLayout` / …）、
+37 个工具函数。
+
+> **本轮新增（2026-09-12）**：`ICEBreadcrumb`（含 maxItems 折叠）、`ICERadioGroup`、
+> `ICECheckboxGroup`（互斥 / 多选 + `max` + 键盘）、`ICEStatistic`（精度 / 千分位 / 倒计时）、
+> `ICESplitter`（拖拽分隔）、`ICEWatermark`（平铺 + 裁剪）。
+> 浏览器回归用例：`npm run qa:gallery`（11 项，真实鼠标事件）。
 
 ## 阶段 A：底座（先做这个）
 
@@ -84,9 +103,9 @@
 | 布局 | Flex / Space | ⬜ 可用现有 Flow/Box 布局覆盖，低优先 |
 | 布局 | Grid | ⬜ 引擎已有 `ICEGridLayout`，缺 UI 封装 |
 | 布局 | Layout（Header/Sider/Content/Footer） | ⬜ 阶段 D（画布内更像「模板」而非组件） |
-| 布局 | Splitter | ⬜ 计划 `ICESplitPane` |
-| 导航 | Anchor | ⊘ 依赖滚动容器与页面语义，低优先 |
-| 导航 | Breadcrumb | ⬜ 阶段 D |
+| 布局 | Splitter | ✅ `ICESplitter`（两栏拖拽 + min/max 夹取；无三栏 / 嵌套手柄） |
+| 导航 | Anchor | ⬜ 下一批（依赖滚动容器 `ICEScrollPane`，可做锚点跟随） |
+| 导航 | Breadcrumb | ✅ `ICEBreadcrumb`（`maxItems` 折叠 + 点击省略号展开） |
 | 导航 | Dropdown | ⬜ 阶段 B（A1 已就绪） |
 | 导航 | Menu | ✅ `ICEMenu`（子菜单内联展开 + 多级嵌套；无键盘导航） |
 | 导航 | Pagination | ⬜ 阶段 B |
@@ -94,7 +113,7 @@
 | 数据录入 | AutoComplete | ✅ `ICEAutoComplete`（输入过滤 + 候选点选/键盘） |
 | 数据录入 | TreeSelect | ✅ `ICETreeSelect`（下拉里装 ICETree） |
 | 数据录入 | Cascader | ✅ `ICECascader`（多列级联 + 路径回显；暂不支持同级多选） |
-| 数据录入 | Checkbox | ✅ `ICECheckBox`（部分：无 Group / 不确定态） |
+| 数据录入 | Checkbox | ✅ `ICECheckBox` + `ICECheckboxGroup`（多选 / `max` / 键盘；无不确定态） |
 | 数据录入 | ColorPicker | ✅ `ICEColorPicker`（色板网格 + 选中环 + 键盘导航；无取色轮/透明度） |
 | 数据录入 | DatePicker | ✅ `ICEDatePicker`（日历浮层，周一开头） |
 | 数据录入 | TimePicker | ✅ `ICETimePicker`（时/分/秒滚动列 + 步进 + HH:mm 两列模式；无 12 小时制/范围选择） |
@@ -102,7 +121,7 @@
 | 数据录入 | Input | ✅ `ICETextField`（部分：无多行 / 密码 / 前后缀 / 清空） |
 | 数据录入 | InputNumber | ✅ `ICEInputNumber`（步进 + 键盘 + 精度） |
 | 数据录入 | Mentions | ⊘ 低优先 |
-| 数据录入 | Radio | ✅ `ICERadioButton`（部分：无 Group） |
+| 数据录入 | Radio | ✅ `ICERadioButton` + `ICERadioGroup`（互斥 / 键盘方向键 / 表单取值） |
 | 数据录入 | Rate | ✅ `ICERate`（悬停预览 + 键盘） |
 | 数据录入 | Select | ⬜ 阶段 B |
 | 数据录入 | Slider | ✅ `ICESlider`（区间双滑块 + `step` 步进 + 方向键；无刻度 / tooltip） |
@@ -122,7 +141,7 @@
 | 数据展示 | Popover | ⬜ 阶段 B |
 | 数据展示 | QRCode | ⊘ 需要编码器，收益低 |
 | 数据展示 | Segmented | ✅ `ICESegmented` |
-| 数据展示 | Statistic | ✅ `ICEStatCard` |
+| 数据展示 | Statistic | ✅ `ICEStatistic`（精度 / 千分位 / 前缀后缀 / 倒计时）+ `ICEStatCard`（卡片态） |
 | 数据展示 | Table | ✅ `ICETable`（列排序 `sorter` + ▲▼ 指示；无分页 / 滚动 / 列宽拖拽） |
 | 数据展示 | Tabs | ✅ `ICETabs`（部分：无溢出滚动 / 关闭 / 卡片态） |
 | 数据展示 | Tag | ✅ `ICETag`（部分：无可关闭 / 多彩） |
@@ -144,7 +163,23 @@
 | 其他 | Affix | ⊘ 画布内不需要（应用自己控制位置） |
 | 其他 | App | ⊘ React 概念；本库对应 `iceUIManager` 主题机制 |
 | 其他 | ConfigProvider | ⊘ 同上（主题/暗色已由 `iceUIManager` 提供） |
-| 其他 | Watermark | ⊘ 低优先 |
+| 其他 | Watermark | ✅ `ICEWatermark`（平铺旋转文字 + `clipChildren` 裁剪 + 不挡点击） |
+
+## 下一批候选（调研结论）
+
+按「用户能立刻感知价值 / 依赖是否就绪」排序：
+
+1. **Typography**（Title / Paragraph / Text / Link + 省略号）—— 现在只有 `ICELabel`，
+   长文本截断要靠调用方自己算宽度，业务页很容易溢出；
+2. **Image preview**（`ICEImageView` 加预览浮层：缩放 / 旋转 / 上一张下一张）——
+   复用 `ICEOverlayManager`，纯增量；
+3. **Anchor**（锚点导航，配合 `ICEScrollPane` 滚动位置高亮）—— 后台长页面刚需；
+4. **BackTop / FloatButton**（回到顶部、悬浮操作按钮）—— 实现直接，画布内同样有用；
+5. **Tour**（漫游式引导：高亮 + 气泡 + 上一步下一步）—— 复用浮层与遮罩；
+6. **Calendar**（月视图 + 选择范围）—— 需要日期网格，可复用 `ICEDatePicker` 的网格；
+7. **QRCode**（需自带编码器，约 200 行）—— 收益中等，排最后；
+8. **Layout / Grid / Space**（Header-Sider-Content-Footer、Row-Col、间距容器）——
+   引擎已有 `ICEGridLayout`，缺 UI 封装；定位更接近「模板」，优先级最低。
 
 ## 现有组件的「做满」清单
 

@@ -808,6 +808,104 @@
         src: demoImageSrc,
       });
 
+      // 导航 / 指标 / 分组 / 分栏 / 水印（本轮新增的组件）
+      const breadcrumb = new W.ICEBreadcrumb({
+        id: 'breadcrumb',
+        left: 0,
+        top: 0,
+        items: [{ label: '首页' }, { label: '订单管理' }, { label: '订单详情' }],
+      });
+      const breadcrumbCollapsed = new W.ICEBreadcrumb({
+        id: 'breadcrumb-collapsed',
+        left: 0,
+        top: 0,
+        maxItems: 3,
+        items: [
+          { label: '首页' },
+          { label: '销售' },
+          { label: '订单' },
+          { label: '发货' },
+          { label: '详情' },
+        ],
+      });
+      const statistic = new W.ICEStatistic({
+        id: 'statistic',
+        left: 0,
+        top: 0,
+        width: 200,
+        title: '本月成交额',
+        value: 1234567.891,
+        precision: 2,
+        groupSeparator: true,
+        prefix: '¥',
+        status: 'primary',
+      });
+      const countdown = new W.ICEStatistic({
+        id: 'statistic-countdown',
+        left: 0,
+        top: 0,
+        width: 200,
+        title: '距活动结束',
+        countdown: 3 * 86400000 + 3661000,
+        suffix: '',
+      });
+      const radioGroup = new W.ICERadioGroup({
+        id: 'radio-group',
+        left: 0,
+        top: 0,
+        width: 360,
+        value: 'pro',
+        options: [
+          { value: 'standard', label: '标准版' },
+          { value: 'pro', label: '专业版' },
+          { value: 'flag', label: '旗舰版（未开放）', disabled: true },
+        ],
+      });
+      const checkboxGroup = new W.ICECheckboxGroup({
+        id: 'checkbox-group',
+        left: 0,
+        top: 0,
+        width: 360,
+        value: ['mail'],
+        options: [
+          { value: 'mail', label: '邮件' },
+          { value: 'sms', label: '短信' },
+          { value: 'im', label: '站内信' },
+        ],
+      });
+      const splitterLeft = new W.ICEPanel({ id: 'splitter-left', left: 0, top: 0, width: 180, height: 160 });
+      splitterLeft.addChild(
+        new W.ICELabel({ left: 12, top: 12, width: 150, height: 20, text: '左侧栏（可拖）', style: { fontSize: 12 } }),
+        false,
+      );
+      const splitterRight = new W.ICEPanel({ id: 'splitter-right', left: 0, top: 0, width: 230, height: 160 });
+      splitterRight.addChild(
+        new W.ICELabel({ left: 12, top: 12, width: 200, height: 20, text: '右侧栏', style: { fontSize: 12 } }),
+        false,
+      );
+      const splitter = new W.ICESplitter({
+        id: 'splitter',
+        left: 0,
+        top: 0,
+        width: 420,
+        height: 160,
+        size: 180,
+        min: 60,
+        first: splitterLeft,
+        second: splitterRight,
+      });
+      const watermark = new W.ICEWatermark({
+        id: 'watermark',
+        left: 0,
+        top: 0,
+        width: 320,
+        height: 160,
+        text: 'ICE 内部资料',
+        gapX: 160,
+        gapY: 80,
+        color: 'rgba(13, 110, 253, 0.16)',
+      });
+
       // 演示清单：每个 item 要么是单个组件，要么是一组「必须贴在一起」的组件（数组）。
       // 组件自带的 left/top 只是簇内局部坐标，实际位置由 flowSections 统一排。
       const sections = [
@@ -965,6 +1063,18 @@
             [imageCover, caption('cover', 0, 96)],
           ],
         },
+        {
+          title: 'Navigation & metrics',
+          items: [breadcrumb, breadcrumbCollapsed, statistic, countdown],
+        },
+        {
+          title: 'Choice groups',
+          items: [radioGroup, checkboxGroup],
+        },
+        {
+          title: 'Splitter & watermark',
+          items: [splitter, watermark],
+        },
       ];
 
       // 画布随内容长高：改元素尺寸 + 同步 ice.canvasWidth/Height（渲染器每帧都读它）
@@ -1047,7 +1157,7 @@
         requestAnimationFrame(() => syncCanvasToContent(flowSections(panel, sections))),
       );
 
-      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, submitHint, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, timePicker, timeHint, cascader, transfer, upload, carousel, avatarGroup, closableAlert, progressCircle, progressCircleDone, comment, colorPicker, colorHint, imageFill, imageContain, imageCover };
+      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, submitHint, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, timePicker, timeHint, cascader, transfer, upload, carousel, avatarGroup, closableAlert, progressCircle, progressCircleDone, comment, colorPicker, colorHint, imageFill, imageContain, imageCover, breadcrumb, breadcrumbCollapsed, statistic, countdown, radioGroup, checkboxGroup, splitter, watermark };
     </script>
   </body>
 </html>

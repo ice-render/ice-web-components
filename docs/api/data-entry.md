@@ -120,6 +120,95 @@
 | `activate()` | `void` | 键盘激活（Enter / Space）与鼠标点击同义：选中本项。 |
 | `initEvents()` | `void` |  |
 
+## `ICERadioGroup`
+
+单选组（业界组件库 Radio.Group）：一组互斥选项，整行可点，值是选项的 `value`。  与 `ICERadioButton` 的分工：单个按钮只管「选中/未选中」，**互斥与取值由本组件维护**， 因此业务代码不用再自己写「点了 A 要把 B 取消」这类同步逻辑。
+
+- 键盘：聚焦后 ←/↑ 上一项、→/↓ 下一项（自动跳过禁用项），Enter/Space 选中当前项；
+- 表单：实现取值约定，可直接放进 `ICEForm`；
+- 事件：值变化触发 `change`（载荷 `{ value }`）并调用 `onChange`。
+
+源码：[`src/components/ICERadioGroup.ts`](../../src/components/ICERadioGroup.ts)
+
+**构造参数** `ICERadioGroupOptions`
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `id?` | `string` | 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） |
+| `options` | `ICERadioGroupOption[]` | 候选项 |
+| `value?` | `string` | 当前选中值（不在选项里的值会被忽略） |
+| `direction?` | `'horizontal' \| 'vertical'` | 排布方向，默认 horizontal |
+| `itemGap?` | `number` | 选项之间的间距，默认 16 |
+| `left?` | `number` | 相对父容器的左边距 |
+| `top?` | `number` | 相对父容器的上边距 |
+| `width?` | `number` | 宽度（不传用组件默认值） |
+| `height?` | `number` | 高度（不传用组件默认值） |
+| `fontSize?` | `number` |  |
+| `onChange?` | `(value: string) => void` | 值变化回调 |
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getValue()` | `string \| null` |  |
+| `setValue(value: string)` | `this` | 程序式改值：只发 `change` 事件，不回调 `onChange`（与库内其它控件一致）。 |
+| `getFormValue()` | `any` |  |
+| `setFormValue(value: any)` | `void` |  |
+| `getOptionNodes()` | `ICEWidget[]` |  |
+| `getItemNode(value: string)` | `ICEWidget \| null` |  |
+| `getRadioNode(value: string)` | `ICERadioButton \| null` |  |
+| `getLabelTexts()` | `string[]` |  |
+| `getActiveIndex()` | `number` | 当前键盘活动项（不一定是选中项）。 |
+| `setOptions(options: ICERadioGroupOption[])` | `this` |  |
+
+## `ICECheckboxGroup`
+
+多选组（业界组件库 Checkbox.Group）：一组可多选的选项，值是 `string[]`（按选项顺序）。
+
+- 整行可点（点文字也能勾选）；
+- `max` 限制最多勾选几项，超出时忽略并触发 `exceed`（载荷 `{ value, max }`）；
+- 键盘：方向键移动活动项、Space 切换；
+- 表单：值为数组，`setFormValue` 兼容单值 / 空值；
+- 事件：值变化触发 `change`（载荷 `{ value }`）并调用 `onChange`。
+
+源码：[`src/components/ICECheckboxGroup.ts`](../../src/components/ICECheckboxGroup.ts)
+
+**构造参数** `ICECheckboxGroupOptions`
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `id?` | `string` | 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） |
+| `options` | `ICECheckboxGroupOption[]` | 候选项 |
+| `value?` | `string[]` | 已选值（按选项顺序归一化） |
+| `direction?` | `'horizontal' \| 'vertical'` |  |
+| `itemGap?` | `number` |  |
+| `max?` | `number` | 最多可勾选数量，不传表示不限 |
+| `left?` | `number` | 相对父容器的左边距 |
+| `top?` | `number` | 相对父容器的上边距 |
+| `width?` | `number` | 宽度（不传用组件默认值） |
+| `height?` | `number` | 高度（不传用组件默认值） |
+| `fontSize?` | `number` |  |
+| `onChange?` | `(value: string[]) => void` | 值变化回调 |
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getValue()` | `string[]` | 已选值（按选项顺序）。 |
+| `getCheckedCount()` | `number` |  |
+| `isChecked(value: string)` | `boolean` |  |
+| `setValue(value: string[])` | `this` | 程序式设值：只发 `change` 事件，不回调 `onChange`。 |
+| `checkAll()` | `this` | 全选（受 `max` 限制）。 |
+| `clear()` | `this` |  |
+| `getFormValue()` | `any` |  |
+| `setFormValue(value: any)` | `void` |  |
+| `getOptionNodes()` | `ICEWidget[]` |  |
+| `getItemNode(value: string)` | `ICEWidget \| null` |  |
+| `getCheckboxNode(value: string)` | `ICECheckBox \| null` |  |
+| `getLabelTexts()` | `string[]` |  |
+| `getActiveIndex()` | `number` |  |
+| `setOptions(options: ICECheckboxGroupOption[])` | `this` |  |
+
 ## `ICESwitch`
 
 开关：点击或 Enter/Space 切换，滑块带过渡动画，触发 `change`。

@@ -85,7 +85,15 @@ export class ICERadioButton extends ICEWidget {
 
   protected initEvents(): void {
     super.initEvents();
-    this.on('mousedown', () => this.model.setSelected(true), this);
+    this.on('mousedown', () => this.__select(), this);
+  }
+
+  /** 禁用的控件不响应鼠标（与 `activate()` 的键盘路径保持一致）。 */
+  private __select(): void {
+    if (!this.enabled) {
+      return;
+    }
+    this.model.setSelected(true);
   }
 
   protected __applyHoverState(): void {

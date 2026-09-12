@@ -85,7 +85,15 @@ export class ICESwitch extends ICEWidget {
 
   protected initEvents(): void {
     super.initEvents();
-    this.on('mousedown', () => this.model.toggle(), this);
+    this.on('mousedown', () => this.__toggle(), this);
+  }
+
+  /** 禁用的控件不响应鼠标（与 `activate()` 的键盘路径保持一致）。 */
+  private __toggle(): void {
+    if (!this.enabled) {
+      return;
+    }
+    this.model.toggle();
   }
 
   protected __applyHoverState(): void {

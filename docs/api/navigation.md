@@ -1,6 +1,6 @@
 # 导航
 
-菜单、下拉触发、分页与标签页。
+菜单、面包屑、下拉触发、分页与标签页。
 
 ## `ICEMenu`
 
@@ -20,6 +20,43 @@
 | `toggleExpand(key: string)` | `this` |  |
 | `setExpandedKeys(keys: string[])` | `this` |  |
 | `activateItem(key: string)` | `this` | 激活某个可见项：父节点展开/收起，叶子项选中并回调。 |
+
+## `ICEBreadcrumb`
+
+面包屑（业界组件库 Breadcrumb）：一行「路径 + 分隔符」，最后一项是当前页。
+
+- 宽度按内容自适应（中文按 1em 估算，不会把文字压出色块外）；
+- 除最后一项外都可点击，点击触发 `navigate` 事件（载荷 `{ item, index }`）与 `onNavigate`；
+- `maxItems` 超长时把中间项折叠成「…」，点击省略号展开（业界组件库 的折叠语义： `maxItems` 只数真实项，省略号不占额度）。
+
+源码：[`src/components/ICEBreadcrumb.ts`](../../src/components/ICEBreadcrumb.ts)
+
+**构造参数** `ICEBreadcrumbOptions`
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `id?` | `string` | 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） |
+| `items` | `ICEBreadcrumbItem[]` | 数据项 |
+| `separator?` | `string` | 分隔符，默认 `›` |
+| `maxItems?` | `number` | 最多显示多少**真实项**（超过则中间折叠为省略号）；不传或 ≤ 0 表示不折叠 |
+| `left?` | `number` | 相对父容器的左边距 |
+| `top?` | `number` | 相对父容器的上边距 |
+| `width?` | `number` | 宽度（不传用组件默认值） |
+| `height?` | `number` | 高度（不传用组件默认值） |
+| `fontSize?` | `number` |  |
+| `onNavigate?` | `(item: ICEBreadcrumbItem, index: number) => void` | 点击非当前项的回调（与 `navigate` 事件同义） |
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getLabelTexts()` | `string[]` | 当前显示的标签（折叠时中间会多出一个 `…`）。 |
+| `getItemNodes()` | `ICEBreadcrumbItemNode[]` |  |
+| `getSeparatorNodes()` | `ICELabel[]` |  |
+| `getItems()` | `ICEBreadcrumbItem[]` |  |
+| `isCollapsed()` | `boolean` |  |
+| `expand()` | `this` | 展开被折叠的中间项。 |
+| `setItems(items: ICEBreadcrumbItem[])` | `this` |  |
 
 ## `ICEDropdown`
 

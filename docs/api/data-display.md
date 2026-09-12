@@ -135,6 +135,49 @@
 | `setTitle(title: string)` | `this` |  |
 | `setTrend(trend: string)` | `this` |  |
 
+## `ICEStatistic`
+
+统计数值（业界组件库 Statistic）：标题 + 大号数字 + 前缀/后缀，支持千分位与精度。  传 `countdown`（剩余毫秒）时进入倒计时模式：按「N 天 HH:mm:ss」显示剩余时间， 归零触发 `finish` 事件与 `onFinish` 回调（业界组件库 的 `Statistic.Countdown`）。
+
+源码：[`src/components/ICEStatistic.ts`](../../src/components/ICEStatistic.ts)
+
+**构造参数** `ICEStatisticOptions` — 统计数值（业界组件库 Statistic）：标题 + 大号数字 + 前缀/后缀，支持千分位与精度。  传 `countdown`（剩余毫秒）时进入倒计时模式：按「N 天 HH:mm:ss」显示剩余时间， 归零触发 `finish` 事件与 `onFinish` 回调（业界组件库 的 `Statistic.Countdown`）。
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `id?` | `string` | 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） |
+| `title?` | `string` | 标题 |
+| `value?` | `number \| string` | 当前值 |
+| `precision?` | `number` | 小数位数，默认 0 |
+| `groupSeparator?` | `boolean` | 千分位分隔，默认 false |
+| `prefix?` | `string` |  |
+| `suffix?` | `string` |  |
+| `status?` | `'default' \| 'primary' \| 'success' \| 'warning' \| 'error' \| 'info'` | 数值颜色状态（默认正文色） |
+| `countdown?` | `number` | 倒计时剩余毫秒；给了就进入倒计时模式 |
+| `autoStart?` | `boolean` | 倒计时是否自动开始（默认 true；测试里可关掉，避免挂定时器） |
+| `onFinish?` | `() => void` | 倒计时归零回调（与 `finish` 事件同义） |
+| `left?` | `number` | 相对父容器的左边距 |
+| `top?` | `number` | 相对父容器的上边距 |
+| `width?` | `number` | 宽度（不传用组件默认值） |
+| `height?` | `number` | 高度（不传用组件默认值） |
+| `fontSize?` | `number` |  |
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getTitleText()` | `string` |  |
+| `getValueText()` | `string` |  |
+| `setTitle(title: string)` | `this` |  |
+| `setValue(value: number \| string)` | `this` | 普通模式：改数值（字符串原样显示）。 |
+| `getValue()` | `number \| string` |  |
+| `isCountdown()` | `boolean` |  |
+| `getRemaining()` | `number` |  |
+| `isRunning()` | `boolean` |  |
+| `setCountdown(ms: number)` | `this` | 设置剩余毫秒。≤ 0 视为归零：文案变 `00:00:00`，停止计时并触发完成回调。 |
+| `start()` | `this` | 开始（或继续）倒计时。 |
+| `stop()` | `this` | 暂停倒计时（保留剩余时间）。 |
+
 ## `ICEDescriptions`
 
 描述列表（业界组件库 Descriptions）：成对的「标签 / 值」，支持单列与多列。 常用于详情页（订单信息、用户资料）。
@@ -425,3 +468,42 @@
 |---|---|---|
 | `getActionButton(key: string)` | `ICEButton \| null` |  |
 | `getReplyNodes()` | `ICEComment[]` |  |
+
+## `ICEWatermark`
+
+水印（业界组件库 Watermark）：把一段旋转文字平铺在自己的区域上。
+
+- 用于「内部资料 / 草稿 / 不可外传」这类页面级标记；
+- 不参与交互（`interactive: false`），不会挡住底下的点击；
+- 裁剪在自己的区域内（`clipChildren`）：边缘瓦片被切掉半截，不会溢出到邻居身上；
+- 瓦片数量 = `(⌈width/gapX⌉ + 1) × (⌈height/gapY⌉ + 1)`，`gap` 不传时按文字宽度自适应；
+- 颜色默认半透明灰（`rgba(0,0,0,0.08)`），可用 `color` / `opacity` 调整。
+
+源码：[`src/components/ICEWatermark.ts`](../../src/components/ICEWatermark.ts)
+
+**构造参数** `ICEWatermarkOptions` — 水印（业界组件库 Watermark）：把一段旋转文字平铺在自己的区域上。
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `id?` | `string` | 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） |
+| `text` | `string` | 文案 |
+| `fontSize?` | `number` |  |
+| `color?` | `string` | 文字颜色，默认 `rgba(0,0,0,0.08)` |
+| `opacity?` | `number` | 整体不透明度，默认 1（颜色本身已经半透明） |
+| `rotate?` | `number` | 旋转角度（度），默认 -22 |
+| `gapX?` | `number` | 水平间距，默认按文字宽度 + 60 自适应 |
+| `gapY?` | `number` | 垂直间距，默认 72 |
+| `left?` | `number` | 相对父容器的左边距 |
+| `top?` | `number` | 相对父容器的上边距 |
+| `width?` | `number` | 宽度（不传用组件默认值） |
+| `height?` | `number` | 高度（不传用组件默认值） |
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getText()` | `string` |  |
+| `getTileCount()` | `number` |  |
+| `getTileNodes()` | `ICELabel[]` |  |
+| `setText(text: string)` | `this` |  |
+| `setSize(width: number, height: number)` | `this` | 改尺寸后重排瓦片（数量跟着变）。 |
