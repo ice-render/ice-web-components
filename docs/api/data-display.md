@@ -278,6 +278,109 @@
 | `getViewportNode()` | `ICEWidget \| null` |  |
 | `getImageNode()` | `EngineImage \| null` |  |
 
+## `ICEImagePreview`
+
+图片预览（业界组件库 `Image.PreviewGroup`）：全屏遮罩 + 居中图片 + 底部工具栏。
+
+- 上一张 / 下一张循环切换（`change` 事件 + `onIndexChange`）；
+- 缩放（步进 + 上下限）与 90° 旋转，`reset()` 复位；
+- 关闭途径：工具栏关闭按钮、遮罩点击、Esc；打开期间接管 ←/→/+/− 快捷键；
+- 浮层挂在引擎工具层（复用 `ICEOverlayManager`），关闭后自动移除。
+
+源码：[`src/components/ICEImagePreview.ts`](../../src/components/ICEImagePreview.ts)
+
+**构造参数** `ICEImagePreviewOptions`
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `images` | `string[]` |  |
+| `index?` | `number` | 初始索引，默认 0 |
+| `zoomStep?` | `number` | 每次缩放的步进，默认 0.25 |
+| `minZoom?` | `number` | 缩放下限，默认 0.25 |
+| `maxZoom?` | `number` | 缩放上限，默认 3 |
+| `maskClosable?` | `boolean` |  |
+| `closeOnEsc?` | `boolean` |  |
+| `onIndexChange?` | `(index: number) => void` |  |
+| `onClose?` | `(reason: ICEImagePreviewCloseReason) => void` | 关闭回调 |
+| `manager?` | `ICEOverlayManager` | 浮层管理器（一般不用传，组件会取共享实例） |
+| `focusManager?` | `ICEFocusManager` |  |
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `isOpen()` | `boolean` |  |
+| `getIndex()` | `number` |  |
+| `getZoom()` | `number` |  |
+| `getRotation()` | `number` |  |
+| `getMask()` | `ICEPanel \| null` |  |
+| `getFrame()` | `ICEWidget \| null` |  |
+| `getImageNode()` | `ICEImageView \| null` |  |
+| `getToolbarButton(name: ICEPreviewToolbarButton)` | `ICEButton \| null` |  |
+| `getImages()` | `string[]` |  |
+| `open(index?: number)` | `this` |  |
+| `close(reason: ICEImagePreviewCloseReason)` | `this` |  |
+| `setIndex(index: number)` | `this` |  |
+| `next()` | `this` |  |
+| `prev()` | `this` |  |
+| `zoomIn()` | `this` |  |
+| `zoomOut()` | `this` |  |
+| `rotateLeft()` | `this` |  |
+| `rotateRight()` | `this` |  |
+| `reset()` | `this` | 缩放与旋转同时复位。 |
+| `on(name: string, handler: (evt: any) => void)` | `this` |  |
+| `off(name: string, handler: (evt: any) => void)` | `this` |  |
+| `trigger(name: string, evt: any, param?: any)` | `this` |  |
+
+## `ICECalendar`
+
+日历（业界组件库 Calendar 的最小版）：月视图 + 日期选择。
+
+- 标题「YYYY 年 M 月」+ 上/下月切换（回调 `onChangeMonth`）；
+- 6×7 网格：相邻月份补齐的格子弱化显示，点击仍然可选；
+- 选中日期实底高亮，今天带主色描边（`today` 可注入，便于测试与「业务今天」）；
+- 键盘：←/→ 按天、↑/↓ 按周移动选中，PageUp/PageDown 切月。
+
+源码：[`src/components/ICECalendar.ts`](../../src/components/ICECalendar.ts)
+
+**构造参数** `ICECalendarOptions` — 日历（业界组件库 Calendar 的最小版）：月视图 + 日期选择。
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `id?` | `string` | 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） |
+| `value?` | `string` | 选中日期 `YYYY-MM-DD` |
+| `month?` | `string` | 当前显示的月份 `YYYY-MM`，默认取 value 所在月 / 今天所在月 |
+| `today?` | `string` | 「今天」的日期（不传取系统时间；传了便于测试与业务定制） |
+| `width?` | `number` | 宽度（不传用组件默认值） |
+| `height?` | `number` | 高度（不传用组件默认值） |
+| `left?` | `number` | 相对父容器的左边距 |
+| `top?` | `number` | 相对父容器的上边距 |
+| `onSelect?` | `(date: string) => void` | 选中回调 |
+| `onChangeMonth?` | `(month: string) => void` |  |
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getValue()` | `string \| null` |  |
+| `setValue(value: any, options: { silent?: boolean })` | `this` |  |
+| `getFormValue()` | `any` |  |
+| `setFormValue(value: any)` | `void` |  |
+| `getVisibleMonth()` | `string` |  |
+| `setVisibleMonth(month: string, options: { silent?: boolean })` | `this` |  |
+| `prevMonth()` | `this` |  |
+| `nextMonth()` | `this` |  |
+| `getTitleText()` | `string` |  |
+| `getWeekdayTexts()` | `string[]` |  |
+| `getCellNodes()` | `ICEWidget[]` |  |
+| `getCellNode(date: string)` | `ICEWidget \| null` |  |
+| `getCellBackground(date: string)` | `string` |  |
+| `getCellTextColor(date: string)` | `string` |  |
+| `isToday(date: string)` | `boolean` |  |
+| `selectDate(date: string)` | `this` | 程序式选中（不发事件）。 |
+| `getPrevButton()` | `ICEWidget \| null` |  |
+| `getNextButton()` | `ICEWidget \| null` |  |
+
 ## `ICEAvatar`
 
 文字头像：取首字母/汉字，背景色可配，自带描边把相邻头像分开。

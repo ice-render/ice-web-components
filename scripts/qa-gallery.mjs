@@ -84,11 +84,6 @@ await page.evaluate(() => {
   };
 });
 
-const rect = await page.evaluate(() => {
-  const r = document.getElementById('canvas').getBoundingClientRect();
-  return { left: r.left, top: r.top };
-});
-
 /** 按表达式取节点 → 世界盒（表达式在页面上下文里求值）。 */
 const nodeBox = async (expr) =>
   page.evaluate((source) => {
@@ -97,6 +92,13 @@ const nodeBox = async (expr) =>
     return node ? window.__qa.world(node) : null;
   }, expr);
 
+/** 当前 canvas 的视口矩形 + 页面纵向偏移（页面滚动后 rect.top 会变）。 */
+const canvasRect = () =>
+  page.evaluate(() => {
+    const r = document.getElementById('canvas').getBoundingClientRect();
+    return { left: r.left, top: r.top, pageTop: r.top + window.scrollY };
+  });
+
 const textOf = async (expr) =>
   page.evaluate((source) => {
     // eslint-disable-next-line no-eval
@@ -104,11 +106,23 @@ const textOf = async (expr) =>
     return node ? window.__qa.texts(node).join('|') : null;
   }, expr);
 
-/** 用真实鼠标点节点中心。 */
+/**
+ * 用真实鼠标点节点中心。
+ *
+ * 每次都在页面里重新量 canvas 的位置（示例页会滚动，缓存下来的 rect 会失效），
+ * 世界坐标 + 当前 rect = 视口坐标。
+ */
 const clickExpr = async (expr) => {
-  const box = await nodeBox(expr);
-  if (!box) return false;
-  await page.mouse.click(rect.left + box.l + box.w / 2, rect.top + box.t + box.h / 2);
+  const point = await page.evaluate((source) => {
+    // eslint-disable-next-line no-eval
+    const node = eval(source);
+    if (!node) return null;
+    const box = window.__qa.world(node);
+    const r = document.getElementById('canvas').getBoundingClientRect();
+    return { x: r.left + box.l + box.w / 2, y: r.top + box.t + box.h / 2 };
+  }, expr);
+  if (!point) return false;
+  await page.mouse.click(point.x, point.y);
   await page.waitForTimeout(260);
   return true;
 };
@@ -181,9 +195,10 @@ check('多选组：点击追加勾选', checkBefore === 'mail' && checkClicked &
 // —— 6. 分隔面板：真实拖动 ——
 const dividerBox = await nodeBox('window.__result.splitter.getDividerNode()');
 const splitBefore = await page.evaluate(() => window.__result.splitter.getSize());
+const dragRect = await canvasRect();
 if (dividerBox) {
-  const startX = rect.left + dividerBox.l + dividerBox.w / 2;
-  const y = rect.top + dividerBox.t + dividerBox.h / 2;
+  const startX = dragRect.left + dividerBox.l + dividerBox.w / 2;
+  const y = dragRect.top + dividerBox.t + dividerBox.h / 2;
   await page.mouse.move(startX, y);
   await page.mouse.down();
   await page.mouse.move(startX + 60, y, { steps: 8 });
@@ -272,17 +287,103 @@ check(
   JSON.stringify(afterBackTop),
 );
 
+// —— 10. 日历 ——
+const calendarInfo = await page.evaluate(() => {
+  const cal = window.__result.calendar;
+  return {
+    title: cal.getTitleText(),
+    cells: cal.getCellNodes().length,
+    weekdays: cal.getWeekdayTexts().join(''),
+    value: cal.getValue(),
+    dimmed: cal.getCellTextColor('2026-08-31'),
+  };
+});
+check(
+  '日历：月视图 + 星期表头 + 相邻月弱化',
+  calendarInfo.title === '2026 年 9 月' &&
+    calendarInfo.cells === 42 &&
+    calendarInfo.weekdays === '一二三四五六日' &&
+    calendarInfo.value === '2026-09-12' &&
+    calendarInfo.dimmed === '#adb5bd',
+  JSON.stringify(calendarInfo),
+);
+const calendarClicked = await clickExpr("window.__result.calendar.getCellNode('2026-09-20')");
+const calendarAfter = await page.evaluate(() => ({
+  value: window.__result.calendar.getValue(),
+  background: window.__result.calendar.getCellBackground('2026-09-20'),
+  textColor: window.__result.calendar.getCellTextColor('2026-09-20'),
+}));
+check(
+  '日历：点击日期选中并高亮',
+  calendarClicked && calendarAfter.value === '2026-09-20' && calendarAfter.background === '#0d6efd' && calendarAfter.textColor === '#ffffff',
+  JSON.stringify(calendarAfter),
+);
+
+// —— 11. 漫游引导：点按钮开始，下一步，Esc 跳过 ——
+const tourStarted = await clickExpr('window.__result.tourTarget');
+const tourStep1 = await page.evaluate(() => ({
+  open: window.__result.tour.isOpen(),
+  counter: window.__result.tour.getCounterText(),
+  title: window.__result.tour.getTitleText(),
+}));
+check(
+  '引导：按钮打开第一步',
+  tourStarted && tourStep1.open === true && tourStep1.counter === '1/3' && tourStep1.title === '先看图片预览',
+  JSON.stringify(tourStep1),
+);
+const tourNextClicked = await clickExpr('window.__result.tour.getNextButton()');
+const tourStep2 = await page.evaluate(() => ({
+  counter: window.__result.tour.getCounterText(),
+  title: window.__result.tour.getTitleText(),
+}));
+check('引导：下一步切到第二步', tourNextClicked && tourStep2.counter === '2/3' && tourStep2.title === '再看看指标', JSON.stringify(tourStep2));
+await page.keyboard.press('Escape');
+await page.waitForTimeout(320);
+const tourClosed = await page.evaluate(() => window.__result.tour.isOpen());
+check('引导：Esc 跳过并关闭', tourClosed === false, String(tourClosed));
+
+// —— 12. 图片预览：打开 / 工具栏 / 键盘 / Esc ——
+const previewOpened = await clickExpr('window.__result.previewTarget');
+const previewStep1 = await page.evaluate(() => ({
+  open: window.__result.imagePreview.isOpen(),
+  index: window.__result.imagePreview.getIndex(),
+  zoom: window.__result.imagePreview.getZoom(),
+}));
+check(
+  '图片预览：按钮打开第一张',
+  previewOpened && previewStep1.open === true && previewStep1.index === 0 && previewStep1.zoom === 1,
+  JSON.stringify(previewStep1),
+);
+await clickExpr("window.__result.imagePreview.getToolbarButton('zoomIn')");
+await clickExpr("window.__result.imagePreview.getToolbarButton('rotateRight')");
+await clickExpr("window.__result.imagePreview.getToolbarButton('next')");
+const previewStep2 = await page.evaluate(() => ({
+  index: window.__result.imagePreview.getIndex(),
+  zoom: window.__result.imagePreview.getZoom(),
+  rotation: window.__result.imagePreview.getRotation(),
+}));
+check(
+  '图片预览：工具栏放大 + 旋转 + 翻页',
+  previewStep2.index === 1 && previewStep2.zoom === 1.25 && previewStep2.rotation === 90,
+  JSON.stringify(previewStep2),
+);
+await page.keyboard.press('Escape');
+await page.waitForTimeout(320);
+const previewClosed = await page.evaluate(() => window.__result.imagePreview.isOpen());
+check('图片预览：Esc 关闭', previewClosed === false, String(previewClosed));
+
 check('无 console error / pageerror', errors.length === 0, errors.slice(0, 3).join(' | '));
 
 await page.screenshot({ path: '/tmp/qa-gallery.png', fullPage: true });
 const sectionBox = await nodeBox('window.__result.splitter');
+const shotRect = await canvasRect();
 if (sectionBox) {
   await page.screenshot({
     path: '/tmp/qa-gallery-new.png',
     fullPage: true,
     clip: {
-      x: Math.max(0, rect.left + sectionBox.l - 40),
-      y: Math.max(0, rect.top + sectionBox.t - 40),
+      x: Math.max(0, shotRect.left + sectionBox.l - 40),
+      y: Math.max(0, shotRect.pageTop + sectionBox.t - 40),
       width: 900,
       height: 360,
     },

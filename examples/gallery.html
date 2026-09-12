@@ -983,6 +983,54 @@
         visibilityHeight: 80,
       });
 
+      // 日历 / 图片预览 / 漫游引导
+      const calendar = new W.ICECalendar({
+        id: 'calendar',
+        left: 0,
+        top: 0,
+        width: 300,
+        month: '2026-09',
+        value: '2026-09-12',
+        today: '2026-09-12',
+      });
+      const imagePreview = new W.ICEImagePreview(ice, {
+        images: [demoImageSrc, demoImageSrc, demoImageSrc],
+        index: 0,
+      });
+      const previewTarget = new W.ICEButton({
+        id: 'preview-target',
+        left: 0,
+        top: 0,
+        width: 120,
+        text: '预览图片',
+      });
+      previewTarget.on('click', () => {
+        imagePreview.open();
+        // 示例页的画布比窗口高得多：预览框按画布居中，这里把它滚进视口
+        // （真实应用里画布本身就是视口，通常不需要这一步）
+        const frame = imagePreview.getFrame();
+        const canvasEl = document.getElementById('canvas');
+        if (frame && canvasEl) {
+          const rect = canvasEl.getBoundingClientRect();
+          window.scrollTo(0, Math.max(0, window.scrollY + rect.top + Number(frame.state.top) - 120));
+        }
+      });
+      const tour = new W.ICETour(ice, {
+        steps: [
+          { target: previewTarget, title: '先看图片预览', description: '点这里可以放大、旋转、翻页查看图片。' },
+          { target: statistic, title: '再看看指标', description: '统计数值支持精度、千分位与倒计时。' },
+          { target: calendar, title: '最后挑个日期', description: '选日期、翻月份，支持键盘操作。' },
+        ],
+      });
+      const tourTarget = new W.ICEButton({
+        id: 'tour-target',
+        left: 136,
+        top: 0,
+        width: 120,
+        text: '开始引导',
+      });
+      tourTarget.on('click', () => tour.open());
+
       // 演示清单：每个 item 要么是单个组件，要么是一组「必须贴在一起」的组件（数组）。
       // 组件自带的 left/top 只是簇内局部坐标，实际位置由 flowSections 统一排。
       const sections = [
@@ -1156,6 +1204,10 @@
           title: 'Typography & anchor',
           items: [typographyTitle, typographyParagraph, typographyLink, [anchorPane, anchor, backTop]],
         },
+        {
+          title: 'Calendar & overlays',
+          items: [calendar, [previewTarget, tourTarget]],
+        },
       ];
 
       // 画布随内容长高：改元素尺寸 + 同步 ice.canvasWidth/Height（渲染器每帧都读它）
@@ -1238,7 +1290,7 @@
         requestAnimationFrame(() => syncCanvasToContent(flowSections(panel, sections))),
       );
 
-      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, submitHint, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, timePicker, timeHint, cascader, transfer, upload, carousel, avatarGroup, closableAlert, progressCircle, progressCircleDone, comment, colorPicker, colorHint, imageFill, imageContain, imageCover, breadcrumb, breadcrumbCollapsed, statistic, countdown, radioGroup, checkboxGroup, splitter, watermark, typographyTitle, typographyParagraph, typographyLink, anchorPane, anchor, backTop };
+      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, submitHint, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, timePicker, timeHint, cascader, transfer, upload, carousel, avatarGroup, closableAlert, progressCircle, progressCircleDone, comment, colorPicker, colorHint, imageFill, imageContain, imageCover, breadcrumb, breadcrumbCollapsed, statistic, countdown, radioGroup, checkboxGroup, splitter, watermark, typographyTitle, typographyParagraph, typographyLink, anchorPane, anchor, backTop, calendar, imagePreview, previewTarget, tour, tourTarget };
     </script>
   </body>
 </html>

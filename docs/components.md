@@ -46,6 +46,8 @@
 |  | [`ICETimeline`](./api/data-display.md#icetimeline) | 时间线（业界组件库 Timeline）：竖线 + 节点圆点 + 标题/描述/时间。 |
 |  | [`ICEProgressBar`](./api/data-display.md#iceprogressbar) | 进度环/进度条。 |
 |  | [`ICEImageView`](./api/data-display.md#iceimageview) | 图片视图（基于引擎原语 `ICEImage`）。  名字带 `View` 后缀是为了避开引擎自己的 `ICEImage`（图片原语）——两个包同名不同物， 同时 import 会撞名，所以本库的控件一律叫 `ICEImageView`。 |
+|  | [`ICEImagePreview`](./api/data-display.md#iceimagepreview) | 图片预览（业界组件库 `Image.PreviewGroup`）：全屏遮罩 + 居中图片 + 底部工具栏。 |
+|  | [`ICECalendar`](./api/data-display.md#icecalendar) | 日历（业界组件库 Calendar 的最小版）：月视图 + 日期选择。 |
 |  | [`ICEAvatar`](./api/data-display.md#iceavatar) | 文字头像：取首字母/汉字，背景色可配，自带描边把相邻头像分开。 |
 |  | [`ICEAvatarGroup`](./api/data-display.md#iceavatargroup) | 头像组（业界组件库 Avatar.Group 的最小版）。 |
 |  | [`ICETag`](./api/data-display.md#icetag) | 标签：默认 Bootstrap 实底（`.text-bg-*`），`variant: 'soft'` 切浅底 + 强调文字。 |
@@ -65,6 +67,7 @@
 |  | [`ICESkeleton`](./api/feedback.md#iceskeleton) | 骨架屏：内容加载前的灰色占位。  `active` 打开时整体做呼吸（opacity 0.55 ⇄ 1 循环），加载完成后 setActive(false) 并移除。 |
 |  | [`ICESpin`](./api/feedback.md#icespin) | 加载指示器（业界组件库 Spin 的最小版）：一段圆弧绕中心旋转。 |
 |  | [`ICESteps`](./api/feedback.md#icesteps) | 步骤条（业界组件库 Steps）：横向序号 + 标题/描述 + 连接线，当前步骤高亮、已完成打勾。 |
+|  | [`ICETour`](./api/feedback.md#icetour) | 漫游式引导（业界组件库 Tour）：一步一步把用户带过关键界面。 |
 | [导航](./api/navigation.md) | [`ICEMenu`](./api/navigation.md#icemenu) | 菜单：菜单项 +（可选）子菜单内联展开；选中态与悬停态分离，父项在子项选中时只做“当前分组”提示。 |
 |  | [`ICEBreadcrumb`](./api/navigation.md#icebreadcrumb) | 面包屑（业界组件库 Breadcrumb）：一行「路径 + 分隔符」，最后一项是当前页。 |
 |  | [`ICEAnchor`](./api/navigation.md#iceanchor) | 锚点导航（业界组件库 Anchor）：一列锚点，点击滚到目标位置，滚动时自动高亮当前项。  与 `ICEScrollPane` 配合使用：`target` 传滚动容器，`items[].top` 是该段落在 **内容坐标系**里的纵向位置。滚动事件由 `ICEScrollPane` 的 `scroll` 事件驱动。 |

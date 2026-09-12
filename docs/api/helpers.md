@@ -152,6 +152,30 @@ formatCountdown(ms: number): string
 truncateTextLines(text: string, options: { maxWidth: number; fontSize: number; maxLines?: number }): string[]
 ```
 
+### `openImagePreview` — 函数
+
+便捷入口：`openImagePreview(ice, { images: [...], index: 0 })`。
+
+```ts
+openImagePreview(ice: any, options: ICEImagePreviewOptions): ICEImagePreview
+```
+
+### `formatCalendarDate` — 函数
+
+`YYYY-MM-DD`（本地时区，日期选择器统一用这个字符串形态）。
+
+```ts
+formatCalendarDate(date: Date): string
+```
+
+### `buildMonthGrid` — 函数
+
+生成月视图网格（固定 6 行 × 7 列 = 42 格，前后用相邻月份补齐）。
+
+```ts
+buildMonthGrid(month: string, options: { weekStart?: number }): ICECalendarCell[]
+```
+
 ### `tooltipPanelWidth` — 函数
 
 气泡面板宽度：按文字估算（中文 1em、拉丁 0.6em），避免长中文被压出色块外面。

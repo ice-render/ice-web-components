@@ -351,3 +351,56 @@
 | `getCurrent()` | `number` |  |
 | `setCurrent(current: number)` | `this` |  |
 | `getStepNode(index: number)` | `ICEWidget \| null` |  |
+
+## `ICETour`
+
+漫游式引导（业界组件库 Tour）：一步一步把用户带过关键界面。
+
+- 每一步有目标组件 + 标题 + 描述；目标被一圈主色边框框住，四周用遮罩压暗；
+- 面板显示「当前/总数」，带「上一步 / 下一步（最后一步为完成）/ 跳过」；
+- 键盘：→/Enter 下一步、← 上一步、Esc 跳过；
+- 关闭途径：完成（`finish()`，回调 `onFinish`）、跳过、Esc、`close()`。
+
+源码：[`src/components/ICETour.ts`](../../src/components/ICETour.ts)
+
+**构造参数** `ICETourOptions`
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `steps` | `ICETourStep[]` |  |
+| `current?` | `number` | 初始步骤，默认 0 |
+| `panelWidth?` | `number` | 面板宽度，默认 260 |
+| `onNext?` | `(index: number) => void` |  |
+| `onPrev?` | `(index: number) => void` |  |
+| `onChange?` | `(index: number) => void` | 值变化回调 |
+| `onFinish?` | `() => void` |  |
+| `onClose?` | `(reason: 'skip' \| 'esc' \| 'api') => void` | 关闭回调 |
+| `manager?` | `ICEOverlayManager` | 浮层管理器（一般不用传，组件会取共享实例） |
+| `focusManager?` | `ICEFocusManager` |  |
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `isOpen()` | `boolean` |  |
+| `isFinished()` | `boolean` |  |
+| `getCurrent()` | `number` |  |
+| `getCurrentStep()` | `ICETourStep \| null` |  |
+| `getSteps()` | `ICETourStep[]` |  |
+| `getPanel()` | `ICEPanel \| null` |  |
+| `getMask()` | `ICEWidget \| null` |  |
+| `getHighlightNode()` | `ICEWidget \| null` |  |
+| `getTitleText()` | `string` |  |
+| `getDescriptionText()` | `string` |  |
+| `getCounterText()` | `string` |  |
+| `getNextButton()` | `ICEButton \| null` |  |
+| `getPrevButton()` | `ICEButton \| null` |  |
+| `getSkipButton()` | `ICEButton \| null` |  |
+| `getHighlightBox()` | `{ left: number; top: number; width: number; height: number } \| null` | 当前高亮框（世界坐标）。 |
+| `setSteps(steps: ICETourStep[])` | `this` |  |
+| `open(index?: number)` | `this` |  |
+| `close(reason: ICETourCloseReason)` | `this` |  |
+| `next()` | `this` |  |
+| `prev()` | `this` |  |
+| `finish()` | `this` | 完成引导（最后一步的「下一步」/ 外部主动调用）。 |
+| `skip()` | `this` |  |
