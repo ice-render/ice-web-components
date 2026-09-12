@@ -120,7 +120,10 @@ export class UIHoverManager {
         }
       }
     };
+    // 工具层（浮层 / 遮罩 / 控制面板）在组件层之上：一起参与候选，靠 zIndex 排序决出最上层。
+    // 只扫 childNodes 会让鼠标 hover 穿透遮罩，落到被挡住的组件上。
     collect(ice.childNodes || []);
+    collect(ice.toolNodes || []);
     candidates.sort((a, b) => (a.state.zIndex || 0) - (b.state.zIndex || 0));
     let found: any = null;
     for (const component of candidates) {

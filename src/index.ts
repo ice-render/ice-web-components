@@ -20,6 +20,7 @@ export * from './components/UITag';
 export * from './components/UITooltip';
 export * from './components/UIPopover';
 export * from './components/UIPopconfirm';
+export * from './components/UIModal';
 export * from './components/UIAvatar';
 export * from './components/UIIcon';
 export * from './components/UISvgIcon';

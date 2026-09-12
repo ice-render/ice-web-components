@@ -20,8 +20,10 @@ import { fadeIn, fadeOut, scaleIn, UIEasing, UIFrameDriver } from '../util/UIAni
 export type UIOverlayCloseReason = 'api' | 'outside' | 'esc' | 'exclusive';
 
 export interface UIOverlayOptions {
-  /** 触发组件（浮层贴着它定位） */
-  anchor: any;
+  /** 触发组件（浮层贴着它定位）；用 `centered` 时可省略 */
+  anchor?: any;
+  /** 居中放置（不依赖锚点）—— Modal / Drawer 这类全屏浮层用 */
+  centered?: boolean;
   /** 浮层内容组件；所有权交给管理器 —— 关闭时会被移除并销毁 */
   content: any;
   placement?: UIOverlayPlacement;
@@ -34,6 +36,11 @@ export interface UIOverlayOptions {
   closeOnEsc?: boolean;
   /** 打开时先关闭其它浮层（默认 true） */
   exclusive?: boolean;
+  /**
+   * 阻断型浮层（Modal 的遮罩）：z 序在最上，且**不会被后来打开的非阻断浮层关掉**
+   * （否则鼠标扫过页面触发 Tooltip 就会把模态一起关掉）。
+   */
+  blocking?: boolean;
   /** 入场动效：none（默认）/ fade / scale（淡入 + 轻微放大） */
   enterAnimation?: 'none' | 'fade' | 'scale';
   /** 出场动效：none（默认，立即移除）/ fade（淡出后再移除） */
@@ -149,7 +156,13 @@ export class UIOverlayManager {
     }
     this.start();
     if (options.exclusive !== false) {
-      this.closeAll('exclusive');
+      // 非阻断浮层只关掉其它非阻断浮层；阻断浮层（模态）打开时清场
+      if (options.blocking) {
+        this.closeAll('exclusive');
+      } else {
+        const pending = this.entries.filter((entry) => !entry.options.blocking);
+        pending.forEach((entry) => this.close(entry.handle, 'exclusive'));
+      }
     }
 
     const entry: UIOverlayEntry = { handle: null as any, anchor: options.anchor, content, options };
@@ -225,6 +238,15 @@ export class UIOverlayManager {
   private __place(entry: UIOverlayEntry): void {
     const { options, anchor, content } = entry;
     const container = this.__visibleWorldRect();
+    if (options.centered || !anchor) {
+      const width = Number(content.state && content.state.width) || 0;
+      const height = Number(content.state && content.state.height) || 0;
+      content.setState({
+        left: container.left + (container.width - width) / 2,
+        top: container.top + (container.height - height) / 2,
+      });
+      return;
+    }
     const position = resolveUIOverlayPosition({
       anchor: worldBox(anchor),
       content: {
@@ -272,7 +294,9 @@ export class UIOverlayManager {
     const [wx, wy] = this.ice.screenToWorld(evt.offsetX, evt.offsetY);
     // 命中任一浮层内容或它的锚点 → 不算「点在外面」（锚点自身负责 toggle）
     const hitAny = this.entries.some(
-      (entry) => inside(worldBox(entry.content), wx, wy) || inside(worldBox(entry.anchor), wx, wy),
+      (entry) =>
+        inside(worldBox(entry.content), wx, wy) ||
+        (!!entry.anchor && inside(worldBox(entry.anchor), wx, wy)),
     );
     if (!hitAny) {
       this.closeAll('outside');

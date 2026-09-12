@@ -228,6 +228,25 @@ describe('UIOverlayManager', () => {
     expect(manager.getLayer().childNodes).toHaveLength(1);
   });
 
+  it('阻断型浮层（模态遮罩）不会被后来打开的非阻断浮层关掉', () => {
+    const ice = makeICE();
+    const manager = new UIOverlayManager(ice);
+    const anchor = new UIComponent({ left: 10, top: 10, width: 20, height: 20 });
+
+    const modal = manager.open({ centered: true, blocking: true, content: panel(200, 100) });
+    const popup = manager.open({ anchor, content: panel(60, 24) });
+
+    expect(modal.isOpen()).toBe(true); // 模态仍在
+    expect(popup.isOpen()).toBe(true);
+    expect(manager.getLayer().childNodes).toHaveLength(2);
+
+    // 再开一个模态 → 清场
+    const secondModal = manager.open({ centered: true, blocking: true, content: panel(200, 100) });
+    expect(popup.isOpen()).toBe(false);
+    expect(modal.isOpen()).toBe(false);
+    expect(secondModal.isOpen()).toBe(true);
+  });
+
   it('onClose 回调带上关闭原因；stop() 清理工具层与事件绑定', () => {
     const ice = makeICE();
     const manager = new UIOverlayManager(ice);

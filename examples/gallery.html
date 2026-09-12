@@ -113,6 +113,21 @@
         text: '',
         style: { fontSize: 12, fillStyle: theme.colors.success },
       });
+      const modalTarget = new W.UIButton({ id: 'modal-btn', left: 1106, top: 656, width: 130, height: 32, text: 'Open modal' });
+      const modalHint = new W.UILabel({
+        left: 1106,
+        top: 708,
+        text: '',
+        style: { fontSize: 12, fillStyle: theme.colors.success },
+      });
+      const modal = new W.UIModal(ice, {
+        title: '确认发布？',
+        content: '发布后所有用户立即可见。',
+        width: 380,
+        onConfirm: () => modalHint.setText('已发布 ✓'),
+      });
+      modalTarget.on('click', () => modal.open());
+
       W.attachPopconfirm(ice, deleteTarget, {
         title: '确认删除？',
         description: '删除后不可恢复',
@@ -179,6 +194,8 @@
         popoverTarget,
         deleteTarget,
         deleteHint,
+        modalTarget,
+        modalHint,
 
         heading('Scroll pane', 32, 706),
         scrollPane,
@@ -232,7 +249,7 @@
       });
 
       ice.addChild(panel);
-      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint };
+      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal };
     </script>
   </body>
 </html>
