@@ -118,6 +118,20 @@ describe('resolveUIOverlayPosition', () => {
     expect(pos.top).toBe(556); // 600 - 4 - 40
   });
 
+  it('贴右边界时只做交叉轴夹取，不竖向翻转', () => {
+    // 锚点在右下角、下方空间充足：浮层只是横向放不下，应该左移贴边而不是翻到上方
+    const pos = resolveUIOverlayPosition({
+      anchor: { left: 1084, top: 1526, width: 220, height: 32 },
+      content: { width: 324, height: 102 },
+      container: { width: 1400, height: 1960 },
+      placement: 'bottomLeft',
+    });
+    expect(pos.flipped).toBe(false);
+    expect(pos.placement).toBe('bottomLeft');
+    expect(pos.left).toBe(1072); // 1400 - 4 - 324
+    expect(pos.top).toBe(1566); // 1526 + 32 + 默认 offset 8（未被夹取）
+  });
+
   it('夹进容器：锚点贴左边时不会溢出', () => {
     const pos = resolveUIOverlayPosition({
       anchor: { left: 0, top: 100, width: 40, height: 20 },

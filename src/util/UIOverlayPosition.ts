@@ -104,7 +104,13 @@ function place(input: UIOverlayPositionInput, placement: UIOverlayPlacement): { 
   return { left, top };
 }
 
-/** 该 placement 是否放得下（不越出容器的可用范围）。 */
+/**
+ * 该 placement 是否放得下。
+ *
+ * 判定按「主轴 + 交叉轴」拆开：主轴（top/bottom 的纵向、left/right 的横向）必须真的放得下，
+ * 交叉轴允许先夹进容器再判定 —— 否则浮层只要贴着右边界（或下边界）就会被误判成「空间不足」
+ * 而整体翻到对侧，出现「明明下方很空却弹到上方」的怪象。交叉轴的最终位置仍由末尾的夹取决定。
+ */
 function fits(
   input: UIOverlayPositionInput,
   placement: UIOverlayPlacement,
@@ -112,11 +118,17 @@ function fits(
 ): boolean {
   const padding = input.padding ?? 4;
   const { content, container } = input;
+  const side = sideOf(placement);
+  const vertical = side === 'top' || side === 'bottom';
+  const maxLeft = Math.max(padding, container.width - padding - content.width);
+  const maxTop = Math.max(padding, container.height - padding - content.height);
+  const left = vertical ? Math.min(Math.max(pos.left, padding), maxLeft) : pos.left;
+  const top = vertical ? pos.top : Math.min(Math.max(pos.top, padding), maxTop);
   return (
-    pos.left >= padding &&
-    pos.top >= padding &&
-    pos.left + content.width <= container.width - padding &&
-    pos.top + content.height <= container.height - padding
+    left >= padding &&
+    top >= padding &&
+    left + content.width <= container.width - padding &&
+    top + content.height <= container.height - padding
   );
 }
 

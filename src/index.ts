@@ -41,6 +41,7 @@ export * from './components/UIResult';
 export * from './components/UIInputNumber';
 export * from './components/UIAutoComplete';
 export * from './components/UITreeSelect';
+export * from './components/UICascader';
 export * from './components/UIDatePicker';
 export * from './components/UITimePicker';
 export * from './components/UIComment';

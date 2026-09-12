@@ -85,7 +85,7 @@
 | 导航 | Steps | ✅ `UISteps` |
 | 数据录入 | AutoComplete | ✅ `UIAutoComplete`（输入过滤 + 候选点选/键盘） |
 | 数据录入 | TreeSelect | ✅ `UITreeSelect`（下拉里装 UITree） |
-| 数据录入 | Cascader | ⬜ 阶段 D |
+| 数据录入 | Cascader | ✅ `UICascader`（多列级联 + 路径回显；暂不支持同级多选） |
 | 数据录入 | Checkbox | ✅ `UICheckBox`（部分：无 Group / 不确定态） |
 | 数据录入 | ColorPicker | ✅ `UIColorPicker`（色板网格 + 选中环 + 键盘导航；无取色轮/透明度） |
 | 数据录入 | DatePicker | ✅ `UIDatePicker`（日历浮层，周一开头） |
