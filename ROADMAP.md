@@ -31,7 +31,7 @@
 | ~~`UIDropdown`~~ ✅ | 触发按钮 + 菜单浮层 + disabled/选中态 + 键盘 ↑↓/Enter | A1 + A3 |
 | ~~`UISelect`~~ ✅ | 输入框外观 + 下拉选项 + 单选/多选 + 搜索过滤 + 键盘 ↑↓/Enter | A1 + A3 |
 | ~~`UIModal`~~ ✅ | 遮罩层 + 居中 + 焦点陷阱 + 缩放进入 | A1 + A3 + A5 |
-| `UIDrawer` | 从边缘滑入的面板 | A1 + A5 |
+| ~~`UIDrawer`~~ ✅ | 从边缘滑入的面板（四方向 + 遮罩 + 焦点陷阱） | A1 + A3 + A5 |
 | ~~`UIMessage` / `UINotification`~~ ✅ | 顶部/右下角堆叠、自动消失、可单独关闭 | A5 |
 | ~~`UIPagination`~~ ✅ | 页码窗口 + 省略号、每页条数切换、共 N 条 | — |
 | ~~`UIPopconfirm`~~ ✅ | 气泡确认（取消/确定 + danger） | A1 |

@@ -195,6 +195,14 @@
         onChange: (value, option) => cityHint.setText('已选择：' + option.label),
       });
 
+      const drawerTarget = new W.UIButton({ id: 'drawer-btn', left: 1120, top: 744, width: 130, height: 32, text: 'Open drawer' });
+      const drawer = new W.UIDrawer(ice, {
+        title: '抽屉',
+        content: '从右侧滑入，点遮罩或 ✕ 关闭。',
+        width: 300,
+      });
+      drawerTarget.on('click', () => drawer.open());
+
       panel.addChildren([
         heading('Buttons', 32, 28),
 
@@ -258,6 +266,7 @@
         modalHint,
         messageTarget,
         notifyTarget,
+        drawerTarget,
         pagination,
         pageHint,
         citySelect,
@@ -329,7 +338,7 @@
       });
 
       ice.addChild(panel);
-      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint };
+      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer };
     </script>
   </body>
 </html>
