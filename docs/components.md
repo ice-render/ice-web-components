@@ -39,7 +39,7 @@
 |  | [`ICETimePicker`](./api/data-entry-popups.md#icetimepicker) | 时间选择器（业界组件库 TimePicker 的最小版）。 |
 |  | [`ICEColorPicker`](./api/data-entry-popups.md#icecolorpicker) | 颜色选择器（业界组件库 ColorPicker 的色板网格最小版）。 |
 |  | [`ICETransfer`](./api/data-entry-popups.md#icetransfer) | 穿梭框（业界组件库 Transfer 的最小版）。 |
-| [数据展示](./api/data-display.md) | [`ICETable`](./api/data-display.md#icetable) | 表格：列定义（宽度 / 对齐 / 排序 / 自定义单元格）+ 行选中 + 悬停反馈 + 斑马纹； 点表头排序（升 → 降 → 恢复），`sorter` 可为布尔或自定义比较函数。 |
+| [数据展示](./api/data-display.md) | [`ICETable`](./api/data-display.md#icetable) | 表格：列定义（宽度 / 对齐 / 排序 / 自定义单元格）+ 行选择 + 分页 + 空态 + 悬停/斑马纹。 |
 |  | [`ICEList`](./api/data-display.md#icelist) | 列表（Swing JList / 业界组件库 List 的最小版）。 |
 |  | [`ICETree`](./api/data-display.md#icetree) | 树（Swing JTree / 业界组件库 Tree 的最小可用版）。 |
 |  | [`ICECard`](./api/data-display.md#icecard) | 卡片：面板 + 标题，并提供右上角 `extra` 插槽（放“更多/操作”）。 |

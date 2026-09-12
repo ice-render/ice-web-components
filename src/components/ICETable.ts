@@ -1,4 +1,5 @@
 import { ICEWidget } from '../core/ICEWidget';
+import { ICECheckBox } from './ICECheckBox';
 import { ICEEmpty } from './ICEEmpty';
 import { ICEPagination } from './ICEPagination';
 import { iceUIManager } from '../core/ICEManager';
@@ -36,9 +37,17 @@ export interface ICETablePaginationOptions {
   onChange?: (page: number, pageSize: number) => void;
 }
 
+export type ICETableSelectionMode = 'none' | 'single' | 'multiple';
+
 /**
- * 表格：列定义（宽度 / 对齐 / 排序 / 自定义单元格）+ 行选中 + 悬停反馈 + 斑马纹；
- * 点表头排序（升 → 降 → 恢复），`sorter` 可为布尔或自定义比较函数。
+ * 表格：列定义（宽度 / 对齐 / 排序 / 自定义单元格）+ 行选择 + 分页 + 空态 + 悬停/斑马纹。
+ *
+ * - 点表头排序：升 → 降 → 恢复，`sorter` 可为布尔或自定义比较函数；
+ * - 行选择 `rowSelection: 'none' | 'single'（默认）| 'multiple'`：多选时最左侧多出
+ *   40px 选择列（表头全选 + 每行复选框），`getSelectedRows()` / `selectAll()` /
+ *   `clearSelection()` 配合批量操作；选择变化触发 `selectionchange` 与 `onSelectionChange`；
+ * - `pagination: { pageSize, page, showTotal, onChange }`：只渲染当前页并挂出 `ICEPagination`；
+ * - 没有数据时渲染 `ICEEmpty` 空态（不会留一片空白）。
  */
 export class ICETable extends ICEWidget {
   private columns: ICETableColumn[];
@@ -63,6 +72,14 @@ export class ICETable extends ICEWidget {
     align: 'left' | 'center' | 'right';
   }> = [];
   private selectedIndex = -1;
+  /** 多选模式下的选中行（当前页内的下标，按行序） */
+  private selectedIndexes: number[] = [];
+  private selectionMode: ICETableSelectionMode = 'single';
+  private selectionNodes: ICECheckBox[] = [];
+  private headerCheckbox: ICECheckBox | null = null;
+  private onSelectionChange: ((rows: ICETableRow[], indexes: number[]) => void) | null = null;
+  /** 选择列宽度（多选时内容列整体右移这么多） */
+  private static readonly SELECTION_WIDTH = 40;
   /** 鼠标悬停行（-1 = 无）；只影响底色，不影响选中 */
   private hoveredIndex = -1;
   private rowHeight: number;
@@ -99,6 +116,9 @@ export class ICETable extends ICEWidget {
     this.rowHeight = rowHeight;
     this.headerHeight = headerHeight;
     this.onSelect = typeof props.onSelect === 'function' ? props.onSelect : null;
+    this.selectionMode =
+      props.rowSelection === 'multiple' ? 'multiple' : props.rowSelection === 'none' ? 'none' : 'single';
+    this.onSelectionChange = typeof props.onSelectionChange === 'function' ? props.onSelectionChange : null;
     if (props.pagination && typeof props.pagination === 'object') {
       this.paginationOptions = props.pagination;
       this.pageSize = Math.max(1, Number(props.pagination.pageSize) || 10);
@@ -115,6 +135,7 @@ export class ICETable extends ICEWidget {
     this.sortKey = null;
     this.sortOrder = null;
     this.selectedIndex = -1;
+    this.selectedIndexes = [];
     this.page = 1;
     this.__applyPage();
     return this;
@@ -261,13 +282,68 @@ export class ICETable extends ICEWidget {
   }
 
   public setSelectedRow(index: number): this {
+    if (this.selectionMode === 'multiple') {
+      return this.setSelectedIndexes(index >= 0 ? [index] : []);
+    }
     this.selectedIndex = index;
+    this.selectedIndexes = index >= 0 ? [index] : [];
     this.__syncSelection();
     return this;
   }
 
   public getSelectedIndex(): number {
     return this.selectedIndex;
+  }
+
+  public getSelectionMode(): ICETableSelectionMode {
+    return this.selectionMode;
+  }
+
+  public getSelectedIndexes(): number[] {
+    if (this.selectionMode === 'multiple') {
+      return this.selectedIndexes.slice();
+    }
+    return this.selectedIndex >= 0 ? [this.selectedIndex] : [];
+  }
+
+  /** 选中的行（多选按行序返回）。 */
+  public getSelectedRows(): ICETableRow[] {
+    return this.getSelectedIndexes()
+      .map((index) => this.data[index])
+      .filter(Boolean);
+  }
+
+  /** 批量设置选中行（多选模式用；单选模式只认第一个）。 */
+  public setSelectedIndexes(indexes: number[]): this {
+    const valid = (indexes || [])
+      .map((index) => Math.floor(Number(index)))
+      .filter((index) => index >= 0 && index < this.data.length)
+      .filter((index, position, list) => list.indexOf(index) === position)
+      .sort((a, b) => a - b);
+    if (this.selectionMode !== 'multiple') {
+      return this.setSelectedRow(valid.length ? valid[0] : -1);
+    }
+    this.selectedIndexes = valid;
+    this.selectedIndex = valid.length ? valid[valid.length - 1] : -1;
+    this.__syncSelection();
+    this.__emitSelection();
+    return this;
+  }
+
+  public selectAll(): this {
+    return this.setSelectedIndexes(this.data.map((_row, index) => index));
+  }
+
+  public clearSelection(): this {
+    return this.setSelectedIndexes([]);
+  }
+
+  public getSelectionNode(index: number): ICECheckBox | null {
+    return this.selectionNodes[index] || null;
+  }
+
+  public getHeaderCheckbox(): ICECheckBox | null {
+    return this.headerCheckbox;
   }
 
   protected afterAddHandler(): void {
@@ -301,8 +377,9 @@ export class ICETable extends ICEWidget {
     const localY = wy - box.tl[1];
     // 表头：命中列 → 排序
     if (localY < this.headerHeight) {
-      const widths = this.__columnWidths(Number(this.state.width) || 720);
-      let acc = 0;
+      const offset = this.selectionMode === 'multiple' ? ICETable.SELECTION_WIDTH : 0;
+      const widths = this.__columnWidths((Number(this.state.width) || 720) - offset);
+      let acc = offset;
       for (let i = 0; i < this.columns.length; i++) {
         if (localX >= acc && localX <= acc + widths[i]) {
           this.toggleSort(this.columns[i].key);
@@ -328,6 +405,17 @@ export class ICETable extends ICEWidget {
         }
       }
       this.selectedIndex = index;
+      if (this.selectionMode === 'multiple') {
+        // 多选：点行本身 = 切换这一行（批量操作用），不再触发 onSelect
+        const next = this.selectedIndexes.indexOf(index) === -1
+          ? this.selectedIndexes.concat(index).sort((a, b) => a - b)
+          : this.selectedIndexes.filter((item) => item !== index);
+        this.selectedIndexes = next;
+        this.selectedIndex = index;
+        this.__syncSelection();
+        this.__emitSelection();
+        return;
+      }
       this.__syncSelection();
       if (this.onSelect) {
         this.onSelect(this.data[index], index);
@@ -373,8 +461,11 @@ export class ICETable extends ICEWidget {
     this.removeChildren([...this.childNodes]);
     const theme = iceUIManager.getTheme();
     const totalWidth = Number(this.state.width) || 720;
-    const widths = this.__columnWidths(totalWidth);
+    const offset = this.selectionMode === 'multiple' ? ICETable.SELECTION_WIDTH : 0;
+    const widths = this.__columnWidths(totalWidth - offset);
     this.cellNodes = [];
+    this.selectionNodes = [];
+    this.headerCheckbox = null;
 
     const header = new ICEWidget({
       fill: true,
@@ -387,7 +478,34 @@ export class ICETable extends ICEWidget {
       },
     });
     this.addChild(header, false);
-    this.__placeCells(header, widths, this.columns.map((column) => this.getHeaderLabel(column.key)), true, this.columns);
+    if (this.selectionMode === 'multiple') {
+      // 表头全选：勾上就是全选当前页
+      const selectAllBox = new ICECheckBox({
+        left: (offset - 24) / 2,
+        top: (this.headerHeight - 24) / 2,
+        width: 24,
+        height: 24,
+        selected: this.data.length > 0 && this.selectedIndexes.length === this.data.length,
+      });
+      selectAllBox.on('change', () => {
+        if (selectAllBox.isSelected()) {
+          this.selectAll();
+        } else {
+          this.clearSelection();
+        }
+      });
+      header.addChild(selectAllBox, false);
+      this.headerCheckbox = selectAllBox;
+    }
+    this.__placeCells(
+      header,
+      widths,
+      this.columns.map((column) => this.getHeaderLabel(column.key)),
+      true,
+      this.columns,
+      undefined,
+      offset,
+    );
     const divider = new ICERect({
       left: 0,
       top: this.headerHeight - 1,
@@ -414,6 +532,29 @@ export class ICETable extends ICEWidget {
       });
       this.addChild(panel, false);
       this.rowPanels.push(panel);
+      if (this.selectionMode === 'multiple') {
+        const checkbox = new ICECheckBox({
+          left: (offset - 24) / 2,
+          top: (this.rowHeight - 24) / 2,
+          width: 24,
+          height: 24,
+          selected: this.selectedIndexes.indexOf(rowIndex) !== -1,
+        });
+        checkbox.on('change', () => {
+          const selected = checkbox.isSelected();
+          const has = this.selectedIndexes.indexOf(rowIndex) !== -1;
+          if (selected === has) {
+            return;
+          }
+          this.selectedIndexes = selected
+            ? this.selectedIndexes.concat(rowIndex).sort((a, b) => a - b)
+            : this.selectedIndexes.filter((item) => item !== rowIndex);
+          this.__syncSelection();
+          this.__emitSelection();
+        });
+        panel.addChild(checkbox, false);
+        this.selectionNodes.push(checkbox);
+      }
       // 行悬停反馈：hover 由 ICEHoverManager 打在行面板上，这里只负责换底色
       panel.on(
         'hoverchange',
@@ -429,7 +570,7 @@ export class ICETable extends ICEWidget {
         this,
       );
       const values = this.columns.map((column) => this.__format(row[column.key]));
-      this.__placeCells(panel, widths, values, false, this.columns, row);
+      this.__placeCells(panel, widths, values, false, this.columns, row, offset);
     });
 
     // 空态：没有数据时给一块 ICEEmpty，而不是留一片空白
@@ -476,10 +617,11 @@ export class ICETable extends ICEWidget {
     header: boolean,
     columns?: ICETableColumn[],
     row?: ICETableRow,
+    offset: number = 0,
   ): void {
     const theme = iceUIManager.getTheme();
     const padX = theme.spacing.sm;
-    let left = 0;
+    let left = offset;
     const cellHeight = header ? this.headerHeight : this.rowHeight;
     values.forEach((value, index) => {
       const column = columns ? columns[index] : undefined;
@@ -572,7 +714,8 @@ export class ICETable extends ICEWidget {
   private __syncSelection(): void {
     const theme = iceUIManager.getTheme();
     this.rowPanels.forEach((panel, index) => {
-      const selected = index === this.selectedIndex;
+      const selected =
+        this.selectionMode === 'multiple' ? this.selectedIndexes.indexOf(index) !== -1 : index === this.selectedIndex;
       const hovered = index === this.hoveredIndex;
       panel.setState({
         style: {
@@ -585,7 +728,21 @@ export class ICETable extends ICEWidget {
                 : theme.colors.background,
         },
       });
+      const checkbox = this.selectionNodes[index];
+      if (checkbox && checkbox.isSelected() !== selected) {
+        checkbox.setSelected(selected);
+      }
     });
     this.revalidate();
+  }
+
+  /** 广播选择变化（多选批量操作用）。 */
+  private __emitSelection(): void {
+    const rows = this.getSelectedRows();
+    const indexes = this.getSelectedIndexes();
+    this.trigger('selectionchange', null, { rows, indexes });
+    if (this.onSelectionChange) {
+      this.onSelectionChange(rows, indexes);
+    }
   }
 }

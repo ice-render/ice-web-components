@@ -98,6 +98,7 @@ const rect = await page.evaluate(() => {
   const r = document.getElementById('canvas').getBoundingClientRect();
   return { left: r.left, top: r.top };
 });
+
 const clickId = async (id) => {
   const b = await page.evaluate((i) => {
     const node = window.__qa.find(i);
@@ -449,6 +450,37 @@ await closeOverlay();
 const statusClicked = await clickExpr("window.__result.state.products.productStatus.getItemNode('presale')");
 const statusValue = await page.evaluate(() => window.__result.state.products.productStatus.getValue());
 check('商品：状态单选组切换', statusClicked && statusValue === 'presale', String(statusValue));
+
+// 订单多选 + 批量发货（ICETable rowSelection: 'multiple'）
+await page.evaluate(() => window.__result.showPage('orders'));
+await page.waitForTimeout(420);
+// 预热点击：切页后第一次鼠标按下会被一次性的全局监听吃掉（悬停提示 / 焦点恢复）
+await page.mouse.click(rect.left + 900, rect.top + 700);
+await page.waitForTimeout(260);
+await page.evaluate(() => window.__result.state.orders.table.clearSelection());
+await page.waitForTimeout(200);
+const checkFirst = await clickExpr('window.__result.state.orders.table.getSelectionNode(0)');
+const checkSecond = await clickExpr('window.__result.state.orders.table.getSelectionNode(1)');
+const bulkState = await page.evaluate(() => ({
+  selected: window.__result.state.orders.table.getSelectedRows().length,
+  hint: window.__result.state.orders.selectedHint.getText(),
+}));
+check(
+  '订单多选：勾两行 → 提示合计',
+  checkFirst && checkSecond && bulkState.selected === 2 && /已选中 2 笔/.test(bulkState.hint),
+  JSON.stringify(bulkState),
+);
+const shipTargets = await page.evaluate(() =>
+  window.__result.state.orders.table.getSelectedRows().map((row) => row.order),
+);
+const shipClicked = await clickExpr('window.__result.state.orders.bulkShip');
+// 批量发货后表格会重新筛选/渲染（选择被清空），所以按订单号回查数据源里的状态
+const shipped = await page.evaluate(
+  (orders) => orders.map((order) => (window.__result.ORDERS.find((row) => row.order === order) || {}).status),
+  shipTargets,
+);
+check('订单批量发货：选中行状态改为 Shipped', shipClicked && shipped.length === 2 && shipped.every((s) => s === 'Shipped'), JSON.stringify(shipped));
+await page.evaluate(() => window.__result.state.orders.table.clearSelection());
 
 // 设置页：第四个 Tab（业务偏好）+ 跨字段校验 + 多选上限
 await page.evaluate(() => window.__result.showPage('settings'));

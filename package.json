@@ -19,6 +19,7 @@
     "types:check": "tsc --noEmit",
     "qa:admin": "node scripts/qa-admin.mjs",
     "qa:gallery": "node scripts/qa-gallery.mjs",
+    "qa:workbench": "node scripts/qa-workbench.mjs",
     "docs:api": "node scripts/gen-docs.mjs",
     "docs:check": "node scripts/check-docs.mjs",
     "docs": "npm run docs:api && npm run docs:check",

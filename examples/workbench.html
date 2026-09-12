@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <meta charset="utf-8" />
+  <title>ICE Support Workbench</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f8f9fa;
+      color: #212529;
+    }
+    canvas {
+      display: block;
+      border-radius: 12px;
+      background: #ffffff;
+      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+  </style>
+  <body>
+    <h1 style="font-size: 20px; margin: 0 0 4px">ICE Support Workbench</h1>
+    <p style="margin: 0 0 16px; color: #6c757d">
+      客服工单工作台：队列 / 会话 / 客户档案三栏，全部由 canvas 组件绘制
+    </p>
+    <canvas id="canvas" width="1400" height="880"></canvas>
+
+    <script src="../node_modules/ice-render/dist/index.umd.js"></script>
+    <script src="../dist/index.umd.js"></script>
+    <script>
+      const ice = new ICE.ICE().init('canvas');
+      const W = ICEWEB;
+      const theme = W.iceUIManager.getTheme();
+      new W.ICEHoverManager(ice).start();
+      W.getICEFocusManager(ice).start();
+
+      const toast = (text, type = 'success') => W.ICEMessage.show(ice, text, { type });
+      const notify = (title, description, type = 'success') => W.ICENotification.open(ice, { title, description, type });
+      const note = (text) => new W.ICELabel({ text, style: { fontSize: 12, fillStyle: theme.colors.textSecondary } });
+      const heading = (text) =>
+        new W.ICELabel({ text, style: { fontSize: 15, fontWeight: '600', fillStyle: theme.colors.text } });
+      const row = (gap, ...nodes) => {
+        let x = 0;
+        nodes.forEach((n) => {
+          n.setState({ left: x, top: 0 });
+          x += (Number(n.state.width) || 0) + gap;
+        });
+        return nodes;
+      };
+      const column = (gap, ...nodes) => {
+        let y = 0;
+        nodes.forEach((n) => {
+          n.setState({ left: 0, top: y });
+          y += (Number(n.state.height) || 0) + gap;
+        });
+        return nodes;
+      };
+      /** 把子树抬到指定 zIndex 之上（面板底色是后建的，不抬会被盖住）。 */
+      const raise = (node, z) => {
+        if (!node || !node.state) return;
+        node.state.zIndex = z;
+        (node.childNodes || []).forEach((child) => raise(child, z));
+      };
+
+      /* ------------------------------ 业务数据 ------------------------------ */
+      const AGENTS = ['小林', '李工', '王倩'];
+      const TICKETS = [
+        {
+          key: 'T-2041',
+          subject: '订单 #10321 未收到货',
+          customer: 'Ava Thompson',
+          level: 'VIP 3',
+          channel: '天猫',
+          waiting: '12 分钟',
+          status: 'urgent',
+          messages: [
+            { author: 'Ava Thompson', avatar: 'A', time: '今天 09:12', text: '下单后一直显示已发货，但物流没有更新，麻烦帮忙看一下。' },
+            { author: '小林', avatar: '林', time: '今天 09:14', text: '您好，我这边先帮您查一下运单状态，请稍等。', me: true },
+            { author: 'Ava Thompson', avatar: 'A', time: '今天 09:16', text: '好的，我这边比较着急，周末要用。' },
+            { author: '小林', avatar: '林', time: '今天 09:18', text: '已经联系仓库确认，包裹在分拨中心，预计今天下午更新。', me: true },
+            { author: '小林', avatar: '林', time: '今天 09:20', text: '已为您催件，仓库反馈今天下午出库，预计明天送达。', me: true },
+            { author: 'Ava Thompson', avatar: 'A', time: '今天 09:22', text: '好的，麻烦帮我盯一下，谢谢！' },
+            { author: '小林', avatar: '林', time: '今天 09:24', text: '已经设置物流异常提醒，一有更新我会第一时间同步给您。', me: true },
+            { author: 'Ava Thompson', avatar: 'A', time: '今天 09:26', text: '另外发票抬头可以帮我改成公司吗？' },
+            { author: '小林', avatar: '林', time: '今天 09:28', text: '可以，我这边登记一下，稍后把新发票发到您的邮箱。', me: true },
+            { author: 'Ava Thompson', avatar: 'A', time: '今天 09:30', text: '好的，辛苦了！' },
+          ],
+          history: [
+            { title: '创建工单', time: '09:12', description: '渠道：天猫' },
+            { title: '转派客服', time: '09:14', color: theme.colors.warning, description: '小林 接单' },
+            { title: '催促仓库', time: '09:20', color: theme.colors.success, description: '顺丰 加急' },
+          ],
+          tags: ['物流', '加急'],
+          satisfaction: 4,
+        },
+        {
+          key: 'T-2042',
+          subject: '申请退款（重复下单）',
+          customer: 'Liam Chen',
+          level: 'VIP 1',
+          channel: '官网',
+          waiting: '26 分钟',
+          status: 'normal',
+          messages: [{ author: 'Liam Chen', avatar: 'L', time: '今天 08:40', text: '我误操作下了两单，想退掉其中一单。' }],
+          history: [
+            { title: '创建工单', time: '08:40', description: '渠道：官网' },
+            { title: '等待处理', time: '08:41', description: '未分配' },
+          ],
+          tags: ['退款'],
+          satisfaction: 3,
+        },
+        {
+          key: 'T-2043',
+          subject: '发票信息需要修改',
+          customer: 'Mia Rodriguez',
+          level: 'VIP 2',
+          channel: '自营商城',
+          waiting: '1 小时',
+          status: 'normal',
+          messages: [{ author: 'Mia Rodriguez', avatar: 'M', time: '昨天 18:02', text: '抬头写错了，可以重开吗？' }],
+          history: [{ title: '创建工单', time: '昨天 18:02', description: '渠道：自营商城' }],
+          tags: ['发票'],
+          satisfaction: 5,
+        },
+        {
+          key: 'T-2044',
+          subject: '尺码不合适想换货',
+          customer: 'Noah Wilson',
+          level: '普通',
+          channel: '抖音',
+          waiting: '2 小时',
+          status: 'normal',
+          messages: [{ author: 'Noah Wilson', avatar: 'N', time: '昨天 15:20', text: 'M 码偏小，可以换成 L 吗？' }],
+          history: [{ title: '创建工单', time: '昨天 15:20', description: '渠道：抖音' }],
+          tags: ['换货'],
+          satisfaction: 4,
+        },
+      ];
+      const state = { filter: 'all', current: 'T-2041', loading: false };
+
+      /* ------------------------------ 外壳 ------------------------------ */
+      const shell = new W.ICEPanel({
+        id: 'shell',
+        left: 0,
+        top: 0,
+        width: 1400,
+        height: 880,
+        radius: 12,
+        style: { fillStyle: '#f8f9fa', strokeStyle: theme.colors.border, shadow: 'lg' },
+      });
+
+      const header = new W.ICEPanel({
+        id: 'wb-header',
+        left: 0,
+        top: 0,
+        width: 1400,
+        height: 64,
+        radius: 12,
+        style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border },
+      });
+      const brand = new W.ICELabel({
+        left: 24,
+        top: 0,
+        height: 64,
+        verticalAlign: 'middle',
+        text: 'ICE 客服工作台',
+        style: { fontSize: 18, fontWeight: '700', fillStyle: theme.colors.primary },
+      });
+      const agentStatus = new W.ICESegmented({
+        id: 'agent-status',
+        left: 220,
+        top: 16,
+        width: 240,
+        value: 'online',
+        options: [
+          { value: 'online', label: '在线' },
+          { value: 'busy', label: '忙碌' },
+          { value: 'away', label: '离开' },
+        ],
+        onChange: (value) => toast(`坐席状态：${value}`, 'info'),
+      });
+      const quickSearch = new W.ICEAutoComplete({
+        id: 'wb-search',
+        left: 500,
+        top: 16,
+        width: 260,
+        placeholder: '搜索工单 / 客户…',
+        options: TICKETS.map((t) => t.customer),
+        onSelect: (value) => {
+          const hit = TICKETS.find((t) => t.customer === value);
+          if (hit) selectTicket(hit.key);
+        },
+      });
+      const avatar = new W.ICEAvatar({ id: 'wb-avatar', left: 1340, top: 12, text: '林', size: 40 });
+      header.addChildren([brand, agentStatus, quickSearch, avatar]);
+
+      /* ------------------------------ 左：工单队列 ------------------------------ */
+      const queueFilter = new W.ICESegmented({
+        id: 'queue-filter',
+        left: 0,
+        top: 0,
+        width: 300,
+        value: 'all',
+        options: [
+          { value: 'all', label: '全部' },
+          { value: 'mine', label: '我的' },
+          { value: 'unassigned', label: '未分配' },
+        ],
+        onChange: (value) => {
+          state.filter = value;
+          renderQueue();
+        },
+      });
+      const queueHint = note('加载中…');
+      const queueList = new W.ICEList({
+        id: 'queue-list',
+        left: 0,
+        top: 0,
+        width: 300,
+        height: 620,
+        itemHeight: 56,
+        items: [],
+        onChange: (keys) => keys.length && selectTicket(keys[keys.length - 1]),
+      });
+      const queueEmpty = new W.ICEEmpty({
+        left: 0,
+        top: 240,
+        width: 300,
+        height: 160,
+        description: '这个筛选下没有工单',
+      });
+      const queueSkeleton = new W.ICESkeleton({ left: 16, top: 16, width: 268, rows: 4, title: true, active: true });
+      const leftPanel = new W.ICEPanel({ left: 0, top: 0, width: 340, height: 720, style: { fillStyle: theme.colors.surface } });
+      leftPanel.addChildren([queueFilter, queueHint, queueList, queueEmpty, queueSkeleton]);
+      leftPanel.childNodes.forEach((child) => raise(child, (Number(leftPanel.state.zIndex) || 0) + 1));
+      queueFilter.setState({ left: 16, top: 16 });
+      queueList.setState({ left: 12, top: 96 });
+      queueHint.setState({ left: 16, top: 62, height: 18, verticalAlign: 'middle' });
+      queueSkeleton.setState({ display: false });
+
+      /* ------------------------------ 中：会话 ------------------------------ */
+      const conversation = new W.ICEWidget({ width: 640, height: 900, fill: false, stroke: false });
+      const conversationScroll = new W.ICEScrollPane({ id: 'conversation', left: 0, top: 0, width: 640, height: 466 });
+      conversationScroll.setContent(conversation);
+      const replyInput = new W.ICETextArea({
+        id: 'reply-input',
+        left: 0,
+        top: 0,
+        width: 460,
+        height: 72,
+        placeholder: '输入回复，⌘/Ctrl + Enter 发送…',
+      });
+      const quickReplies = new W.ICEButton({ id: 'quick-replies', left: 476, top: 0, width: 150, height: 32, text: '快捷回复 ▾', variant: 'default' });
+      const sendButton = new W.ICEButton({ id: 'send-reply', left: 476, top: 40, width: 150, height: 32, text: '发送回复' });
+      const attach = new W.ICEUpload({
+        id: 'attach',
+        left: 0,
+        top: 80,
+        width: 300,
+        accept: '.png,.jpg,.pdf',
+        maxCount: 3,
+        text: '添加附件',
+        onChange: (files) => toast(`已添加 ${files.length} 个附件`, 'info'),
+      });
+      const tagGroup = new W.ICECheckboxGroup({
+        id: 'ticket-tags',
+        left: 320,
+        top: 80,
+        width: 320,
+        max: 3,
+        options: [
+          { value: '物流', label: '物流' },
+          { value: '退款', label: '退款' },
+          { value: '发票', label: '发票' },
+          { value: '换货', label: '换货' },
+        ],
+        onChange: (values) => toast(`标签：${values.join('、') || '（空）'}`, 'info'),
+      });
+      const centerPanel = new W.ICEPanel({ left: 0, top: 0, width: 640, height: 720, style: { fillStyle: theme.colors.surface } });
+      centerPanel.addChildren([conversationScroll, replyInput, quickReplies, sendButton, attach, tagGroup]);
+      centerPanel.childNodes.forEach((child) => raise(child, (Number(centerPanel.state.zIndex) || 0) + 1));
+      conversationScroll.setState({ left: 16, top: 16 });
+      replyInput.setState({ left: 16, top: 498 });
+      quickReplies.setState({ left: 490, top: 498 });
+      sendButton.setState({ left: 490, top: 538 });
+      attach.setState({ left: 16, top: 582 });
+      tagGroup.setState({ left: 332, top: 598 });
+
+      /* ------------------------------ 右：客户档案 ------------------------------ */
+      const customerTitle = new W.ICELabel({ text: '', style: { fontSize: 16, fontWeight: '600', fillStyle: theme.colors.text } });
+      const customerTags = row(6, new W.ICETag({ left: 0, top: 0, width: 62, height: 22, text: 'VIP', status: 'primary' }), new W.ICETag({ left: 0, top: 0, width: 74, height: 22, text: '天猫', status: 'success', variant: 'soft' }));
+      const customerInfo = new W.ICEDescriptions({ left: 0, top: 0, width: 340, column: 1, items: [] });
+      const satisfaction = new W.ICERate({ id: 'satisfaction', left: 0, top: 0, count: 5, value: 4, onChange: (v) => toast(`满意度：${v} 星`, 'info') });
+      const history = new W.ICETimeline({ left: 0, top: 0, width: 340, items: [] });
+      const kbCollapse = new W.ICECollapse({
+        left: 0,
+        top: 0,
+        width: 340,
+        items: [
+          { key: 'ship', title: '物流时效说明', content: '顺丰 48 小时 / 圆通 72 小时' },
+          { key: 'refund', title: '退款政策', content: '签收后 7 天内可退，运费险覆盖首重' },
+          { key: 'size', title: '尺码对照表', content: 'M/L/XL 对应胸围 96/100/104' },
+        ],
+      });
+      const rightPanel = new W.ICEPanel({ left: 0, top: 0, width: 380, height: 720, style: { fillStyle: theme.colors.surface } });
+      const rightInner = new W.ICEWidget({ left: 20, top: 20, width: 340, height: 660, fill: false, stroke: false });
+      const rightNodes = [
+        customerTitle,
+        ...customerTags,
+        customerInfo,
+        satisfaction,
+        heading('处理记录'),
+        history,
+        heading('知识库'),
+        kbCollapse,
+      ];
+      rightInner.addChildren(rightNodes);
+      const layoutRight = () => column(12, ...rightNodes);
+      rightPanel.addChild(rightInner, false);
+      raise(rightInner, (Number(rightPanel.state.zIndex) || 0) + 1);
+
+      /* ------------------------------ 三栏 + 分隔条 ------------------------------ */
+      const leftSplitter = new W.ICESplitter({
+        id: 'wb-splitter-left',
+        left: 16,
+        top: 80,
+        width: 1000,
+        height: 720,
+        size: 340,
+        min: 260,
+        first: leftPanel,
+        second: centerPanel,
+        onResize: () => toast('已调整队列宽度', 'info'),
+      });
+      // 纯布局容器：必须 interactive:false —— 它比三栏后创建（zIndex 更高），
+      // 可交互的话会把面板内部所有点击都吃掉（只剩更晚创建的列表行/消息气泡能点）
+      const workbench = new W.ICEWidget({
+        left: 0,
+        top: 0,
+        width: 1400,
+        height: 820,
+        fill: false,
+        stroke: false,
+        interactive: false,
+      });
+      workbench.addChildren([leftSplitter, rightPanel]);
+      rightPanel.setState({ left: 1020, top: 80 });
+
+      const backTop = new W.ICEBackTop({
+        id: 'wb-backtop',
+        left: 1352,
+        top: 780,
+        target: conversationScroll,
+        visibilityHeight: 80,
+        onClick: () => toast('已回到最新消息', 'info'),
+      });
+      const fab = new W.ICEFloatButton({
+        id: 'wb-fab',
+        left: 1348,
+        top: 712,
+        size: 40,
+        items: [
+          { key: 'tour', icon: '?', onClick: () => tour.open() },
+          { key: 'ticket', icon: '✚', onClick: () => toast('已创建空白工单 T-2045', 'success') },
+        ],
+      });
+      const tour = new W.ICETour(ice, {
+        steps: [
+          { target: queueFilter, title: '① 筛选工单', description: '按全部 / 我的 / 未分配切换队列。' },
+          { target: conversationScroll, title: '② 会话与回复', description: '下方输入回复，⌘/Ctrl + Enter 直接发送。' },
+          { target: rightPanel, title: '③ 客户档案', description: '客户等级、满意度与处理记录都在右边。' },
+        ],
+        onFinish: () => notify('引导完成', '点右下角「?」可随时重看', 'success'),
+      });
+      const shellChildren = [header, workbench, backTop, fab];
+      shell.addChildren(shellChildren);
+      ice.addChild(shell);
+
+      /* ------------------------------ 交互逻辑 ------------------------------ */
+      const visibleTickets = () => {
+        if (state.filter === 'mine') return TICKETS.filter((t) => t.key === 'T-2041' || t.key === 'T-2043');
+        if (state.filter === 'unassigned') return TICKETS.filter((t) => t.key === 'T-2042');
+        return TICKETS;
+      };
+
+      function renderQueue() {
+        queueSkeleton.setState({ display: true });
+        queueList.setState({ display: false });
+        queueEmpty.setState({ display: false });
+        // 模拟一次接口延迟：骨架屏 → 列表（真实项目里换成请求回调）
+        setTimeout(() => {
+          const items = visibleTickets().map((t) => ({ key: t.key, label: `${t.key}  ${t.subject}` }));
+          queueList.setItems(items);
+          queueSkeleton.setState({ display: false });
+          queueList.setState({ display: items.length > 0 });
+          queueEmpty.setState({ display: items.length === 0 });
+          queueHint.setText(
+            items.length ? `${items.length} 个待处理 · 最久等待 ${visibleTickets()[0].waiting}` : '没有待处理工单',
+          );
+        }, 260);
+      }
+
+      function renderConversation(ticket) {
+        conversation.removeChildren([...conversation.childNodes]);
+        let top = 0;
+        ticket.messages.forEach((message) => {
+          const bubble = new W.ICEComment({
+            left: message.me ? 120 : 0,
+            top,
+            width: 500,
+            author: message.author,
+            avatarText: message.avatar,
+            time: message.time,
+            content: message.text,
+          });
+          conversation.addChild(bubble, false);
+          top += Number(bubble.state.height) + 14;
+        });
+        conversation.setState({ height: Math.max(400, top + 20) });
+        conversationScroll.setContentSize(640, Math.max(400, top + 20));
+      }
+
+      function selectTicket(key) {
+        const ticket = TICKETS.find((t) => t.key === key);
+        if (!ticket) return;
+        state.current = key;
+        queueList.setSelectedKeys([key]);
+        customerTitle.setText(ticket.customer);
+        customerInfo.setItems([
+          { label: '工单号', value: ticket.key },
+          { label: '渠道', value: ticket.channel },
+          { label: '等级', value: ticket.level },
+          { label: '等待时长', value: ticket.waiting },
+          { label: '当前坐席', value: '小林' },
+        ]);
+        satisfaction.setValue(ticket.satisfaction);
+        history.setItems(ticket.history);
+        tagGroup.setValue(ticket.tags.filter((tag) => ['物流', '退款', '发票', '换货'].indexOf(tag) !== -1));
+        renderConversation(ticket);
+        // 描述/时间线/折叠面板填完数据后高度才确定，这里再排一次右栏
+        layoutRight();
+        conversationScroll.setScroll(0, 99999);
+      }
+
+      const appendMessage = (text) => {
+        const ticket = TICKETS.find((t) => t.key === state.current);
+        if (!ticket || !String(text).trim()) {
+          toast('回复内容不能为空', 'warning');
+          return;
+        }
+        ticket.messages.push({ author: '小林', avatar: '林', time: '刚刚', text: String(text), me: true });
+        renderConversation(ticket);
+        conversationScroll.setScroll(0, 99999);
+        toast('回复已发送', 'success');
+      };
+
+      sendButton.on('click', () => {
+        const value = replyInput.getValue();
+        appendMessage(value);
+        replyInput.setValue('');
+      });
+      // ⌘/Ctrl + Enter 发送：键盘事件走全局总线，先确认焦点确实在回复框里
+      const focus = W.getICEFocusManager(ice);
+      ice.evtBus.on('keydown', (evt) => {
+        const raw = evt && (evt.originalEvent || evt);
+        if (!raw || raw.key !== 'Enter' || !(raw.metaKey || raw.ctrlKey)) return;
+        if (focus.getFocused() !== replyInput) return;
+        appendMessage(replyInput.getValue());
+        replyInput.setValue('');
+      });
+      W.attachDropdown(ice, quickReplies, {
+        items: [
+          { key: 'ship', label: '物流时效说明' },
+          { key: 'refund', label: '退款政策' },
+          { key: 'size', label: '尺码对照表' },
+        ],
+        onSelect: (item) => {
+          const templates = {
+            ship: '您好，您的包裹已加急，预计 48 小时内送达，请留意物流更新。',
+            refund: '已为您提交退款申请，1-3 个工作日原路返回。',
+            size: '参考尺码表：M 码胸围 96cm，建议按平时尺码购买。',
+          };
+          replyInput.setValue(templates[item.key] || '');
+          toast('已插入快捷回复：' + item.label, 'info');
+        },
+      });
+      W.attachDropdown(ice, avatar, {
+        items: [
+          { key: 'break', label: '小休 15 分钟' },
+          { key: 'stats', label: '今日接待统计' },
+        ],
+        onSelect: (item) => toast(item.label, 'info'),
+      });
+
+      renderQueue();
+      selectTicket('T-2041');
+      window.__result = {
+        ice,
+        shell,
+        state,
+        TICKETS,
+        queueList,
+        queueEmpty,
+        queueSkeleton,
+        queueHint,
+        queueFilter,
+        conversationScroll,
+        replyInput,
+        sendButton,
+        quickReplies,
+        attach,
+        tagGroup,
+        customerInfo,
+        customerTitle,
+        satisfaction,
+        history,
+        kbCollapse,
+        leftSplitter,
+        rightPanel,
+        backTop,
+        fab,
+        tour,
+        selectTicket,
+        renderQueue,
+      };
+    </script>
+  </body>
+</html>

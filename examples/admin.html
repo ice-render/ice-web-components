@@ -738,6 +738,9 @@
           rowHeight: 40,
           columns,
           data: ORDERS.slice(0, 6),
+          // 多选列（批量操作靠它）；单选场景不传 rowSelection 即可
+          rowSelection: options.rowSelection,
+          onSelectionChange: options.onSelectionChange,
           // 页面可以覆盖选中行为（订单页要保持「选中提示」同步）
           onSelect: options.onSelect || ((row) => row && openOrderDrawer(row)),
         });
@@ -891,12 +894,19 @@
         });
 
         const refreshSelectedHint = () => {
-          const index = table.getSelectedIndex();
-          const row = index >= 0 ? table.getRows()[index] : null;
-          selectedHint.setText(row ? `已选中 ${row.order} · ${row.customer} · ${money(row.amount)}` : '未选中任何订单');
+          const rows = table.getSelectedRows();
+          const total = rows.reduce((sum, row) => sum + Number(row.amount || 0), 0);
+          selectedHint.setText(
+            rows.length
+              ? `已选中 ${rows.length} 笔 · 合计 ${money(total)}`
+              : '未选中任何订单（勾选左侧复选框可多选）',
+          );
         };
         const table = buildOrderTable({
           id: 'orders-full',
+          // 多选：勾复选框批量操作；点「详情」仍然打开抽屉
+          rowSelection: 'multiple',
+          onSelectionChange: () => refreshSelectedHint(),
           onSelect: (row) => {
             refreshSelectedHint();
             openOrderDrawer(row);
@@ -952,44 +962,45 @@
         const bulkExport = new W.ICEButton({ left: 0, top: 0, width: 104, height: 32, text: '导出所选', variant: 'default' });
         const bulkMore = new W.ICEButton({ left: 0, top: 0, width: 104, height: 32, text: '更多操作', variant: 'text' });
         const bulkDelete = new W.ICEButton({ left: 0, top: 0, width: 104, height: 32, text: '删除所选', danger: true });
-        const currentSelection = () => {
-          const index = table.getSelectedIndex();
-          return index >= 0 ? table.getRows()[index] : null;
-        };
+        const currentSelection = () => table.getSelectedRows();
         const requireSelection = () => {
-          const row = currentSelection();
-          if (!row) {
-            toast('请先在表格里选中一行订单', 'warning');
+          const rows = currentSelection();
+          if (!rows.length) {
+            toast('请先勾选要处理的订单', 'warning');
             return null;
           }
-          return row;
+          return rows;
         };
         bulkShip.on('click', () => {
-          const row = requireSelection();
-          if (!row) return;
-          row.status = 'Shipped';
+          const rows = requireSelection();
+          if (!rows) return;
+          rows.forEach((row) => {
+            row.status = 'Shipped';
+          });
           applyFilter();
-          notify('已发货', `${row.order} · ${row.customer}`, 'success');
+          notify(`已发货 ${rows.length} 笔`, rows.map((row) => row.order).join('、'), 'success');
         });
         bulkExport.on('click', () => {
-          const row = requireSelection();
-          if (!row) return;
-          toast(`已导出 ${row.order} 的明细`, 'success');
+          const rows = requireSelection();
+          if (!rows) return;
+          toast(`已导出 ${rows.length} 笔订单明细`, 'success');
         });
         W.attachPopconfirm(ice, bulkDelete, {
           title: '删除所选订单？',
           description: '删除后不可恢复。',
           danger: true,
           onConfirm: () => {
-            const row = currentSelection();
-            if (!row) {
-              toast('请先在表格里选中一行订单', 'warning');
+            const rows = currentSelection();
+            if (!rows.length) {
+              toast('请先勾选要删除的订单', 'warning');
               return;
             }
-            const index = ORDERS.findIndex((o) => o.order === row.order);
-            if (index >= 0) ORDERS.splice(index, 1);
+            rows.forEach((row) => {
+              const index = ORDERS.findIndex((o) => o.order === row.order);
+              if (index >= 0) ORDERS.splice(index, 1);
+            });
             applyFilter();
-            toast('已删除 ' + row.order, 'success');
+            toast(`已删除 ${rows.length} 笔订单`, 'success');
           },
         });
         W.attachDropdown(ice, bulkMore, {
@@ -999,11 +1010,12 @@
             { key: 'tag', label: '打标签' },
           ],
           onSelect: (item) => {
-            const row = requireSelection();
-            if (!row) return;
-            toast(`${row.order}：${item.label}`, 'info');
+            const rows = requireSelection();
+            if (!rows) return;
+            toast(`${rows.length} 笔订单：${item.label}`, 'info');
           },
         });
+        state.orders = { table, selectedHint, bulkShip };
 
         keywordField.on('change', (evt) => {
           const value = evt && evt.value !== undefined ? evt.value : keywordField.getValue();

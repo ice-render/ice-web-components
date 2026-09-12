@@ -147,6 +147,18 @@ keyboard, and participates in `ICEForm` validation.
 
 ![Custom component](docs/images/custom-component.png)
 
+### `workbench.html` — customer-support workbench
+
+A second end-to-end scenario (deliberately *not* a dashboard): a three-pane support
+workbench built with `ICESplitter` — ticket queue with filters and skeleton loading,
+conversation pane with reply composer / quick-reply dropdown / attachment upload /
+ticket tags, and a customer profile pane with satisfaction rating, history timeline
+and knowledge base. Session log: ticket selection drives the profile, sending a
+reply appends a message, the floating button opens a 3-step tour, and the
+back-to-top button appears once the conversation scrolls.
+
+![Support workbench](docs/images/workbench.png)
+
 ## Components
 
 | Group | Components |
@@ -232,6 +244,13 @@ panel.setLayout(new ICEFlowLayout({ gap: 8 }));
   (creation order), so build containers before their children; components that wrap
   caller-provided nodes (carousel slides, card `extra`, modal content) raise those
   subtrees above themselves.
+- **Container hit-testing** — a container that is created *after* its children and
+  stays interactive will swallow every click inside it (`ICESplitter` and plain
+  layout wrappers therefore ship with `interactive: false`; if you build your own
+  wrapper, do the same).
+- **Text input & IME** — canvas text fields handle per-key `keydown` (ASCII letters,
+  digits, backspace…). IME composition (Chinese / Japanese input) is not wired yet,
+  so CJK text currently has to go through `setValue()`.
 
 ## Development
 
@@ -249,6 +268,10 @@ npm run qa:admin
 # newest components (breadcrumb collapse, countdown, radio/checkbox groups,
 # splitter drag, watermark tiling)
 npm run qa:gallery
+
+# browser QA for examples/workbench.html: queue → profile, reply composer,
+# quick replies, tags/rating, tour, back-to-top, splitter drag
+npm run qa:workbench
 
 # 文档：重新生成 API 参考并检查链接
 npm run docs

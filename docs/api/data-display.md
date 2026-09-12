@@ -4,7 +4,12 @@
 
 ## `ICETable`
 
-表格：列定义（宽度 / 对齐 / 排序 / 自定义单元格）+ 行选中 + 悬停反馈 + 斑马纹； 点表头排序（升 → 降 → 恢复），`sorter` 可为布尔或自定义比较函数。
+表格：列定义（宽度 / 对齐 / 排序 / 自定义单元格）+ 行选择 + 分页 + 空态 + 悬停/斑马纹。
+
+- 点表头排序：升 → 降 → 恢复，`sorter` 可为布尔或自定义比较函数；
+- 行选择 `rowSelection: 'none' | 'single'（默认）| 'multiple'`：多选时最左侧多出 40px 选择列（表头全选 + 每行复选框），`getSelectedRows()` / `selectAll()` / `clearSelection()` 配合批量操作；选择变化触发 `selectionchange` 与 `onSelectionChange`；
+- `pagination: { pageSize, page, showTotal, onChange }`：只渲染当前页并挂出 `ICEPagination`；
+- 没有数据时渲染 `ICEEmpty` 空态（不会留一片空白）。
 
 源码：[`src/components/ICETable.ts`](../../src/components/ICETable.ts)
 
@@ -27,6 +32,14 @@
 | `sortBy(key: string, order: 'asc' \| 'desc' \| null)` | `this` | 显式设置排序（`order: null` 恢复原始顺序）。 |
 | `setSelectedRow(index: number)` | `this` |  |
 | `getSelectedIndex()` | `number` |  |
+| `getSelectionMode()` | `ICETableSelectionMode` |  |
+| `getSelectedIndexes()` | `number[]` |  |
+| `getSelectedRows()` | `ICETableRow[]` | 选中的行（多选按行序返回）。 |
+| `setSelectedIndexes(indexes: number[])` | `this` | 批量设置选中行（多选模式用；单选模式只认第一个）。 |
+| `selectAll()` | `this` |  |
+| `clearSelection()` | `this` |  |
+| `getSelectionNode(index: number)` | `ICECheckBox \| null` |  |
+| `getHeaderCheckbox()` | `ICECheckBox \| null` |  |
 
 ## `ICEList`
 

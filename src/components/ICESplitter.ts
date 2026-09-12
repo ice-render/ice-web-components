@@ -93,6 +93,9 @@ export class ICESplitter extends ICEWidget {
       id: props.id,
       fill: false,
       stroke: false,
+      // 分隔面板本身是个「纯容器」：它的矩形不该参与命中，否则后创建的分隔器
+      // 会把两栏内部（更早创建的组件）的点击全吃掉。拖动只依赖分隔条 + 全局鼠标事件。
+      interactive: false,
       left: props.left,
       top: props.top,
       width: props.width ?? 320,
