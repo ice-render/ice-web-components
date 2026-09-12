@@ -24,6 +24,7 @@ export * from './components/UIPopconfirm';
 export * from './components/UIModal';
 export * from './components/UIPagination';
 export * from './components/UIDropdown';
+export * from './components/UISelect';
 export * from './components/UIAvatar';
 export * from './components/UIIcon';
 export * from './components/UISvgIcon';

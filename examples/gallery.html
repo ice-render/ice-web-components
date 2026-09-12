@@ -171,6 +171,30 @@
         onChange: (page, pageSize) => pageHint.setText(`第 ${page} 页 / 每页 ${pageSize} 条`),
       });
 
+      // 选择器演示：单选 + 搜索（放在 Feedback 区下方）
+      const cityHint = new W.UILabel({
+        left: 1106,
+        top: 776,
+        text: '未选择城市',
+        style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+      });
+      const citySelect = new W.UISelect({
+        id: 'city-select',
+        left: 1106,
+        top: 800,
+        width: 180,
+        height: 32,
+        placeholder: '请选择城市',
+        showSearch: true,
+        options: [
+          { value: 'hangzhou', label: '杭州' },
+          { value: 'shanghai', label: '上海' },
+          { value: 'shenzhen', label: '深圳', disabled: true },
+          { value: 'beijing', label: '北京' },
+        ],
+        onChange: (value, option) => cityHint.setText('已选择：' + option.label),
+      });
+
       panel.addChildren([
         heading('Buttons', 32, 28),
 
@@ -236,6 +260,8 @@
         notifyTarget,
         pagination,
         pageHint,
+        citySelect,
+        cityHint,
 
         heading('Scroll pane', 32, 706),
         scrollPane,
@@ -303,7 +329,7 @@
       });
 
       ice.addChild(panel);
-      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown };
+      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint };
     </script>
   </body>
 </html>
