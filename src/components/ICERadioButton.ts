@@ -3,6 +3,9 @@ import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEToggleModel } from '../model/ICEToggleModel';
 
+/**
+ * 单选框：点击或 Enter/Space 选中；同组互斥由调用方（表单/业务）维护。
+ */
 export class ICERadioButton extends ICEWidget {
   private model: ICEToggleModel;
   private outer: any;

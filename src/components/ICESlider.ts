@@ -3,6 +3,9 @@ import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEBoundedRangeModel } from '../model/ICEBoundedRangeModel';
 
+/**
+ * 滑块：单值 / 区间双滑块，支持 `step` 量化与方向键微调。
+ */
 export class ICESlider extends ICEWidget {
   private model: ICEBoundedRangeModel;
   private track: any;

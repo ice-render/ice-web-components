@@ -2,6 +2,9 @@ import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEStatusColors, createTextNode, getStatusColors } from '../util/ICEStyle';
 
+/**
+ * 标签：默认 Bootstrap 实底（`.text-bg-*`），`variant: 'soft'` 切浅底 + 强调文字。
+ */
 export class ICETag extends ICEWidget {
   private textNode: any;
   private statusColors: ICEStatusColors;

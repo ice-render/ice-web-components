@@ -25,6 +25,10 @@ export interface ICETableSortState {
   order: 'asc' | 'desc';
 }
 
+/**
+ * 表格：列定义（宽度 / 对齐 / 排序 / 自定义单元格）+ 行选中 + 悬停反馈 + 斑马纹；
+ * 点表头排序（升 → 降 → 恢复），`sorter` 可为布尔或自定义比较函数。
+ */
 export class ICETable extends ICEWidget {
   private columns: ICETableColumn[];
   /** 原始数据（排序前的顺序，用于第三次点击恢复） */

@@ -2,6 +2,9 @@ import { ICERect } from 'ice-render';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 
+/**
+ * 分隔线：1px 的水平或垂直分隔。
+ */
 export class ICESeparator extends ICEWidget {
   constructor(props: any = {}) {
     const theme = iceUIManager.getTheme();

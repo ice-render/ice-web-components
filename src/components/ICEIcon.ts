@@ -2,6 +2,9 @@ import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { centerTextNode } from '../util/ICEStyle';
 
+/**
+ * 图标：一个居中的字形（★ ✓ ℹ …），字号与颜色可配。
+ */
 export class ICEIcon extends ICEWidget {
   private textNode: any;
 

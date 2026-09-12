@@ -3,6 +3,9 @@ import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { centerTextNode } from '../util/ICEStyle';
 
+/**
+ * 文字头像：取首字母/汉字，背景色可配，自带描边把相邻头像分开。
+ */
 export class ICEAvatar extends ICEWidget {
   private circle: any;
   private textNode: any;

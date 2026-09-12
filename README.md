@@ -71,6 +71,22 @@ ice.addChild(panel);
 
 ![Quick start](docs/images/quick-start.png)
 
+## Documentation
+
+Full docs live in [`docs/`](./docs/README.md):
+
+| | |
+|---|---|
+| [架构思路](./docs/architecture.md) | 分层、组件模型、渲染与重绘、事件与悬停、浮层/焦点/表单/主题，以及一张“踩坑表” |
+| [组件速查](./docs/components.md) | 60+ 组件按分组的一句话说明 + 跳转 API |
+| [API 参考](./docs/api/README.md) | 每个组件的构造参数与 public 方法（**从源码生成**，不会漂移） |
+| [主题与配色](./docs/guides/theming.md) | token 分组、状态色、`*TextEmphasis`、自定义主题 |
+| [表单与校验](./docs/guides/forms.md) | 三层结构、规则清单、异步校验、自定义控件接入 |
+| [浮层指南](./docs/guides/overlays.md) | 弹窗/抽屉/下拉/提示的三种用法、定位、关闭策略、内容工厂 |
+| [画布内布局](./docs/guides/layout.md) | 坐标与 zIndex、簇+货架布局、裁剪与滚动、尺寸时机 |
+| [测试](./docs/guides/testing.md) | 单测套路（假 ICE + 真组件）与浏览器 QA 脚本 |
+| [迁移说明](./docs/guides/migration.md) | `UI*` → `ICE*`、业界组件库 → Bootstrap 主题等破坏性变更 |
+
 ## Demos
 
 Both pages under `examples/` are plain HTML — build the package, then open them
@@ -196,6 +212,9 @@ npm run build            # cjs + esm + umd + d.ts
 # browser QA for examples/admin.html: layout consistency + popup open/close
 # (needs playwright; point PLAYWRIGHT_PATH at an existing install if needed)
 npm run qa:admin
+
+# 文档：重新生成 API 参考并检查链接
+npm run docs
 ```
 
 `npm run qa:admin` drives a real browser: it asserts every page has zero overlapping

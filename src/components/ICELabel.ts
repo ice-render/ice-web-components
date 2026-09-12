@@ -2,6 +2,10 @@ import { ICEText } from 'ice-render';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 
+/**
+ * 文本标签：包装引擎 `ICEText`，支持水平（`align`）与垂直（`verticalAlign`）对齐；
+ * 未显式给尺寸时采用文字的实测尺寸，便于参与流式/盒式布局。
+ */
 export class ICELabel extends ICEWidget {
   private textNode: any;
 

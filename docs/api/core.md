@@ -1,0 +1,135 @@
+# 核心与布局
+
+不直接出现在业务页面里，但决定一切的东西：组件基类、滚动视口、浮层/焦点/消息管理器，以及布局与动画工具。
+
+## `ICEScrollPane`
+
+滚动视口（Swing 的 JScrollPane / 业界组件库 的 overflow:auto 容器）。  依赖引擎的**子树裁剪**（`clipChildren`）：内容超出视口的部分被裁掉，滚出去的子组件 也命不中（命中检测同样尊重裁剪区）。  结构： ``` ICEScrollPane (clipChildren: true)   ├── contentBox   位置 = (-scrollX, -scrollY)，尺寸 = 内容尺寸   │     └── 调用方的内容组件   └── scrollbarTrack + scrollbarThumb   滚动条（内容超出时才显示） ``` 内容盒与滚动条都在构造期创建，保证滚动条的 zIndex 恒高于内容（引擎按 zIndex 排序渲染）。
+
+源码：[`src/components/ICEScrollPane.ts`](../../src/components/ICEScrollPane.ts)
+
+**构造参数** `ICEScrollPaneOptions` — 滚动视口（Swing 的 JScrollPane / 业界组件库 的 overflow:auto 容器）。  依赖引擎的**子树裁剪**（`clipChildren`）：内容超出视口的部分被裁掉，滚出去的子组件 也命不中（命中检测同样尊重裁剪区）。  结构： ``` ICEScrollPane (clipChildren: true)   ├── contentBox   位置 = (-scrollX, -scrollY)，尺寸 = 内容尺寸   │     └── 调用方的内容组件   └── scrollbarTrack + scrollbarThumb   滚动条（内容超出时才显示） ``` 内容盒与滚动条都在构造期创建，保证滚动条的 zIndex 恒高于内容（引擎按 zIndex 排序渲染）。
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `width?` | `number` | 宽度（不传用组件默认值） |
+| `height?` | `number` | 高度（不传用组件默认值） |
+| `scrollX?` | `number` | 初始滚动位置 |
+| `scrollY?` | `number` |  |
+| `scrollbar?` | `boolean` | 是否显示滚动条（默认 auto：内容超出时显示） |
+| `wheelStep?` | `number` | 滚轮灵敏度（每个 deltaY 像素对应的滚动量，默认 1） |
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `setContent(node: any)` | `this` | 设置滚动内容（会替换上一个内容组件）。 |
+| `getContent()` | `any` |  |
+| `setContentSize(width: number, height: number)` | `this` | 显式设置内容尺寸（内容自己不做布局时用；设置后不再跟随内容组件尺寸）。 |
+| `getContentSize()` | `[number, number]` |  |
+| `getViewportSize()` | `[number, number]` |  |
+| `getScrollRange()` | `[number, number]` | 可滚动范围（上界）；内容不超出时为 0。 |
+| `getScroll()` | `[number, number]` |  |
+| `setScroll(x: number, y: number)` | `this` | 设置滚动位置（按可滚动范围夹取）。 |
+| `scrollBy(dx: number, dy: number)` | `this` |  |
+| `isScrollbarVisible()` | `boolean` |  |
+| `getScrollbarThumb()` | `any` | 滚动条滑块（测试与自定义样式用）。 |
+
+## `ICEOverlayManager`
+
+弹层/浮层底座。  所有需要「浮在其它组件之上」的组件（Modal、Dropdown、Select、Tooltip、Popover、 右键菜单…）都走这一层，避免每个组件各自实现锚点定位、z 序、点外关闭、Esc 关闭。  实现要点：
+
+- 浮层根节点挂在 **ICE 的工具层**（`ice.addTool`）：工具层会被递归渲染、绘制在所有 组件之上，且不参与 getComponentById 查找；根节点 `interactive:false`，所以它自身 不会被命中，只有浮层内容可交互。
+- 浮层内容是根节点的子组件，位置由 `resolveICEOverlayPosition()` 按锚点世界盒算出来 （支持 12 种 placement、空间不足自动翻转、夹进可见范围；带视口缩放/平移也正确）。
+- 关闭：点击浮层与锚点之外、Esc、或调用 handle.close()。
+
+源码：[`src/core/ICEOverlayManager.ts`](../../src/core/ICEOverlayManager.ts)
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `start()` | `this` | 幂等：创建浮层根节点（挂到 ICE 工具层）并绑定关闭事件。 |
+| `stop()` | `this` | 解绑并移除浮层根节点（关闭所有浮层）。 |
+| `open(options: ICEOverlayOptions)` | `ICEOverlayHandle` |  |
+| `close(handle: ICEOverlayHandle, reason: ICEOverlayCloseReason)` | `void` |  |
+| `closeAll(reason: ICEOverlayCloseReason)` | `void` |  |
+| `isOpen()` | `boolean` |  |
+| `isKeyboardCaptured()` | `boolean` | 是否有浮层正在接管键盘（见 ICEOverlayOptions.keyboardCaptured）。 |
+| `getLayer()` | `any` |  |
+
+## `ICEFocusManager`
+
+键盘焦点与焦点环。  引擎只负责「键盘事件派发给谁」（`ice.setFocusedComponent` + DOMEventDispatcher）， 上层的策略在这里：
+
+- **可聚焦集合**：`ICEWidget.isFocusable()`（控件显式声明 + 启用 + 可见），按文档序；
+- **Tab / Shift+Tab** 循环轮转，**Escape** 取消焦点，**Enter / Space** 激活 （调用控件的 `activate()`，勾选/开关/单选会覆盖成对应的切换动作）；
+- **鼠标点击**同样会聚焦：命中后沿父链上溯到最近的可聚焦控件（点标签也能聚焦按钮）， 点在非控件区域则取消焦点；
+- **焦点环**画在 ICE 工具层（非交互、绘制在所有组件之上），外扩 2px 跟随焦点组件。 焦点环跟随组件移动：组件触发 AFTER_MOVE 时重算（拖拽、布局变化都能跟上）。
+
+源码：[`src/core/ICEFocusManager.ts`](../../src/core/ICEFocusManager.ts)
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `start()` | `this` | 幂等：创建焦点环（挂 ICE 工具层）并绑定键盘/鼠标事件。 |
+| `stop()` | `this` | 解绑事件、清空焦点并摘除焦点环。 |
+| `getFocused()` | `any` | 当前焦点控件（无焦点返回 null）。 |
+| `getRing()` | `any` | 焦点环组件（测试与自定义样式用）。 |
+| `getFocusables()` | `any[]` | 按文档序返回当前可聚焦的控件。 |
+| `setFocusScope(container: any)` | `this` | 限制焦点范围（模态对话框 / 抽屉的「焦点陷阱」）。 |
+| `getFocusScope()` | `any` |  |
+| `focus(component: any)` | `this` | 设置焦点（传 null 取消焦点）。非可聚焦对象会被忽略成取消焦点。 |
+| `focusNext()` | `this` | Tab：聚焦下一个（未聚焦时聚焦第一个；到末尾回绕）。 |
+| `focusPrev()` | `this` | Shift+Tab：聚焦上一个。 |
+
+## `ICEHoverManager`
+
+ICE 内核的移动类事件为了性能不会在 mousemove 时做全量命中检测， 因此 Canvas 组件没有内置 mouseenter/mouseleave 语义。  ICEHoverManager 通过事件总线的 mousemove + ice.hitTest() 自己维护当前 hover 组件， 并把状态同步到带 setHovered() 的 ICEWidget 上，实现接近 HTML 组件的 hover 效果。
+
+源码：[`src/core/ICEHoverManager.ts`](../../src/core/ICEHoverManager.ts)
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `start()` | `this` |  |
+| `stop()` | `this` |  |
+| `getHoveredComponent()` | `any` |  |
+
+## `ICEMessageManager`
+
+全局提示（Message / Notification）。
+
+- 消息挂在**独立的工具层容器**上，与浮层系统解耦：打开 Modal / Popover 不会清掉消息， 消息也不参与浮层的 exclusive 关闭；
+- `show()` 顶部居中堆叠（业界组件库 的 message），`notification()` 右下角倒序堆叠；
+- duration 到期自动淡出后移除（0 表示常驻）；每条消息返回 handle 可单独关闭。
+
+源码：[`src/core/ICEMessageManager.ts`](../../src/core/ICEMessageManager.ts)
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `start()` | `this` | 幂等：创建消息容器（挂 ICE 工具层）。 |
+| `stop()` | `this` |  |
+| `getLayer()` | `ICEWidget \| null` |  |
+| `show(options: ICEMessageOptions)` | `ICEMessageHandle` | 顶部居中消息。 |
+| `notification(options: ICENotificationOptions)` | `ICEMessageHandle` | 右下角通知（带标题、说明与关闭按钮）。 |
+| `closeAll()` | `void` |  |
+| `isOpen()` | `boolean` |  |
+
+## `ICEManager`
+
+主题管理单例（`iceUIManager`）：持有当前 token 表，组件构造时从这里取主题。
+
+源码：[`src/core/ICEManager.ts`](../../src/core/ICEManager.ts)
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `setTheme(name: ICEThemeName)` | `this` |  |
+| `getThemeName()` | `ICEThemeName` |  |
+| `getTheme()` | `ICEThemeTokens` |  |

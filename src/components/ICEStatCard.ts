@@ -3,6 +3,9 @@ import { ICEPanel } from './ICEPanel';
 import { iceUIManager } from '../core/ICEManager';
 import { createTextNode, getStatusColors } from '../util/ICEStyle';
 
+/**
+ * 统计卡：图标 + 标题 + 数值 + 涨跌趋势，用于仪表盘顶部指标。
+ */
 export class ICEStatCard extends ICEPanel {
   private valueNode: any;
   private titleNode: any;

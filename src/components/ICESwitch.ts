@@ -3,6 +3,9 @@ import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEToggleModel } from '../model/ICEToggleModel';
 
+/**
+ * 开关：点击或 Enter/Space 切换，滑块带过渡动画，触发 `change`。
+ */
 export class ICESwitch extends ICEWidget {
   private model: ICEToggleModel;
   private track: any;

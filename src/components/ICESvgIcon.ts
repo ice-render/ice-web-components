@@ -40,6 +40,9 @@ class ICESvgPath extends ICEPath {
   }
 }
 
+/**
+ * SVG 路径图标：给一段 `d` 路径数据，按 `viewBox` 缩放到目标尺寸并描边。
+ */
 export class ICESvgIcon extends ICEWidget {
   private pathNode: any;
 

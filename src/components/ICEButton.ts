@@ -74,6 +74,10 @@ function textColor(theme: any, variant: ICEButtonVariant, danger: boolean, enabl
   return hovered ? theme.colors.primary : theme.colors.text;
 }
 
+/**
+ * 按钮：`primary` / `default` / `text` / `link` 变体，`danger` 与三种尺寸，
+ * 自带 hover / 焦点 / 禁用态，点击时触发 `click`。
+ */
 export class ICEButton extends ICEWidget {
   private label: any;
   private variant: ICEButtonVariant;

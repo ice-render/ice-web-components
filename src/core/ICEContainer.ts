@@ -1,6 +1,9 @@
 import type { ICELayoutManager } from 'ice-render';
 import { ICEWidget } from './ICEWidget';
 
+/**
+ * 容器基类：在此挂布局策略（`setLayout`，链式返回自身）。
+ */
 export class ICEContainer extends ICEWidget {
   constructor(props: any = {}) {
     super(props);

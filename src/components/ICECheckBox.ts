@@ -4,6 +4,9 @@ import { iceUIManager } from '../core/ICEManager';
 import { ICEToggleModel } from '../model/ICEToggleModel';
 import { centerTextNode } from '../util/ICEStyle';
 
+/**
+ * 复选框：点击或 Enter/Space 切换勾选，触发 `change`，可直接进表单。
+ */
 export class ICECheckBox extends ICEWidget {
   private model: ICEToggleModel;
   private box: any;

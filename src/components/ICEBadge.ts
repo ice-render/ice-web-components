@@ -2,6 +2,9 @@ import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { createTextNode, getStatusColors } from '../util/ICEStyle';
 
+/**
+ * 徽标：数字/文字胶囊；`dot` 是红点模式，`count` 超过阈值自动显示 `99+`。
+ */
 export class ICEBadge extends ICEWidget {
   private textNode: any;
   private dot: boolean;

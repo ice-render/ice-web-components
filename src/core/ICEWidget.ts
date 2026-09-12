@@ -2,6 +2,13 @@ import { ICEGroup } from 'ice-render';
 import type { ICEPainter } from './ICEPainter';
 import { iceUIManager } from './ICEManager';
 
+/**
+ * 所有 UI 组件的基类（继承引擎 ICEGroup）。
+ *
+ * 在引擎的绘制能力之上只加四件事：交互态（enabled / hovered / focused）、键盘焦点
+ * （`focusable` / `activate()`）、表单校验态（`validateStatus`）、表单取值约定
+ * （`getFormValue` / `setFormValue`）。
+ */
 export class ICEWidget extends ICEGroup {
   protected painter: ICEPainter | null = null;
   protected preferredWidth: number = 0;

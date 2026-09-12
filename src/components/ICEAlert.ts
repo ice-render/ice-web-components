@@ -5,6 +5,9 @@ import { createTextNode, getStatusColors } from '../util/ICEStyle';
 
 export type ICEAlertType = 'info' | 'success' | 'warning' | 'error';
 
+/**
+ * 提示条：info / success / warning / error 四种状态 + 类型图标，可关闭。
+ */
 export class ICEAlert extends ICEWidget {
   private titleNode: any;
   private messageNode: any;

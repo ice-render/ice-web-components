@@ -13,6 +13,9 @@ export type ICEMenuItem = {
   children?: ICEMenuItem[];
 };
 
+/**
+ * 菜单：菜单项 +（可选）子菜单内联展开；选中态与悬停态分离，父项在子项选中时只做“当前分组”提示。
+ */
 export class ICEMenu extends ICEContainer {
   private items: ICEMenuItem[];
   /** 扁平化后的可见行（展开的父节点后紧跟其子项） */

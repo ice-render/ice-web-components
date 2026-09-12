@@ -3,6 +3,9 @@ import { ICEContainer } from '../core/ICEContainer';
 import { ICEFlowLayout } from 'ice-render';
 import { iceUIManager } from '../core/ICEManager';
 
+/**
+ * 标签页：一组互斥按钮，`onChange` 通知切换（程序式 `setActiveIndex` 不触发回调）。
+ */
 export class ICETabs extends ICEContainer {
   private buttons: ICEButton[] = [];
   private activeIndex = 0;

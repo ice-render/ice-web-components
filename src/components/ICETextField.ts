@@ -2,6 +2,10 @@ import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { createTextNode } from '../util/ICEStyle';
 
+/**
+ * 单行文本输入：聚焦边框、错误态、表单取值约定与键盘输入；
+ * 子类通过覆盖 `__allowNewline()` 等钩子扩展（见 ICETextArea）。
+ */
 export class ICETextField extends ICEWidget {
   private textNode: any;
   private value: string;

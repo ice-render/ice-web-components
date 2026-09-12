@@ -2,6 +2,9 @@ import { ICEPanel } from './ICEPanel';
 import { iceUIManager } from '../core/ICEManager';
 import { createTextNode } from '../util/ICEStyle';
 
+/**
+ * 卡片：面板 + 标题，并提供右上角 `extra` 插槽（放“更多/操作”）。
+ */
 export class ICECard extends ICEPanel {
   private titleNode: any;
   private extraNode: any = null;
