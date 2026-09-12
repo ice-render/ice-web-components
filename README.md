@@ -238,8 +238,13 @@ panel.setLayout(new ICEFlowLayout({ gap: 8 }));
   mounted on the engine’s tool layer, so it renders above the scene, follows the
   anchor, and is excluded from scene hit-testing.
 - **Focus** — `getICEFocusManager(ice).start()` gives Tab / Shift+Tab rotation,
-  Enter/Space activation, and a ring drawn on the tool layer. Overlays that own the
-  keyboard declare `keyboardCaptured` so the scene yields Enter/Space.
+  Enter/Space activation, and a ring drawn on the tool layer. The ring follows
+  `:focus-visible` semantics: it only appears for **keyboard** focus, so mouse
+  clicks and thumb drags stay clean. Text-entry controls (text field, number,
+  select, date/time/cascader, colour picker…) opt into `focusRing: 'always'`;
+  any component can declare `focusRing: 'keyboard' | 'always' | 'never'` (or
+  `setFocusRingMode()`). Overlays that own the keyboard declare `keyboardCaptured`
+  so the scene yields Enter/Space.
 - **Rendering pitfalls worth knowing** — the engine sorts by **global zIndex**
   (creation order), so build containers before their children; components that wrap
   caller-provided nodes (carousel slides, card `extra`, modal content) raise those
@@ -248,6 +253,11 @@ panel.setLayout(new ICEFlowLayout({ gap: 8 }));
   stays interactive will swallow every click inside it (`ICESplitter` and plain
   layout wrappers therefore ship with `interactive: false`; if you build your own
   wrapper, do the same).
+- **Focus ring vs. hit-testing** — the two rules above bite together: a form item
+  wrapper left interactive hides its own input from `ice.hitTest()`, so the focus
+  manager can't focus it (no ring, and `getFocused()` returns null while the field
+  still accepts typing through its own point-in-box check). `ICEFormItem`,
+  `ICEForm`, `ICESpace`, `ICEGrid` and `ICESplitter` are all `interactive: false`.
 - **Text input & IME** — canvas text fields handle per-key `keydown` (ASCII letters,
   digits, backspace…). IME composition (Chinese / Japanese input) is not wired yet,
   so CJK text currently has to go through `setValue()`.

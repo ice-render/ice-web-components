@@ -23,6 +23,14 @@ export class ICEWidget extends ICEGroup {
   protected focused: boolean = false;
   /** 表单校验状态（由 ICEFormItem 设置；控件可覆盖 __applyValidateState 做视觉反馈） */
   protected validateStatus: 'default' | 'error' | 'warning' | 'success' = 'default';
+  /**
+   * 焦点环策略（`:focus-visible` 的语义）：
+   * - `keyboard`（默认）：只有键盘（Tab / Shift+Tab）聚焦才画环 —— 鼠标点一下按钮、
+   *   拖一下滑块都冒蓝框会很怪；
+   * - `always`：鼠标聚焦也画环（文本类控件需要「正在输入」的反馈）；
+   * - `never`：从不画。
+   */
+  protected focusRingMode: 'keyboard' | 'always' | 'never' = 'keyboard';
 
   constructor(props: any = {}) {
     super({
@@ -36,6 +44,29 @@ export class ICEWidget extends ICEGroup {
     if (props.focusable !== undefined) {
       this.focusable = !!props.focusable;
     }
+    if (props.focusRing === 'always' || props.focusRing === 'never' || props.focusRing === 'keyboard') {
+      this.focusRingMode = props.focusRing;
+    }
+  }
+
+  public getFocusRingMode(): 'keyboard' | 'always' | 'never' {
+    return this.focusRingMode;
+  }
+
+  public setFocusRingMode(mode: 'keyboard' | 'always' | 'never'): this {
+    this.focusRingMode = mode === 'always' || mode === 'never' ? mode : 'keyboard';
+    return this;
+  }
+
+  /** 按聚焦来源判断要不要画焦点环（ICEFocusManager 调用）。 */
+  public shouldShowFocusRing(origin: 'mouse' | 'keyboard' | 'api'): boolean {
+    if (this.focusRingMode === 'never') {
+      return false;
+    }
+    if (this.focusRingMode === 'always') {
+      return true;
+    }
+    return origin === 'keyboard';
   }
 
   public setEnabled(enabled: boolean): this {

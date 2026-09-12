@@ -34,6 +34,8 @@ export class ICEFocusManager {
   private toolNode: ICEWidget | null = null;
   private ring: ICEWidget | null = null;
   private focused: any = null;
+  /** 当前焦点的来源：鼠标点出来的焦点不画环（除非控件声明 always） */
+  private focusOrigin: 'mouse' | 'keyboard' | 'api' = 'api';
   private bound = false;
   private ringPadding = 2;
   /** 焦点范围（模态对话框用）：非空时 Tab 只在该子树里轮转。 */
@@ -119,6 +121,16 @@ export class ICEFocusManager {
     return this.ring;
   }
 
+  /** 当前焦点是怎么来的（mouse / keyboard / api）。 */
+  public getFocusOrigin(): 'mouse' | 'keyboard' | 'api' {
+    return this.focusOrigin;
+  }
+
+  /** 焦点环此刻是否可见（`:focus-visible` 的结果）。 */
+  public isRingVisible(): boolean {
+    return !!(this.ring && this.ring.state.display);
+  }
+
   /** 按文档序返回当前可聚焦的控件。 */
   public getFocusables(): any[] {
     const out: any[] = [];
@@ -160,11 +172,18 @@ export class ICEFocusManager {
     return this.scope;
   }
 
-  /** 设置焦点（传 null 取消焦点）。非可聚焦对象会被忽略成取消焦点。 */
-  public focus(component: any): this {
+  /**
+   * 设置焦点（传 null 取消焦点）。非可聚焦对象会被忽略成取消焦点。
+   *
+   * `options.origin` 决定要不要画焦点环：`keyboard` 画、`mouse`/`api` 默认不画
+   * （控件自己的 `shouldShowFocusRing()` 说了算）。
+   */
+  public focus(component: any, options: { origin?: 'mouse' | 'keyboard' | 'api' } = {}): this {
     const next =
       component && typeof component.isFocusable === 'function' && component.isFocusable() ? component : null;
+    this.focusOrigin = options.origin || 'api';
     if (next === this.focused) {
+      // 焦点没变、但来源变了（例如键盘聚焦后又被鼠标点了一次）→ 焦点环要重新算
       this.__syncRing();
       return this;
     }
@@ -193,7 +212,7 @@ export class ICEFocusManager {
       return this.focus(null);
     }
     const index = this.focused ? list.indexOf(this.focused) : -1;
-    return this.focus(list[(index + 1) % list.length]);
+    return this.focus(list[(index + 1) % list.length], { origin: 'keyboard' });
   }
 
   /** Shift+Tab：聚焦上一个。 */
@@ -203,7 +222,7 @@ export class ICEFocusManager {
       return this.focus(null);
     }
     const index = this.focused ? list.indexOf(this.focused) : 0;
-    return this.focus(list[(index - 1 + list.length) % list.length]);
+    return this.focus(list[(index - 1 + list.length) % list.length], { origin: 'keyboard' });
   }
 
   private __onKeyDown(evt: any): void {
@@ -245,7 +264,7 @@ export class ICEFocusManager {
     while (node && typeof node.isFocusable === 'function' && !node.isFocusable()) {
       node = node.parentNode;
     }
-    this.focus(node && typeof node.isFocusable === 'function' ? node : null);
+    this.focus(node && typeof node.isFocusable === 'function' ? node : null, { origin: 'mouse' });
   }
 
   /** 焦点组件移动（拖拽/布局变化）时让焦点环跟上。 */
@@ -270,7 +289,12 @@ export class ICEFocusManager {
       return;
     }
     const target = this.focused;
-    if (!target) {
+    const showRing =
+      !!target &&
+      (typeof target.shouldShowFocusRing === 'function'
+        ? target.shouldShowFocusRing(this.focusOrigin)
+        : this.focusOrigin === 'keyboard');
+    if (!target || !showRing) {
       ring.setState({ display: false });
       return;
     }

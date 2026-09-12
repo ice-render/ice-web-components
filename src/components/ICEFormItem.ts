@@ -73,6 +73,8 @@ export class ICEFormItem extends ICEWidget {
       id: props.id,
       fill: false,
       stroke: false,
+      // 纯布局容器：自己不能参与命中，否则会挡住内部控件（焦点管理器就认不出输入框了）
+      interactive: false,
       left: (props as any).left,
       top: (props as any).top,
       width,

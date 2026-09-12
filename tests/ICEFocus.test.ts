@@ -7,7 +7,8 @@
  * - Enter / Space 激活当前焦点控件（调用它的 activate()）；
  * - 鼠标点击控件会聚焦它，点击非控件区域取消焦点；
  * - 焦点同步到引擎（setFocusedComponent），以便引擎把后续键盘事件派发给它；
- * - 焦点环画在工具层（非交互、跟随焦点组件的位置与尺寸）。
+ * - 焦点环画在工具层（非交互、跟随焦点组件的位置与尺寸）；
+ *   显示策略见 ICEFocusRing.test.ts（默认只有键盘聚焦才画环）。
  */
 import { ICEButton } from '../src/components/ICEButton';
 import { ICECheckBox } from '../src/components/ICECheckBox';
@@ -124,7 +125,8 @@ describe('ICEFocusManager', () => {
   it('焦点同步到引擎（后续键盘事件由引擎派发给它）', () => {
     const { ice, button } = makeScene();
     const fm = new ICEFocusManager(ice).start();
-    fm.focus(button);
+    // 显式声明来源：默认策略下只有键盘聚焦才画环（见 ICEFocusRing.test.ts）
+    fm.focus(button, { origin: 'keyboard' });
     expect(ice.getFocusedComponent() === button).toBe(true);
     expect(button.isFocused()).toBe(true);
     fm.focus(null);
@@ -152,7 +154,8 @@ describe('ICEFocusManager', () => {
     const ring = fm.getRing();
 
     expect(ring.state.display).toBe(false);
-    fm.focus(button);
+    // 显式声明来源：默认策略下只有键盘聚焦才画环（见 ICEFocusRing.test.ts）
+    fm.focus(button, { origin: 'keyboard' });
     expect(ring.state.display).toBe(true);
     // 控件 (10,10,100,32)，焦点环外扩 2px
     expect([ring.state.left, ring.state.top, ring.state.width, ring.state.height]).toEqual([8, 8, 104, 36]);

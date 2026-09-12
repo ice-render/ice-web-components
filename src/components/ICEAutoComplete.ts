@@ -78,6 +78,8 @@ export class ICEAutoComplete extends ICEWidget {
     });
     this.addChild(this.field, false);
     this.focusable = true;
+    // 文本类控件：鼠标点进去也要有「正在输入」的焦点反馈（:focus 语义）
+    this.focusRingMode = 'always';
   }
 
   protected afterAddHandler(): void {

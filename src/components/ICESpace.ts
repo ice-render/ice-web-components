@@ -40,6 +40,8 @@ export class ICESpace extends ICEContainer {
       id: props.id,
       fill: false,
       stroke: false,
+      // 纯布局容器：不参与命中（否则会挡住子项）
+      interactive: false,
       left: props.left,
       top: props.top,
       width: props.width ?? 0,

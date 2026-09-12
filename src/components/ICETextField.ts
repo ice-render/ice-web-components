@@ -56,6 +56,8 @@ export class ICETextField extends ICEWidget {
     });
     this.addChild(this.textNode, false);
     this.focusable = props.focusable !== false;
+    // 文本类控件：鼠标点进去也要有「正在输入」的焦点反馈（:focus 语义）
+    this.focusRingMode = 'always';
   }
 
   public getValue(): string {

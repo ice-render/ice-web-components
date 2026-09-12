@@ -67,6 +67,8 @@ export class ICEInputNumber extends ICEWidget {
     this.currentValue = this.__clamp(Number(props.value) || 0);
     this.onChange = typeof props.onChange === 'function' ? props.onChange : null;
     this.focusable = !this.disabled;
+    // 文本类控件：鼠标点进去也要有「正在输入」的焦点反馈（:focus 语义）
+    this.focusRingMode = 'always';
     this.__render();
   }
 

@@ -118,10 +118,12 @@
 | `stop()` | `this` | 解绑事件、清空焦点并摘除焦点环。 |
 | `getFocused()` | `any` | 当前焦点控件（无焦点返回 null）。 |
 | `getRing()` | `any` | 焦点环组件（测试与自定义样式用）。 |
+| `getFocusOrigin()` | `'mouse' \| 'keyboard' \| 'api'` | 当前焦点是怎么来的（mouse / keyboard / api）。 |
+| `isRingVisible()` | `boolean` | 焦点环此刻是否可见（`:focus-visible` 的结果）。 |
 | `getFocusables()` | `any[]` | 按文档序返回当前可聚焦的控件。 |
 | `setFocusScope(container: any)` | `this` | 限制焦点范围（模态对话框 / 抽屉的「焦点陷阱」）。 |
 | `getFocusScope()` | `any` |  |
-| `focus(component: any)` | `this` | 设置焦点（传 null 取消焦点）。非可聚焦对象会被忽略成取消焦点。 |
+| `focus(component: any, options: { origin?: 'mouse' \| 'keyboard' \| 'api' })` | `this` | 设置焦点（传 null 取消焦点）。非可聚焦对象会被忽略成取消焦点。 |
 | `focusNext()` | `this` | Tab：聚焦下一个（未聚焦时聚焦第一个；到末尾回绕）。 |
 | `focusPrev()` | `this` | Shift+Tab：聚焦上一个。 |
 

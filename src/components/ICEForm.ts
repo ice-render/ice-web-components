@@ -36,7 +36,14 @@ export class ICEForm extends ICEContainer {
     const width = props.width ?? 320;
     super({
       id: props.id,
-      fill: false, stroke: false, left: props.left, top: props.top, width, height: 0 ,
+      fill: false,
+      stroke: false,
+      // 纯布局容器：内部控件的点击不该被表单本身吃掉
+      interactive: false,
+      left: props.left,
+      top: props.top,
+      width,
+      height: 0,
     });
     this.itemGap = props.gap ?? 16;
     this.model = props.model || new ICEFormModel();

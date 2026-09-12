@@ -89,6 +89,8 @@ export class ICESelect extends ICEWidget {
     this.manager = props.manager || null;
     this.selected = this.__normalizeValue(props.value);
     this.focusable = props.focusable !== false && !this.disabled;
+    // 文本类控件：鼠标点进去也要有「正在输入」的焦点反馈（:focus 语义）
+    this.focusRingMode = 'always';
     this.__syncField();
   }
 

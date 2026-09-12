@@ -459,6 +459,37 @@ check(
   JSON.stringify(crossForm),
 );
 
+// —— 17. 焦点环策略（`:focus-visible`）：鼠标操作不画环，键盘聚焦才画 ——
+const sliderBox = await nodeBox("window.__result.panel.childNodes.find((n) => n.state && n.state.id === 'slider')");
+const ringManager = 'window.ICEWEB.getICEFocusManager(window.__result.ice)';
+const ringRect = await canvasRect();
+if (sliderBox) {
+  const startX = ringRect.left + sliderBox.l + sliderBox.w * 0.3;
+  const y = ringRect.top + sliderBox.t + sliderBox.h / 2;
+  await page.mouse.move(startX, y);
+  await page.mouse.down();
+  await page.mouse.move(startX + 60, y, { steps: 6 });
+  await page.mouse.up();
+  await page.waitForTimeout(300);
+}
+const ringAfterDrag = await page.evaluate((src) => eval(src).isRingVisible(), ringManager);
+const originAfterDrag = await page.evaluate((src) => eval(src).getFocusOrigin(), ringManager);
+check('拖 Slider 手柄：聚焦但不画焦点环', sliderBox !== null && ringAfterDrag === false && originAfterDrag === 'mouse', `${originAfterDrag}/${ringAfterDrag}`);
+
+await page.keyboard.press('Tab');
+await page.waitForTimeout(280);
+const ringAfterTab = await page.evaluate((src) => eval(src).isRingVisible(), ringManager);
+const originAfterTab = await page.evaluate((src) => eval(src).getFocusOrigin(), ringManager);
+check('Tab 键盘聚焦：焦点环出现', ringAfterTab === true && originAfterTab === 'keyboard', `${originAfterTab}/${ringAfterTab}`);
+
+const inputBox = await nodeBox('window.__result.nameInput');
+if (inputBox) {
+  await page.mouse.click(ringRect.left + inputBox.l + 30, ringRect.top + inputBox.t + inputBox.h / 2);
+  await page.waitForTimeout(280);
+}
+const ringAfterInputClick = await page.evaluate((src) => eval(src).isRingVisible(), ringManager);
+check('文本框：鼠标点进去也画环（正在输入）', inputBox !== null && ringAfterInputClick === true, String(ringAfterInputClick));
+
 check('无 console error / pageerror', errors.length === 0, errors.slice(0, 3).join(' | '));
 
 await page.screenshot({ path: '/tmp/qa-gallery.png', fullPage: true });

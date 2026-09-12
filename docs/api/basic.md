@@ -12,6 +12,9 @@
 
 | 方法 | 返回 | 说明 |
 |---|---|---|
+| `getFocusRingMode()` | `'keyboard' \| 'always' \| 'never'` |  |
+| `setFocusRingMode(mode: 'keyboard' \| 'always' \| 'never')` | `this` |  |
+| `shouldShowFocusRing(origin: 'mouse' \| 'keyboard' \| 'api')` | `boolean` | 按聚焦来源判断要不要画焦点环（ICEFocusManager 调用）。 |
 | `setEnabled(enabled: boolean)` | `this` |  |
 | `isEnabled()` | `boolean` |  |
 | `isHovered()` | `boolean` |  |
