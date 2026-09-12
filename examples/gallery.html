@@ -553,6 +553,36 @@
         onChange: (index) => console.log('carousel ->', index),
       });
 
+      // 组件补全：头像组（重叠 + 折叠 +N）与可关闭提示条
+      const avatarGroup = new W.UIAvatarGroup({
+        id: 'avatar-group',
+        left: 360,
+        top: 262,
+        size: 32,
+        max: 4,
+        overlap: 10,
+        avatars: [
+          { text: 'A' },
+          { text: 'B', backgroundColor: theme.colors.success },
+          { text: 'C', backgroundColor: theme.colors.warning },
+          { text: 'D', backgroundColor: theme.colors.error },
+          { text: 'E', backgroundColor: theme.colors.info },
+          { text: 'F' },
+        ],
+      });
+      const closableAlert = new W.UIAlert({
+        id: 'closable-alert',
+        left: 360,
+        top: 1150,
+        width: 420,
+        height: 56,
+        type: 'success',
+        title: '发布成功',
+        message: '右侧 ✕ 可关闭这条提示。',
+        closable: true,
+        onClose: () => console.log('alert closed'),
+      });
+
       // 评论区（含嵌套回复与操作）
       const comment = new W.UIComment({
         id: 'comment',
@@ -657,6 +687,7 @@
         new W.UIBadge({ id: 'badge-success', left: 76, top: 166, text: 'OK', width: 40, height: 24, status: 'success' }),
         new W.UIBadge({ id: 'badge-warning', left: 128, top: 166, text: 'W', width: 32, height: 24, status: 'warning' }),
         new W.UIBadge({ id: 'badge-error', left: 172, top: 166, text: '5', width: 32, height: 24, status: 'error' }),
+        new W.UIBadge({ id: 'badge-dot', left: 604, top: 178, dot: true, dotSize: 10 }),
 
         new W.UITag({ id: 'tag-default', left: 224, top: 168, text: 'Default', width: 82, height: 24 }),
         new W.UITag({ id: 'tag-success', left: 318, top: 168, text: 'Success', width: 88, height: 24, status: 'success' }),
@@ -672,6 +703,8 @@
         new W.UIIcon({ id: 'icon-star', left: 220, top: 276, icon: '★', size: 24, color: theme.colors.warning }),
         new W.UIIcon({ id: 'icon-check', left: 258, top: 276, icon: '✓', size: 24, color: theme.colors.success }),
         new W.UIIcon({ id: 'icon-info', left: 296, top: 276, icon: 'ℹ', size: 24, color: theme.colors.info }),
+        avatarGroup,
+        closableAlert,
 
         heading('Selection & progress', 32, 340),
 
@@ -820,7 +853,7 @@
       });
 
       ice.addChild(panel);
-      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, timePicker, timeHint, cascader, transfer, carousel, comment, colorPicker, colorHint, imageFill, imageContain, imageCover };
+      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, timePicker, timeHint, cascader, transfer, carousel, avatarGroup, closableAlert, comment, colorPicker, colorHint, imageFill, imageContain, imageCover };
     </script>
   </body>
 </html>

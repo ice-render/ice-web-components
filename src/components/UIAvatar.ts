@@ -41,4 +41,8 @@ export class UIAvatar extends UIComponent {
     this.revalidate();
     return this;
   }
+
+  public getText(): string {
+    return this.textNode.getText();
+  }
 }

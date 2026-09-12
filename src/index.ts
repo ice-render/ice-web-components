@@ -50,6 +50,7 @@ export * from './components/UIComment';
 export * from './components/UIColorPicker';
 export * from './components/UIImage';
 export * from './components/UIAvatar';
+export * from './components/UIAvatarGroup';
 export * from './components/UIIcon';
 export * from './components/UISvgIcon';
 export * from './components/UISeparator';

@@ -8,6 +8,10 @@ export class UIAlert extends UIComponent {
   private titleNode: any;
   private messageNode: any;
   private type: UIAlertType;
+  private closable: boolean;
+  private closed = false;
+  private closeButton: UIComponent | null = null;
+  private onCloseCallback: (() => void) | null;
 
   constructor(props: any = {}) {
     const theme = uiManager.getTheme();
@@ -15,6 +19,7 @@ export class UIAlert extends UIComponent {
     const colors = getStatusColors(theme, type);
     const width = props.width || 420;
     const height = props.height || 60;
+    const closable = props.closable === true;
 
     super({
       ...props,
@@ -32,7 +37,10 @@ export class UIAlert extends UIComponent {
     });
 
     this.type = type;
-    const textWidth = Math.max(0, width - theme.spacing.md * 2);
+    this.closable = closable;
+    this.onCloseCallback = typeof props.onClose === 'function' ? props.onClose : null;
+    // 可关闭时给右侧关闭按钮留位
+    const textWidth = Math.max(0, width - theme.spacing.md * 2 - (closable ? 24 : 0));
     this.titleNode = createTextNode({
       left: theme.spacing.md,
       top: theme.spacing.xs,
@@ -61,6 +69,36 @@ export class UIAlert extends UIComponent {
     });
     this.addChild(this.titleNode, false);
     this.addChild(this.messageNode, false);
+
+    if (closable) {
+      const button = new UIComponent({
+        left: width - 30,
+        top: 10,
+        width: 20,
+        height: 20,
+        radius: theme.radius.sm,
+        fill: false,
+        stroke: false,
+      });
+      button.addChild(
+        createTextNode({
+          left: 0,
+          top: 0,
+          width: 20,
+          height: 20,
+          text: '✕',
+          fillStyle: colors.text,
+          fontFamily: theme.font.family,
+          fontSize: theme.font.sizeSmall,
+          align: 'center',
+          verticalAlign: 'middle',
+        }),
+        false,
+      );
+      button.on('click', () => this.close());
+      this.addChild(button, false);
+      this.closeButton = button;
+    }
   }
 
   public setTitle(title: string): this {
@@ -77,5 +115,30 @@ export class UIAlert extends UIComponent {
 
   public getType(): UIAlertType {
     return this.type;
+  }
+
+  /** 关闭（隐藏整棵子树）并回调 onClose；重复调用只生效一次。 */
+  public close(): this {
+    if (this.closed) {
+      return this;
+    }
+    this.closed = true;
+    this.setState({ display: false });
+    if (this.onCloseCallback) {
+      this.onCloseCallback();
+    }
+    return this;
+  }
+
+  public isClosed(): boolean {
+    return this.closed;
+  }
+
+  public isClosable(): boolean {
+    return this.closable;
+  }
+
+  public getCloseButton(): UIComponent | null {
+    return this.closeButton;
   }
 }

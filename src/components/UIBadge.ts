@@ -4,27 +4,37 @@ import { createTextNode, getStatusColors } from '../util/UIStyle';
 
 export class UIBadge extends UIComponent {
   private textNode: any;
+  private dot: boolean;
 
   constructor(props: any = {}) {
     const theme = uiManager.getTheme();
-    const status = props.status || props.color || 'primary';
+    const dot = props.dot === true;
+    // 红点语义（业界组件库：状态点默认告警色），普通徽标默认主色
+    const status = props.status || props.color || (dot ? 'error' : 'primary');
     const colors = getStatusColors(theme, status);
-    const height = props.height || 20;
-    const width = props.width || Math.max(24, height);
+    const dotSize = Number(props.dotSize) || 8;
+    const height = dot ? dotSize : props.height || 20;
+    const width = dot ? dotSize : props.width || Math.max(24, height);
     super({
       ...props,
       fill: true,
       stroke: true,
       width,
       height,
-      radius: theme.radius.pill,
+      radius: dot ? dotSize / 2 : theme.radius.pill,
       style: {
-        fillStyle: colors.background,
-        strokeStyle: colors.border,
+        // 红点是实心圆点（业界组件库 语义）：用状态实色，而不是徽标那种浅底 + 描边
+        fillStyle: dot ? colors.text : colors.background,
+        strokeStyle: dot ? colors.text : colors.border,
         lineWidth: theme.control.lineWidth,
         ...(props.style || {}),
       },
     });
+    this.dot = dot;
+    if (dot) {
+      // 红点只画一个小圆，没有文字
+      return;
+    }
     const padX = theme.spacing.sm;
     this.textNode = createTextNode({
       left: padX,
@@ -45,8 +55,16 @@ export class UIBadge extends UIComponent {
   }
 
   public setText(text: string): this {
+    if (this.dot) {
+      return this;
+    }
     this.textNode.setText(text ?? '0');
     this.revalidate();
     return this;
+  }
+
+  /** 是否红点模式（只有圆点、没有文字）。 */
+  public isDot(): boolean {
+    return this.dot;
   }
 }
