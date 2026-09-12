@@ -105,7 +105,7 @@
 | 数据展示 | Badge | ✅ `UIBadge`（部分：无红点 / 计数封顶） |
 | 数据展示 | Calendar | ⬜ 阶段 D |
 | 数据展示 | Card | ✅ `UICard`（部分：无 extra / 操作区 / 底部） |
-| 数据展示 | Carousel | ⬜ 阶段 D |
+| 数据展示 | Carousel | ✅ `UICarousel`（轨道滑动 + 箭头/圆点 + 自动播放；无渐变/多图同屏） |
 | 数据展示 | Collapse | ✅ `UICollapse`（accordion 可选） |
 | 数据展示 | Descriptions | ✅ `UIDescriptions`（1/2 列） |
 | 数据展示 | Empty | ✅ `UIEmpty` |
