@@ -8,6 +8,8 @@ export type UITableColumn = {
   title: string;
   width?: number;
   align?: 'left' | 'center' | 'right';
+  /** 表头可排序：`true` 用默认比较（数值按数值、其余按字典序），或传自定义比较函数 */
+  sorter?: boolean | ((a: UITableRow, b: UITableRow) => number);
   renderCell?: (
     value: string,
     row: UITableRow,
@@ -18,9 +20,18 @@ export type UITableColumn = {
 
 export type UITableRow = Record<string, any>;
 
+export interface UITableSortState {
+  key: string;
+  order: 'asc' | 'desc';
+}
+
 export class UITable extends UIComponent {
   private columns: UITableColumn[];
+  /** 原始数据（排序前的顺序，用于第三次点击恢复） */
+  private sourceData: UITableRow[];
   private data: UITableRow[];
+  private sortKey: string | null = null;
+  private sortOrder: 'asc' | 'desc' | null = null;
   private rowPanels: any[] = [];
   private cellNodes: Array<{
     node: any;
@@ -58,6 +69,7 @@ export class UITable extends UIComponent {
     });
 
     this.columns = props.columns || [];
+    this.sourceData = props.data || [];
     this.data = props.data || [];
     this.rowHeight = rowHeight;
     this.headerHeight = headerHeight;
@@ -66,8 +78,73 @@ export class UITable extends UIComponent {
   }
 
   public setData(data: UITableRow[]): this {
-    this.data = data || [];
+    this.sourceData = data || [];
+    this.data = this.sourceData;
+    this.sortKey = null;
+    this.sortOrder = null;
     this.selectedIndex = -1;
+    this.setState({ height: this.headerHeight + this.rowHeight * this.data.length });
+    this.__render();
+    return this;
+  }
+
+  /** 当前渲染顺序的数据（排序后）。 */
+  public getRows(): UITableRow[] {
+    return this.data.slice();
+  }
+
+  public getSortState(): UITableSortState | null {
+    if (!this.sortKey || !this.sortOrder) {
+      return null;
+    }
+    return { key: this.sortKey, order: this.sortOrder };
+  }
+
+  /** 表头文案（排序中的列带 ▲/▼ 指示）。 */
+  public getHeaderLabel(key: string): string {
+    const column = this.columns.find((item) => item.key === key);
+    if (!column) {
+      return '';
+    }
+    if (this.sortKey === key && this.sortOrder) {
+      return `${column.title} ${this.sortOrder === 'asc' ? '▲' : '▼'}`;
+    }
+    return column.title;
+  }
+
+  /** 点表头：升序 → 降序 → 恢复原始顺序。 */
+  public toggleSort(key: string): this {
+    const column = this.columns.find((item) => item.key === key);
+    if (!column || !column.sorter) {
+      return this;
+    }
+    let order: 'asc' | 'desc' | null;
+    if (this.sortKey !== key) {
+      order = 'asc';
+    } else if (this.sortOrder === 'asc') {
+      order = 'desc';
+    } else {
+      order = null;
+    }
+    return this.sortBy(key, order);
+  }
+
+  /** 显式设置排序（`order: null` 恢复原始顺序）。 */
+  public sortBy(key: string, order: 'asc' | 'desc' | null): this {
+    const column = this.columns.find((item) => item.key === key);
+    if (!column || !column.sorter || !order) {
+      this.sortKey = null;
+      this.sortOrder = null;
+      this.data = this.sourceData.slice();
+      this.__render();
+      return this;
+    }
+    this.sortKey = key;
+    this.sortOrder = order;
+    const direction = order === 'asc' ? 1 : -1;
+    this.data = this.sourceData
+      .slice()
+      .sort((a, b) => direction * this.__compareRows(a, b, column));
     this.__render();
     return this;
   }
@@ -105,8 +182,22 @@ export class UITable extends UIComponent {
     if (wx < box.tl[0] || wx > box.br[0] || wy < box.tl[1] || wy > box.br[1]) {
       return;
     }
-    const localY = wy - box.tl[1] - this.headerHeight;
-    const index = Math.floor(localY / this.rowHeight);
+    const localX = wx - box.tl[0];
+    const localY = wy - box.tl[1];
+    // 表头：命中列 → 排序
+    if (localY < this.headerHeight) {
+      const widths = this.__columnWidths(Number(this.state.width) || 720);
+      let acc = 0;
+      for (let i = 0; i < this.columns.length; i++) {
+        if (localX >= acc && localX <= acc + widths[i]) {
+          this.toggleSort(this.columns[i].key);
+          return;
+        }
+        acc += widths[i];
+      }
+      return;
+    }
+    const index = Math.floor((localY - this.headerHeight) / this.rowHeight);
     if (index >= 0 && index < this.data.length) {
       this.selectedIndex = index;
       this.__syncSelection();
@@ -114,6 +205,40 @@ export class UITable extends UIComponent {
         this.onSelect(this.data[index], index);
       }
     }
+  }
+
+  /**
+   * 宽松数值解析：容忍千分位与常见货币/百分号（`$1,240.00`、`12%`、`-3.5`）。
+   * 解析不出来返回 null，交给字符串比较。
+   */
+  private __toNumber(value: any): number | null {
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? value : null;
+    }
+    if (typeof value !== 'string') {
+      return null;
+    }
+    const cleaned = value.replace(/[,\s]/g, '').replace(/^[¥$€£]/, '').replace(/%$/, '');
+    if (!/^[-+]?(\d+\.?\d*|\.\d+)$/.test(cleaned)) {
+      return null;
+    }
+    const parsed = Number(cleaned);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  /** 默认比较：两侧都能解析成数字（含货币/千分位/百分号）时按数值，否则按字符串。 */
+  private __compareRows(a: UITableRow, b: UITableRow, column: UITableColumn): number {
+    if (typeof column.sorter === 'function') {
+      return column.sorter(a, b);
+    }
+    const left = a[column.key];
+    const right = b[column.key];
+    const leftNumber = this.__toNumber(left);
+    const rightNumber = this.__toNumber(right);
+    if (leftNumber !== null && rightNumber !== null) {
+      return leftNumber - rightNumber;
+    }
+    return String(left ?? '').localeCompare(String(right ?? ''));
   }
 
   private __render(): void {
@@ -134,7 +259,7 @@ export class UITable extends UIComponent {
       },
     });
     this.addChild(header, false);
-    this.__placeCells(header, widths, this.columns.map((column) => column.title), true, this.columns);
+    this.__placeCells(header, widths, this.columns.map((column) => this.getHeaderLabel(column.key)), true, this.columns);
     const divider = new ICERect({
       left: 0,
       top: this.headerHeight - 1,

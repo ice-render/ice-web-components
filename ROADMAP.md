@@ -115,7 +115,7 @@
 | 数据展示 | QRCode | ⊘ 需要编码器，收益低 |
 | 数据展示 | Segmented | ✅ `UISegmented` |
 | 数据展示 | Statistic | ✅ `UIStatCard` |
-| 数据展示 | Table | ✅ `UITable`（部分：无排序 / 分页 / 滚动 / 列宽拖拽） |
+| 数据展示 | Table | ✅ `UITable`（列排序 `sorter` + ▲▼ 指示；无分页 / 滚动 / 列宽拖拽） |
 | 数据展示 | Tabs | ✅ `UITabs`（部分：无溢出滚动 / 关闭 / 卡片态） |
 | 数据展示 | Tag | ✅ `UITag`（部分：无可关闭 / 多彩） |
 | 数据展示 | Timeline | ✅ `UITimeline` |
@@ -142,7 +142,7 @@
 
 新组件之外，下面这些缺口同样影响观感，按需插空做：
 
-- `UITable`：排序、分页、滚动、列宽拖拽、空态
+- `UITable`：分页、滚动、列宽拖拽、空态（排序 ✅ 已做）
 - `UITextField`：多行（TextArea）、密码、前后缀、清除按钮、错误态
 - `UIMenu`：子菜单、键盘操作、折叠
 - `UITabs`：溢出滚动、关闭、位置（上下左右）
