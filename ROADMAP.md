@@ -83,14 +83,14 @@
 | 导航 | Menu | ✅ `UIMenu`（部分：无子菜单 / inline 折叠 / 键盘导航） |
 | 导航 | Pagination | ⬜ 阶段 B |
 | 导航 | Steps | ✅ `UISteps` |
-| 数据录入 | AutoComplete | ⬜ 阶段 D（依赖 Select 与键盘） |
+| 数据录入 | AutoComplete | ✅ `UIAutoComplete`（输入过滤 + 候选点选/键盘） |
 | 数据录入 | Cascader / TreeSelect | ⬜ 阶段 D |
 | 数据录入 | Checkbox | ✅ `UICheckBox`（部分：无 Group / 不确定态） |
 | 数据录入 | ColorPicker | ⬜ 低优先（交互重） |
 | 数据录入 | DatePicker / TimePicker | ⬜ 阶段 D（需日历浮层） |
 | 数据录入 | Form | ⬜ 阶段 A4 + C |
 | 数据录入 | Input | ✅ `UITextField`（部分：无多行 / 密码 / 前后缀 / 清空） |
-| 数据录入 | InputNumber | ⬜ 阶段 D |
+| 数据录入 | InputNumber | ✅ `UIInputNumber`（步进 + 键盘 + 精度） |
 | 数据录入 | Mentions | ⊘ 低优先 |
 | 数据录入 | Radio | ✅ `UIRadioButton`（部分：无 Group） |
 | 数据录入 | Rate | ✅ `UIRate`（悬停预览 + 键盘） |

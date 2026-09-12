@@ -368,6 +368,32 @@
         actions: [{ key: 'ok', text: '返回首页', primary: true }],
       });
 
+      // 高级录入：数字步进框 / 自动完成
+      const inputsLabel = new W.UILabel({
+        left: 1060,
+        top: 1226,
+        text: 'Inputs',
+        style: { fontSize: 13, fontWeight: '600', fillStyle: theme.colors.text },
+      });
+      const quantity = new W.UIInputNumber({
+        id: 'quantity',
+        left: 1060,
+        top: 1256,
+        width: 140,
+        value: 3,
+        min: 1,
+        max: 10,
+        step: 1,
+      });
+      const cityAuto = new W.UIAutoComplete({
+        id: 'city-auto',
+        left: 1060,
+        top: 1310,
+        width: 220,
+        placeholder: '输入城市名…',
+        options: ['杭州', '上海', '深圳', '北京', '广州', '成都'],
+      });
+
       panel.addChildren([
         heading('Buttons', 32, 28),
 
@@ -450,6 +476,9 @@
         collapsePanel,
         descriptions,
         timeline,
+        inputsLabel,
+        quantity,
+        cityAuto,
         heading('Feedback & status', 32, 1500),
         spin,
         rate,
@@ -522,7 +551,7 @@
       });
 
       ice.addChild(panel);
-      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result };
+      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto };
     </script>
   </body>
 </html>

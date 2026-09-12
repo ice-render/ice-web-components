@@ -38,6 +38,8 @@ export * from './components/UISpin';
 export * from './components/UIRate';
 export * from './components/UISteps';
 export * from './components/UIResult';
+export * from './components/UIInputNumber';
+export * from './components/UIAutoComplete';
 export * from './components/UIAvatar';
 export * from './components/UIIcon';
 export * from './components/UISvgIcon';
