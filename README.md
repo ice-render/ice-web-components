@@ -27,6 +27,10 @@ rings and shadows) is drawn by the engine.
 - **Bootstrap 5 token theme** (plus a dark theme) — swap with one call.
 - **No name collisions with the engine** — the package’s runtime exports are
   disjoint from `ice-render`’s (there is a regression test for it).
+- **Actually tested** — 350+ unit tests (form validation, overlay positioning,
+  keyboard navigation, sort/hover/focus edge cases) plus `npm run qa:admin`, a real
+  browser pass over the demo: layout consistency, every popup layer, zero console
+  errors.
 
 ## Quick start
 
