@@ -19,6 +19,10 @@ export class UILabel extends UIComponent {
       ...props,
     });
     const vAlign = props.verticalAlign;
+    // 水平对齐：UILabel 只是 ICEText 的包装，`align` 必须显式映射进 style.textAlign。
+    // 曾经漏了这层映射 —— 所有 `new UILabel({ align: 'center' })` 都静默地按左对齐渲染，
+    // 表现为「明明给了居中、文字却贴着盒子左边」（轮播文字、时间列、空状态文字都中招）。
+    const hAlign = props.align;
     // 有显式 height（如与控件同行）时默认垂直居中；无显式 height 时交给 ICEText
     // 的默认 baseline，按单行文本自然排版，避免标题被错误地以 top 为中心而整体上移。
     const baseline =
@@ -36,6 +40,8 @@ export class UILabel extends UIComponent {
       stroke: false,
       style: {
         ...font,
+        ...(hAlign === 'center' ? { textAlign: 'center' } : {}),
+        ...(hAlign === 'right' ? { textAlign: 'right' } : {}),
         ...(baseline ? { textBaseline: baseline } : {}),
         ...(props.style || {}),
       },
