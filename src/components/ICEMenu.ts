@@ -278,9 +278,12 @@ export class ICEMenu extends ICEContainer {
 
   private __syncSelection(): void {
     const theme = iceUIManager.getTheme();
+    // 选中项所在路径上的父节点：只做「当前分组」的文字高亮，不加底色
+    const ancestors = this.__ancestorKeys(this.selectedKey);
     this.itemPanels.forEach((panel, index) => {
       const active = this.rows[index] && this.rows[index].item.key === this.selectedKey;
       const hovered = this.rows[index] && this.rows[index].item.key === this.hoverKey;
+      const inActivePath = !!this.rows[index] && ancestors.indexOf(this.rows[index].item.key) !== -1;
       panel.setState({
         style: {
           fillStyle: active ? theme.colors.primaryBg : hovered ? theme.colors.background : 'rgba(0,0,0,0)',
@@ -290,15 +293,37 @@ export class ICEMenu extends ICEContainer {
         label.setState({
           style: {
             ...label.state.style,
-            fillStyle: active ? theme.colors.primary : theme.colors.text,
+            fillStyle: active || inActivePath ? theme.colors.primary : theme.colors.text,
           },
         });
       });
       const icon = this.itemIcons[index];
       if (icon && typeof icon.setColor === 'function') {
-        icon.setColor(active ? theme.colors.primary : theme.colors.textSecondary);
+        icon.setColor(active || inActivePath ? theme.colors.primary : theme.colors.textSecondary);
       }
     });
     this.revalidate();
+  }
+
+  /** 从根走到目标项，返回途中经过的父节点 key（不含自身）。 */
+  private __ancestorKeys(key: string | null): string[] {
+    if (!key) {
+      return [];
+    }
+    const walk = (items: ICEMenuItem[], trail: string[]): string[] | null => {
+      for (const item of items) {
+        if (item.key === key) {
+          return trail;
+        }
+        if (item.children && item.children.length) {
+          const found = walk(item.children, trail.concat(item.key));
+          if (found) {
+            return found;
+          }
+        }
+      }
+      return null;
+    };
+    return walk(this.items, []) || [];
   }
 }

@@ -259,7 +259,8 @@
             orderState.page = 1;
             state.segmented && state.segmented.setValue(orderState.status);
             state.applyFilter && state.applyFilter();
-            showPage('orders');
+            // 第二个参数 = 菜单里要高亮的项：点的是子项，就让子项保持选中（别被父项顶掉）
+            showPage('orders', item.key);
             return;
           }
           showPage(item.key);
@@ -1391,7 +1392,14 @@
       };
       const builtPages = {};
 
-      function showPage(key) {
+      /**
+       * 切换页面。
+       *
+       * `menuKey` 是菜单里要高亮的项：多数情况与页面同名，但订单页有子菜单
+       * （全部/待处理/退款中），点哪个子项就该让那个子项保持选中状态，
+       * 不能一律回落到父项「订单」。
+       */
+      function showPage(key, menuKey) {
         const def = PAGE_DEFS[key];
         if (!def) return;
         if (!builtPages[key]) {
@@ -1409,7 +1417,7 @@
         contentHost.setScroll(0, 0);
         contentHost.setContentSize(node.state.width, node.state.height);
         pageTitle.setText(def.title);
-        menu.setSelectedKey(key.startsWith('orders') ? 'orders' : key);
+        menu.setSelectedKey(menuKey || key);
         if (key === 'settings' && state.showSettingsPane) state.showSettingsPane(0);
         ice.dirty = true;
       }

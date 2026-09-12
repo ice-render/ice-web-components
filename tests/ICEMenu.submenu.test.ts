@@ -8,6 +8,7 @@
  * - 支持多级嵌套；空 children 视为叶子。
  */
 import { ICEMenu, ICEMenuItem } from '../src/components/ICEMenu';
+import { iceUIManager } from '../src/core/ICEManager';
 
 const items: ICEMenuItem[] = [
   { key: 'new', label: 'New' },
@@ -104,5 +105,23 @@ describe('ICEMenu 子菜单', () => {
     ]);
     menu.setExpandedKeys([]);
     expect(menu.getVisibleItems().length).toBe(4);
+  });
+
+  it('选中子项：子项高亮，父项只做「当前分组」文字高亮（不加底色）', () => {
+    const { menu } = setup();
+    menu.activateItem('export');
+    menu.activateItem('pdf');
+    expect(menu.getSelectedKey()).toBe('pdf');
+
+    const theme = iceUIManager.getTheme();
+    const child = menu.getItemNode('pdf')!;
+    const childLabel = child.childNodes[0] as any;
+    expect(child.state.style.fillStyle).toBe(theme.colors.primaryBg);
+    expect(childLabel.state.style.fillStyle).toBe(theme.colors.primary);
+
+    const parent = menu.getItemNode('export')!;
+    const parentLabel = parent.childNodes[0] as any;
+    expect(parentLabel.state.style.fillStyle).toBe(theme.colors.primary);
+    expect(parent.state.style.fillStyle).not.toBe(theme.colors.primaryBg);
   });
 });
