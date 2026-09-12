@@ -219,4 +219,12 @@ export class ICECollapse extends ICEWidget {
       this.ice.dirty = true;
     }
   }
+
+  /** 宽度变化时重排标题/内容宽度（引擎只回调 __afterStateMerge）。 */
+  protected __afterStateMerge(sizeChanged: boolean): void {
+    super.__afterStateMerge(sizeChanged);
+    if (sizeChanged) {
+      this.__render();
+    }
+  }
 }

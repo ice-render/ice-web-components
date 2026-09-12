@@ -11,7 +11,7 @@
 > `focusRing` 聚焦色）；③ `ICETag`/`ICEBadge` 默认改成 Bootstrap 实底 `.text-bg-*`（`variant:'soft'` 保留浅底风格）。
 > 细节见 README 的 Naming / Theme / Colour variants 三节。
 
-## 现状（76 个组件源文件 / 90 个导出类 / 511 条单测 / 111 项浏览器断言）
+## 现状（76 个组件源文件 / 90 个导出类 / 516 条单测 / 111 项浏览器断言）
 
 按分组清点（完整清单与参数见 [`docs/components.md`](./docs/components.md)）：
 
@@ -56,6 +56,11 @@
 > 第七批：`ICEMinesweeperModel`（扫雷纯逻辑模型：首点安全/洪水填充/插旗循环/chord/胜负/计时）
 > + XP 扫雷做成完整游戏（三档难度、右键插旗、双击 chord、LED 计数、最佳成绩）；
 > 引擎 1.4.1 修掉 `ICE.init()` 用 `stopPropagation()` 拦死 `contextmenu` 的问题。
+> 第八批（美化）：`ICEManager.registerTheme()` 自定义主题 + 内置 `ICE_XP_THEME`（XP 经典配色）；
+> 示例全部改用 `dpr` 初始化（Retina 文字不发虚）；XP 桌面全部图标改为自绘；
+> 顺带修四类 bug：引擎多行文本行距（中文叠字）、`ICESplitter` 构造期夹取丢掉请求尺寸、
+> 显示类组件宽度变化不重排（ICEDescriptions/ICETimeline/ICEList/ICECollapse）、
+> `ICEIconTile`/`ICEWindow` 支持自绘图标节点（`iconNode`）。
 >
 > 示例：`gallery.html`（组件总览）、`admin.html`（6 页后台）、`workbench.html`（客服工单工作台）、
 > `windows-xp.html`（全屏 XP 桌面）、`custom-component.html`（自定义组件）——见[示例与场景](./docs/guides/examples.md)。

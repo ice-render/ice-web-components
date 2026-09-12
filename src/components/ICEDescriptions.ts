@@ -66,6 +66,20 @@ export class ICEDescriptions extends ICEWidget {
     return this;
   }
 
+  /**
+   * 宽度变化时重排内部布局。
+   *
+   * `__render()` 只在构造与 setItems 时跑，而「窗口缩放 / 分栏拖动」只改 `state.width` ——
+   * 引擎在 setState 后只回调 `__afterStateMerge`，不补这次重排的话列宽会停留在旧值
+   * （值列宽度算成 0，文字直接消失）。
+   */
+  protected __afterStateMerge(sizeChanged: boolean): void {
+    super.__afterStateMerge(sizeChanged);
+    if (sizeChanged) {
+      this.__render();
+    }
+  }
+
   private __render(): void {
     const theme = iceUIManager.getTheme();
     const width = Number(this.state.width) || 320;

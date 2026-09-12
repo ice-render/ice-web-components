@@ -19,8 +19,12 @@
     <script src="../node_modules/ice-render/dist/index.umd.js"></script>
     <script src="../dist/index.umd.js"></script>
     <script>
-      const ice = new ICE.ICE().init('canvas');
+      // 高分屏：让引擎把 backing store 按 dpr 放大，文字/描边不发虚（Retina 上尤其明显）
+      const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
+      const ice = new ICE.ICE().init('canvas', { dpr });
       const W = ICEWEB;
+      // 先切主题、再建组件：组件在构造时读一次主题 token
+      W.iceUIManager.registerTheme('xp', W.ICE_XP_THEME).setTheme('xp');
       const theme = W.iceUIManager.getTheme();
       new W.ICEHoverManager(ice).start();
       W.getICEFocusManager(ice).start();
@@ -48,6 +52,153 @@
         const [r2, g2, b2] = parse(to);
         const ch = (a, b) => Math.round(a + (b - a) * t).toString(16).padStart(2, '0');
         return `#${ch(r1, r2)}${ch(g1, g2)}${ch(b1, b2)}`;
+      };
+
+      /* ------------------------ XP 风格图标（自绘，不引外部贴图） ------------------------
+       * 用引擎图元拼出拟物小图标：离线可用、任意尺寸都清晰、没有版权问题。
+       * Windows 的原版图标是微软版权素材，这里一律自己画。
+       */
+      const iconBox = (size, children) => {
+        const box = new W.ICEWidget({
+          left: 0,
+          top: 0,
+          width: size,
+          height: size,
+          fill: false,
+          stroke: false,
+          interactive: false,
+        });
+        children.filter(Boolean).forEach((child) => box.addChild(child, false));
+        return box;
+      };
+      const pixel = (left, top, width, height, color, radius = 0, extra = {}) =>
+        new W.ICEWidget({
+          left,
+          top,
+          width,
+          height,
+          radius,
+          fill: true,
+          stroke: false,
+          interactive: false,
+          style: { fillStyle: color },
+          ...extra,
+        });
+      const outlined = (left, top, width, height, fill, stroke, radius = 0) =>
+        new W.ICEWidget({
+          left,
+          top,
+          width,
+          height,
+          radius,
+          fill: true,
+          stroke: true,
+          interactive: false,
+          style: { fillStyle: fill, strokeStyle: stroke, lineWidth: 1 },
+        });
+      const disc = (left, top, radius, fill, stroke) =>
+        new ICE.ICECircle({
+          left,
+          top,
+          radius,
+          fill: true,
+          stroke: !!stroke,
+          interactive: false,
+          style: { fillStyle: fill, strokeStyle: stroke || fill, lineWidth: 1 },
+        });
+
+      /** kind: computer | folder | notepad | paint | mine | ie | display | recycle | windows */
+      const xpIcon = (kind, size = 32) => {
+        const s = size;
+        const r = (ratio) => Math.round(s * ratio);
+        switch (kind) {
+          case 'computer':
+            return iconBox(s, [
+              outlined(r(0.08), r(0.14), r(0.84), r(0.55), '#e6e6e6', '#8a8a8a', 2),
+              pixel(r(0.14), r(0.2), r(0.72), r(0.42), '#1f6fd0'),
+              pixel(r(0.44), r(0.69), r(0.12), r(0.1), '#d0d0d0'),
+              outlined(r(0.28), r(0.79), r(0.44), r(0.08), '#c8c8c8', '#8a8a8a'),
+            ]);
+          case 'folder':
+            return iconBox(s, [
+              pixel(r(0.1), r(0.2), r(0.36), r(0.14), '#e0a92e', 1),
+              outlined(r(0.06), r(0.28), r(0.86), r(0.5), '#ffd35c', '#c9a227', 2),
+              pixel(r(0.12), r(0.34), r(0.74), r(0.1), '#ffe9a3'),
+            ]);
+          case 'notepad':
+            return iconBox(s, [
+              outlined(r(0.16), r(0.1), r(0.68), r(0.78), '#ffffff', '#8a8a8a', 1),
+              pixel(r(0.16), r(0.1), r(0.68), r(0.14), '#316ac5'),
+              pixel(r(0.24), r(0.36), r(0.5), r(0.05), '#9a9a9a'),
+              pixel(r(0.24), r(0.5), r(0.5), r(0.05), '#9a9a9a'),
+              pixel(r(0.24), r(0.64), r(0.34), r(0.05), '#9a9a9a'),
+            ]);
+          case 'paint':
+            return iconBox(s, [
+              new ICE.ICEEllipse({
+                left: r(0.08),
+                top: r(0.16),
+                radiusX: r(0.42),
+                radiusY: r(0.34),
+                fill: true,
+                stroke: true,
+                interactive: false,
+                style: { fillStyle: '#f2ead0', strokeStyle: '#b9a06a', lineWidth: 1 },
+              }),
+              disc(r(0.2), r(0.24), r(0.06), '#c1272d'),
+              disc(r(0.34), r(0.22), r(0.06), '#1f6fd0'),
+              disc(r(0.26), r(0.38), r(0.06), '#198754'),
+              disc(r(0.42), r(0.36), r(0.06), '#ffc107'),
+              pixel(r(0.5), r(0.52), r(0.42), r(0.1), '#8a5a2b', 2, { transform: { rotate: 35 } }),
+            ]);
+          case 'mine':
+            return iconBox(s, [
+              pixel(r(0.44), r(0.08), r(0.12), r(0.84), '#1b1b1b', 2),
+              pixel(r(0.08), r(0.44), r(0.84), r(0.12), '#1b1b1b', 2),
+              pixel(r(0.2), r(0.2), r(0.6), r(0.6), '#1b1b1b', 2, { transform: { rotate: 45 } }),
+              disc(r(0.28), r(0.28), r(0.22), '#2b2b2b'),
+              disc(r(0.32), r(0.3), r(0.07), '#f2f2f2'),
+            ]);
+          case 'ie':
+            return iconBox(s, [
+              disc(r(0.12), r(0.12), r(0.38), 'rgba(0,0,0,0)', '#1f6fd0'),
+              new W.ICELabel({
+                interactive: false,
+                left: 0,
+                top: 0,
+                width: s,
+                height: s,
+                text: 'e',
+                align: 'center',
+                verticalAlign: 'middle',
+                style: { fontSize: Math.round(s * 0.66), fontWeight: '700', fontStyle: 'italic', fillStyle: '#1f6fd0' },
+              }),
+            ]);
+          case 'display':
+            return iconBox(s, [
+              outlined(r(0.06), r(0.16), r(0.88), r(0.58), '#e6e6e6', '#8a8a8a', 2),
+              pixel(r(0.12), r(0.22), r(0.24), r(0.46), '#c1272d'),
+              pixel(r(0.38), r(0.22), r(0.24), r(0.46), '#198754'),
+              pixel(r(0.64), r(0.22), r(0.24), r(0.46), '#1f6fd0'),
+              outlined(r(0.3), r(0.78), r(0.4), r(0.08), '#c8c8c8', '#8a8a8a'),
+            ]);
+          case 'recycle':
+            return iconBox(s, [
+              outlined(r(0.24), r(0.18), r(0.52), r(0.12), '#b8b8b8', '#7a7a7a', 2),
+              outlined(r(0.28), r(0.3), r(0.44), r(0.54), '#d0d0d0', '#7a7a7a', 2),
+              pixel(r(0.36), r(0.4), r(0.28), r(0.06), '#a8a8a8'),
+              pixel(r(0.36), r(0.52), r(0.28), r(0.06), '#a8a8a8'),
+            ]);
+          case 'windows':
+            return iconBox(s, [
+              pixel(r(0.06), r(0.2), r(0.4), r(0.34), '#e8443a', 1, { transform: { rotate: -8 } }),
+              pixel(r(0.5), r(0.16), r(0.4), r(0.34), '#7ab648', 1, { transform: { rotate: -8 } }),
+              pixel(r(0.06), r(0.56), r(0.4), r(0.34), '#2f7bd6', 1, { transform: { rotate: -8 } }),
+              pixel(r(0.5), r(0.52), r(0.4), r(0.34), '#f2c33d', 1, { transform: { rotate: -8 } }),
+            ]);
+          default:
+            return iconBox(s, [disc(r(0.16), r(0.16), r(0.34), '#8a8a8a', '#5a5a5a')]);
+        }
       };
       /** 用横向色带拼出渐变（引擎的 fillStyle 只吃纯色）。 */
       const gradient = (parent, left, top, width, height, from, to, bands = 12, radius = 0) => {
@@ -280,16 +431,19 @@
           button.addChild(
             new W.ICELabel({
               interactive: false,
-              left: 8,
+              left: 30,
               top: 0,
-              width: 152,
+              width: 130,
               height: TASKBAR_H - 8,
-              text: `${entry.icon}  ${entry.title}`,
+              text: entry.title,
               verticalAlign: 'middle',
               style: { fontSize: 12, fillStyle: '#ffffff', fontFamily: XPFONT },
             }),
             false,
           );
+          const buttonIcon = xpIcon(entry.iconKind, 16);
+          buttonIcon.setState({ left: 8, top: Math.round((TASKBAR_H - 8 - 16) / 2) });
+          button.addChild(buttonIcon, false);
           button.on('click', () => {
             if (entry.minimized) {
               showWindow(key);
@@ -348,7 +502,7 @@
         const win = new W.ICEWindow({
           id: 'window-' + app.key,
           title: app.title,
-          icon: app.icon,
+          iconNode: xpIcon(app.iconKind, 16),
           left: Math.min(360, 120 + offset),
           top: 60 + offset,
           width: app.width,
@@ -368,7 +522,13 @@
           },
         });
         windowLayer.addChild(win, false);
-        openWindows.set(app.key, { window: win, title: app.title, icon: app.icon, minimized: false });
+        openWindows.set(app.key, {
+          window: win,
+          title: app.title,
+          icon: app.icon,
+          iconKind: app.iconKind,
+          minimized: false,
+        });
         focusWindow(app.key);
         // 应用可以在窗口就绪后调整自身尺寸（例如扫雷按难度换棋盘大小）
         if (typeof app.onOpened === 'function') {
@@ -434,7 +594,8 @@
           left: 0,
           top: 0,
           width: 100,
-          column: 2,
+          // 单列：面板只有 ~450px，两列时「Intel Pentium 4 2.4GHz」这类长值会溢出到隔壁
+          column: 1,
           items: [
             { label: '处理器', value: 'Intel Pentium 4 2.4GHz' },
             { label: '内存', value: '512 MB' },
@@ -456,7 +617,7 @@
         rightPanel.addChild(
           new W.ICELabel({
             left: 12,
-            top: 300,
+            top: 348,
             width: 320,
             text: '驱动器列表可以直接点行选中（表格），右侧显示系统信息（描述列表）。',
             style: { fontSize: 11, fillStyle: '#6c757d' },
@@ -651,7 +812,7 @@
         const toolPanel = new W.ICEPanel({
           left: 0,
           top: 0,
-          width: 132,
+          width: 150,
           height: 100,
           interactive: false,
           style: { fillStyle: '#ece9d8' },
@@ -704,9 +865,9 @@
         });
         const hint = new W.ICELabel({
           left: 12,
-          top: 180,
-          width: 108,
-          text: '在右侧按住左键拖动即可作画（每笔画一条折线）。',
+          top: 182,
+          width: 126,
+          text: '左键拖动即可作画',
           style: { fontSize: 11, fillStyle: '#6c757d' },
         });
         toolPanel.addChildren([widthLabel, brush, clearButton, hint], { align: 'top' });
@@ -716,7 +877,7 @@
           const width = Number(pane.state.width) || 600;
           const height = Number(pane.state.height) || 400;
           toolPanel.setState({ height });
-          canvas.setState({ left: 138, top: 8, width: width - 146, height: height - 16 });
+          canvas.setState({ left: 156, top: 8, width: width - 164, height: height - 16 });
         };
         pane.revalidate = function () {
           W.ICEWidget.prototype.revalidate.call(this);
@@ -1128,8 +1289,8 @@
             previewBand.setState({ style: { ...previewBand.state.style, fillStyle: preset.hill[0] } });
           },
         });
-        const applyButton = new W.ICEButton({ left: 236, top: 160, width: 92, height: 28, text: '应用' });
-        const cancelButton = new W.ICEButton({ left: 336, top: 160, width: 92, height: 28, text: '取消', variant: 'default' });
+        const applyButton = new W.ICEButton({ left: 236, top: 196, width: 92, height: 26, text: '应用' });
+        const cancelButton = new W.ICEButton({ left: 336, top: 196, width: 92, height: 26, text: '取消', variant: 'default' });
         applyButton.on('click', () => {
           setWallpaper(group.getValue());
           toast('壁纸已应用：' + WALLPAPERS[group.getValue()].name, 'success');
@@ -1216,6 +1377,7 @@
           style: { fontSize: 12 },
         });
         const go = new W.ICEButton({ left: 100, top: 10, width: 60, height: 26, text: '转到', size: 'small' });
+        const addressDivider = new W.ICESeparator({ left: 12, top: 44, width: 600, height: 1 });
         const pageTitle = new W.ICELabel({
           left: 16,
           top: 48,
@@ -1262,10 +1424,15 @@
           toast('已访问：' + url, url.includes('ice') ? 'success' : 'warning');
         });
         pane.addChildren([address, go, pageTitle, pageBody, links, status], { align: 'top' });
+        pane.addChild(addressDivider, false);
         const layout = () => {
           const width = Number(pane.state.width) || 600;
-          address.setState({ width: Math.max(120, width - 96) });
-          go.setState({ left: width - 74 });
+          address.setState({ width: Math.max(120, width - 120) });
+          go.setState({ left: width - 84 });
+          addressDivider.setState({ width: width - 24 });
+          pageTitle.setState({ top: 56 });
+          pageBody.setState({ top: 86 });
+          links.setState({ top: 116 });
           pageTitle.setState({ width: width - 32 });
           pageBody.setState({ width: width - 32 });
           links.setState({ width: width - 32 });
@@ -1288,21 +1455,22 @@
         paintWallpaper(key);
       };
       const APPS = [
-        { key: 'computer', title: '我的电脑', icon: '🖥', width: 720, height: 460, build: buildMyComputer },
-        { key: 'documents', title: '我的文档', icon: '📁', width: 640, height: 420, build: buildMyDocuments },
-        { key: 'notepad', title: '未命名 - 记事本', icon: '📝', width: 560, height: 420, build: buildNotepad },
-        { key: 'paint', title: '未命名 - 画图', icon: '🎨', width: 720, height: 520, build: buildPaint },
+        { key: 'computer', title: '我的电脑', icon: '🖥', iconKind: 'computer', width: 720, height: 460, build: buildMyComputer },
+        { key: 'documents', title: '我的文档', icon: '📁', iconKind: 'folder', width: 640, height: 420, build: buildMyDocuments },
+        { key: 'notepad', title: '未命名 - 记事本', icon: '📝', iconKind: 'notepad', width: 560, height: 420, build: buildNotepad },
+        { key: 'paint', title: '未命名 - 画图', icon: '🎨', iconKind: 'paint', width: 720, height: 520, build: buildPaint },
         {
           key: 'minesweeper',
           title: '扫雷',
           icon: '💣',
+          iconKind: 'mine',
           width: 260,
           height: 360,
           build: buildMinesweeper,
           onOpened: () => handles.mines && handles.mines.fit(),
         },
-        { key: 'ie', title: 'ICE 桌面 - Microsoft Internet Explorer', icon: '🌐', width: 700, height: 460, build: buildIE },
-        { key: 'display', title: '显示 属性', icon: '⚙', width: 500, height: 260, build: buildDisplayProperties },
+        { key: 'ie', title: 'ICE 桌面 - Microsoft Internet Explorer', icon: '🌐', iconKind: 'ie', width: 700, height: 460, build: buildIE },
+        { key: 'display', title: '显示 属性', icon: '⚙', iconKind: 'display', width: 500, height: 300, build: buildDisplayProperties },
       ];
 
       /* ============================ 桌面图标 ============================ */
@@ -1312,7 +1480,8 @@
         const app = APPS.find((item) => item.key === key);
         const tile = new W.ICEIconTile({
           id: 'icon-' + key,
-          icon: app.icon,
+          icon: '',
+          iconNode: xpIcon(app.iconKind, 34),
           label: app.title.replace('未命名 - ', '').replace(' - Microsoft Internet Explorer', ''),
           left: 18,
           top: 18 + index * 84,
@@ -1379,16 +1548,19 @@
           row.addChild(
             new W.ICELabel({
               interactive: false,
-              left: 10,
+              left: 32,
               top: 0,
-              width: 190,
+              width: 170,
               height: 36,
-              text: `${app.icon}   ${app.title}`,
+              text: app.title,
               verticalAlign: 'middle',
               style: { fontSize: 12, fillStyle: '#0a246a', fontFamily: XPFONT },
             }),
             false,
           );
+          const rowIcon = xpIcon(app.iconKind, 20);
+          rowIcon.setState({ left: 8, top: 8 });
+          row.addChild(rowIcon, false);
           row.on('click', () => {
             startMenuHandle && startMenuHandle.close();
             openApp(app);

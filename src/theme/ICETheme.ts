@@ -262,3 +262,108 @@ export const ICE_DARK_THEME: ICEThemeTokens = {
     focusRing: '#6ea8fe',
   },
 };
+
+/**
+ * Windows XP 经典主题（Luna 蓝 + 米灰控件）。
+ *
+ * 用途：桌面 / 怀旧风格的应用。用 `iceUIManager.registerTheme('xp', ICE_XP_THEME).setTheme('xp')`
+ * 切换（主题在组件构造时读取，先切主题再建组件）。
+ *
+ * 取色要点：
+ * - 主色取 XP 选择蓝 `#316ac5`，控件面 `#ece9d8`（经典米灰），输入框白底 + `#7f9db9` 边框；
+ * - 圆角压到 2~3px、控件更矮更紧凑（XP 的按钮比 Bootstrap 小一圈）；
+ * - 阴影几乎不用（XP 是描边风格，不是投影风格）。
+ */
+export const ICE_XP_THEME: ICEThemeTokens = {
+  colors: {
+    primary: '#316ac5',
+    primaryHover: '#4a86e8',
+    primaryActive: '#24529a',
+    primaryBg: '#d6e5fb',
+    primaryBorder: '#7f9db9',
+    primaryText: '#ffffff',
+    background: '#ece9d8',
+    surface: '#ffffff',
+    elevated: '#ffffff',
+    border: '#7f9db9',
+    borderSecondary: '#d4d0c8',
+    text: '#000000',
+    textSecondary: '#4a4a4a',
+    textTertiary: '#6d6d6d',
+    textDisabled: '#9a9a9a',
+    muted: '#6d6d6d',
+    disabled: '#d4d0c8',
+    disabledText: '#9a9a9a',
+    success: '#1c7c31',
+    successBg: '#dff0d8',
+    successBorder: '#a6c99a',
+    warning: '#b8860b',
+    warningBg: '#fdf3d8',
+    warningBorder: '#e0c37a',
+    error: '#c1272d',
+    errorBg: '#f8d7da',
+    errorBorder: '#d9a0a3',
+    info: '#0a5cd8',
+    infoBg: '#d6e5fb',
+    infoBorder: '#9db4d0',
+    primaryTextEmphasis: '#1b3f75',
+    successTextEmphasis: '#0f4a1e',
+    warningTextEmphasis: '#6b4e05',
+    errorTextEmphasis: '#7a191d',
+    infoTextEmphasis: '#0a3b8c',
+    focusRing: '#316ac5',
+  },
+  spacing: {
+    xxs: 4,
+    xs: 6,
+    sm: 10,
+    md: 14,
+    lg: 20,
+    xl: 28,
+    xxl: 40,
+  },
+  radius: {
+    xs: 2,
+    sm: 2,
+    md: 3,
+    lg: 4,
+    xl: 6,
+    pill: 999,
+  },
+  font: {
+    family: 'Tahoma, "Microsoft YaHei", "Segoe UI", Verdana, sans-serif',
+    size: 12,
+    sizeSmall: 11,
+    sizeLarge: 13,
+    weightNormal: 'normal',
+    weightMedium: '500',
+    weightSemibold: '600',
+    weightBold: 'bold',
+  },
+  control: {
+    heightSmall: 20,
+    height: 24,
+    heightLarge: 28,
+    paddingXXS: 3,
+    paddingXS: 6,
+    paddingSmall: 8,
+    padding: 12,
+    paddingLarge: 18,
+    lineWidth: 1,
+    lineWidthFocused: 2,
+    switchWidth: 40,
+    switchHeight: 20,
+    switchHandle: 16,
+    checkboxSize: 14,
+    radioSize: 14,
+    progressHeight: 14,
+    sliderTrackHeight: 4,
+    sliderHandle: 12,
+  },
+  shadows: {
+    // XP 基本不用投影：给一个极轻的，避免模态/浮层完全贴在一起
+    sm: { shadowColor: 'rgba(0, 0, 0, 0.10)', shadowBlur: 4, shadowOffsetX: 0, shadowOffsetY: 1 },
+    md: { shadowColor: 'rgba(0, 0, 0, 0.18)', shadowBlur: 10, shadowOffsetX: 0, shadowOffsetY: 3 },
+    lg: { shadowColor: 'rgba(0, 0, 0, 0.25)', shadowBlur: 20, shadowOffsetX: 0, shadowOffsetY: 6 },
+  },
+};

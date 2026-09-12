@@ -121,4 +121,19 @@ describe('ICESplitter', () => {
     divider.setHovered(false);
     expect(divider.state.style.fillStyle).toBe(before);
   });
+
+  it('容器「先建后量」：拿到真实尺寸后恢复调用方要的 size，不被构造期夹取粘住', () => {
+    const first = new ICEPanel({ width: 10, height: 10 });
+    const second = new ICEPanel({ width: 10, height: 10 });
+    // 构造时容器只有 100 宽 → 228 被夹到 min(160)
+    const splitter = new ICESplitter({ width: 100, height: 100, size: 228, min: 160, first, second });
+    expect(splitter.getSize()).toBe(160);
+    // 真实尺寸到位（窗口/分栏给它 714×426）→ 恢复 228
+    splitter.setState({ width: 714, height: 426 });
+    expect(splitter.getSize()).toBe(228);
+    expect(first.state.width).toBe(228);
+    expect(first.state.height).toBe(426);
+    expect(second.state.left).toBe(228 + 6);
+    expect(second.state.width).toBe(714 - 228 - 6);
+  });
 });

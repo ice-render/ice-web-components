@@ -119,6 +119,14 @@ export class ICEList extends ICEWidget {
     return this;
   }
 
+  /** 宽度变化时重排行宽（引擎只回调 __afterStateMerge，不调 revalidate）。 */
+  protected __afterStateMerge(sizeChanged: boolean): void {
+    super.__afterStateMerge(sizeChanged);
+    if (sizeChanged) {
+      this.__render();
+    }
+  }
+
   /** 焦点在列表上时才处理方向键/Enter（避免抢走页面按键）。 */
   private __onKeyDown(evt: any): void {
     if (!this.isFocused() || !this.items.length) {

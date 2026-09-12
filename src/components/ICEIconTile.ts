@@ -14,6 +14,12 @@ export interface ICEIconTileOptions {
   id?: string;
   /** 图标字形（emoji 或单个符号） */
   icon: string;
+  /**
+   * 自绘图标节点（给了它就代替 `icon` 字形）。
+   *
+   * 需要「画」出来的图标（拟物、彩色、多图层）时用：传一个组件，磁贴会把它在图标区居中。
+   */
+  iconNode?: any;
   label: string;
   left?: number;
   top?: number;
@@ -27,7 +33,7 @@ export interface ICEIconTileOptions {
 }
 
 export class ICEIconTile extends ICEWidget {
-  private iconNode: ICELabel;
+  private iconNode: any;
   private labelNode: ICELabel;
   private labelBackground: ICEWidget;
   private selected: boolean;
@@ -55,17 +61,28 @@ export class ICEIconTile extends ICEWidget {
     this.onSelect = typeof props.onSelect === 'function' ? props.onSelect : null;
     this.onOpen = typeof props.onOpen === 'function' ? props.onOpen : null;
     const iconSize = props.iconSize ?? 34;
-    this.iconNode = new ICELabel({
-      interactive: false,
-      left: 0,
-      top: 4,
-      width,
-      height: iconSize + 6,
-      text: props.icon,
-      align: 'center',
-      verticalAlign: 'middle',
-      style: { fontSize: iconSize, fillStyle: '#ffffff' },
-    });
+    if (props.iconNode) {
+      const glyph = props.iconNode;
+      const glyphWidth = Number(glyph.state && glyph.state.width) || iconSize;
+      const glyphHeight = Number(glyph.state && glyph.state.height) || iconSize;
+      glyph.setState({
+        left: Math.round((width - glyphWidth) / 2),
+        top: 4 + Math.max(0, Math.round((iconSize + 6 - glyphHeight) / 2)),
+      });
+      this.iconNode = glyph;
+    } else {
+      this.iconNode = new ICELabel({
+        interactive: false,
+        left: 0,
+        top: 4,
+        width,
+        height: iconSize + 6,
+        text: props.icon,
+        align: 'center',
+        verticalAlign: 'middle',
+        style: { fontSize: iconSize, fillStyle: '#ffffff' },
+      });
+    }
     this.labelNode = new ICELabel({
       interactive: false,
       left: 4,

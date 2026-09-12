@@ -71,6 +71,24 @@ ICE_LIGHT_THEME.colors.primaryBorder = '#c4b5fd';
 
 颜色值可以是任意 CSS 颜色字符串（`#rrggbb`、`rgba(...)`）。`shadows` 是引擎字段，不是 CSS 文本。
 
+## 注册自定义主题（不污染内置主题）
+
+直接改 `ICE_LIGHT_THEME` 是全局副作用；更干净的做法是**注册一套新 token** 再切过去：
+
+```ts
+import { ICE_XP_THEME, iceUIManager } from 'ice-web-components';
+
+// 先注册 + 切主题，再创建组件（组件在构造时读一次主题）
+iceUIManager.registerTheme('xp', ICE_XP_THEME).setTheme('xp');
+```
+
+- `registerTheme(name, tokens)` / `hasTheme(name)` / `getThemeNames()` 都是 `iceUIManager` 上的方法；
+- `setTheme('未注册的名字')` 会被忽略（不抛异常，也不改变当前主题）；
+- 库内置了 `ICE_XP_THEME`（Windows XP 经典：Luna 蓝 `#316ac5` + 米灰控件面 `#ece9d8`、
+  小圆角、紧凑控件尺寸），`examples/windows-xp.html` 就是靠它整体换肤的。
+
+> 想热切换主题就重建组件 —— 组件只在构造时读一次 token（这是刻意的：绘制阶段零 token 查表）。
+
 ## 焦点色
 
 `colors.focusRing`（浅色 `#86b7fe` / 深色 `#6ea8fe`）用于**焦点环**与**输入框聚焦边框** ——

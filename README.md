@@ -168,6 +168,10 @@ Seven tiny apps are wired up (My Computer, My Documents, Notepad, Paint, Mineswe
 Internet Explorer, Display Properties), and switching the wallpaper in Display
 Properties repaints the desktop immediately.
 
+Looks the part too: it switches to the library's built-in `ICE_XP_THEME` (Luna blue +
+classic grey controls), draws every icon with engine primitives (no bitmap assets, no
+Microsoft artwork), and initialises with `dpr` so text stays crisp on Retina screens.
+
 Minesweeper is the full game: beginner / intermediate / expert, first-click-safe mine
 placement, flood fill, right-click flag cycle (🚩 / ❓), chord on double click, LED
 counters, a timer that starts on the first click, and per-difficulty best times. Its

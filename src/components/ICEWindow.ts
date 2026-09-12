@@ -34,6 +34,8 @@ export interface ICEWindowOptions {
   title?: string;
   /** 标题栏左侧的图标字形 */
   icon?: string;
+  /** 自绘图标节点（给了它就代替 `icon` 字形），会在标题栏左侧居中 */
+  iconNode?: any;
   left?: number;
   top?: number;
   width?: number;
@@ -128,7 +130,7 @@ function mixHex(from: string, to: string, t: number): string {
 export class ICEWindow extends ICEWidget {
   private titleBar: ICEWidget;
   private titleLabel: ICELabel;
-  private iconNode: ICELabel;
+  private iconNode: any;
   private client: ICEWidget;
   private closeButton: ICEWindowButton;
   private minimizeButton: ICEWindowButton;
@@ -209,17 +211,24 @@ export class ICEWindow extends ICEWidget {
       this.titleBar.addChild(band, false);
       this.titleBands.push(band);
     }
-    this.iconNode = new ICELabel({
-      interactive: false,
-      left: 6,
-      top: 0,
-      width: 18,
-      height: titleBarHeight,
-      text: props.icon ?? '',
-      align: 'center',
-      verticalAlign: 'middle',
-      style: { fontSize: 13, fillStyle: '#ffffff' },
-    });
+    if (props.iconNode) {
+      const glyph = props.iconNode;
+      const glyphHeight = Number(glyph.state && glyph.state.height) || 16;
+      glyph.setState({ left: 6, top: Math.round((titleBarHeight - glyphHeight) / 2) });
+      this.iconNode = glyph;
+    } else {
+      this.iconNode = new ICELabel({
+        interactive: false,
+        left: 6,
+        top: 0,
+        width: 18,
+        height: titleBarHeight,
+        text: props.icon ?? '',
+        align: 'center',
+        verticalAlign: 'middle',
+        style: { fontSize: 13, fillStyle: '#ffffff' },
+      });
+    }
     this.titleLabel = new ICELabel({
       interactive: false,
       left: 26,

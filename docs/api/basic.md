@@ -252,6 +252,7 @@ SVG 路径图标：给一段 `d` 路径数据，按 `viewBox` 缩放到目标尺
 |---|---|---|
 | `id?` | `string` | 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） |
 | `icon` | `string` | 图标字形（emoji 或单个符号） |
+| `iconNode?` | `any` | 自绘图标节点（给了它就代替 `icon` 字形）。 |
 | `label` | `string` |  |
 | `left?` | `number` | 相对父容器的左边距 |
 | `top?` | `number` | 相对父容器的上边距 |

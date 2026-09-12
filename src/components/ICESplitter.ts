@@ -74,6 +74,8 @@ export interface ICESplitterOptions {
 
 export class ICESplitter extends ICEWidget {
   private direction: 'horizontal' | 'vertical';
+  /** 调用方要的尺寸（不被「当下容器的夹取」覆盖，容器变大后能恢复） */
+  private requestedSize: number;
   private size: number;
   private min: number;
   private dividerSize: number;
@@ -105,7 +107,8 @@ export class ICESplitter extends ICEWidget {
     this.dividerSize = Math.max(2, dividerSize);
     this.min = Math.max(0, Number(props.min) || 40);
     this.onResize = typeof props.onResize === 'function' ? props.onResize : null;
-    this.size = this.__clamp(Number(props.size) || 0);
+    this.requestedSize = Number(props.size) || 0;
+    this.size = this.__clamp(this.requestedSize);
     this.first = props.first ?? null;
     this.second = props.second ?? null;
     this.divider = new ICESplitterDivider({
@@ -142,7 +145,8 @@ export class ICESplitter extends ICEWidget {
   }
 
   public setSize(size: number): this {
-    const next = this.__clamp(Number(size) || 0);
+    this.requestedSize = Number(size) || 0;
+    const next = this.__clamp(this.requestedSize);
     if (next === this.size) {
       return this;
     }
@@ -185,6 +189,14 @@ export class ICESplitter extends ICEWidget {
     return this;
   }
 
+  /** 自身尺寸被程序式改动（setState）时也要重排两栏（引擎只回调这个钩子）。 */
+  protected __afterStateMerge(sizeChanged: boolean): void {
+    super.__afterStateMerge(sizeChanged);
+    if (sizeChanged) {
+      this.__layout();
+    }
+  }
+
   protected __applyHoverState(): void {
     // 悬停在分隔条上由分隔条自己处理
   }
@@ -214,7 +226,9 @@ export class ICESplitter extends ICEWidget {
     this.laying = true;
     const width = Number(this.state.width) || 0;
     const height = Number(this.state.height) || 0;
-    this.size = this.__clamp(this.size);
+    // 注意用 requestedSize 重新夹取：容器可能是「先建后量」（初始 100×100，
+    // 之后才拿到真实尺寸），早先夹取过的值不能粘住调用方要的尺寸
+    this.size = this.__clamp(this.requestedSize);
     const horizontal = this.direction === 'horizontal';
     if (horizontal) {
       if (this.first) {

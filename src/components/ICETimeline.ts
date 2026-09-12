@@ -63,6 +63,14 @@ export class ICETimeline extends ICEWidget {
     return this;
   }
 
+  /** 宽度变化时重排（理由同 ICEDescriptions：引擎只回调 __afterStateMerge）。 */
+  protected __afterStateMerge(sizeChanged: boolean): void {
+    super.__afterStateMerge(sizeChanged);
+    if (sizeChanged) {
+      this.__render();
+    }
+  }
+
   private __render(): void {
     const theme = iceUIManager.getTheme();
     const width = Number(this.state.width) || 320;

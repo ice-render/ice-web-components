@@ -95,6 +95,7 @@
 | `id?` | `string` | 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） |
 | `title?` | `string` | 标题 |
 | `icon?` | `string` | 标题栏左侧的图标字形 |
+| `iconNode?` | `any` | 自绘图标节点（给了它就代替 `icon` 字形），会在标题栏左侧居中 |
 | `left?` | `number` | 相对父容器的左边距 |
 | `top?` | `number` | 相对父容器的上边距 |
 | `width?` | `number` | 宽度（不传用组件默认值） |
@@ -237,6 +238,10 @@ ICE 内核的移动类事件为了性能不会在 mousemove 时做全量命中�
 
 主题管理单例（`iceUIManager`）：持有当前 token 表，组件构造时从这里取主题。
 
+- 内置 `light` / `dark`；
+- `registerTheme(name, tokens)` 注册自定义主题（例如库内置的 `ICE_XP_THEME`）， 然后 `setTheme('xp')` 切换；
+- **主题在组件构造时读取一次**，要热切换就重建组件（见 docs/guides/theming.md）。
+
 源码：[`src/core/ICEManager.ts`](../../src/core/ICEManager.ts)
 
 **方法**
@@ -245,4 +250,7 @@ ICE 内核的移动类事件为了性能不会在 mousemove 时做全量命中�
 |---|---|---|
 | `setTheme(name: ICEThemeName)` | `this` |  |
 | `getThemeName()` | `ICEThemeName` |  |
+| `registerTheme(name: string, tokens: ICEThemeTokens)` | `this` | 注册（或覆盖）一套主题 token。 |
+| `hasTheme(name: string)` | `boolean` |  |
+| `getThemeNames()` | `string[]` | 已注册的主题名（内置 + 自定义）。 |
 | `getTheme()` | `ICEThemeTokens` |  |
