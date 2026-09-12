@@ -32,7 +32,7 @@
 | `UISelect` / `UIComboBox` | 输入框 + 下拉选项列表 + 搜索过滤 + 多选标签 | A1 + A2 + A3 |
 | ~~`UIModal`~~ ✅ | 遮罩层 + 居中 + 焦点陷阱 + 缩放进入 | A1 + A3 + A5 |
 | `UIDrawer` | 从边缘滑入的面板 | A1 + A5 |
-| `UIMessage` / `UINotification` | 顶部/角落堆叠、自动消失 | A1 + A5 |
+| ~~`UIMessage` / `UINotification`~~ ✅ | 顶部/右下角堆叠、自动消失、可单独关闭 | A5 |
 | `UIPagination` | 页码、每页条数、跳转 | — |
 | ~~`UIPopconfirm`~~ ✅ | 气泡确认（取消/确定 + danger） | A1 |
 

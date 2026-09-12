@@ -5,6 +5,7 @@ export * from './core/UIPainter';
 export * from './core/UILayoutManager';
 export * from './core/UIOverlayManager';
 export * from './core/UIFocusManager';
+export * from './core/UIMessageManager';
 export * from './core/UIComponent';
 export * from './core/UIContainer';
 export * from './layouts/UIBoxLayout';

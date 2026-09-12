@@ -113,6 +113,24 @@
         text: '',
         style: { fontSize: 12, fillStyle: theme.colors.success },
       });
+      const messageTarget = new W.UIButton({ id: 'msg-btn', left: 820, top: 744, width: 148, height: 32, text: 'Show message' });
+      messageTarget.on('click', () => {
+        W.UIMessage.success(ice, '已保存');
+        W.UIMessage.info(ice, '正在同步数据');
+      });
+      const notifyTarget = new W.UIButton({
+        id: 'notify-btn',
+        left: 974,
+        top: 744,
+        width: 140,
+        height: 32,
+        text: 'Notify',
+        variant: 'default',
+      });
+      notifyTarget.on('click', () => {
+        W.UINotification.open(ice, { title: '部署完成', description: 'v1.4.0 已上线' });
+      });
+
       const modalTarget = new W.UIButton({ id: 'modal-btn', left: 1106, top: 656, width: 130, height: 32, text: 'Open modal' });
       const modalHint = new W.UILabel({
         left: 1106,
@@ -196,6 +214,8 @@
         deleteHint,
         modalTarget,
         modalHint,
+        messageTarget,
+        notifyTarget,
 
         heading('Scroll pane', 32, 706),
         scrollPane,
