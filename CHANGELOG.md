@@ -7,6 +7,40 @@
 
 > 暂无（下一个版本发布前在这里累积）。
 
+## [1.2.0] - 2026-09-12
+
+第 2 批：**像素画板**（`examples/pixel-editor.html`）。这一版把「撤销/重做」和「导出」
+做成了可复用的纯逻辑，顺手补掉 `ICETileMap` 换尺寸的一个真坑。
+
+### 新增 · 像素编辑器
+
+- **`ICEPixelModel`**（像素画布，纯逻辑）：行优先的调色板索引画布、`setPixel` /
+  `drawLine`（Bresenham）/ `drawRect` / `fill`（四邻域迭代灌色）/ `clear` / `resize`、
+  `getLineCells` / `getRectCells`（给拖动预览用，与落笔共用同一套坐标）、
+  `undo` / `redo` / `commit`、`toSVG`（run-length 合并）/ `toRGBA(scale)`（喂 ImageData）/
+  `toJSON` / `fromJSON`。
+- **`ICEHistoryModel`**（通用撤销栈，纯逻辑）：push 清空 redo、超限丢最旧、
+  `getDepth()`、变更通知带 `reason`（push / undo / redo / clear）—— 不只给画板用。
+- **`examples/pixel-editor.html`**：铅笔 / 橡皮 / 直线 / 矩形 / 油漆桶、12 色调色板、
+  撤销重做（按钮 + Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z）、1-5 切工具、尺寸 16/32/48、
+  PNG 与 SVG 导出、状态栏（光标 / 历史深度 / 改动态）。画布与色板各是一个 `ICETileMap` 节点。
+- **`qa:pixel`**：24 项浏览器断言，全程真实鼠标（按下 → 拖动 → 松开）：一次拖动只占一次撤销、
+  直线/矩形拖动时先高亮预览且画布不变、油漆桶框内灌满框外不动、PNG 解 IHDR 得到 512×512。
+
+### 修复
+
+- **`ICETileMap.setSize()`**：`rows/cols/cellSize` 在构造期被缓存进实例字段，
+  只 `setState({ rows, cols })` 会让内部字段与 state 不一致，下一次 `setTiles` 按旧尺寸
+  抛错（「需要 1024 个格子，实际 256」）。新方法同时更新内部字段 / state / 默认宽高
+  （显式给过 width/height 的保持不变），并清空旧格子数据。
+- `qa:arcade` 里两条时间敏感的断言改成轮询（并行跑多套 QA 时不再偶发假红）。
+
+### 测试
+
+- 单测 **749 条 / 101 套件**（新增 `ICEHistoryModel` 6 条、`ICEPixelModel` 18 条、
+  `ICETileMap` 换尺寸 2 条）。
+- 浏览器 QA **232 项 / 六套**（新增 `qa:pixel` 24 项）。
+
 ## [1.1.0] - 2026-09-12
 
 掌机的**第四块卡带**：一台真的 CHIP-8 虚拟机。这一版还带出一个**引擎级**渲染修复

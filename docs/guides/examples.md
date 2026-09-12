@@ -17,6 +17,7 @@ npx serve .
 | [`custom-component.html`](../../examples/custom-component.html) | 自己写组件并接进体系 | `ICEWidget` + 表单/焦点/主题约定 |
 | [`windows-xp.html`](../../examples/windows-xp.html) | 全屏 Windows XP 桌面（好玩的那一个） | `ICEWindow`、`ICEIconTile` + 几乎全套组件 |
 | [`arcade.html`](../../examples/arcade.html) | ICE Arcade 掌机（小游戏合集：俄罗斯方块 + 贪吃蛇 + 2048 + CHIP-8 虚拟机） | `ICETetrisModel` / `ICESnakeModel` / `ICE2048Model` / `ICEChip8Model`（纯逻辑）+ 自绘棋盘/HUD，键盘全接管 |
+| [`pixel-editor.html`](../../examples/pixel-editor.html) | 像素画板（画 / 撤销 / 导出 PNG、SVG） | `ICEPixelModel` + `ICEHistoryModel`（纯逻辑）+ 单节点自绘画布，导出走模型 |
 
 ![组件总览](../images/gallery.png)
 
@@ -482,6 +483,51 @@ model.pause(); model.resume();         // 与其它三块卡带共用同一套�
 > 直到别的原因触发一次重绘（表现成「小方块外层的盒子一直在动/不动」）。
 > 现在 `ICETileMap` 所有内部改动都走 `requestPaint()`（组件 + ice 双置脏），单测用假 ICE
 > 守住这条，QA 也加了「脉冲必须亮起 → 淡出」的断言。
+
+---
+
+## `pixel-editor.html`：ICE Pixel Studio（像素画板）
+
+这个示例反过来用：前几个页面是「把业务画出来」，它是一台**真的编辑器** ——
+画布、工具列、色板、状态栏全是组件，只有画布里的像素是自绘的（一个 `ICETileMap` 节点）。
+铅笔 / 橡皮 / 直线 / 矩形 / 油漆桶、撤销重做、PNG 与 SVG 导出。
+
+![ICE Pixel Studio](../images/pixel-editor.png)
+
+模型有两个，都是纯逻辑（[模型 API](../api/models.md#icepixelmodel)）：
+
+```ts
+import { ICEPixelModel, ICEHistoryModel } from 'ice-web-components';
+
+const model = new ICEPixelModel({ rows: 32, cols: 32, palette: PALETTE, background: 0 });
+model.setPixel(4, 4, 1);                 // 实时改动（返回「真的改了没」，拖动回调可以放心调）
+model.drawLine(0, 0, 0, 7, 2);           // Bresenham
+model.fill(3, 3, 5);                     // 四邻域油漆桶（迭代，不递归）
+model.commit();                          // ← 一次commit = 一步历史
+model.undo(); model.redo();              // 回放已提交的快照
+model.toSVG({ cellSize: 16 });           // run-length 合并的 SVG 字符串
+model.toRGBA(16);                        // 直接喂 ImageData（PNG 导出）
+```
+
+三条设计决定值得记下来：
+
+1. **历史的粒度是「操作」而不是「像素」**：拖动一次画了 20 格，只落**一个**快照
+   （`mousedown` 改、`mouseup` 才 `commit()`）。否则撤销要按 20 次才退得回去 ——
+   在 1024 格的画布上，这直接决定「能不能用」。`ICEHistoryModel` 是通用泛型栈
+   （push 清空 redo、超限丢最旧、变更通知带 reason），看板 / 表格编辑也能拿去用。
+2. **预览靠高亮层，不靠「先画再撤」**：拖直线 / 矩形时用 `getLineCells()` /
+   `getRectCells()` 算出坐标点亮 `ICETileMap.setHighlights()`，松手才真正落笔。
+   预览与落笔走**同一套坐标 API**（`drawLine` 内部就是遍历 `getLineCells()` 的结果），
+   所以预览什么形状、画出来就是什么形状（单测里直接把两者画出来逐格比对）。
+3. **导出是纯函数，模型不碰 canvas**：`toSVG()` 把同色横向连续像素合并成一个 `<rect>`
+   （32×32 的笑脸只吐 20 个元素，而不是 1024 个）；`toRGBA(scale)` 给页面喂 `ImageData`，
+   页面才需要 `canvas.toDataURL()`。QA 断言也就落在了纯数据上 —— PNG 那条是
+   **解 data URL 里的 IHDR** 拿宽高，确认导出的位图真是 512×512。
+
+> **顺手补的组件坑**：`ICETileMap` 的 `rows/cols/cellSize` 在构造期就被缓存进实例字段，
+> 换尺寸时只 `setState({ rows, cols })` 的话内部字段还是旧的，下一次 `setTiles` 会按旧尺寸
+> 抛错（「需要 1024 个格子，实际 256」）。现在有正经的 `setSize(rows, cols, cellSize?)`：
+> 同步内部字段与 state、重算默认宽高（显式给过 width/height 的保持不变）、清空旧数据。
 
 ---
 

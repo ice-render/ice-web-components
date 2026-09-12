@@ -27,10 +27,11 @@ rings and shadows) is drawn by the engine.
 - **Bootstrap 5 token theme** (plus a dark theme) — swap with one call.
 - **No name collisions with the engine** — the package’s runtime exports are
   disjoint from `ice-render`’s (there is a regression test for it).
-- **Actually tested** — 723 unit tests (99 suites: form validation, overlay
-  positioning, keyboard navigation, sort/hover/focus edge cases, and the Minesweeper,
-  Tetris, Snake, 2048 and CHIP-8 rule/machine models) plus five browser QA suites
-  (`qa:admin`, `qa:gallery`, `qa:workbench`, `qa:xp`, `qa:arcade` — 208 assertions) that drive the demo pages with
+- **Actually tested** — 749 unit tests (101 suites: form validation, overlay
+  positioning, keyboard navigation, sort/hover/focus edge cases, the Minesweeper,
+  Tetris, Snake, 2048 and CHIP-8 rule/machine models, the pixel canvas and the undo
+  stack) plus six browser QA suites (`qa:admin`, `qa:gallery`, `qa:workbench`, `qa:xp`,
+  `qa:arcade`, `qa:pixel` — 232 assertions) that drive the demo pages with
   real mouse and keyboard events and fail on any console error.
 
 ## Quick start
@@ -307,6 +308,52 @@ Under the hood this page is where the engine work happens:
 > A game page keeps the keyboard for itself; mouse hover still goes through
 > `ICEHoverManager`.
 
+### `pixel-editor.html` — ICE Pixel Studio (a real pixel editor)
+
+The other direction: instead of “draw a business screen”, this page is a **tool**.
+The canvas, tool palette, colour swatches and status bar are all components — only the
+pixels themselves are self-drawn, as a single `ICETileMap` node. Pencil, eraser, line,
+rectangle and flood fill, undo/redo, and PNG + SVG export.
+
+![ICE Pixel Studio](docs/images/pixel-editor.png)
+
+Two pure models carry it (no canvas involved):
+
+```ts
+import { ICEPixelModel, ICEHistoryModel } from 'ice-web-components';
+
+const model = new ICEPixelModel({ rows: 32, cols: 32, palette: PALETTE, background: 0 });
+model.setPixel(4, 4, 1);        // live change; returns whether it really changed
+model.drawLine(0, 0, 0, 7, 2);  // Bresenham
+model.fill(3, 3, 5);            // 4-neighbour flood fill (iterative, no recursion)
+model.commit();                 // one commit = one undo step
+model.toSVG({ cellSize: 16 });  // run-length merged SVG string
+model.toRGBA(16);               // feed it straight into ImageData for PNG export
+```
+
+The three decisions worth stealing:
+
+1. **History is per *operation*, not per pixel** — a 20-cell drag pushes exactly one
+   snapshot (`mousedown` paints, `mouseup` commits). Otherwise undo would need 20
+   presses to walk one stroke back, which decides whether a 1024-cell editor is usable.
+   `ICEHistoryModel` itself is a plain generic stack (push clears redo, trims to a limit,
+   notifies with a reason) — reusable for kanban or table editing too.
+2. **Preview via the highlight layer, not “draw then undo”** — dragging a line or a
+   rectangle lights up `ICETileMap.setHighlights()` from `getLineCells()` /
+   `getRectCells()`, and only `mouseup` commits. Preview and painting share the same
+   coordinate API, so the preview is exactly what you get (a unit test paints both and
+   compares cell by cell).
+3. **Export is pure** — `toSVG()` merges horizontal runs into single `<rect>`s (the
+   32×32 smiley emits 20 elements, not 1024), and `toRGBA(scale)` hands the page an
+   `ImageData` buffer; only the page touches `canvas.toDataURL()`. The QA asserts on the
+   data: the PNG check decodes the **IHDR** chunk to prove the bitmap is 512×512.
+
+> A component gap this page closed: `ICETileMap` cached `rows`/`cols`/`cellSize` in
+> instance fields, so resizing with only `setState({ rows, cols })` left the internals
+> stale and the next `setTiles` threw (“expected 1024 cells, got 256”). There is now a
+> proper `setSize(rows, cols, cellSize?)` that updates the internals, the state and the
+> default width/height in one go, and clears the old cell data.
+
 ## Components
 
 | Group | Components |
@@ -318,12 +365,12 @@ Under the hood this page is where the engine work happens:
 | Feedback & status | `ICEAlert` `ICEModal` `ICEDrawer` `ICEMessage` `ICENotification` `ICETooltip` `ICEPopover` `ICEPopconfirm` `ICETour` `ICEFloatButton` `ICEEmpty` `ICESkeleton` `ICESpin` `ICEResult` `ICESteps` `ICEOverlayManager` |
 | Navigation | `ICEMenu` `ICEBreadcrumb` `ICEAnchor` `ICEBackTop` `ICEDropdown` `ICEPagination` `ICETabs` |
 | Layout & core | `ICEWidget` `ICEContainer` `ICEHoverManager` `ICEFocusManager` `ICEMessageManager` `ICEManager` (`ICEPainter` / `ICELayoutManager` are types) |
-| Models | `ICEButtonModel` `ICEToggleModel` `ICEBoundedRangeModel` `ICESelectionModel` `ICEFormModel` `ICETetrisModel` `ICESnakeModel` `ICE2048Model` `ICEChip8Model` `ICEMinesweeperModel` `ICEHighScoreModel` |
+| Models | `ICEButtonModel` `ICEToggleModel` `ICEBoundedRangeModel` `ICESelectionModel` `ICEFormModel` `ICEHistoryModel` `ICEPixelModel` `ICETetrisModel` `ICESnakeModel` `ICE2048Model` `ICEChip8Model` `ICEMinesweeperModel` `ICEHighScoreModel` |
 
 Helper functions: `attachTooltip` `attachPopover` `attachPopconfirm` `attachDropdown`
 `openModal` `openDrawer` `getICEOverlayManager` `getICEFocusManager` `getICEMessageManager`
 `formatStatisticValue` `formatCountdown` `truncateTextLines` `buildMonthGrid` `formatCalendarDate`
-`openImagePreview` `tween` `fadeIn` `fadeOut` `slideIn` `scaleIn` and friends.
+`openImagePreview` `icePixelParseColor` `tween` `fadeIn` `fadeOut` `slideIn` `scaleIn` and friends.
 
 ## Theme
 
@@ -457,6 +504,11 @@ npm run qa:xp
 # cartridge switching, the self-drawn tile map, tweens, the leaderboard modal, and
 # real clicks on the HUD
 npm run qa:arcade
+
+# browser QA for examples/pixel-editor.html: drawing with a real mouse (pencil drag,
+# line/rect preview, flood fill, eraser), undo/redo via buttons and Ctrl+Z/Y, and the
+# PNG (IHDR-checked) / SVG exports
+npm run qa:pixel
 
 # docs: regenerate the API reference and check relative links
 npm run docs

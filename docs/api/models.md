@@ -110,6 +110,33 @@
 | `reset()` | `this` | 回到初始值并清空错误。 |
 | `addChangeListener(listener: ICEFormModelListener)` | `() => void` |  |
 
+## `ICEHistoryModel`
+
+撤销 / 重做栈（纯逻辑，泛型）。  不是给某个画板专用的：任何「编辑 → 提交 → 后悔」的界面都能用（像素画板、看板、 表格编辑、表单草稿…），所以它只认泛型快照，不认识 canvas、颜色和数据结构。  约定：
+
+- `push(state)` 入栈并**清空 redo 栈** —— 从历史中间改一下，原来那条「未来」就作废了；
+- `undo()` / `redo()` 返回目标快照，到边界返回 `null`（调用方据此把按钮置灰）；
+- 超过 `limit` 丢**最旧**的一条（默认 50：够用，且内存不会无限涨）；
+- 变更通知带 `reason`（push / undo / redo / clear），页面按需刷新按钮态；
+- 快照的存取由调用方负责 `slice()` / 深拷贝 —— 栈只存引用，不做深拷贝（性能）。
+
+源码：[`src/model/ICEHistoryModel.ts`](../../src/model/ICEHistoryModel.ts)
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getLimit()` | `number` |  |
+| `getCurrent()` | `T \| null` |  |
+| `canUndo()` | `boolean` |  |
+| `canRedo()` | `boolean` |  |
+| `getDepth()` | `{ undo: number; redo: number }` | 栈深：undo = 还能撤销几步，redo = 还能重做几步。 |
+| `push(state: T)` | `void` |  |
+| `undo()` | `T \| null` |  |
+| `redo()` | `T \| null` |  |
+| `clear(initial?: T)` | `void` |  |
+| `addChangeListener(listener: ICEHistoryListener<T>)` | `() => void` |  |
+
 ## `ICEMinesweeperModel`
 
 扫雷的纯逻辑模型（不碰 canvas）。  规则按 Windows XP 扫雷：
@@ -345,3 +372,61 @@ CHIP-8 虚拟机（纯逻辑，不碰 canvas）。  掌机的第四块卡带用�
 按上、右、下、左顺序排列（UI 画方向提示可以直接用）。
 
 源码：`src/model/ICE2048Model.ts`
+
+## `ICEPixelModel`
+
+源码：[`src/model/ICEPixelModel.ts`](../../src/model/ICEPixelModel.ts)
+
+**构造参数** `ICEPixelModelOptions`
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `rows?` | `number` | 行数 |
+| `cols?` | `number` |  |
+| `palette?` | `string[]` | 调色板（`#rgb` / `#rrggbb`），下标就是画布上存的值；不传给一组默认色 |
+| `background?` | `number` | 背景色下标，默认 0 |
+| `limit?` | `number` | 最多能撤销几步，默认 50 |
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getRows()` | `number` |  |
+| `getCols()` | `number` |  |
+| `getPalette()` | `string[]` |  |
+| `getBackground()` | `number` |  |
+| `getCells()` | `number[]` | 画布副本（行优先）。 |
+| `getPixel(row: number, col: number)` | `number` |  |
+| `isDirty()` | `boolean` | 有没提交的改动（页面据此把「保存 / 导出」按钮点亮）。 |
+| `canUndo()` | `boolean` |  |
+| `canRedo()` | `boolean` |  |
+| `getHistoryDepth()` | `{ undo: number; redo: number }` |  |
+| `setPixel(row: number, col: number, color: number)` | `boolean` | 画一个像素。返回「真的改了」—— 越界、颜色非法、值没变都返回 false， |
+| `drawLine(row0: number, col0: number, row1: number, col1: number, color: number)` | `boolean` | Bresenham 直线（铅笔拖动、直线工具都走它）。 |
+| `getLineCells(row0: number, col0: number, row1: number, col1: number)` | `Array<[number, number]>` | 直线经过的格子坐标（Bresenham）。 |
+| `getRectCells(row0: number, col0: number, row1: number, col1: number)` | `Array<[number, number]>` | 矩形**描边**经过的格子坐标（和 drawRect 同一套口径，供预览用）。 |
+| `drawRect(row0: number, col0: number, row1: number, col1: number, color: number)` | `boolean` | 矩形描边（只画框，不填内部）。 |
+| `fill(row: number, col: number, color: number)` | `boolean` | 四邻域油漆桶（迭代版，不用递归 —— 大画布上递归会爆栈）。 |
+| `clear(color?: number)` | `boolean` | 整块刷成某个颜色（清空 / 填充背景）。 |
+| `resize(rows: number, cols: number)` | `void` | 换尺寸：重新铺一块空画布（旧内容不留，历史也重开）。 |
+| `commit()` | `boolean` | 把当前画布落一次历史（一次笔画 / 一次图形操作调用一次）。返回是否真的入了栈。 |
+| `undo()` | `boolean` |  |
+| `redo()` | `boolean` |  |
+| `toSVG(options: ICEPixelSVGOptions)` | `string` |  |
+| `toRGBA(scale: number)` | `Uint8ClampedArray` | 给 `new ImageData(rgba, cols * scale, rows * scale)` 用的 RGBA 数组。 |
+| `toJSON()` | `string` |  |
+| `addChangeListener(listener: ICEPixelListener)` | `() => void` |  |
+
+### `ICE_PIXEL_DEFAULT_PALETTE` — 常量
+
+默认调色板：Bootstrap 语义色 + 黑白灰（够画像素画，也不刺眼）。
+
+源码：`src/model/ICEPixelModel.ts`
+
+### `icePixelParseColor` — 函数
+
+`#rgb` / `#rrggbb` → [r, g, b]；认不出来当黑色（画布上永远有个确定的结果）。
+
+```ts
+icePixelParseColor(color: string): [number, number, number]
+```

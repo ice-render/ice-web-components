@@ -689,6 +689,7 @@
 | `getCols()` | `number` |  |
 | `getCellSize()` | `number` |  |
 | `getGap()` | `number` |  |
+| `setSize(rows: number, cols: number, cellSize?: number)` | `this` | 换网格尺寸（行列 / 格子大小一起换），并清空格子数据与高亮。 |
 | `getCellRect(row: number, col: number)` | `{ left: number; top: number; width: number; height: number }` | 格子在组件内的矩形（gap 均分在两边）。 |
 | `getCellAt(x: number, y: number)` | `{ row: number; col: number } \| null` | 组件内坐标 → 格子（边界外返回 null；落在间隙里算最近的格子）。 |
 | `setTiles(tiles: Array<string \| number \| null> \| Array<Array<string \| number \| null>>)` | `this` | 设置格子数据：一维（长度 = rows*cols）或二维（rows 行）；数字会被当成字符串 key。 |

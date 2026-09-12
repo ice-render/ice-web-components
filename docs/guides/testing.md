@@ -27,7 +27,7 @@ const picker = new ICEDatePicker({ /* … */ });
 (picker as any).afterAddHandler();    // 手动触发“加入场景”钩子，注册全局事件
 ```
 
-覆盖范围（99 个 suite / 723 条）：
+覆盖范围（101 个 suite / 749 条）：
 
 | 主题 | 例子 |
 |---|---|
@@ -48,7 +48,7 @@ const picker = new ICEDatePicker({ /* … */ });
 3. 有全局事件的（`mousedown`/`keydown`/`wheel`）一定要测**组件被移出场景后不崩**（守卫）；
 4. 有浮层的，断言「打开 / 关闭 / 关闭原因」。
 
-## 浏览器 QA（五套 / 208 项）
+## 浏览器 QA（六套 / 232 项）
 
 浏览器 QA 是「真开 Chromium 点一遍」的验收：慢，但能抓到单测抓不到的问题
 （布局交叠、命中被挡、浮层外观、焦点环这种纯视觉行为）。
@@ -60,6 +60,7 @@ PLAYWRIGHT_PATH=/path/to/playwright npm run qa:gallery
 PLAYWRIGHT_PATH=/path/to/playwright npm run qa:workbench
 PLAYWRIGHT_PATH=/path/to/playwright npm run qa:xp
 PLAYWRIGHT_PATH=/path/to/playwright npm run qa:arcade
+PLAYWRIGHT_PATH=/path/to/playwright npm run qa:pixel
 ```
 
 | 脚本 | 页面 | 项数 | 覆盖 |
@@ -69,6 +70,7 @@ PLAYWRIGHT_PATH=/path/to/playwright npm run qa:arcade
 | `qa:workbench` | `examples/workbench.html` | 15 | 三栏零交叠、队列→档案联动、筛选（含骨架/空态）、回复发送、快捷回复模板、标签/评分/坐席状态、引导、回到顶部、分栏拖动 |
 | `qa:xp` | `examples/windows-xp.html` | 40 | **开机画面 → 欢迎界面 → 点用户 → 密码页 → 真键盘输入 + 回车登录（开机音效确实触发）→ 注销回登录 → 关机 → 重新开机 → 点「登录」按钮二次登录**；桌面/任务栏零交叠；图标选中与双击开窗、拖动标题栏、最小化与任务栏恢复、开始菜单、托盘喇叭静音、扫雷（首点安全/插旗循环/难度/计时/胜利）、画图笔画、换壁纸、时钟、**IE 真抓网页 + 404 错误页 + 后退 + about:xp 表格 + 收藏夹**、**ICE Arcade 窗口（单节点自绘棋盘 / 键盘路由 / 暂停 / 切卡带 / 关窗收尾）** |
 | `qa:arcade` | `examples/arcade.html` | 56 | 俄罗斯方块卡带：真实按键驱动（← → 移动、↑ 旋转、↓ 软降、空格硬降、P 暂停且重力真的停、R 重开）、造题强制消行、一路硬降到 game over 并写入最高分；**换卡带到贪吃蛇**：棋盘/HUD 卡片换掉、真实方向键入队、喂食长身子、撞墙结束并记最高分、暂停时 tick 无效、R 重开；**2048**：4×4 单节点棋盘 + 标签层、← 合并同值块、合并脉冲亮起再淡出、推不动判负、合并出 2048 获胜、R 重开；**CHIP-8**：64×32 单节点显存 + 单节点机器键盘、自写 demo ROM 在跑（8×8 笑脸 26 个像素、撞边反弹不裂到对边、不残留）、真实键盘 `w` 按下/松开点亮机器键 5、`R` 归机器键盘（键 7）不触发外壳重开、P 暂停冻住指令流 + 提示底板与文字都出来、重开按钮复位、没有排行榜的卡带点「排行榜」只提示不报错；鼠标点 HUD 按钮与音效开关；四块卡带的棋盘都在屏幕框内、卡带行 5 格等缝不越界、面板不交叠 |
+| `qa:pixel` | `examples/pixel-editor.html` | 24 | 开局（32×32 空画布 / 画板与色板各是单节点 / 5 工具 / 12 色）；**真实鼠标**：点一格上色、按住拖过 11 格只占一次撤销、撤销与重做（按钮 + Ctrl+Z / Ctrl+Y）、矩形框（描边 24 像素）、油漆桶（框内 25 格灌满、框外不动）、直线工具（拖动时 11 格高亮预览**且画布没变**，松手才落笔，预览收干净）、橡皮擦回纸色、点色板换色（高亮与落笔颜色都跟着走）、清空 + 可撤销、示例图案（26 像素笑脸）；**导出**：SVG 字符串（viewBox 512×512、同色横向合并后 20 个 rect）、PNG data URL（解 IHDR 得到 512×512）；换尺寸 16×16（棋盘与格子大小同步换、历史清空）；四块面板零交叠 |
 
 > `qa:xp` 会**自己起一个静态服务器用 http 打开页面**（而不是 `file://`）：XP 里的「IE」是真的会
 > `fetch()` 的，而 `fetch` 在 `file://` 下不可用 —— 要演示真导航就必须走 http。用例还会故意访问
