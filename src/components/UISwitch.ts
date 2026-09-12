@@ -18,6 +18,7 @@ export class UISwitch extends UIComponent {
       draggable: false,
       ...props,
     });
+    this.focusable = props.focusable !== false;
     this.model = new UIToggleModel({ selected });
     const width = props.width || theme.control.switchWidth;
     const height = props.height || theme.control.switchHeight;
@@ -58,6 +59,14 @@ export class UISwitch extends UIComponent {
   public setSelected(selected: boolean): this {
     this.model.setSelected(selected);
     return this;
+  }
+
+  /** 键盘激活（Enter / Space）与鼠标点击同义：切换开关。 */
+  public activate(): void {
+    if (!this.enabled) {
+      return;
+    }
+    this.model.toggle();
   }
 
   protected initEvents(): void {

@@ -19,6 +19,7 @@ export class UISlider extends UIComponent {
       draggable: false,
       ...props,
     });
+    this.focusable = props.focusable !== false;
     this.model = new UIBoundedRangeModel({
       value: props.value,
       min: props.min,

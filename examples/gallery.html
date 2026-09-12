@@ -28,6 +28,7 @@
       const W = ICEWEB;
       const theme = W.uiManager.getTheme();
       new W.UIHoverManager(ice).start();
+      W.getUIFocusManager(ice).start();
 
       const heading = (text, left, top) =>
         new W.UILabel({

@@ -8,6 +8,12 @@ export class UIComponent extends ICEGroup {
   protected preferredHeight: number = 0;
   protected enabled: boolean = true;
   protected hovered: boolean = false;
+  /**
+   * 是否参与键盘焦点轮转（Tab）。默认 false：容器与展示类组件不该拿到焦点，
+   * 控件在自己的构造函数里置 true；调用方也可用 `props.focusable` 覆盖。
+   */
+  protected focusable: boolean = false;
+  protected focused: boolean = false;
 
   constructor(props: any = {}) {
     super({
@@ -18,6 +24,9 @@ export class UIComponent extends ICEGroup {
       interactive: true,
       ...props,
     });
+    if (props.focusable !== undefined) {
+      this.focusable = !!props.focusable;
+    }
   }
 
   public setEnabled(enabled: boolean): this {
@@ -33,6 +42,49 @@ export class UIComponent extends ICEGroup {
 
   public isHovered(): boolean {
     return this.hovered;
+  }
+
+  /**
+   * 是否可聚焦：显式声明 + 启用 + 可交互 + 最终可见（祖先 display:false 时不可聚焦）。
+   */
+  public isFocusable(): boolean {
+    return this.focusable && this.enabled && this.state.interactive !== false && this.isEffectivelyVisible();
+  }
+
+  public setFocusable(focusable: boolean): this {
+    this.focusable = !!focusable;
+    return this;
+  }
+
+  public isFocused(): boolean {
+    return this.focused;
+  }
+
+  /** 由 UIFocusManager 调用；默认只记录状态（视觉表现由焦点环负责，子类可覆盖）。 */
+  public setFocused(focused: boolean): this {
+    const next = !!focused && this.enabled;
+    if (next === this.focused) {
+      return this;
+    }
+    this.focused = next;
+    this.__applyFocusState();
+    this.revalidate();
+    return this;
+  }
+
+  /**
+   * 键盘激活（Enter / Space）。默认等价于一次 click；
+   * 有自己语义的控件（勾选、开关、单选）覆盖成对应的切换动作。
+   */
+  public activate(): void {
+    if (!this.enabled) {
+      return;
+    }
+    this.trigger('click', null, { source: 'keyboard' });
+  }
+
+  protected __applyFocusState(): void {
+    // 默认不改变外观：焦点环由 UIFocusManager 统一绘制。
   }
 
   public setHovered(hovered: boolean): this {

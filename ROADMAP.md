@@ -18,7 +18,7 @@
 |---|---|---|---|
 | A1 | 弹层 / 浮层 | ✅ 已完成 | `UIOverlayManager`：浮层根节点挂在 ICE **工具层**（递归渲染、绘制在组件之上、不参与 `getComponentById`）；12 种 placement、空间不足自动翻转、夹进可见范围；点外关闭 / Esc / exclusive。带视口缩放平移也正确。 |
 | A2 | 滚动容器 | ✅ 已完成 | 引擎侧新增**子树裁剪** `clipChildren`（ice-render 1.2.0：设备空间裁剪、多层求交、命中检测同样尊重裁剪、被裁剪组件不参与离屏缓存）；组件侧 `UIScrollPane`（内容盒 + 滚动条 + 滚轮/API 滚动）。 |
-| A3 | 焦点与键盘导航 | ⬜ 待做 | 引擎已有 `focusedComponent` 与 a11y `focusable` 元数据，但 UI 层没有 Tab 序、焦点环、方向键选择、Enter/Space 激活、模态焦点陷阱。做表单前必须补。 |
+| A3 | 焦点与键盘导航 | 🟡 基础已做 | `UIFocusManager`：Tab/Shift+Tab 循环、Esc 取消、Enter/Space 激活（控件自定义 `activate()`）、鼠标点击聚焦（沿父链上溯到最近控件）、焦点环画在工具层并跟随组件移动。**待补**：方向键在组内移动（Radio 组 / Menu / Tabs）、模态焦点陷阱、Slider 方向键调值。 |
 | A4 | 表单与校验 | ⬜ 待做 | 值收集 + 校验规则 + 错误态渲染（依赖 A3）。 |
 | A5 | 动画/过渡 | ⬜ 待做 | 浮层淡入淡出 + 缩放、折叠展开、消息滑入。引擎有 AnimationManager 可复用。 |
 

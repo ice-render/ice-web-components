@@ -25,6 +25,7 @@ export class UICheckBox extends UIComponent {
       height,
       ...props,
     });
+    this.focusable = props.focusable !== false;
     this.model = new UIToggleModel({ selected });
     this.box = new ICERect({
       left: boxLeft,
@@ -56,6 +57,14 @@ export class UICheckBox extends UIComponent {
   public setSelected(selected: boolean): this {
     this.model.setSelected(selected);
     return this;
+  }
+
+  /** 键盘激活（Enter / Space）与鼠标点击同义：切换勾选状态。 */
+  public activate(): void {
+    if (!this.enabled) {
+      return;
+    }
+    this.model.toggle();
   }
 
   protected initEvents(): void {

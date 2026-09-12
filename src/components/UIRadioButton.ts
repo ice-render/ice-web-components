@@ -26,6 +26,7 @@ export class UIRadioButton extends UIComponent {
       height,
       ...props,
     });
+    this.focusable = props.focusable !== false;
     this.model = new UIToggleModel({ selected });
     this.outer = new ICECircle({
       left: outerLeft,
@@ -58,6 +59,14 @@ export class UIRadioButton extends UIComponent {
   public setSelected(selected: boolean): this {
     this.model.setSelected(selected);
     return this;
+  }
+
+  /** 键盘激活（Enter / Space）与鼠标点击同义：选中本项。 */
+  public activate(): void {
+    if (!this.enabled) {
+      return;
+    }
+    this.model.setSelected(true);
   }
 
   protected initEvents(): void {

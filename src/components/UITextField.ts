@@ -6,7 +6,6 @@ export class UITextField extends UIComponent {
   private textNode: any;
   private value: string;
   private placeholder: string;
-  private focused = false;
   private maxLength: number;
   private __bound = false;
 
@@ -50,6 +49,7 @@ export class UITextField extends UIComponent {
       verticalAlign: 'middle',
     });
     this.addChild(this.textNode, false);
+    this.focusable = props.focusable !== false;
   }
 
   public getValue(): string {
@@ -73,20 +73,17 @@ export class UITextField extends UIComponent {
   }
 
   public focus(): this {
-    this.focused = true;
-    this.__sync();
+    this.setFocused(true);
     return this;
   }
 
   public blur(): this {
-    this.focused = false;
-    this.__sync();
+    this.setFocused(false);
     return this;
   }
 
-  public isFocused(): boolean {
-    return this.focused;
-  }
+  /** 文本输入由控件自己的 keydown 处理（见 __onGlobalKeyDown）；Enter/Space 不额外触发 click。 */
+  public activate(): void {}
 
   protected afterAddHandler(): void {
     super.afterAddHandler();
@@ -104,8 +101,7 @@ export class UITextField extends UIComponent {
 
   private __onGlobalMouseDown(evt: any): void {
     if (!this.enabled) return;
-    this.focused = this.__isPointInside(evt);
-    this.__sync();
+    this.setFocused(this.__isPointInside(evt));
   }
 
   private __onGlobalKeyDown(evt: any): void {
@@ -138,6 +134,11 @@ export class UITextField extends UIComponent {
 
   private __normalize(value: string): string {
     return this.maxLength > 0 ? value.slice(0, this.maxLength) : value;
+  }
+
+  /** 基类在焦点变化后回调：同步边框与光标显示。 */
+  protected __applyFocusState(): void {
+    this.__sync();
   }
 
   private __sync(): void {

@@ -108,6 +108,7 @@ export class UIButton extends UIComponent {
         ...(props.style || {}),
       },
     });
+    this.focusable = props.focusable !== false;
 
     this.variant = variant;
     this.size = size;
