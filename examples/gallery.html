@@ -19,7 +19,7 @@
   </style>
   <body>
     <h1 style="font-size: 20px; margin: 0 0 16px">ice-web-components gallery</h1>
-    <canvas id="canvas" width="1400" height="1440"></canvas>
+    <canvas id="canvas" width="1400" height="1700"></canvas>
 
     <script src="../node_modules/ice-render/dist/index.umd.js"></script>
     <script src="../dist/index.umd.js"></script>
@@ -42,7 +42,7 @@
           },
         });
 
-      const panel = new W.UIPanel({ id: 'panel', left: 24, top: 24, width: 1352, height: 1392 });
+      const panel = new W.UIPanel({ id: 'panel', left: 24, top: 24, width: 1352, height: 1652 });
 
       // 滚动视口演示：内容比视口高，靠引擎的 clipChildren 裁掉溢出部分
       // 注意：容器要先创建、再加子组件（引擎按全局 zIndex 排序渲染）
@@ -338,6 +338,36 @@
         ],
       });
 
+      // 反馈与状态：加载指示器 / 评分 / 步骤条 / 结果页
+      const spin = new W.UISpin({ id: 'spin', left: 32, top: 1540, size: 24, tip: '加载中…' });
+      const rate = new W.UIRate({
+        id: 'rate',
+        left: 200,
+        top: 1540,
+        count: 5,
+        value: 3,
+        onChange: (value) => console.log('rate ->', value),
+      });
+      const steps = new W.UISteps({
+        id: 'steps',
+        left: 386,
+        top: 1532,
+        width: 400,
+        current: 1,
+        items: [{ title: '填写信息' }, { title: '确认订单', description: '核对商品' }, { title: '完成' }],
+      });
+      const result = new W.UIResult({
+        id: 'result',
+        left: 780,
+        top: 1520,
+        width: 260,
+        height: 150,
+        status: 'success',
+        title: '提交成功',
+        subtitle: '我们会在 1 个工作日内联系你',
+        actions: [{ key: 'ok', text: '返回首页', primary: true }],
+      });
+
       panel.addChildren([
         heading('Buttons', 32, 28),
 
@@ -420,6 +450,11 @@
         collapsePanel,
         descriptions,
         timeline,
+        heading('Feedback & status', 32, 1500),
+        spin,
+        rate,
+        steps,
+        result,
 
         heading('Scroll pane', 32, 706),
         scrollPane,
@@ -487,7 +522,7 @@
       });
 
       ice.addChild(panel);
-      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline };
+      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result };
     </script>
   </body>
 </html>

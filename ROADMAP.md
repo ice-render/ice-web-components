@@ -82,7 +82,7 @@
 | 导航 | Dropdown | ⬜ 阶段 B（A1 已就绪） |
 | 导航 | Menu | ✅ `UIMenu`（部分：无子菜单 / inline 折叠 / 键盘导航） |
 | 导航 | Pagination | ⬜ 阶段 B |
-| 导航 | Steps | ⬜ 阶段 D |
+| 导航 | Steps | ✅ `UISteps` |
 | 数据录入 | AutoComplete | ⬜ 阶段 D（依赖 Select 与键盘） |
 | 数据录入 | Cascader / TreeSelect | ⬜ 阶段 D |
 | 数据录入 | Checkbox | ✅ `UICheckBox`（部分：无 Group / 不确定态） |
@@ -93,7 +93,7 @@
 | 数据录入 | InputNumber | ⬜ 阶段 D |
 | 数据录入 | Mentions | ⊘ 低优先 |
 | 数据录入 | Radio | ✅ `UIRadioButton`（部分：无 Group） |
-| 数据录入 | Rate | ⬜ 阶段 D |
+| 数据录入 | Rate | ✅ `UIRate`（悬停预览 + 键盘） |
 | 数据录入 | Select | ⬜ 阶段 B |
 | 数据录入 | Slider | ✅ `UISlider`（部分：无区间 / 刻度 / tooltip） |
 | 数据录入 | Switch | ✅ `UISwitch` |
@@ -127,9 +127,9 @@
 | 反馈 | Notification | ⬜ 阶段 B |
 | 反馈 | Popconfirm | ⬜ 阶段 B |
 | 反馈 | Progress | ✅ `UIProgressBar`（部分：无环形 / 仪表盘） |
-| 反馈 | Result | ⬜ 阶段 D |
+| 反馈 | Result | ✅ `UIResult` |
 | 反馈 | Skeleton | ✅ `UISkeleton`（呼吸动画） |
-| 反馈 | Spin | ⬜ 阶段 D（需要动画底座 A5） |
+| 反馈 | Spin | ✅ `UISpin`（旋转弧线，复用引擎动画） |
 | 其他 | Affix | ⊘ 画布内不需要（应用自己控制位置） |
 | 其他 | App | ⊘ React 概念；本库对应 `uiManager` 主题机制 |
 | 其他 | ConfigProvider | ⊘ 同上（主题/暗色已由 `uiManager` 提供） |
