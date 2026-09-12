@@ -35,23 +35,15 @@ rings and shadows) is drawn by the engine.
 
 ## Quick start
 
-> **Install**: `1.0.0` is the first tagged release. The engine (`ice-render`) is on npm;
-> the component library ships as a tarball / git dependency for now — use one of the following:
+> **Install**: both packages are on npm now — `npm install ice-web-components` (it pulls
+> `ice-render` as a dependency). `1.0.0` is the first published release; from a checkout you
+> can also `npm install /path/to/ice-web-components` or `npm install git+https://github.com/ice-render/ice-web-components.git`.
 
 ```bash
-# ① a local path (the usual thing inside a monorepo / workspace)
-npm install /path/to/ice-web-components
-
-# ② straight from git
-npm install git+https://github.com/ice-render/ice-web-components.git
-
-# ③ pack it, then install the tarball
-(cd /path/to/ice-web-components && npm pack)     # produces ice-web-components-0.0.1.tgz
-npm install /path/to/ice-web-components-0.0.1.tgz
+npm install ice-web-components   # + ice-render, pulled automatically
 ```
 
-All three pull the `ice-render@^1.3.0` dependency from npm. The published tarball
-contains `dist/` only (cjs + esm + umd + type declarations).
+The published tarball contains `dist/` only (cjs + esm + umd + type declarations).
 
 ```ts
 import { ICE } from 'ice-render';
