@@ -88,7 +88,8 @@
 | 数据录入 | Cascader | ⬜ 阶段 D |
 | 数据录入 | Checkbox | ✅ `UICheckBox`（部分：无 Group / 不确定态） |
 | 数据录入 | ColorPicker | ⬜ 低优先（交互重） |
-| 数据录入 | DatePicker / TimePicker | ⬜ 阶段 D（需日历浮层） |
+| 数据录入 | DatePicker | ✅ `UIDatePicker`（日历浮层，周一开头） |
+| 数据录入 | TimePicker | ⬜ 阶段 D |
 | 数据录入 | Form | ⬜ 阶段 A4 + C |
 | 数据录入 | Input | ✅ `UITextField`（部分：无多行 / 密码 / 前后缀 / 清空） |
 | 数据录入 | InputNumber | ✅ `UIInputNumber`（步进 + 键盘 + 精度） |

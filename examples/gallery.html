@@ -421,6 +421,22 @@
         onChange: (key, node) => treeSelectHint.setText('已选：' + node.label),
       });
 
+      const datePickerHint = new W.UILabel({
+        left: 1250,
+        top: 1412,
+        text: '未选择日期',
+        style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+      });
+      const datePicker = new W.UIDatePicker({
+        id: 'date-picker',
+        left: 1060,
+        top: 1406,
+        width: 180,
+        placeholder: '选择日期…',
+        value: '2026-09-12',
+        onChange: (value) => datePickerHint.setText('已选：' + value),
+      });
+
       panel.addChildren([
         heading('Buttons', 32, 28),
 
@@ -508,6 +524,8 @@
         cityAuto,
         dataTreeSelect,
         treeSelectHint,
+        datePicker,
+        datePickerHint,
         heading('Feedback & status', 32, 1500),
         spin,
         rate,
@@ -580,7 +598,7 @@
       });
 
       ice.addChild(panel);
-      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint };
+      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint };
     </script>
   </body>
 </html>
