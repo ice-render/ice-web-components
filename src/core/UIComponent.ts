@@ -127,6 +127,8 @@ export class UIComponent extends ICEGroup {
     this.hovered = next;
     this.__applyHoverState();
     this.revalidate();
+    // 通知外部（Tooltip / Popover 这类「跟着 hover 走」的组件）
+    this.trigger('hoverchange', null, { hovered: next });
     return this;
   }
 

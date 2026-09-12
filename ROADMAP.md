@@ -26,15 +26,15 @@
 
 | 组件 | 缺什么 | 依赖 |
 |---|---|---|
-| `UITooltip` | 悬停延时、跟随锚点、多行 | A1 |
-| `UIPopover` | 任意内容浮层 + 点击/悬停触发 | A1 |
+| ~~`UITooltip`~~ ✅ | 悬停延时、跟随锚点、多行 | A1 |
+| ~~`UIPopover`~~ ✅ | 任意内容浮层 + 点击/悬停触发 | A1 |
 | `UIDropdown` | 触发按钮 + 菜单浮层 + 键盘选中 | A1 + A3 |
 | `UISelect` / `UIComboBox` | 输入框 + 下拉选项列表 + 搜索过滤 + 多选标签 | A1 + A2 + A3 |
 | `UIModal` / `UIDialog` | 遮罩层 + 居中 + 焦点陷阱 + 关闭按钮 | A1 + A3 |
 | `UIDrawer` | 从边缘滑入的面板 | A1 + A5 |
 | `UIMessage` / `UINotification` | 顶部/角落堆叠、自动消失 | A1 + A5 |
 | `UIPagination` | 页码、每页条数、跳转 | — |
-| `UIPopconfirm` | Tooltip 的「确认/取消」变体 | A1 |
+| ~~`UIPopconfirm`~~ ✅ | 气泡确认（取消/确定 + danger） | A1 |
 
 ## 阶段 C：Swing 对应物（补齐 README 的定位）
 

@@ -91,6 +91,35 @@
         submitHint.setText(ok ? 'Submitted ✓' : '');
       });
 
+      // 反馈类组件演示：Tooltip（悬停）/ Popover（点击）/ Popconfirm（危险确认）
+      const tipTarget = new W.UIButton({ id: 'tip-btn', left: 820, top: 656, width: 110, height: 32, text: 'Hover me' });
+      W.attachTooltip(ice, tipTarget, { title: '这是工具提示', placement: 'top' });
+
+      const popoverTarget = new W.UIButton({
+        id: 'pop-btn',
+        left: 946,
+        top: 656,
+        width: 148,
+        height: 32,
+        text: 'Show popover',
+        variant: 'default',
+      });
+      W.attachPopover(ice, popoverTarget, { title: '浮层标题', content: '点击外部关闭' });
+
+      const deleteTarget = new W.UIButton({ id: 'del-btn', left: 820, top: 700, width: 140, height: 32, text: 'Delete', danger: true });
+      const deleteHint = new W.UILabel({
+        left: 974,
+        top: 708,
+        text: '',
+        style: { fontSize: 12, fillStyle: theme.colors.success },
+      });
+      W.attachPopconfirm(ice, deleteTarget, {
+        title: '确认删除？',
+        description: '删除后不可恢复',
+        danger: true,
+        onConfirm: () => deleteHint.setText('已删除 ✓'),
+      });
+
       panel.addChildren([
         heading('Buttons', 32, 28),
 
@@ -145,6 +174,12 @@
         submitButton,
         submitHint,
 
+        heading('Feedback', 820, 620),
+        tipTarget,
+        popoverTarget,
+        deleteTarget,
+        deleteHint,
+
         heading('Scroll pane', 32, 706),
         scrollPane,
 
@@ -197,7 +232,7 @@
       });
 
       ice.addChild(panel);
-      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane };
+      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint };
     </script>
   </body>
 </html>
