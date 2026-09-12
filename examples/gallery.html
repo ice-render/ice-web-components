@@ -713,6 +713,18 @@
         new W.UISwitch({ id: 'switch', left: 116, top: 380, width: 52, height: 26, selected: true }),
         new W.UIProgressBar({ id: 'progress', left: 192, top: 388, value: 55, width: 220, height: 10 }),
         new W.UISlider({ id: 'slider', left: 440, top: 384, value: 40, width: 220, height: 18 }),
+        new W.UISlider({
+          id: 'slider-range',
+          left: 680,
+          top: 384,
+          width: 220,
+          height: 18,
+          range: true,
+          min: 0,
+          max: 100,
+          step: 5,
+          value: [25, 70],
+        }),
 
         heading('Containers', 32, 446),
 

@@ -97,7 +97,7 @@
 | 数据录入 | Radio | ✅ `UIRadioButton`（部分：无 Group） |
 | 数据录入 | Rate | ✅ `UIRate`（悬停预览 + 键盘） |
 | 数据录入 | Select | ⬜ 阶段 B |
-| 数据录入 | Slider | ✅ `UISlider`（部分：无区间 / 刻度 / tooltip） |
+| 数据录入 | Slider | ✅ `UISlider`（区间双滑块 + `step` 步进 + 方向键；无刻度 / tooltip） |
 | 数据录入 | Switch | ✅ `UISwitch` |
 | 数据录入 | Transfer | ✅ `UITransfer`（双栏勾选搬运 + disabled 行；无搜索/分页） |
 | 数据录入 | Upload | ⬜ 阶段 D（画布内需与 DOM input 桥接） |
