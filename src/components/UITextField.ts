@@ -8,6 +8,8 @@ export class UITextField extends UIComponent {
   private placeholder: string;
   private maxLength: number;
   private __bound = false;
+  /** 子类扩展点：是否允许多行（Enter 插入换行）。 */
+  protected allowNewline = false;
 
   constructor(props: any = {}) {
     const theme = uiManager.getTheme();
@@ -118,6 +120,12 @@ export class UITextField extends UIComponent {
       return;
     }
     const key = evt && evt.key;
+    if (key === 'Enter' && this.allowNewline) {
+      this.value = this.__normalize(this.value + '\n');
+      this.__sync();
+      this.__emitChange();
+      return;
+    }
     if (key === 'Backspace') {
       this.value = this.value.slice(0, -1);
       this.__sync();
@@ -146,6 +154,24 @@ export class UITextField extends UIComponent {
     const [wx, wy] = this.ice.screenToWorld(evt.offsetX, evt.offsetY);
     const box = this.getMinBoundingBox(true);
     return wx >= box.tl[0] && wx <= box.br[0] && wy >= box.tl[1] && wy <= box.br[1];
+  }
+
+  /** 当前显示的文本（含聚焦时的光标占位）。 */
+  public getFieldText(): string {
+    return this.textNode.getText();
+  }
+
+  /** 子类改动了显示相关状态后，重新渲染字段。 */
+  protected refresh(): void {
+    this.__sync();
+  }
+
+  /**
+   * 子类扩展点：把真实值转成显示文本（密码掩码）。
+   * 光标仍然按真实值长度渲染在末尾。
+   */
+  protected formatDisplayValue(value: string): string {
+    return value;
   }
 
   private __normalize(value: string): string {
@@ -182,8 +208,9 @@ export class UITextField extends UIComponent {
             : theme.control.lineWidth,
       },
     });
-    const text = this.value || this.placeholder;
-    this.textNode.setText(this.focused && this.value ? `${this.value}|` : text);
+    const display = this.formatDisplayValue(this.value);
+    const text = display || this.placeholder;
+    this.textNode.setText(this.focused && display ? `${display}|` : text);
     this.textNode.setState({
       style: {
         fillStyle: this.value ? theme.colors.text : theme.colors.textTertiary,

@@ -19,7 +19,7 @@
   </style>
   <body>
     <h1 style="font-size: 20px; margin: 0 0 16px">ice-web-components gallery</h1>
-    <canvas id="canvas" width="1400" height="1040"></canvas>
+    <canvas id="canvas" width="1400" height="1200"></canvas>
 
     <script src="../node_modules/ice-render/dist/index.umd.js"></script>
     <script src="../dist/index.umd.js"></script>
@@ -42,7 +42,7 @@
           },
         });
 
-      const panel = new W.UIPanel({ id: 'panel', left: 24, top: 24, width: 1352, height: 992 });
+      const panel = new W.UIPanel({ id: 'panel', left: 24, top: 24, width: 1352, height: 1152 });
 
       // 滚动视口演示：内容比视口高，靠引擎的 clipChildren 裁掉溢出部分
       // 注意：容器要先创建、再加子组件（引擎按全局 zIndex 排序渲染）
@@ -258,6 +258,49 @@
         onSelect: (keys, node) => treeHint.setText(node ? '已选择：' + node.label : '未选择节点'),
       });
 
+      // 更多输入与状态：多行文本框 / 密码框 / 分段控制器 / 空状态 / 骨架屏
+      const bioArea = new W.UITextArea({ id: 'bio', left: 32, top: 1066, width: 240, placeholder: '多行文本…' });
+      const passwordField = new W.UIPasswordField({
+        id: 'password',
+        left: 300,
+        top: 1082,
+        width: 200,
+        value: 'secret123',
+        showToggle: true,
+      });
+      const rangeSegmented = new W.UISegmented({
+        id: 'range',
+        left: 524,
+        top: 1082,
+        width: 240,
+        value: 'week',
+        options: [
+          { value: 'day', label: '日' },
+          { value: 'week', label: '周' },
+          { value: 'month', label: '月', disabled: true },
+        ],
+        onChange: (value) => console.log('segmented ->', value),
+      });
+      const emptyState = new W.UIEmpty({
+        id: 'empty',
+        left: 788,
+        top: 1050,
+        width: 200,
+        height: 130,
+        description: '暂无数据',
+        actionText: '新建',
+      });
+      const skeleton = new W.UISkeleton({
+        id: 'skeleton',
+        left: 1010,
+        top: 1060,
+        width: 320,
+        rows: 3,
+        title: true,
+        avatar: true,
+        active: true,
+      });
+
       panel.addChildren([
         heading('Buttons', 32, 28),
 
@@ -330,6 +373,12 @@
         listHint,
         tree,
         treeHint,
+        heading('More inputs & states', 32, 1030),
+        bioArea,
+        passwordField,
+        rangeSegmented,
+        emptyState,
+        skeleton,
 
         heading('Scroll pane', 32, 706),
         scrollPane,
@@ -397,7 +446,7 @@
       });
 
       ice.addChild(panel);
-      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint };
+      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton };
     </script>
   </body>
 </html>

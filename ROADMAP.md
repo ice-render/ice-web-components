@@ -44,7 +44,7 @@
 | `JList` | ✅ `UIList` + `UISelectionModel` | A2 + A3 |
 | `JComboBox` | 阶段 B 的 `UIComboBox` | A1/A2/A3 |
 | `JSpinner` | `UISpinner`（数值/步进） | A3 |
-| `JTextArea` / `JPasswordField` | `UITextArea` / `UIPasswordField` | A2 |
+| `JTextArea` / `JPasswordField` | ✅ `UITextArea`（Enter 换行）/ `UIPasswordField`（掩码 + 眼睛切换） | A2 |
 | `JTree` | ✅ `UITree`（复用 UISelectionModel） | A2 + A3 |
 | `JSplitPane` | `UISplitPane`（拖拽分隔） | — |
 | `JToolBar` | `UIToolBar` | — |
@@ -106,12 +106,12 @@
 | 数据展示 | Carousel | ⬜ 阶段 D |
 | 数据展示 | Collapse | ⬜ 阶段 D |
 | 数据展示 | Descriptions | ⬜ 阶段 D |
-| 数据展示 | Empty | ⬜ 阶段 D |
+| 数据展示 | Empty | ✅ `UIEmpty` |
 | 数据展示 | Image | ⬜ 引擎有 `ICEImage`，缺预览/加载态封装 |
 | 数据展示 | List | ✅ `UIList` |
 | 数据展示 | Popover | ⬜ 阶段 B |
 | 数据展示 | QRCode | ⊘ 需要编码器，收益低 |
-| 数据展示 | Segmented | ⬜ 阶段 D |
+| 数据展示 | Segmented | ✅ `UISegmented` |
 | 数据展示 | Statistic | ✅ `UIStatCard` |
 | 数据展示 | Table | ✅ `UITable`（部分：无排序 / 分页 / 滚动 / 列宽拖拽） |
 | 数据展示 | Tabs | ✅ `UITabs`（部分：无溢出滚动 / 关闭 / 卡片态） |
@@ -128,7 +128,7 @@
 | 反馈 | Popconfirm | ⬜ 阶段 B |
 | 反馈 | Progress | ✅ `UIProgressBar`（部分：无环形 / 仪表盘） |
 | 反馈 | Result | ⬜ 阶段 D |
-| 反馈 | Skeleton | ⬜ 阶段 D |
+| 反馈 | Skeleton | ✅ `UISkeleton`（呼吸动画） |
 | 反馈 | Spin | ⬜ 阶段 D（需要动画底座 A5） |
 | 其他 | Affix | ⊘ 画布内不需要（应用自己控制位置） |
 | 其他 | App | ⊘ React 概念；本库对应 `uiManager` 主题机制 |
