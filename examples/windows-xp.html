@@ -475,19 +475,36 @@
         interactive: false,
         style: { fillStyle: 'rgba(255,255,255,0.14)' },
       });
-      tray.addChild(
-        new W.ICELabel({
-          interactive: false,
-          left: 8,
-          top: 0,
-          width: 96,
-          height: TASKBAR_H - 4,
-          text: '🔊  🛡  📶',
-          verticalAlign: 'middle',
-          style: { fontSize: 12, fillStyle: '#ffffff' },
-        }),
-        false,
-      );
+      const trayLabel = new W.ICELabel({
+        id: 'tray-icons',
+        interactive: false,
+        left: 8,
+        top: 0,
+        width: 96,
+        height: TASKBAR_H - 4,
+        text: '🔊  🛡  📶',
+        verticalAlign: 'middle',
+        style: { fontSize: 12, fillStyle: '#ffffff' },
+      });
+      tray.addChild(trayLabel, false);
+      /** 点托盘里的喇叭静音 / 取消静音（开机音、注销音都归它管）。 */
+      const traySoundToggle = new W.ICEWidget({
+        id: 'tray-sound',
+        left: 4,
+        top: 2,
+        width: 26,
+        height: TASKBAR_H - 8,
+        radius: 3,
+        fill: false,
+        stroke: false,
+      });
+      traySoundToggle.on('click', () => {
+        sound.enabled = !sound.enabled;
+        trayLabel.setText(sound.enabled ? '🔊  🛡  📶' : '🔇  🛡  📶');
+        if (sound.enabled) playCue('click');
+        toast(sound.enabled ? '音效已开启' : '音效已关闭', 'info');
+      });
+      tray.addChild(traySoundToggle, false);
       taskbar.addChild(tray, false);
       taskbar.addChild(clockLabel, false);
 
@@ -2059,6 +2076,32 @@
           style: { fontSize: 12, fontWeight: '700', fillStyle: '#ffffff', fontFamily: XPFONT },
         });
         footer.addChild(shutDown, false);
+        // 注销 / 关机入口（压在标签上的透明热区，hover 有高亮）
+        const menuHotspot = (id, left, width, label, handler) => {
+          const hit = new W.ICEWidget({
+            id,
+            left,
+            top: 0,
+            width,
+            height: 58,
+            radius: 4,
+            fill: true,
+            stroke: false,
+            style: { fillStyle: 'rgba(255,255,255,0)' },
+          });
+          hit.on('click', handler);
+          hit.on('hoverchange', (evt) => {
+            const hovered = !!(evt && evt.param ? evt.param.hovered : evt && evt.hovered);
+            hit.setState({ style: { ...hit.state.style, fillStyle: hovered ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0)' } });
+            ice.dirty = true;
+          });
+          footer.addChild(hit, false);
+          return { label, hit };
+        };
+        const logoffHotspot = menuHotspot('menu-logoff', 4, 176, '注销', () => logoff());
+        const shutdownHotspot = menuHotspot('menu-shutdown', 184, 172, '关闭计算机', () => shutdown());
+        handles.menuLogoff = logoffHotspot.hit;
+        handles.menuShutdown = shutdownHotspot.hit;
         pane.addChild(footer, false);
         return pane;
       };
@@ -2092,13 +2135,633 @@
       tick();
       setInterval(tick, 1000);
 
+      /* ============================ 音效（WebAudio 合成，零音频文件） ============================
+       * 开机 / 注销 / 关机音都是**现场合成的原创音型**，不是微软的原版开机声（那是版权素材）。
+       * 浏览器不允许无手势自动播放：AudioContext 在第一次点击/回车之后才创建，所以开机
+       * 画面里的声音要等用户按一下（这也正好符合「按任意键继续」）。
+       */
+      const sound = { enabled: true, ctx: null, lastCue: null };
+      const audioCtx = () => {
+        try {
+          if (!sound.ctx) {
+            const Ctor = window.AudioContext || window.webkitAudioContext;
+            if (!Ctor) return null;
+            sound.ctx = new Ctor();
+          }
+          if (sound.ctx.state === 'suspended' && sound.ctx.resume) sound.ctx.resume();
+          return sound.ctx;
+        } catch (err) {
+          return null;
+        }
+      };
+      /** 一个带包络的正弦/三角音符。 */
+      const note = (dest, freq, at, duration, options = {}) => {
+        const ctx = sound.ctx;
+        if (!ctx || !dest) return;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const t = ctx.currentTime + at;
+        const peak = options.peak || 0.12;
+        const attack = options.attack === undefined ? 0.02 : options.attack;
+        osc.type = options.type || 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(peak, t + Math.max(0.01, attack));
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+        osc.connect(gain);
+        gain.connect(dest);
+        osc.start(t);
+        osc.stop(t + duration + 0.05);
+      };
+      /** 总线：给整段音型一个柔和的起音与收尾。 */
+      const bus = (duration, peak = 0.6) => {
+        const ctx = sound.ctx;
+        const gain = ctx.createGain();
+        const t = ctx.currentTime + 0.01;
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(peak, t + 0.35);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+        gain.connect(ctx.destination);
+        return { gain, at: 0.02 };
+      };
+      const cues = {
+        /** 开机音：低音铺底 + 四音上行钟声（原创，非微软原版）。 */
+        startup: () => {
+          const ctx = audioCtx();
+          if (!ctx) return;
+          const { gain } = bus(3.4, 0.5);
+          note(gain, 110, 0, 3.2, { peak: 0.16, attack: 0.5 });
+          note(gain, 164.81, 0.1, 3.0, { peak: 0.12, attack: 0.6 });
+          [[659.25, 0.05], [830.61, 0.3], [987.77, 0.55], [1318.51, 0.8]].forEach(([freq, at]) => {
+            note(gain, freq, at, 2.2, { peak: 0.14, attack: 0.03, type: 'triangle' });
+          });
+        },
+        /** 注销：三音下行。 */
+        logoff: () => {
+          const ctx = audioCtx();
+          if (!ctx) return;
+          const { gain } = bus(1.4, 0.45);
+          [[987.77, 0], [783.99, 0.18], [587.33, 0.36]].forEach(([freq, at]) => {
+            note(gain, freq, at, 0.8, { peak: 0.12, type: 'triangle' });
+          });
+        },
+        /** 关机：低沉收尾。 */
+        shutdown: () => {
+          const ctx = audioCtx();
+          if (!ctx) return;
+          const { gain } = bus(1.8, 0.45);
+          [[440, 0], [329.63, 0.25], [220, 0.5]].forEach(([freq, at]) => {
+            note(gain, freq, at, 1.3, { peak: 0.13, attack: 0.05 });
+          });
+        },
+        /** 选用户 / 点按钮的小咔哒。 */
+        click: () => {
+          const ctx = audioCtx();
+          if (!ctx) return;
+          note(ctx.destination, 1320, 0, 0.06, { peak: 0.05, type: 'square' });
+        },
+      };
+      const playCue = (name) => {
+        if (!sound.enabled) return;
+        sound.lastCue = name;
+        try {
+          if (cues[name]) cues[name]();
+        } catch (err) {
+          /* 没有音频设备（headless）时静默降级 */
+        }
+      };
+
+      /* ============================ 开机 / 登录 / 注销 ============================
+       * 会话状态机：boot → login → password → welcome → desktop →（注销）login
+       *                                                └（关机）shutdown → boot
+       * 登录规则是**故意宽松**的：任意用户名、任意密码、甚至空密码都能进 —— 这是玩具。
+       */
+      const session = { phase: 'boot', user: null, password: '', logins: 0, skips: 0 };
+      const USERS = [
+        { key: 'ice', name: 'ICE 用户', avatar: '🧊', accent: '#3f8cf3', note: '单击登录 · 任意密码' },
+        { key: 'guest', name: '访客', avatar: '🙂', accent: '#2e9e5b', note: '无需密码 · 直接进入' },
+      ];
+
+      /** 微软四色小旗（自绘，非官方素材）。 */
+      const xpFlag = (parent, left, top, size) => {
+        const gap = Math.max(2, Math.round(size * 0.07));
+        const cell = (size - gap) / 2;
+        const skew = Math.round(size * 0.08);
+        const colors = ['#f65314', '#7cbb00', '#00a1f1', '#ffbb00'];
+        [[0, 0, 0], [1, 0, skew], [0, 1, 0], [1, 1, skew]].forEach(([cx, cy, dy], index) => {
+          parent.addChild(
+            new W.ICEWidget({
+              left: Math.round(left + cx * (cell + gap)),
+              top: Math.round(top + cy * (cell + gap) - dy),
+              width: Math.ceil(cell),
+              height: Math.ceil(cell),
+              radius: Math.max(2, Math.round(size * 0.08)),
+              fill: true,
+              stroke: false,
+              interactive: false,
+              style: { fillStyle: colors[index] },
+            }),
+            false,
+          );
+        });
+      };
+      /** 建一个标签并挂上去（`addChild` 不返回子节点，所以这里自己返回，方便后面 setText）。 */
+      const xpLabel = (parent, props) => {
+        const label = new W.ICELabel({
+          interactive: false,
+          verticalAlign: 'middle',
+          style: { color: '#ffffff', fillStyle: '#ffffff', fontFamily: XPFONT, fontSize: 12 },
+          ...props,
+        });
+        parent.addChild(label, false);
+        return label;
+      };
+
+      const sessionRoot = new W.ICEWidget({
+        id: 'session-screen',
+        left: 0,
+        top: 0,
+        width: SCREEN_W,
+        height: SCREEN_H,
+        fill: false,
+        stroke: false,
+        interactive: true,
+      });
+
+      /* ---------------------------- ① 开机画面 ---------------------------- */
+      const bootLayer = new W.ICEWidget({
+        id: 'boot-screen',
+        left: 0,
+        top: 0,
+        width: SCREEN_W,
+        height: SCREEN_H,
+        fill: true,
+        stroke: false,
+        interactive: false,
+        style: { fillStyle: '#000000' },
+      });
+      sessionRoot.addChild(bootLayer, false);
+      xpFlag(bootLayer, 596, 328, 96);
+      xpLabel(bootLayer, { left: 716, top: 322, width: 260, height: 24, text: 'Microsoft', style: { color: '#d8d8d8', fillStyle: '#d8d8d8', fontSize: 18 } });
+      xpLabel(bootLayer, { left: 716, top: 344, width: 260, height: 46, text: 'Windows', style: { color: '#ffffff', fillStyle: '#ffffff', fontSize: 38, fontWeight: '700' } });
+      xpLabel(bootLayer, { left: 896, top: 352, width: 90, height: 34, text: 'xp', style: { color: '#ff8c00', fillStyle: '#ff8c00', fontSize: 28, fontWeight: '700', fontStyle: 'italic' } });
+      const bootTrack = new W.ICEWidget({
+        left: 600,
+        top: 520,
+        width: 240,
+        height: 12,
+        radius: 6,
+        fill: true,
+        stroke: true,
+        interactive: false,
+        style: { fillStyle: '#141414', strokeStyle: '#3a3a3a', lineWidth: 1 },
+      });
+      bootLayer.addChild(bootTrack, false);
+      const BOOT_BLOCK_W = 44;
+      const bootBlocks = [0, 1, 2].map(() => {
+        const block = new W.ICEWidget({
+          left: 0,
+          top: 0,
+          width: BOOT_BLOCK_W,
+          height: 12,
+          radius: 6,
+          fill: true,
+          stroke: false,
+          interactive: false,
+          style: { fillStyle: '#3f8cf3' },
+        });
+        bootTrack.addChild(block, false);
+        return block;
+      });
+      xpLabel(bootLayer, {
+        left: 600,
+        top: 552,
+        width: 240,
+        height: 20,
+        text: '点击任意处 / 按任意键继续',
+        align: 'center',
+        style: { color: '#8a8f98', fillStyle: '#8a8f98', fontSize: 12 },
+      });
+      xpLabel(bootLayer, { left: 40, top: 860, width: 320, height: 20, text: 'Microsoft Corporation', style: { color: '#6a6f78', fillStyle: '#6a6f78', fontSize: 11 } });
+
+      /* ---------------------------- ② 欢迎 / 登录界面 ---------------------------- */
+      const loginLayer = new W.ICEWidget({
+        id: 'login-screen',
+        left: 0,
+        top: 0,
+        width: SCREEN_W,
+        height: SCREEN_H,
+        fill: false,
+        stroke: false,
+        display: false,
+        interactive: false,
+      });
+      sessionRoot.addChild(loginLayer, false);
+      // 色带数量给足，否则大屏上能看出横条分界
+      gradient(loginLayer, 0, 0, SCREEN_W, SCREEN_H, '#0a52c0', '#032b73', 120);
+      const loginBand = new W.ICEWidget({ left: 0, top: 0, width: SCREEN_W, height: 92, fill: false, stroke: false, interactive: false });
+      loginLayer.addChild(loginBand, false);
+      gradient(loginBand, 0, 0, SCREEN_W, 92, '#3f8cf3', '#1b5fc8', 30);
+      loginBand.addChild(new W.ICEWidget({ left: 0, top: 90, width: SCREEN_W, height: 2, fill: true, stroke: false, interactive: false, style: { fillStyle: '#ffffff' } }), false);
+      loginBand.addChild(new W.ICEWidget({ left: 0, top: 92, width: SCREEN_W, height: 3, fill: true, stroke: false, interactive: false, style: { fillStyle: '#ff8c00' } }), false);
+      xpFlag(loginBand, 1174, 26, 40);
+      xpLabel(loginBand, { left: 1224, top: 22, width: 200, height: 24, text: 'Microsoft', style: { color: '#dbe7ff', fillStyle: '#dbe7ff', fontSize: 12 } });
+      xpLabel(loginBand, { left: 1224, top: 40, width: 140, height: 30, text: 'Windows', style: { color: '#ffffff', fillStyle: '#ffffff', fontSize: 22, fontWeight: '700' } });
+      xpLabel(loginBand, { left: 1348, top: 44, width: 60, height: 26, text: 'xp', style: { color: '#ff8c00', fillStyle: '#ff8c00', fontSize: 18, fontWeight: '700', fontStyle: 'italic' } });
+
+      loginLayer.addChild(
+        new W.ICEWidget({ left: 380, top: 148, width: 1, height: 600, fill: true, stroke: false, interactive: false, style: { fillStyle: 'rgba(255,255,255,0.32)' } }),
+        false,
+      );
+      xpLabel(loginLayer, { left: 64, top: 156, width: 300, height: 26, text: '要开始，请单击您的用户名', style: { color: '#ffffff', fillStyle: '#ffffff', fontSize: 15, fontWeight: '700' } });
+      xpLabel(loginLayer, {
+        left: 64,
+        top: 192,
+        width: 292,
+        height: 80,
+        text: '这是 ICE 玩具系统：账号随便点，密码随便写（不写也行），回车就进。音效是现场合成的，没有音频文件。',
+        style: { color: 'rgba(255,255,255,0.78)', fillStyle: 'rgba(255,255,255,0.78)', fontSize: 12 },
+      });
+      const loginHint = xpLabel(loginLayer, {
+        id: 'login-hint',
+        left: 64,
+        top: 700,
+        width: 292,
+        height: 60,
+        text: '',
+        style: { color: 'rgba(255,255,255,0.75)', fillStyle: 'rgba(255,255,255,0.75)', fontSize: 12 },
+      });
+
+      /** 用户磁贴：头像 + 名字 + 一行说明；hover 有高亮底，点击进密码页。 */
+      const userTiles = USERS.map((user, index) => {
+        const tile = new W.ICEWidget({
+          id: 'login-user-' + user.key,
+          left: 460,
+          top: 186 + index * 96,
+          width: 560,
+          height: 84,
+          radius: 6,
+          fill: true,
+          stroke: false,
+          style: { fillStyle: 'rgba(255,255,255,0)' },
+        });
+        const avatar = new W.ICEWidget({
+          left: 12,
+          top: 12,
+          width: 60,
+          height: 60,
+          radius: 8,
+          fill: true,
+          stroke: true,
+          interactive: false,
+          style: { fillStyle: user.accent, strokeStyle: 'rgba(255,255,255,0.65)', lineWidth: 2 },
+        });
+        avatar.addChild(
+          new W.ICELabel({
+            interactive: false,
+            left: 0,
+            top: 0,
+            width: 60,
+            height: 60,
+            text: user.avatar,
+            align: 'center',
+            verticalAlign: 'middle',
+            style: { fontSize: 26 },
+          }),
+          false,
+        );
+        tile.addChild(avatar, false);
+        xpLabel(tile, { left: 88, top: 18, width: 420, height: 28, text: user.name, style: { color: '#ffffff', fillStyle: '#ffffff', fontSize: 19, fontWeight: '700' } });
+        xpLabel(tile, { left: 88, top: 46, width: 420, height: 22, text: user.note, style: { color: 'rgba(255,255,255,0.8)', fillStyle: 'rgba(255,255,255,0.8)', fontSize: 12 } });
+        tile.on('click', () => pickUser(user));
+        tile.on('hoverchange', (evt) => {
+          const hovered = !!(evt && evt.param ? evt.param.hovered : evt && evt.hovered);
+          tile.setState({ style: { ...tile.state.style, fillStyle: hovered ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0)' } });
+          ice.dirty = true;
+        });
+        loginLayer.addChild(tile, false);
+        return tile;
+      });
+
+      /** 密码页：XP 会先让你选用户、再输密码 —— 这里任意内容都能过。 */
+      const passwordPanel = new W.ICEWidget({
+        id: 'login-password',
+        left: 460,
+        top: 186,
+        width: 560,
+        height: 240,
+        radius: 8,
+        fill: true,
+        stroke: true,
+        display: false,
+        style: { fillStyle: 'rgba(255,255,255,0.12)', strokeStyle: 'rgba(255,255,255,0.5)', lineWidth: 2 },
+      });
+      loginLayer.addChild(passwordPanel, false);
+      const passwordAvatar = new W.ICEWidget({
+        left: 20,
+        top: 22,
+        width: 72,
+        height: 72,
+        radius: 10,
+        fill: true,
+        stroke: true,
+        interactive: false,
+        style: { fillStyle: '#3f8cf3', strokeStyle: 'rgba(255,255,255,0.65)', lineWidth: 2 },
+      });
+      const passwordAvatarLabel = new W.ICELabel({
+        interactive: false,
+        left: 0,
+        top: 0,
+        width: 72,
+        height: 72,
+        text: '🧊',
+        align: 'center',
+        verticalAlign: 'middle',
+        style: { fontSize: 30 },
+      });
+      passwordAvatar.addChild(passwordAvatarLabel, false);
+      passwordPanel.addChild(passwordAvatar, false);
+      const passwordName = xpLabel(passwordPanel, { left: 108, top: 24, width: 420, height: 30, text: 'ICE 用户', style: { color: '#ffffff', fillStyle: '#ffffff', fontSize: 20, fontWeight: '700' } });
+      xpLabel(passwordPanel, { left: 108, top: 56, width: 430, height: 22, text: '输入任意内容（或直接回车）即可登录', style: { color: 'rgba(255,255,255,0.8)', fillStyle: 'rgba(255,255,255,0.8)', fontSize: 12 } });
+      const passwordField = new W.ICEPasswordField({
+        id: 'login-password-field',
+        left: 108,
+        top: 92,
+        width: 300,
+        height: 32,
+        placeholder: '密码（随便写）',
+        showToggle: true,
+      });
+      passwordPanel.addChild(passwordField, false);
+      const loginButton = new W.ICEButton({ id: 'login-submit', left: 420, top: 92, width: 120, height: 32, text: '登录', variant: 'primary' });
+      loginButton.on('click', () => doLogin());
+      passwordPanel.addChild(loginButton, false);
+      const backLink = new W.ICELabel({
+        id: 'login-back',
+        interactive: true,
+        left: 108,
+        top: 140,
+        width: 200,
+        height: 24,
+        text: '← 换一个用户',
+        style: { color: '#cfe0ff', fillStyle: '#cfe0ff', fontSize: 13 },
+      });
+      backLink.on('click', () => showLogin());
+      passwordPanel.addChild(backLink, false);
+      xpLabel(passwordPanel, { left: 108, top: 176, width: 430, height: 40, text: '提示：这是演示用的假登录，输入什么都会被接受，不会离开这台电脑。', style: { color: 'rgba(255,255,255,0.6)', fillStyle: 'rgba(255,255,255,0.6)', fontSize: 11 } });
+
+      const welcomeText = xpLabel(loginLayer, {
+        id: 'login-welcome',
+        left: 0,
+        top: 380,
+        width: SCREEN_W,
+        height: 60,
+        text: '',
+        align: 'center',
+        display: false,
+        style: { color: '#ffffff', fillStyle: '#ffffff', fontSize: 34, fontWeight: '700' },
+      });
+      const welcomeSub = xpLabel(loginLayer, {
+        left: 0,
+        top: 444,
+        width: SCREEN_W,
+        height: 24,
+        text: '',
+        align: 'center',
+        display: false,
+        style: { color: 'rgba(255,255,255,0.78)', fillStyle: 'rgba(255,255,255,0.78)', fontSize: 13 },
+      });
+
+      const loginFooter = new W.ICEWidget({ left: 0, top: 828, width: SCREEN_W, height: 72, fill: false, stroke: false, interactive: false });
+      loginLayer.addChild(loginFooter, false);
+      gradient(loginFooter, 0, 0, SCREEN_W, 72, '#1b5fc8', '#0a3f9e', 8);
+      loginFooter.addChild(new W.ICEWidget({ left: 0, top: -4, width: SCREEN_W, height: 2, fill: true, stroke: false, interactive: false, style: { fillStyle: '#ff8c00' } }), false);
+      const shutdownEntry = new W.ICEWidget({ id: 'login-shutdown', left: 28, top: 8, width: 200, height: 56, radius: 6, fill: true, stroke: false, style: { fillStyle: 'rgba(255,255,255,0)' } });
+      shutdownEntry.addChild(
+        new W.ICELabel({
+          interactive: false,
+          left: 12,
+          top: 0,
+          width: 180,
+          height: 56,
+          text: '⏻  关闭计算机',
+          verticalAlign: 'middle',
+          style: { color: '#ffffff', fillStyle: '#ffffff', fontSize: 14, fontWeight: '700', fontFamily: XPFONT },
+        }),
+        false,
+      );
+      shutdownEntry.on('click', () => shutdown());
+      shutdownEntry.on('hoverchange', (evt) => {
+        const hovered = !!(evt && evt.param ? evt.param.hovered : evt && evt.hovered);
+        shutdownEntry.setState({ style: { ...shutdownEntry.state.style, fillStyle: hovered ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0)' } });
+        ice.dirty = true;
+      });
+      loginFooter.addChild(shutdownEntry, false);
+      xpLabel(loginFooter, {
+        left: 760,
+        top: 0,
+        width: 640,
+        height: 72,
+        text: '任意账号 · 任意密码 · 都能进',
+        align: 'right',
+        style: { color: 'rgba(255,255,255,0.75)', fillStyle: 'rgba(255,255,255,0.75)', fontSize: 12 },
+      });
+
+      /* ---------------------------- ③ 关机 / 重启 ---------------------------- */
+      const shutLayer = new W.ICEWidget({
+        id: 'shutdown-screen',
+        left: 0,
+        top: 0,
+        width: SCREEN_W,
+        height: SCREEN_H,
+        fill: true,
+        stroke: false,
+        display: false,
+        interactive: false,
+        style: { fillStyle: '#000000' },
+      });
+      sessionRoot.addChild(shutLayer, false);
+      xpLabel(shutLayer, {
+        left: 0,
+        top: 400,
+        width: SCREEN_W,
+        height: 40,
+        text: '现在可以安全地关闭计算机了。',
+        align: 'center',
+        style: { color: '#ff8c00', fillStyle: '#ff8c00', fontSize: 22, fontWeight: '700' },
+      });
+      xpLabel(shutLayer, {
+        left: 0,
+        top: 448,
+        width: SCREEN_W,
+        height: 24,
+        text: '（别担心，点下面的按钮就又能开机了）',
+        align: 'center',
+        style: { color: '#8a8f98', fillStyle: '#8a8f98', fontSize: 12 },
+      });
+      const powerButton = new W.ICEButton({ id: 'power-on', left: SCREEN_W / 2 - 80, top: 500, width: 160, height: 40, text: '⏻  重新开机', variant: 'primary' });
+      powerButton.on('click', () => startBoot());
+      shutLayer.addChild(powerButton, false);
+
+      /* ---------------------------- 会话状态机 ---------------------------- */
+      let bootTimer = null;
+      let sessionTimer = null;
+      const setPhase = (phase) => {
+        session.phase = phase;
+        ice.dirty = true;
+      };
+      const showLogin = () => {
+        clearTimeout(sessionTimer);
+        clearInterval(bootTimer);
+        setPhase('login');
+        sessionRoot.setState({ display: true, opacity: 1, style: { ...sessionRoot.state.style, fillStyle: 'rgba(0,0,0,0)' } });
+        bootLayer.setState({ display: false });
+        shutLayer.setState({ display: false });
+        loginLayer.setState({ display: true });
+        passwordPanel.setState({ display: false });
+        userTiles.forEach((tile) => tile.setState({ display: true }));
+        welcomeText.setState({ display: false });
+        welcomeSub.setState({ display: false });
+        loginHint.setText(`上次登录：${session.logins ? session.user.name + '（第 ' + session.logins + ' 次）' : '还没有人登录过'}\n音效：${sound.enabled ? '开' : '关'}`);
+      };
+      const pickUser = (user) => {
+        session.user = user;
+        playCue('click');
+        setPhase('password');
+        passwordName.setText(user.name);
+        passwordAvatarLabel.setText(user.avatar);
+        passwordAvatar.setState({ style: { ...passwordAvatar.state.style, fillStyle: user.accent } });
+        passwordField.setValue('');
+        userTiles.forEach((tile) => tile.setState({ display: false }));
+        welcomeText.setState({ display: false });
+        welcomeSub.setState({ display: false });
+        passwordPanel.setState({ display: true });
+        // 直接给焦点，省得用户再点一下输入框
+        W.getICEFocusManager(ice).focus(passwordField);
+      };
+      const doLogin = () => {
+        if (session.phase !== 'password' || !session.user) return;
+        session.password = passwordField.getValue();
+        session.logins += 1;
+        setPhase('welcome');
+        userTiles.forEach((tile) => tile.setState({ display: false }));
+        passwordPanel.setState({ display: false });
+        welcomeText.setText(`欢迎 ${session.user.name}`);
+        welcomeText.setState({ display: true });
+        welcomeSub.setText(
+          session.password
+            ? `密码「${session.password}」已接受 —— 反正谁都放行 🙂`
+            : '连密码都没输，照样进 —— 这就是玩具系统 🙂',
+        );
+        welcomeSub.setState({ display: true });
+        playCue('startup');
+        // 桌面在幕布后面就绪，等欢迎语亮一下再揭幕
+        desktop.setState({ display: true });
+        sessionTimer = setTimeout(() => {
+          W.fadeOut(sessionRoot, {
+            duration: 700,
+            onFinish: () => {
+              sessionRoot.setState({ display: false });
+              setPhase('desktop');
+              toast(`欢迎回来，${session.user.name}`, 'success');
+              showSoundHint();
+            },
+          });
+        }, 900);
+      };
+      const logoff = () => {
+        startMenuHandle && startMenuHandle.close();
+        playCue('logoff');
+        setPhase('logoff');
+        desktop.setState({ display: false });
+        sessionRoot.setState({ display: true, opacity: 1 });
+        bootLayer.setState({ display: false });
+        shutLayer.setState({ display: false });
+        loginLayer.setState({ display: true });
+        passwordPanel.setState({ display: false });
+        userTiles.forEach((tile) => tile.setState({ display: false }));
+        welcomeText.setText('正在注销…');
+        welcomeText.setState({ display: true });
+        welcomeSub.setText(`正在保存 ${session.user ? session.user.name : ''} 的设置`);
+        welcomeSub.setState({ display: true });
+        sessionTimer = setTimeout(showLogin, 900);
+      };
+      const shutdown = () => {
+        startMenuHandle && startMenuHandle.close();
+        playCue('shutdown');
+        setPhase('shutdown');
+        desktop.setState({ display: false });
+        sessionRoot.setState({ display: true, opacity: 1 });
+        bootLayer.setState({ display: false });
+        loginLayer.setState({ display: false });
+        shutLayer.setState({ display: true });
+      };
+      const startBoot = () => {
+        clearTimeout(sessionTimer);
+        setPhase('boot');
+        desktop.setState({ display: false });
+        sessionRoot.setState({ display: true, opacity: 1 });
+        bootLayer.setState({ display: true });
+        loginLayer.setState({ display: false });
+        shutLayer.setState({ display: false });
+        let offset = 0;
+        clearInterval(bootTimer);
+        bootTimer = setInterval(() => {
+          if (session.phase !== 'boot') return;
+          offset = (offset + 7) % 200;
+          bootBlocks.forEach((block, index) => {
+            block.setState({ left: Math.min(196, offset + index * 24) });
+          });
+          ice.dirty = true;
+        }, 40);
+        sessionTimer = setTimeout(showLogin, 2200);
+      };
+      const skipBoot = () => {
+        if (session.phase !== 'boot') return false;
+        session.skips += 1;
+        showLogin();
+        return true;
+      };
+      /** 第一次登入桌面时，把「音效可以关」这件事告诉用户（托盘里的喇叭）。 */
+      let soundHintShown = false;
+      const showSoundHint = () => {
+        if (soundHintShown) return;
+        soundHintShown = true;
+        toast('托盘里的 🔊 可以关掉音效', 'info');
+      };
+
+      /* ============================ 组装 ============================ */
       /* ============================ 组装 ============================ */
       // 壁纸 → 图标 → 窗口 → 任务栏，任务栏永远在最上面
       desktop.addChild(taskbar, false);
       ice.addChild(desktop);
       raise(taskbar, 9000);
-      // 开场：自动打开「我的电脑」，让人一眼看到窗口的样子
+      // 会话幕布（开机 / 登录 / 关机）盖在任务栏之上，登录完才揭幕
+      ice.addChild(sessionRoot);
+      raise(sessionRoot, 9800);
+      // 开场：自动打开「我的电脑」，让人一眼看到窗口的样子（登录前藏在幕布后面）
       openApp(APPS[0]);
+      startBoot();
+
+      /* 键盘：开机任意键跳过；登录页回车直接选第一个用户；密码页回车直接进。 */
+      window.addEventListener('keydown', (event) => {
+        if (session.phase === 'boot') {
+          if (event.key === 'Tab' || event.key === 'Shift' || event.key === 'Escape' || event.key === 'CapsLock') return;
+          event.preventDefault();
+          skipBoot();
+          return;
+        }
+        if (event.key !== 'Enter') return;
+        if (session.phase === 'password') {
+          event.preventDefault();
+          doLogin();
+        } else if (session.phase === 'login') {
+          event.preventDefault();
+          pickUser(USERS[0]);
+        }
+      });
+      // 开机画面上点一下也算「任意键」（顺便解锁 AudioContext）
+      sessionRoot.on('click', () => skipBoot());
 
       window.__result = {
         ice,
@@ -2117,6 +2780,30 @@
         setWallpaper,
         APPS,
         WALLPAPERS,
+        session,
+        sound,
+        sessionRoot,
+        bootLayer,
+        loginLayer,
+        loginHint,
+        shutLayer,
+        passwordPanel,
+        welcomeText,
+        welcomeSub,
+        trayLabel,
+        userTiles,
+        passwordField,
+        loginButton,
+        shutdownEntry,
+        powerButton,
+        traySoundToggle,
+        pickUser,
+        doLogin,
+        logoff,
+        shutdown,
+        startBoot,
+        skipBoot,
+        USERS,
         handles,
       };
     </script>

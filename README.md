@@ -162,7 +162,19 @@ back-to-top button appears once the conversation scrolls.
 
 ### `windows-xp.html` — a full-screen Windows XP desktop
 
-The fun one: a canvas-only XP desktop — wallpaper, desktop icons, taskbar with a
+The fun one: a canvas-only XP desktop that **boots**. Turn it on and you get the black
+boot splash (self-drawn four-colour flag + the running progress blocks), then the blue
+welcome screen: pick a user tile, type anything (or nothing) into the password box and
+press Enter — *any* credentials are accepted, this is a toy. Then the desktop fades in
+with a synthesized startup chime.
+
+The sound is generated live with WebAudio (startup / logoff / shutdown / click cues) —
+original tones, no audio files, no Microsoft assets. Hover the tray speaker in the
+taskbar to mute it. Log off from the Start menu and you drop back to the welcome
+screen; shut down and you get the black "it is now safe to turn off your computer"
+screen with a power button that boots the machine all over again.
+
+The desktop itself: wallpaper, desktop icons, taskbar with a
 working clock, a Start menu, and draggable windows with minimise / maximise / close.
 Seven tiny apps are wired up (My Computer, My Documents, Notepad, Paint, Minesweeper,
 Internet Explorer, Display Properties), and switching the wallpaper in Display
@@ -189,6 +201,10 @@ way to the dispatcher (ice-render 1.4.1).
 Two new generic components came out of it: `ICEWindow` (window chrome with an XP Luna
 title bar, drag, resize, maximise/restore, activate event) and `ICEIconTile`
 (selectable icon tile that opens on double click).
+
+| Boot splash | Welcome screen | Password page |
+|---|---|---|
+| ![XP boot](docs/images/xp-boot.png) | ![XP login](docs/images/xp-login.png) | ![XP password](docs/images/xp-login-password.png) |
 
 ![Windows XP desktop](docs/images/xp-desktop.png)
 
@@ -335,6 +351,7 @@ npm run qa:gallery
 npm run qa:workbench
 
 # browser QA for examples/windows-xp.html: icons, windows (drag/minimise/restore),
+# boot → login (any password) → desktop, logoff/shutdown/power-on, tray mute,
 # start menu, minesweeper, paint strokes, wallpaper switch, clock
 npm run qa:xp
 
@@ -363,7 +380,10 @@ checks the watermark tiling, then screenshots to `/tmp/qa-gallery*.png`.
 
 `npm run qa:workbench` covers the support workbench (queue → profile, reply composer,
 quick replies, tags, rating, tour, back-to-top, splitter drag) and `npm run qa:xp`
-covers the Windows XP desktop: icons, window drag/minimise/restore, Start menu,
+covers the Windows XP desktop: the boot splash → welcome screen → typing a password and
+pressing Enter (the run asserts the startup cue actually fired), log off back to the
+welcome screen, shut down, power back on, logging in again with the 登录 button, the
+tray mute toggle, icons, window drag/minimise/restore, Start menu,
 Minesweeper (first-click-safe, flag cycle, difficulty, timer, win), the Paint canvas,
 the wallpaper switch, the clock — and the IE window really fetching pages (plus its
 404 page, back button, `about:xp` table and bookmarks). `qa:xp` starts a small static

@@ -86,7 +86,7 @@ page.on('console', (m) => {
   errors.push('console: ' + m.text());
 });
 await page.goto(URL);
-await page.waitForTimeout(1200);
+await page.waitForFunction(() => !!window.__result, null, { timeout: 20000 });
 
 const rect = await page.evaluate(() => {
   const r = document.getElementById('canvas').getBoundingClientRect();
@@ -121,6 +121,82 @@ const dblClickExpr = async (source) => {
   await page.waitForTimeout(400);
   return true;
 };
+
+/* ---------- 1. 布局与启动 ---------- */
+/* ---------- 0. 开机 → 登录 → 进桌面 ---------- */
+const boot = await page.evaluate(() => {
+  const r = window.__result;
+  return {
+    phase: r.session.phase,
+    bootVisible: r.bootLayer.state.display !== false,
+    loginHidden: r.loginLayer.state.display === false,
+    desktopHidden: r.desktop.state.display === false,
+    progressBlocks: r.bootLayer.childNodes.length,
+  };
+});
+check(
+  '开机画面：黑屏 + 进度条，桌面还没露出来',
+  boot.phase === 'boot' && boot.bootVisible && boot.loginHidden && boot.desktopHidden && boot.progressBlocks >= 4,
+  JSON.stringify(boot),
+);
+
+await page.waitForFunction(() => window.__result.session.phase === 'login', null, { timeout: 15000 });
+const loginScreen = await page.evaluate(() => {
+  const r = window.__result;
+  return {
+    phase: r.session.phase,
+    tiles: r.userTiles.length,
+    tileVisible: r.userTiles[0].state.display !== false,
+    desktopHidden: r.desktop.state.display === false,
+    bootHidden: r.bootLayer.state.display === false,
+    soundOn: r.sound.enabled,
+  };
+});
+check(
+  '欢迎界面：用户磁贴出现、开机画面收起',
+  loginScreen.phase === 'login' && loginScreen.tiles === 2 && loginScreen.tileVisible && loginScreen.desktopHidden && loginScreen.bootHidden,
+  JSON.stringify(loginScreen),
+);
+
+const tileClicked = await clickExpr('window.__result.userTiles[0]');
+const passwordScreen = await page.evaluate(() => {
+  const r = window.__result;
+  return {
+    phase: r.session.phase,
+    user: r.session.user ? r.session.user.name : null,
+    panelVisible: r.passwordPanel.state.display !== false,
+    tilesHidden: r.userTiles[0].state.display === false,
+    focused: window.ICEWEB.getICEFocusManager(r.ice).getFocused() === r.passwordField,
+  };
+});
+check(
+  '点用户磁贴 → 密码页（并自动聚焦输入框）',
+  tileClicked && passwordScreen.phase === 'password' && passwordScreen.panelVisible && passwordScreen.tilesHidden && passwordScreen.focused,
+  JSON.stringify(passwordScreen),
+);
+
+await page.keyboard.type('let-me-in');
+const typed = await page.evaluate(() => window.__result.passwordField.getValue());
+check('密码框真的收到了键盘输入', typed === 'let-me-in', typed);
+await page.keyboard.press('Enter');
+await page.waitForFunction(() => window.__result.session.phase === 'desktop', null, { timeout: 10000 });
+const loggedIn = await page.evaluate(() => {
+  const r = window.__result;
+  return {
+    phase: r.session.phase,
+    desktopVisible: r.desktop.state.display !== false,
+    screenHidden: r.sessionRoot.state.display === false,
+    password: r.session.password,
+    logins: r.session.logins,
+    cue: r.sound.lastCue,
+    audioReady: !!r.sound.ctx,
+  };
+});
+check(
+  '任意密码 + 回车 = 登录成功（桌面揭幕 + 开机音效）',
+  loggedIn.desktopVisible && loggedIn.screenHidden && loggedIn.password === 'let-me-in' && loggedIn.logins === 1 && loggedIn.cue === 'startup' && loggedIn.audioReady,
+  JSON.stringify(loggedIn),
+);
 
 /* ---------- 1. 布局与启动 ---------- */
 const layout = await page.evaluate(() => {
@@ -422,6 +498,92 @@ const bookmarksOpened = await page.evaluate(() => window.ICEWEB.getICEOverlayMan
 check('IE：收藏夹下拉可以打开', bookmarksOpened === true, String(bookmarksOpened));
 await page.keyboard.press('Escape');
 await page.waitForTimeout(220);
+
+/* ---------- 8. 托盘音效开关 / 注销 / 关机 / 重新开机 ---------- */
+const soundBefore = await page.evaluate(() => ({ enabled: window.__result.sound.enabled, text: window.__result.trayLabel.getText() }));
+const soundClick = await clickExpr('window.__result.traySoundToggle');
+const soundMuted = await page.evaluate(() => ({ enabled: window.__result.sound.enabled, text: window.__result.trayLabel.getText() }));
+await clickExpr('window.__result.traySoundToggle');
+const soundBack = await page.evaluate(() => ({
+  enabled: window.__result.sound.enabled,
+  text: window.__result.trayLabel.getText(),
+}));
+check(
+  '托盘喇叭：点一下静音、再点回来（图标跟着变）',
+  soundClick && soundBefore.enabled === true && soundMuted.enabled === false && /🔇/.test(soundMuted.text) && soundBack.enabled === true && /🔊/.test(soundBack.text),
+  JSON.stringify({ soundBefore, soundMuted, soundBack }),
+);
+
+// 开始菜单 → 注销 → 回登录界面
+await clickExpr('window.__result.startButton');
+const logoffClicked = await clickExpr('window.__result.handles.menuLogoff');
+await page.waitForFunction(() => window.__result.session.phase === 'login', null, { timeout: 10000 });
+const loggedOff = await page.evaluate(() => {
+  const r = window.__result;
+  return {
+    phase: r.session.phase,
+    desktopHidden: r.desktop.state.display === false,
+    screenVisible: r.sessionRoot.state.display !== false,
+    loginVisible: r.loginLayer.state.display !== false,
+    cue: r.sound.lastCue,
+    tilesBack: r.userTiles[0].state.display !== false,
+  };
+});
+check(
+  '开始菜单 → 注销：回到登录界面（含注销音效）',
+  logoffClicked && loggedOff.desktopHidden && loggedOff.screenVisible && loggedOff.loginVisible && loggedOff.tilesBack && loggedOff.cue === 'logoff',
+  JSON.stringify(loggedOff),
+);
+
+// 登录界面 → 关闭计算机 → 重新开机
+const shutClicked = await clickExpr('window.__result.shutdownEntry');
+const shutState = await page.evaluate(() => {
+  const r = window.__result;
+  return {
+    phase: r.session.phase,
+    shutVisible: r.shutLayer.state.display !== false,
+    loginHidden: r.loginLayer.state.display === false,
+    cue: r.sound.lastCue,
+  };
+});
+check(
+  '登录界面 → 关闭计算机：进入关机画面（含关机音效）',
+  shutClicked && shutState.phase === 'shutdown' && shutState.shutVisible && shutState.loginHidden && shutState.cue === 'shutdown',
+  JSON.stringify(shutState),
+);
+
+const powerClicked = await clickExpr('window.__result.powerButton');
+await page.waitForFunction(() => window.__result.session.phase === 'login', null, { timeout: 12000 });
+const poweredOn = await page.evaluate(() => ({
+  phase: window.__result.session.phase,
+  bootHidden: window.__result.bootLayer.state.display === false,
+  desktopHidden: window.__result.desktop.state.display === false,
+}));
+check(
+  '关机画面 → 重新开机：重新走一遍开机 → 登录',
+  powerClicked && poweredOn.phase === 'login' && poweredOn.bootHidden && poweredOn.desktopHidden,
+  JSON.stringify(poweredOn),
+);
+
+// 这次走「点登录按钮」而不是回车，顺便验证第二次登录
+await clickExpr('window.__result.userTiles[1]');
+const guestPicked = await page.evaluate(() => ({
+  user: window.__result.session.user ? window.__result.session.user.name : null,
+  phase: window.__result.session.phase,
+}));
+await page.evaluate(() => window.__result.passwordField.setValue('guest'));
+const loginButtonClicked = await clickExpr('window.__result.loginButton');
+await page.waitForFunction(() => window.__result.session.phase === 'desktop', null, { timeout: 10000 });
+const secondLogin = await page.evaluate(() => ({
+  logins: window.__result.session.logins,
+  user: window.__result.session.user.name,
+  desktopVisible: window.__result.desktop.state.display !== false,
+}));
+check(
+  '换用户 + 点「登录」按钮也能进（第二次登录）',
+  loginButtonClicked && guestPicked.user === '访客' && guestPicked.phase === 'password' && secondLogin.logins === 2 && secondLogin.user === '访客' && secondLogin.desktopVisible,
+  JSON.stringify({ guestPicked, secondLogin }),
+);
 
 check('无 console error / pageerror', errors.length === 0, errors.slice(0, 3).join(' | '));
 

@@ -81,6 +81,50 @@ npx serve .
 一个纯 canvas 的 XP 桌面：壁纸、桌面图标、任务栏、开始菜单、可拖动/最小化/最大化/关闭的窗口，
 外加七个能点的小程序 —— 全部用这套组件拼出来（壁纸和「画图」的笔画用的是引擎原语）。
 
+### 开机 → 登录 → 桌面（含音效）
+
+这一页现在**是开机的**。会话是个显式状态机：
+
+```
+boot ──(任意键/点击 或 2.2s)──▶ login ──(点用户磁贴)──▶ password ──(回车/登录)──▶ welcome ──▶ desktop
+                                ▲                                                             │
+                                └──────────────────(注销)─────────────────────────────────────┘
+                                                desktop ──(关闭计算机)──▶ shutdown ──(重新开机)──▶ boot
+```
+
+* **开机画面**：黑底 + 自绘的四色小旗 + `Windows xp` 字标 + 一截来回跑的进度条
+  （进度块位置由 `setInterval` 推，置 `ice.dirty = true` 触发重绘）；
+* **欢迎界面**：蓝色渐变 + 顶部亮带 + 白色/橙色分隔线（XP 的两条标志线）+ 用户磁贴，
+  磁贴 hover 有高亮底，点击进密码页；**任意账号、任意密码、甚至空密码都能进** ——
+  密码只用来演示输入链路，不做任何校验；
+* **登录音效**：开机 / 注销 / 关机 / 咔哒四种音效全是 **WebAudio 现场合成的原创音型**
+  （`OscillatorNode` + 包络，没有音频文件，也没有微软的原版素材）。浏览器不允许无手势
+  自动播放，所以 `AudioContext` 在第一次点击/回车时才创建 —— 正好就是「按任意键继续」那一下；
+* **注销 / 关机**：开始菜单底部的「注销」「关闭计算机」是真的（透明热区压在标签上），
+  注销回欢迎界面、关机进黑屏「现在可以安全地关闭计算机了」，那颗「重新开机」按钮会从
+  开机画面重来一遍；
+* **静音**：任务栏托盘里的 🔊 一键静音（图标变 🔇），开机音、注销音都归它管。
+
+```js
+// 会话状态机（示例页里的写法，省略绘制细节）
+const session = { phase: 'boot', user: null, password: '', logins: 0 };
+const pickUser = (user) => { session.user = user; setPhase('password'); focus(passwordField); };
+const doLogin = () => {
+  session.password = passwordField.getValue();   // 任意内容（含空）都放行
+  playCue('startup');                            // WebAudio 合成的开机音
+  desktop.setState({ display: true });           // 桌面在幕布后面就绪
+  fadeOut(sessionRoot, { onFinish: () => setPhase('desktop') });
+};
+```
+
+一个值得抄的实现细节：整块会话幕布（开机 / 登录 / 关机）是挂在 `ice` 上的**一个容器**，
+`raise(sessionRoot, 9800)` 把它抬到任务栏（9000）之上，登录完成就 `fadeOut` 整棵子树 ——
+引擎的**子树不透明度**让「整屏淡出」零成本，不必给每个节点单独做动画。
+
+| 开机画面 | 欢迎界面 | 密码页 |
+|---|---|---|
+| ![XP 开机](../images/xp-boot.png) | ![XP 登录](../images/xp-login.png) | ![XP 密码](../images/xp-login-password.png) |
+
 ![Windows XP 桌面](../images/xp-desktop.png)
 
 Windows 里的「IE」是真会抓网页的（下图是它 `fetch()` 本目录 `gallery.html` 后的渲染结果）：
