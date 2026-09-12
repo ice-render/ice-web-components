@@ -75,7 +75,7 @@ export class UILabel extends UIComponent {
    * ICEText 会把自身宽高自动调成实测值，而 UILabel 只是它的一层包装容器：调用方不显式给尺寸时，
    * UILabel 会停在 ICERect 的默认 10×10 —— 布局管理器（ICEFlowLayout / ICEBoxLayout 读的都是
    * 子项的 `state.width/height`）于是不为文字留空间，表现为「标题和后面的按钮叠在一起」
-   * （examples/basic.html 的标题与按钮重叠就是这么来的）。
+   * （流式布局里「标题压住后面的按钮」就是这么来的）。
    *
    * 调用方显式传了 width/height 时不覆盖，沿用引擎里「默认值 10 视为未设置」的约定。
    */

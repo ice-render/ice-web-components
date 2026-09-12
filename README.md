@@ -29,7 +29,7 @@ npm run build
 
 ## Example
 
-After building, open `examples/basic.html` with a static server.
+After building, open the pages under `examples/` with a static server.
 
 `examples/gallery.html` shows the default light theme across all current components.
 

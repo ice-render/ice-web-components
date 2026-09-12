@@ -3,7 +3,7 @@
  *
  * 背景：UILabel 只是 ICEText 的一层包装容器，调用方不显式给尺寸时会停在 ICERect 的默认 10×10；
  * 而 ICEFlowLayout / ICEBoxLayout 排布时读的是子项的 `state.width/height`，于是「标题占 10px 宽」，
- * 紧跟其后的按钮直接压在标题文字上（examples/basic.html 的实际现象）。
+ * 紧跟其后的按钮直接压在标题文字上。
  *
  * 测试环境是 node（没有真实文本度量），所以直接给内部 ICEText 塞一个尺寸来驱动这套机制。
  */
