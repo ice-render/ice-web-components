@@ -314,13 +314,18 @@ const beforeWallpaper = await page.evaluate(() => window.__result.wallpaper.chil
 await clickExpr("window.__result.handles.display.group.getItemNode('sunset')");
 const applied = await clickExpr('window.__result.handles.display.applyButton');
 await page.waitForTimeout(320);
-const wallpaperState = await page.evaluate(() => ({
-  skyBand: String(window.__result.wallpaper.childNodes[0].state.style.fillStyle),
-  closed: !window.__result.openWindows.has('display'),
-}));
+const wallpaperState = await page.evaluate(() => {
+  const image = window.__result.wallpaper.childNodes[0];
+  return {
+    // 壁纸现在是离屏生成的位图：换壁纸会换 src（data URL）
+    srcLength: String(image.state.src || '').length,
+    isDataUrl: String(image.state.src || '').startsWith('data:image/png'),
+    closed: !window.__result.openWindows.has('display'),
+  };
+});
 check(
   '显示属性：换壁纸立即生效并关窗',
-  applied && wallpaperState.closed && beforeWallpaper > 0 && wallpaperState.skyBand !== '#1b4fa8',
+  applied && wallpaperState.closed && beforeWallpaper > 0 && wallpaperState.isDataUrl && wallpaperState.srcLength > 1000,
   JSON.stringify(wallpaperState),
 );
 

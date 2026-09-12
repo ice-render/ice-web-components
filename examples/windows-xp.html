@@ -223,10 +223,50 @@
       };
 
       /* ============================ 桌面壁纸 ============================ */
+      /* ------------------------------ 壁纸（按真实 Bliss 采样数据程序化生成） ------------------------------
+       * 参考图只用来量数据（天空渐变取样、山脊每列高度、草地的明暗带），不随仓库分发：
+       * Windows XP 的 Bliss 是微软的版权照片，我们不能打包它。这里按量到的构图/配色
+       * 用 canvas 自己"画"一张，1280×960 的原图数据折算成下面的常量。
+       */
       const WALLPAPERS = {
-        bliss: { name: '蓝天绿地（经典）', sky: ['#1b4fa8', '#8fc9ff'], hill: ['#3f8c22', '#8ec63f'], cloud: '#ffffff' },
-        sunset: { name: '落日余晖', sky: ['#f2953f', '#ffe0a3'], hill: ['#5a3b1e', '#a5723a'], cloud: '#fff2d6' },
-        ocean: { name: '深海夜蓝', sky: ['#071c3d', '#2b6fb5'], hill: ['#04121f', '#0d3b5c'], cloud: '#cfe6ff' },
+        bliss: {
+          name: '蓝天绿地（经典）',
+          // 天空：顶部深蓝 → 中段 → 近地平线泛白（实测 #4680F2 / #6095F2 / #94BCF3）
+          sky: ['#3d76ec', '#6095f2', '#9cc2f5'],
+          // 山脊下方是暗绿，中间受光带亮黄绿，底部再转深（实测 #38511C / #74992B / #364C0A）
+          hill: ['#3a5320', '#74992b', '#364c0a'],
+          cloud: 'rgba(255,255,255,0.92)',
+          crest: [0.55, 0.5, 0.57, 0.645],   // 起 / 控制1 / 控制2 / 终（相对高度）
+          clouds: [
+            [0.13, 0.07, 0.085, 0.9],
+            [0.32, 0.17, 0.055, 0.7],
+            [0.74, 0.05, 0.1, 0.85],
+            [0.9, 0.15, 0.06, 0.6],
+          ],
+        },
+        sunset: {
+          name: '落日余晖',
+          sky: ['#c95a1e', '#f2953f', '#ffe6b0'],
+          hill: ['#4a3418', '#8a6a30', '#2a1c0a'],
+          cloud: 'rgba(255,236,200,0.9)',
+          crest: [0.58, 0.54, 0.6, 0.66],
+          clouds: [
+            [0.18, 0.14, 0.16, 0.55],
+            [0.62, 0.08, 0.12, 0.4],
+            [0.86, 0.2, 0.11, 0.35],
+          ],
+        },
+        ocean: {
+          name: '深海夜蓝',
+          sky: ['#0a2450', '#14487f', '#3f83b5'],
+          hill: ['#08131f', '#1c4a3a', '#040a12'],
+          cloud: 'rgba(207,230,255,0.42)',
+          crest: [0.6, 0.56, 0.62, 0.68],
+          clouds: [
+            [0.24, 0.12, 0.15, 0.3],
+            [0.7, 0.18, 0.12, 0.25],
+          ],
+        },
       };
 
       // 桌面根容器与各层都是「纯布局」：interactive:false，避免挡住内部的图标/窗口/任务栏按钮
@@ -239,63 +279,128 @@
         stroke: false,
         interactive: false,
       });
+      // 壁纸：一层可交互的容器（点它取消图标选中）+ 一张离屏生成的位图
       const wallpaper = new W.ICEWidget({ left: 0, top: 0, width: SCREEN_W, height: DESKTOP_H, fill: false, stroke: false });
+      const wallpaperImage = new ICE.ICEImage({
+        left: 0,
+        top: 0,
+        width: SCREEN_W,
+        height: DESKTOP_H,
+        src: '',
+      });
+      wallpaper.addChild(wallpaperImage, false);
       desktop.addChild(wallpaper, false);
 
-      const paintWallpaper = (presetKey) => {
+      /** 用离屏 canvas 生成壁纸（原生渐变 + 贝塞尔山脊 → 比自己铺色带平滑得多）。 */
+      const renderWallpaper = (presetKey) => {
         const preset = WALLPAPERS[presetKey] || WALLPAPERS.bliss;
-        wallpaper.removeChildren([...wallpaper.childNodes]);
-        gradient(wallpaper, 0, 0, SCREEN_W, DESKTOP_H, preset.sky[0], preset.sky[1], 24);
-        // 云：三团叠起来的小椭圆（一朵云一个组，避免大椭圆互相咬出奇怪形状）
-        const cloud = (baseLeft, baseTop, scale) => {
-          [
-            [0, 10, 36, 20],
-            [30, 0, 30, 22],
-            [58, 12, 26, 16],
-          ].forEach(([dx, dy, rx, ry]) => {
-            wallpaper.addChild(
-              new ICE.ICEEllipse({
-                left: baseLeft + dx * scale,
-                top: baseTop + dy * scale,
-                radiusX: rx * scale,
-                radiusY: ry * scale,
-                fill: true,
-                stroke: false,
-                opacity: 0.8,
-                style: { fillStyle: preset.cloud },
-              }),
-              false,
-            );
-          });
+        const canvas = document.createElement('canvas');
+        const scale = Math.max(1, dpr);
+        canvas.width = Math.round(SCREEN_W * scale);
+        canvas.height = Math.round(DESKTOP_H * scale);
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return '';
+        ctx.scale(scale, scale);
+        const W = SCREEN_W;
+        const H = DESKTOP_H;
+
+        // 1) 天空：竖向线性渐变
+        const sky = ctx.createLinearGradient(0, 0, 0, H * preset.crest[0]);
+        sky.addColorStop(0, preset.sky[0]);
+        sky.addColorStop(0.55, preset.sky[1]);
+        sky.addColorStop(1, preset.sky[2]);
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, W, H);
+
+        // 2) 云：径向渐变（软边），比椭圆拼块自然
+        preset.clouds.forEach(([cx, cy, r, alpha]) => {
+          const cxPx = cx * W;
+          const cyPx = cy * H;
+          const rPx = r * W;
+          const puff = (dx, dy, scaleR, a) => {
+            const grad = ctx.createRadialGradient(cxPx + dx * rPx, cyPx + dy * rPx * 1.6, 0, cxPx + dx * rPx, cyPx + dy * rPx * 1.6, rPx * scaleR);
+            grad.addColorStop(0, `rgba(255,255,255,${(alpha * a).toFixed(3)})`);
+            grad.addColorStop(0.55, `rgba(255,255,255,${(alpha * a * 0.7).toFixed(3)})`);
+            grad.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = grad;
+            const span = rPx * scaleR * 1.05;
+            ctx.fillRect(cxPx + dx * rPx - span, cyPx + dy * rPx * 1.6 - span, span * 2, span * 2);
+          };
+          puff(0, 0, 1, 1);
+          puff(-0.7, 0.25, 0.7, 0.85);
+          puff(0.75, 0.2, 0.75, 0.8);
+        });
+
+        // 3) 山脊：三次贝塞尔（数据来自参考图逐列测量的脊线）
+        const [c0, c1, c2, c3] = preset.crest;
+        ctx.beginPath();
+        ctx.moveTo(0, H * c0);
+        ctx.bezierCurveTo(W * 0.2, H * c1, W * 0.62, H * c2, W, H * c3);
+        ctx.lineTo(W, H);
+        ctx.lineTo(0, H);
+        ctx.closePath();
+
+        // 4) 草地：受光带 + 底部压暗
+        const grass = ctx.createLinearGradient(0, H * 0.5, 0, H);
+        grass.addColorStop(0, preset.hill[0]);
+        grass.addColorStop(0.12, preset.hill[1]);
+        grass.addColorStop(0.34, preset.hill[1]);
+        grass.addColorStop(0.72, preset.hill[2]);
+        grass.addColorStop(1, preset.hill[2]);
+        ctx.fillStyle = grass;
+        ctx.fill();
+
+        // 5) 光照：右侧更亮（参考图右半边明显更亮），用一层斜向白色柔光
+        const light = ctx.createLinearGradient(W, H * 0.45, W * 0.1, H);
+        light.addColorStop(0, 'rgba(255,255,210,0.26)');
+        light.addColorStop(0.55, 'rgba(255,255,210,0.06)');
+        light.addColorStop(1, 'rgba(0,0,0,0.16)');
+        ctx.fillStyle = light;
+        ctx.fill();
+
+        // 5.5) 草地颗粒：几百条极淡的短笔触，避免大片纯色显得像塑料
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(0, H * c0);
+        ctx.bezierCurveTo(W * 0.2, H * c1, W * 0.62, H * c2, W, H * c3);
+        ctx.lineTo(W, H);
+        ctx.lineTo(0, H);
+        ctx.closePath();
+        ctx.clip();
+        let seed = 20260912;
+        const rand = () => {
+          seed = (seed * 1103515245 + 12345) % 2147483648;
+          return seed / 2147483648;
         };
-        cloud(150, 70, 1);
-        cloud(1080, 54, 0.85);
-        // 山丘：大椭圆露出来的上半部分
-        wallpaper.addChild(
-          new ICE.ICEEllipse({
-            left: -260,
-            top: 470,
-            radiusX: 1000,
-            radiusY: 330,
-            fill: true,
-            stroke: false,
-            style: { fillStyle: preset.hill[1] },
-          }),
-          false,
-        );
-        wallpaper.addChild(
-          new ICE.ICEEllipse({
-            left: 640,
-            top: 560,
-            radiusX: 720,
-            radiusY: 260,
-            fill: true,
-            stroke: false,
-            style: { fillStyle: preset.hill[0] },
-          }),
-          false,
-        );
-        ice.dirty = true;
+        for (let i = 0; i < 2200; i += 1) {
+          const x = rand() * W;
+          const y = H * 0.52 + rand() * H * 0.48;
+          const len = 2 + rand() * 5;
+          ctx.strokeStyle = rand() > 0.5 ? 'rgba(255,255,190,0.05)' : 'rgba(20,40,10,0.06)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(x + (rand() - 0.5) * 3, y - len);
+          ctx.stroke();
+        }
+        ctx.restore();
+
+        // 6) 脊线高光：一条细的亮绿，把草地和天空的边界"点亮"
+        ctx.save();
+        ctx.strokeStyle = 'rgba(190,235,120,0.55)';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(0, H * c0);
+        ctx.bezierCurveTo(W * 0.2, H * c1, W * 0.62, H * c2, W, H * c3);
+        ctx.stroke();
+        ctx.restore();
+
+        return canvas.toDataURL('image/png');
+      };
+
+      const paintWallpaper = (presetKey) => {
+        wallpaperImage.setState({ src: renderWallpaper(presetKey) });
+        if (ice) ice.dirty = true;
       };
       paintWallpaper('bliss');
 
