@@ -241,3 +241,59 @@ function structureSignature(nodes: ICETreeNodeLike[], childrenKey: string): stri
     })
     .join(',');
 }
+
+/** 看板列（结构最小化：只要 key + cards）。 */
+export interface ICEKanbanColumnLike<T = any> {
+  key: string;
+  cards: T[];
+  [field: string]: any;
+}
+
+export interface ICEKanbanMoveResult<C> {
+  columns: C[];
+  moved: boolean;
+  /** 移动后所在的列 */
+  columnKey: string | null;
+  /** 移动后在列内的下标 */
+  index: number;
+}
+
+/**
+ * 看板卡片移动：从原列取出，插到目标列的 `index` 位置。
+ *
+ * - 卡片对象**引用不变**地搬过去（业务字段不丢）；
+ * - `index` 超界收到末尾（插到列尾 / 空列都是合法落点）；
+ * - 未知卡片 / 未知列 / 同列原位（移动前后下标相同）都返回 `moved: false` 且结构不变；
+ * - 返回新结构（浅拷贝列数组 + 新卡片数组），原结构不动。
+ */
+export function moveKanbanCard<C extends ICEKanbanColumnLike>(
+  columns: C[],
+  cardKey: string,
+  targetColumnKey: string,
+  index: number,
+): ICEKanbanMoveResult<C> {
+  const source = Array.isArray(columns) ? columns : [];
+  const unchanged = { columns: source.slice(), moved: false, columnKey: null, index: -1 };
+  const targetColumn = source.find((column) => column.key === targetColumnKey);
+  if (!targetColumn) return unchanged;
+  let fromColumn: C | null = null;
+  let fromIndex = -1;
+  source.forEach((column) => {
+    const found = (column.cards || []).findIndex((card) => card && card.key === cardKey);
+    if (found >= 0) {
+      fromColumn = column;
+      fromIndex = found;
+    }
+  });
+  if (!fromColumn || fromIndex < 0) return unchanged;
+  const targetLength = (targetColumn.cards || []).length;
+  const insertAt = Math.min(Math.max(Math.floor(Number(index) || 0), 0), fromColumn === targetColumn ? targetLength - 1 : targetLength);
+  if (fromColumn === targetColumn && fromIndex === insertAt) return unchanged;
+  const nextColumns = source.map((column) => ({ ...column, cards: (column.cards || []).slice() })) as C[];
+  const nextFrom = nextColumns.find((column) => column.key === fromColumn!.key) as C;
+  const [card] = nextFrom.cards.splice(fromIndex, 1);
+  const nextTarget = nextColumns.find((column) => column.key === targetColumnKey) as C;
+  const at = Math.min(Math.max(Math.floor(Number(index) || 0), 0), nextTarget.cards.length);
+  nextTarget.cards.splice(at, 0, card);
+  return { columns: nextColumns, moved: true, columnKey: targetColumnKey, index: at };
+}

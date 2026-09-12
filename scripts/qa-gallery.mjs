@@ -52,7 +52,9 @@ page.on('console', (m) => {
   if (m.type() === 'error') errors.push('console: ' + m.text());
 });
 await page.goto(GALLERY_URL);
-await page.waitForTimeout(1200);
+// 等页面真的挂上句柄（示例页越来越重，写死 sleep 会偶发抢跑）
+await page.waitForFunction(() => !!window.__result, null, { timeout: 20000 });
+await page.waitForTimeout(600);
 
 // 页面内小工具：世界坐标 / 节点文本
 await page.evaluate(() => {

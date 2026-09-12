@@ -89,6 +89,7 @@ export * from './components/ICESplitter';
 export * from './components/ICEWatermark';
 export * from './components/ICETileMap';
 export * from './components/ICEVirtualList';
+export * from './components/ICEKanban';
 export * from './components/ICETypography';
 export * from './components/ICEBackTop';
 export * from './components/ICEAnchor';

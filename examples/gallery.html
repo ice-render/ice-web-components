@@ -1144,7 +1144,33 @@
       let virtualList = null;
       /** 宽表句柄（QA 用它验证虚拟行 / 固定列 / 横向滚动） */
       let bigTable = null;
+      /** 看板句柄（QA 用它验证跨列拖卡片） */
+      let kanban = null;
       const sections = [
+        {
+          title: 'Kanban（卡片跨列拖拽）',
+          items: [
+            (() => {
+              kanban = new W.ICEKanban({
+                id: 'kanban',
+                left: 0,
+                top: 0,
+                width: 560,
+                height: 220,
+                columnWidth: 172,
+                cardHeight: 48,
+                // TODO: 卡片拖拽的指针跟随还没打通（见 ROADMAP 阶段 E 待办），先只做展示
+                draggable: false,
+                columns: [
+                  { key: 'todo', title: '待办', cards: [{ key: 'c1', title: '修复登录抖动' }, { key: 'c2', title: '补充埋点文档' }] },
+                  { key: 'doing', title: '进行中', cards: [{ key: 'c3', title: '审核组件 API' }] },
+                  { key: 'done', title: '已完成', cards: [] },
+                ],
+              });
+              return kanban;
+            })(),
+          ],
+        },
         {
           title: 'Big table（一万行 × 20 列：虚拟行 + 固定列 + 拖拽缩列）',
           items: [
@@ -1521,7 +1547,7 @@
       // 屏幕阅读器/键盘用户才够得着（canvas 本身对辅助技术是完全不可见的）。
       const a11yMirror = W.mountICEAccessibilityMirror(ice, { id: 'gallery-a11y-mirror' });
 
-      window.__result = { ice, panel, form, a11yMirror, nameInput, agreeBox, submitButton, submitHint, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, timePicker, timeHint, cascader, transfer, upload, carousel, avatarGroup, closableAlert, progressCircle, progressCircleDone, comment, colorPicker, colorHint, imageFill, imageContain, imageCover, breadcrumb, breadcrumbCollapsed, statistic, countdown, radioGroup, checkboxGroup, splitter, watermark, typographyTitle, typographyParagraph, typographyLink, anchorPane, anchor, backTop, calendar, imagePreview, previewTarget, tour, tourTarget, layoutSpace, layoutGrid, fab, pagedTable, crossForm, virtualList, bigTable };
+      window.__result = { ice, panel, form, a11yMirror, nameInput, agreeBox, submitButton, submitHint, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, timePicker, timeHint, cascader, transfer, upload, carousel, avatarGroup, closableAlert, progressCircle, progressCircleDone, comment, colorPicker, colorHint, imageFill, imageContain, imageCover, breadcrumb, breadcrumbCollapsed, statistic, countdown, radioGroup, checkboxGroup, splitter, watermark, typographyTitle, typographyParagraph, typographyLink, anchorPane, anchor, backTop, calendar, imagePreview, previewTarget, tour, tourTarget, layoutSpace, layoutGrid, fab, pagedTable, crossForm, virtualList, bigTable, kanban };
     </script>
   </body>
 </html>

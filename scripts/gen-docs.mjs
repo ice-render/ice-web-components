@@ -99,6 +99,7 @@ const GROUPS = [
       'ICEWatermark',
       'ICETileMap',
       'ICEVirtualList',
+      'ICEKanban',
     ],
   },
   {
@@ -155,6 +156,7 @@ const GROUPS = [
       'resolveColumnWidths',
       'computeDropTarget',
       'moveItem',
+      'moveKanbanCard',
       'mountICEAccessibilityMirror',
       'setICELocale',
       'getICELocale',

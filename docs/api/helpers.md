@@ -80,6 +80,14 @@ computeDropTarget(options: ICEDropTargetOptions): ICEDropTarget | null
 moveItem(items: T[], from: number, target: ICEDropTarget): ICEMoveResult<T>
 ```
 
+### `moveKanbanCard` — 函数
+
+看板卡片移动：从原列取出，插到目标列的 `index` 位置。
+
+```ts
+moveKanbanCard(columns: C[], cardKey: string, targetColumnKey: string, index: number): ICEKanbanMoveResult<C>
+```
+
 ### `mountICEAccessibilityMirror` — 函数
 
 ```ts

@@ -745,3 +745,37 @@
 | `setItems(items: any[])` | `this` |  |
 | `setScrollTop(scrollTop: number)` | `this` |  |
 | `scrollToIndex(index: number)` | `this` | 把某一条滚进视口（贴顶对齐），下标会被夹进合法范围。 |
+
+## `ICEKanban`
+
+看板：列 + 卡片，卡片可以**跨列拖拽**（CRM / 项目管理最常见的那块界面）。  结构很直白： ``` ICEKanban   ├── column[todo]   ← 列标题 + 卡片（等距竖排）   ├── column[doing]   └── column[done] ```  拖拽的「落点」复用列表那套：列由指针的 **x** 决定，列内插入位置由 **y** 决定 （`computeDropTarget` 的上下半格语义），真正的数据搬运交给纯函数 `moveKanbanCard`。
+
+源码：[`src/components/ICEKanban.ts`](../../src/components/ICEKanban.ts)
+
+**构造参数** `ICEKanbanOptions`
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `id?` | `string` | 组件 id（引擎用它做唯一标识；e2e/调试时可按 id 定位） |
+| `left?` | `number` | 相对父容器的左边距 |
+| `top?` | `number` | 相对父容器的上边距 |
+| `width?` | `number` | 宽度（不传用组件默认值） |
+| `height?` | `number` | 高度（不传用组件默认值） |
+| `columns` | `ICEKanbanColumn[]` | 列定义 |
+| `columnWidth?` | `number` |  |
+| `cardHeight?` | `number` |  |
+| `gap?` | `number` |  |
+| `draggable?` | `boolean` |  |
+| `onCardMove?` | `(info: { cardKey: string; columnKey: string; index: number; columns: ICEKanbanColumn[] }) => void` |  |
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getColumns()` | `ICEKanbanColumn[]` |  |
+| `getCardNode(key: string)` | `ICEWidget \| null` |  |
+| `getColumnNode(key: string)` | `ICEWidget \| null` |  |
+| `isDraggable()` | `boolean` |  |
+| `isDragging()` | `boolean` |  |
+| `getDropTarget()` | `ICEKanbanDropTarget \| null` |  |
+| `moveCard(cardKey: string, columnKey: string, index: number)` | `boolean` | 把卡片移到目标列的指定位置；真的动了才返回 true（判定见纯函数 `moveKanbanCard`）。 |

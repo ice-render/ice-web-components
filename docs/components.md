@@ -62,6 +62,7 @@
 |  | [`ICEWatermark`](./api/data-display.md#icewatermark) | 水印（业界组件库 Watermark）：把一段旋转文字平铺在自己的区域上。 |
 |  | [`ICETileMap`](./api/data-display.md#icetilemap) | 单个格子的绘制样式。 |
 |  | [`ICEVirtualList`](./api/data-display.md#icevirtuallist) | 当前该渲染的区间：`[start, end)`。 |
+|  | [`ICEKanban`](./api/data-display.md#icekanban) | 看板：列 + 卡片，卡片可以**跨列拖拽**（CRM / 项目管理最常见的那块界面）。  结构很直白： ``` ICEKanban   ├── column[todo]   ← 列标题 + 卡片（等距竖排）   ├── column[doing]   └── column[done] ```  拖拽的「落点」复用列表那套：列由指针的 **x** 决定，列内插入位置由 **y** 决定 （`computeDropTarget` 的上下半格语义），真正的数据搬运交给纯函数 `moveKanbanCard`。 |
 | [反馈与状态](./api/feedback.md) | [`ICEAlert`](./api/feedback.md#icealert) | 提示条：info / success / warning / error 四种状态 + 类型图标，可关闭。 |
 |  | [`ICEModal`](./api/feedback.md#icemodal) | 模态对话框：全屏遮罩 + 居中面板 + 焦点陷阱。 |
 |  | [`ICEDrawer`](./api/feedback.md#icedrawer) | 抽屉：从屏幕某一边滑入的面板（带遮罩与焦点陷阱）。  与 ICEModal 同源（遮罩 + 焦点范围 + 关闭途径），差别只在： |
