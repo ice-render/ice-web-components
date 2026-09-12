@@ -440,6 +440,22 @@
         onChange: (value) => datePickerHint.setText('已选：' + value),
       });
 
+      const timeHint = new W.UILabel({
+        left: 1240,
+        top: 1462,
+        text: '未选择时间',
+        style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+      });
+      const timePicker = new W.UITimePicker({
+        id: 'time-picker',
+        left: 1060,
+        top: 1454,
+        width: 160,
+        placeholder: '选择时间…',
+        value: '09:30:00',
+        onChange: (value) => timeHint.setText('已选：' + value),
+      });
+
       // 评论区（含嵌套回复与操作）
       const comment = new W.UIComment({
         id: 'comment',
@@ -616,6 +632,8 @@
         treeSelectHint,
         datePicker,
         datePickerHint,
+        timePicker,
+        timeHint,
         heading('Feedback & status', 32, 1500),
         spin,
         rate,
@@ -700,7 +718,7 @@
       });
 
       ice.addChild(panel);
-      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, comment, colorPicker, colorHint, imageFill, imageContain, imageCover };
+      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, timePicker, timeHint, comment, colorPicker, colorHint, imageFill, imageContain, imageCover };
     </script>
   </body>
 </html>

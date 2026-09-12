@@ -89,7 +89,7 @@
 | 数据录入 | Checkbox | ✅ `UICheckBox`（部分：无 Group / 不确定态） |
 | 数据录入 | ColorPicker | ✅ `UIColorPicker`（色板网格 + 选中环 + 键盘导航；无取色轮/透明度） |
 | 数据录入 | DatePicker | ✅ `UIDatePicker`（日历浮层，周一开头） |
-| 数据录入 | TimePicker | ⬜ 阶段 D |
+| 数据录入 | TimePicker | ✅ `UITimePicker`（时/分/秒滚动列 + 步进 + HH:mm 两列模式；无 12 小时制/范围选择） |
 | 数据录入 | Form | ⬜ 阶段 A4 + C |
 | 数据录入 | Input | ✅ `UITextField`（部分：无多行 / 密码 / 前后缀 / 清空） |
 | 数据录入 | InputNumber | ✅ `UIInputNumber`（步进 + 键盘 + 精度） |
