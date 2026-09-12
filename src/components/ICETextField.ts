@@ -151,6 +151,9 @@ export class ICETextField extends ICEWidget {
     if (!evt || typeof evt.offsetX !== 'number' || typeof evt.offsetY !== 'number') {
       return false;
     }
+    if (!this.ice || typeof this.ice.screenToWorld !== 'function') {
+      return false;
+    }
     const [wx, wy] = this.ice.screenToWorld(evt.offsetX, evt.offsetY);
     const box = this.getMinBoundingBox(true);
     return wx >= box.tl[0] && wx <= box.br[0] && wy >= box.tl[1] && wy <= box.br[1];

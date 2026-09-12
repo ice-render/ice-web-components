@@ -6,6 +6,8 @@ import { iceUIManager } from '../core/ICEManager';
 export class ICETabs extends ICEContainer {
   private buttons: ICEButton[] = [];
   private activeIndex = 0;
+  private tabs: string[] = [];
+  private onChangeCallback: ((index: number, tab: string) => void) | null = null;
 
   constructor(props: any = {}) {
     const theme = iceUIManager.getTheme();
@@ -17,6 +19,8 @@ export class ICETabs extends ICEContainer {
     });
     this.setLayout(new ICEFlowLayout({ gap: 8, align: 'left' }));
     const tabs: string[] = props.tabs || [];
+    this.tabs = tabs.slice();
+    this.onChangeCallback = typeof props.onChange === 'function' ? props.onChange : null;
     const gap = 8;
     const totalGap = Math.max(0, tabs.length - 1) * gap;
     const autoWidth = props.width ? (props.width - totalGap) / Math.max(1, tabs.length) : 90;
@@ -31,8 +35,9 @@ export class ICETabs extends ICEContainer {
       this.addChild(button, false);
     });
     this.buttons.forEach((button, index) => {
-      button.on('mousedown', () => this.setActiveIndex(index), this);
+      button.on('mousedown', () => this.__activate(index), this);
     });
+    this.setActiveIndex(0);
     this.doLayout();
   }
 
@@ -41,6 +46,23 @@ export class ICETabs extends ICEContainer {
   }
 
   public setActiveIndex(index: number): this {
+    return this.__applyActive(index);
+  }
+
+  public getTabs(): string[] {
+    return this.tabs.slice();
+  }
+
+  /** 用户点击切页（`setActiveIndex` 是程序式设置，不触发 onChange）。 */
+  private __activate(index: number): void {
+    const changed = index !== this.activeIndex;
+    this.__applyActive(index);
+    if (changed && this.onChangeCallback) {
+      this.onChangeCallback(index, this.tabs[index]);
+    }
+  }
+
+  private __applyActive(index: number): this {
     if (index < 0 || index >= this.buttons.length) {
       return this;
     }

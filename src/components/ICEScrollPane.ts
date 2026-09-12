@@ -210,6 +210,9 @@ export class ICEScrollPane extends ICEContainer {
     if (!evt || typeof evt.offsetX !== 'number' || typeof evt.offsetY !== 'number') {
       return;
     }
+    if (!this.ice || typeof this.ice.screenToWorld !== 'function') {
+      return;
+    }
     const raw: any = evt.originalEvent || evt;
     const deltaY = Number(raw && raw.deltaY) || 0;
     if (!deltaY) {

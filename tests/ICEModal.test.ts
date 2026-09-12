@@ -172,4 +172,15 @@ describe('ICEModal', () => {
     expect(modal.isOpen()).toBe(true);
     modal.close();
   });
+
+  it('closeOnConfirm:false 时确定后不自动关闭（留给异步校验收尾）', () => {
+    const calls: string[] = [];
+    const { modal } = setup({ closeOnConfirm: false, onConfirm: () => calls.push('confirm') });
+    modal.open();
+    modal.getConfirmButton()!.trigger('click', null, {});
+    expect(calls).toEqual(['confirm']);
+    expect(modal.isOpen()).toBe(true); // 弹窗留在原地，等调用方校验完再关
+    modal.close();
+    expect(modal.isOpen()).toBe(false);
+  });
 });

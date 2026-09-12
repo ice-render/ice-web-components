@@ -143,6 +143,9 @@ export class ICEMenu extends ICEContainer {
     if (!evt || typeof evt.offsetX !== 'number' || typeof evt.offsetY !== 'number') {
       return;
     }
+    if (!this.ice || typeof this.ice.screenToWorld !== 'function') {
+      return;
+    }
     const [wx, wy] = this.ice.screenToWorld(evt.offsetX, evt.offsetY);
     const box = this.getMinBoundingBox(true);
     if (wx < box.tl[0] || wx > box.br[0] || wy < box.tl[1] || wy > box.br[1]) {

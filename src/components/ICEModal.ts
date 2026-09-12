@@ -27,6 +27,13 @@ export interface ICEModalOptions {
   confirmText?: string;
   cancelText?: string;
   showFooter?: boolean;
+  /**
+   * `onConfirm` 之后是否自动关闭（默认 true）。
+   *
+   * 异步场景（提交前要跑异步校验 / 等接口）传 `false`：回调里自己做异步操作，
+   * 成功后再调 `modal.close()`，失败时弹窗留在原地展示错误。
+   */
+  closeOnConfirm?: boolean;
   maskClosable?: boolean;
   closeOnEsc?: boolean;
   confirmLoading?: boolean;
@@ -254,7 +261,10 @@ export class ICEModal {
         if (this.options.onConfirm) {
           this.options.onConfirm();
         }
-        this.close('confirm');
+        // closeOnConfirm:false 时把关闭时机交给调用方（异步校验通过后再关）
+        if (this.options.closeOnConfirm !== false) {
+          this.close('confirm');
+        }
       });
       dialog.addChild(cancelButton, false);
       dialog.addChild(confirmButton, false);

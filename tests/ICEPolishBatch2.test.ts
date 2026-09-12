@@ -5,6 +5,7 @@ import { ICECard } from '../src/components/ICECard';
 import { ICEAlert } from '../src/components/ICEAlert';
 import { ICEBadge } from '../src/components/ICEBadge';
 import { ICELabel } from '../src/components/ICELabel';
+import { ICETabs } from '../src/components/ICETabs';
 
 describe('ICECard extra 插槽', () => {
   it('工厂形式：节点创建在卡片之后（zIndex 高于卡片），右对齐到内边距', () => {
@@ -69,5 +70,23 @@ describe('ICEBadge 计数封顶', () => {
   it('text 仍优先于 count；红点模式没有文字', () => {
     expect(new ICEBadge({ text: 'new', count: 9 }).getText()).toBe('new');
     expect(new ICEBadge({ dot: true, count: 9 }).getText()).toBe('');
+  });
+});
+
+describe('ICETabs onChange', () => {
+  it('点击 Tab 触发 onChange；程序式 setActiveIndex 不触发', () => {
+    const seen: Array<[number, string]> = [];
+    const tabs = new ICETabs({
+      tabs: ['Overview', 'Activity', 'Settings'],
+      width: 380,
+      height: 40,
+      onChange: (index: number, tab: string) => seen.push([index, tab]),
+    });
+    expect(tabs.getTabs()).toEqual(['Overview', 'Activity', 'Settings']);
+    expect(tabs.getActiveIndex()).toBe(0);
+
+    tabs.setActiveIndex(2);
+    expect(tabs.getActiveIndex()).toBe(2);
+    expect(seen).toEqual([]);
   });
 });

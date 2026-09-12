@@ -177,6 +177,10 @@ export class ICETable extends ICEWidget {
     if (!evt || typeof evt.offsetX !== 'number' || typeof evt.offsetY !== 'number') {
       return;
     }
+    // 组件可能已经从场景里摘掉（ice 被置空），此时全局事件不该再处理
+    if (!this.ice || typeof this.ice.screenToWorld !== 'function') {
+      return;
+    }
     const [wx, wy] = this.ice.screenToWorld(evt.offsetX, evt.offsetY);
     const box = this.getMinBoundingBox(true);
     if (wx < box.tl[0] || wx > box.br[0] || wy < box.tl[1] || wy > box.br[1]) {
