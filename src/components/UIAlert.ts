@@ -32,27 +32,32 @@ export class UIAlert extends UIComponent {
     });
 
     this.type = type;
+    const textWidth = Math.max(0, width - theme.spacing.md * 2);
     this.titleNode = createTextNode({
       left: theme.spacing.md,
       top: theme.spacing.xs,
+      width: textWidth,
+      height: 20,
       text: props.title || '',
       fillStyle: colors.text,
       fontFamily: theme.font.family,
       fontSize: theme.font.size,
       fontWeight: theme.font.weightSemibold,
       align: 'left',
-      verticalAlign: 'top',
+      verticalAlign: 'middle',
     });
     this.messageNode = createTextNode({
       left: theme.spacing.md,
-      top: theme.spacing.lg,
+      top: theme.spacing.md + 16,
+      width: textWidth,
+      height: 18,
       text: props.message || '',
       fillStyle: theme.colors.textSecondary,
       fontFamily: theme.font.family,
       fontSize: theme.font.sizeSmall,
       fontWeight: theme.font.weightNormal,
       align: 'left',
-      verticalAlign: 'top',
+      verticalAlign: 'middle',
     });
     this.addChild(this.titleNode, false);
     this.addChild(this.messageNode, false);

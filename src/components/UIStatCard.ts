@@ -26,11 +26,17 @@ export class UIStatCard extends UIPanel {
     const trendType = props.trendType || 'success';
     const trend = props.trend === undefined ? '' : String(props.trend);
 
+    // 图标盒与文字块在卡片内垂直居中对齐
+    const blockHeight = 72; // 标题18 + 间距 + 数值30 + 间距 + 趋势18
+    const textTop = Math.round((height - blockHeight) / 2);
+    const iconSize = 36;
+    const iconTop = Math.round((height - iconSize) / 2);
+
     const iconBox = new ICERect({
       left: theme.spacing.md,
-      top: theme.spacing.md,
-      width: 36,
-      height: 36,
+      top: iconTop,
+      width: iconSize,
+      height: iconSize,
       radius: theme.radius.md,
       style: {
         fillStyle: iconBg,
@@ -40,9 +46,9 @@ export class UIStatCard extends UIPanel {
     });
     this.iconNode = createTextNode({
       left: theme.spacing.md,
-      top: theme.spacing.md,
-      width: 36,
-      height: 36,
+      top: iconTop,
+      width: iconSize,
+      height: iconSize,
       text: props.icon || '●',
       fillStyle: iconColor,
       fontFamily: theme.font.family,
@@ -52,39 +58,47 @@ export class UIStatCard extends UIPanel {
       verticalAlign: 'middle',
     });
 
+    const textLeft = theme.spacing.md + iconSize + theme.spacing.sm; // 图标右侧 + 间距
+    const textWidth = Math.max(0, width - textLeft - theme.spacing.sm);
+
     this.titleNode = createTextNode({
-      left: theme.spacing.md,
-      top: 58,
+      left: textLeft,
+      top: textTop,
+      width: textWidth,
+      height: 18,
       text: props.title || '',
       fillStyle: theme.colors.textSecondary,
       fontFamily: theme.font.family,
       fontSize: theme.font.sizeSmall,
       fontWeight: theme.font.weightNormal,
       align: 'left',
-      verticalAlign: 'top',
+      verticalAlign: 'middle',
     });
     this.valueNode = createTextNode({
-      left: theme.spacing.md,
-      top: 28,
+      left: textLeft,
+      top: textTop + 22,
+      width: textWidth,
+      height: 30,
       text: String(props.value ?? '0'),
       fillStyle: theme.colors.text,
       fontFamily: theme.font.family,
       fontSize: 24,
       fontWeight: theme.font.weightSemibold,
       align: 'left',
-      verticalAlign: 'top',
+      verticalAlign: 'middle',
     });
     this.trendNode = createTextNode({
-      left: width - 74,
-      top: 60,
-      width: 58,
+      left: textLeft,
+      top: textTop + 54,
+      width: textWidth,
+      height: 18,
       text: trend,
       fillStyle: getStatusColors(theme, trendType).text,
       fontFamily: theme.font.family,
       fontSize: theme.font.sizeSmall,
       fontWeight: theme.font.weightSemibold,
-      align: 'right',
-      verticalAlign: 'top',
+      align: 'left',
+      verticalAlign: 'middle',
     });
 
     this.addChild(iconBox, false);

@@ -1,12 +1,19 @@
 import { UIComponent } from '../core/UIComponent';
 import { uiManager } from '../core/UIManager';
 import { createTextNode } from '../util/UIStyle';
+import { ICERect } from 'ice-render';
 
 export type UITableColumn = {
   key: string;
   title: string;
   width?: number;
   align?: 'left' | 'center' | 'right';
+  renderCell?: (
+    value: string,
+    row: UITableRow,
+    column: UITableColumn,
+    meta: { cellWidth: number; cellHeight: number; align: 'left' | 'center' | 'right' },
+  ) => any | null;
 };
 
 export type UITableRow = Record<string, any>;
@@ -119,6 +126,16 @@ export class UITable extends UIComponent {
     });
     this.addChild(header, false);
     this.__placeCells(header, widths, this.columns.map((column) => column.title), true);
+    const divider = new ICERect({
+      left: 0,
+      top: this.headerHeight - 1,
+      width: totalWidth,
+      height: 1,
+      fill: true,
+      stroke: false,
+      style: { fillStyle: theme.colors.border },
+    });
+    header.addChild(divider, false);
 
     this.rowPanels = [];
     this.data.forEach((row, rowIndex) => {
@@ -136,7 +153,7 @@ export class UITable extends UIComponent {
       this.addChild(panel, false);
       this.rowPanels.push(panel);
       const values = this.columns.map((column) => this.__format(row[column.key]));
-      this.__placeCells(panel, widths, values, false, this.columns);
+      this.__placeCells(panel, widths, values, false, this.columns, row);
     });
     this.__syncSelection();
     this.revalidate();
@@ -148,15 +165,47 @@ export class UITable extends UIComponent {
     values: string[],
     header: boolean,
     columns?: UITableColumn[],
+    row?: UITableRow,
   ): void {
     const theme = uiManager.getTheme();
+    const padX = theme.spacing.sm;
     let left = 0;
     values.forEach((value, index) => {
-      const align = columns ? columns[index].align || 'left' : 'left';
+      const column = columns ? columns[index] : undefined;
+      const align = column ? column.align || 'left' : 'left';
+      const colW = widths[index];
+
+      if (column && typeof column.renderCell === 'function' && row) {
+        const node = column.renderCell(value, row, column, {
+          cellWidth: colW,
+          cellHeight: header ? this.headerHeight : this.rowHeight,
+          align,
+        });
+        if (node) {
+          // 渲染节点是 row panel 的子节点，其 left/top 是相对 panel 坐标；
+          // 需把节点平移到当前单元格内（左侧累加值 left 即单元格在 panel 中的起点）。
+          node.setState({ left: (node.state.left || 0) + left });
+          parent.addChild(node, false);
+          left += colW;
+          return;
+        }
+      }
+
+      let nodeLeft = left;
+      let nodeWidth = colW;
+      if (align === 'left') {
+        nodeLeft = left + padX;
+        nodeWidth = colW - padX;
+      } else if (align === 'right') {
+        nodeWidth = colW - padX;
+      } else if (align === 'center') {
+        nodeLeft = left + padX / 2;
+        nodeWidth = colW - padX;
+      }
       const node = createTextNode({
-        left,
+        left: nodeLeft,
         top: 0,
-        width: widths[index],
+        width: Math.max(0, nodeWidth),
         height: header ? this.headerHeight : this.rowHeight,
         text: value,
         fillStyle: header ? theme.colors.textSecondary : theme.colors.text,
@@ -167,7 +216,7 @@ export class UITable extends UIComponent {
         verticalAlign: 'middle',
       });
       parent.addChild(node, false);
-      left += widths[index];
+      left += colW;
     });
   }
 

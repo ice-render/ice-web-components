@@ -38,6 +38,7 @@
         style: { fillStyle: '#f5f5f5', strokeStyle: theme.colors.border, shadow: 'lg' },
       });
 
+      /* ---------- Sidebar ---------- */
       const sidebar = new W.UIPanel({
         id: 'sidebar',
         left: 0,
@@ -50,14 +51,14 @@
 
       const brand = new W.UILabel({
         left: 28,
-        top: 30,
+        top: 28,
         text: 'ICE Admin',
         style: { fontSize: 22, fontWeight: '700', fillStyle: theme.colors.primary },
       });
 
       const menu = new W.UIMenu({
         left: 16,
-        top: 86,
+        top: 84,
         width: 232,
         items: [
           { key: 'dashboard', label: 'Dashboard', icon: '◧' },
@@ -70,6 +71,22 @@
         style: { fillStyle: '#ffffff' },
       });
 
+      const sidebarFooterSep = new W.UISeparator({ left: 16, top: 860, width: 232, height: 1 });
+      const sidebarAvatar = new W.UIAvatar({ left: 16, top: 880, text: 'FM', size: 40 });
+      const sidebarName = new W.UILabel({
+        left: 64,
+        top: 884,
+        text: 'Felix Morgan',
+        style: { fontSize: 14, fontWeight: '600', fillStyle: theme.colors.text },
+      });
+      const sidebarRole = new W.UILabel({
+        left: 64,
+        top: 904,
+        text: 'Administrator',
+        style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+      });
+
+      /* ---------- Header ---------- */
       const header = new W.UIPanel({
         id: 'header',
         left: 264,
@@ -80,22 +97,18 @@
         style: { fillStyle: '#ffffff', strokeStyle: theme.colors.border },
       });
 
-      const search = new W.UITextField({
-        id: 'search',
-        left: 28,
-        top: 16,
-        width: 300,
-        placeholder: 'Search orders, customers...',
+      const hamburger = new W.UIIcon({ left: 24, top: 20, size: 24, icon: '☰', color: theme.colors.textSecondary });
+      const pageTitle = new W.UILabel({
+        left: 58,
+        top: 22,
+        text: 'Dashboard',
+        style: { fontSize: 18, fontWeight: '600', fillStyle: theme.colors.text },
       });
+      const search = new W.UITextField({ id: 'search', left: 340, top: 16, width: 260, placeholder: 'Search orders, customers...' });
+      const headerSep = new W.UISeparator({ left: 1188, top: 16, width: 1, height: 32 });
+      const headerAvatar = new W.UIAvatar({ id: 'header-avatar', left: 1208, top: 12, text: 'FM', size: 40 });
 
-      const avatar = new W.UIAvatar({
-        id: 'header-avatar',
-        left: 1172,
-        top: 12,
-        text: 'P',
-        size: 40,
-      });
-
+      /* ---------- Content ---------- */
       const content = new W.UIPanel({
         id: 'content',
         left: 264,
@@ -106,33 +119,61 @@
         style: { fillStyle: '#f5f5f5', strokeStyle: 'rgba(0,0,0,0)' },
       });
 
+      const overviewTitle = new W.UILabel({
+        left: 28,
+        top: 24,
+        text: 'Overview',
+        style: { fontSize: 16, fontWeight: '600', fillStyle: theme.colors.text },
+      });
+
       const stats = [
-        new W.UIStatCard({ left: 28, top: 28, width: 280, height: 128, icon: '◧', title: 'Total Revenue', value: '$128,400', trend: '+12.4%', trendType: 'success' }),
-        new W.UIStatCard({ left: 332, top: 28, width: 280, height: 128, icon: '▤', title: 'New Orders', value: '2,318', trend: '+8.1%', trendType: 'success' }),
-        new W.UIStatCard({ left: 636, top: 28, width: 280, height: 128, icon: '◉', title: 'Active Users', value: '18,204', trend: '-2.7%', trendType: 'warning' }),
-        new W.UIStatCard({ left: 940, top: 28, width: 280, height: 128, icon: '⌁', title: 'Conversion', value: '6.42%', trend: '+1.9%', trendType: 'success' }),
+        new W.UIStatCard({ left: 28, top: 56, width: 224, height: 128, icon: '◧', title: 'Total Revenue', value: '$128,400', trend: '+12.4%', trendType: 'success' }),
+        new W.UIStatCard({ left: 268, top: 56, width: 224, height: 128, icon: '▤', title: 'New Orders', value: '2,318', trend: '+8.1%', trendType: 'success' }),
+        new W.UIStatCard({ left: 508, top: 56, width: 224, height: 128, icon: '◉', title: 'Active Users', value: '18,204', trend: '-2.7%', trendType: 'warning' }),
+        new W.UIStatCard({ left: 748, top: 56, width: 224, height: 128, icon: '⌁', title: 'Conversion', value: '6.42%', trend: '+1.9%', trendType: 'success' }),
       ];
+
+      const ordersTitle = new W.UILabel({
+        left: 28,
+        top: 200,
+        text: 'Recent Orders',
+        style: { fontSize: 16, fontWeight: '600', fillStyle: theme.colors.text },
+      });
 
       const alert = new W.UIAlert({
         left: 28,
-        top: 180,
-        width: 1180,
+        top: 232,
+        width: 944,
         height: 64,
         type: 'info',
         title: 'Sales campaign is running',
         message: 'The spring campaign will end in 3 days. Review the latest performance now.',
       });
 
+      const statusMap = { Paid: 'success', Pending: 'warning', Shipped: 'info', Refunded: 'error' };
       const table = new W.UITable({
         left: 28,
-        top: 268,
-        width: 1180,
+        top: 312,
+        width: 944,
         columns: [
-          { key: 'order', title: 'Order', width: 160 },
-          { key: 'customer', title: 'Customer', width: 300 },
-          { key: 'date', title: 'Date', width: 200 },
-          { key: 'amount', title: 'Amount', width: 180, align: 'right' },
-          { key: 'status', title: 'Status', width: 340 },
+          { key: 'order', title: 'Order', width: 150 },
+          { key: 'customer', title: 'Customer', width: 280 },
+          { key: 'date', title: 'Date', width: 160 },
+          { key: 'amount', title: 'Amount', width: 150, align: 'right' },
+          {
+            key: 'status',
+            title: 'Status',
+            width: 204,
+            renderCell: (value, row, column, meta) =>
+              new W.UIBadge({
+                left: 12,
+                top: Math.round((meta.cellHeight - 22) / 2),
+                width: 86,
+                height: 22,
+                text: value,
+                status: statusMap[value] || 'default',
+              }),
+          },
         ],
         data: [
           { order: '#10321', customer: 'Ava Thompson', date: '2026-09-10', amount: '$1,240.00', status: 'Paid' },
@@ -144,18 +185,128 @@
         ],
       });
 
-      const progress = new W.UIProgressBar({
-        left: 1260,
-        top: 300,
-        value: 72,
-        width: 220,
-        height: 10,
+      const tableCaption = new W.UILabel({
+        left: 28,
+        top: 600,
+        text: 'Showing 1–6 of 2,318 orders',
+        style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
       });
-      const toggle = new W.UISwitch({ left: 1260, top: 360, width: 52, height: 26, selected: true });
 
-      sidebar.addChildren([brand, menu]);
-      header.addChildren([search, avatar]);
-      content.addChildren([...stats, alert, table, progress, toggle]);
+      /* ---------- Revenue by Channel (main column bottom) ---------- */
+      const channelCard = new W.UICard({
+        left: 28,
+        top: 632,
+        width: 944,
+        height: 208,
+        title: 'Revenue by Channel',
+        style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border, shadow: 'md' },
+      });
+      const channelRows = [
+        { label: 'Direct', value: 82 },
+        { label: 'Referral', value: 64 },
+        { label: 'Social', value: 47 },
+        { label: 'Email', value: 33 },
+      ];
+      const channelNodes = [];
+      channelRows.forEach((row, i) => {
+        const barTop = 52 + i * 40;
+        channelNodes.push(
+          new W.UILabel({
+            left: 16,
+            top: barTop,
+            height: 10,
+            verticalAlign: 'middle',
+            text: row.label,
+            style: { fontSize: 13, fillStyle: theme.colors.textSecondary },
+          }),
+        );
+        channelNodes.push(new W.UIProgressBar({ left: 140, top: barTop, width: 756, value: row.value, height: 10 }));
+      });
+
+      /* ---------- Right column ---------- */
+      const statusCard = new W.UICard({
+        left: 1004,
+        top: 56,
+        width: 256,
+        height: 256,
+        title: 'System Status',
+        style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border, shadow: 'md' },
+      });
+      const cpuLabel = new W.UILabel({ left: 16, top: 48, height: 10, verticalAlign: 'middle', text: 'CPU Load', style: { fontSize: 13, fillStyle: theme.colors.textSecondary } });
+      const cpuBar = new W.UIProgressBar({ left: 16, top: 48, width: 224, value: 72, height: 10 });
+      const memLabel = new W.UILabel({ left: 16, top: 88, height: 10, verticalAlign: 'middle', text: 'Memory', style: { fontSize: 13, fillStyle: theme.colors.textSecondary } });
+      const memBar = new W.UIProgressBar({ left: 16, top: 88, width: 224, value: 54, height: 10 });
+      const diskLabel = new W.UILabel({ left: 16, top: 128, height: 10, verticalAlign: 'middle', text: 'Disk', style: { fontSize: 13, fillStyle: theme.colors.textSecondary } });
+      const diskBar = new W.UIProgressBar({ left: 16, top: 128, width: 224, value: 38, height: 10 });
+      const statusSep = new W.UISeparator({ left: 16, top: 164, width: 224, height: 1 });
+      const emailLabel = new W.UILabel({ left: 16, top: 178, height: 22, verticalAlign: 'middle', text: 'Email notifications', style: { fontSize: 13, fillStyle: theme.colors.textSecondary } });
+      const emailSwitch = new W.UISwitch({ left: 188, top: 178, width: 44, height: 22, selected: true });
+      const pushLabel = new W.UILabel({ left: 16, top: 214, height: 22, verticalAlign: 'middle', text: 'Push notifications', style: { fontSize: 13, fillStyle: theme.colors.textSecondary } });
+      const pushSwitch = new W.UISwitch({ left: 188, top: 214, width: 44, height: 22, selected: false });
+
+      const actionsCard = new W.UICard({
+        left: 1004,
+        top: 328,
+        width: 256,
+        height: 150,
+        title: 'Quick Actions',
+        style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border, shadow: 'md' },
+      });
+      const newOrderBtn = new W.UIButton({ left: 16, top: 56, width: 224, height: 36, text: 'New Order', variant: 'primary' });
+      const exportBtn = new W.UIButton({ left: 16, top: 100, width: 224, height: 36, text: 'Export Report', variant: 'default' });
+
+      const teamCard = new W.UICard({
+        left: 1004,
+        top: 494,
+        width: 256,
+        height: 320,
+        title: 'Team',
+        style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border, shadow: 'md' },
+      });
+      const teamMembers = [
+        { initials: 'AT', name: 'Ava Thompson', role: 'Admin' },
+        { initials: 'LC', name: 'Liam Chen', role: 'Editor' },
+        { initials: 'MR', name: 'Mia Rodriguez', role: 'Viewer' },
+        { initials: 'NW', name: 'Noah Wilson', role: 'Viewer' },
+        { initials: 'EB', name: 'Emma Brown', role: 'Viewer' },
+      ];
+      const teamNodes = [];
+      teamMembers.forEach((m, i) => {
+        const top = 48 + i * 48;
+        teamNodes.push(new W.UIAvatar({ left: 16, top, text: m.initials, size: 32 }));
+        teamNodes.push(
+          new W.UILabel({ left: 56, top, height: 16, verticalAlign: 'middle', text: m.name, style: { fontSize: 13, fontWeight: '600', fillStyle: theme.colors.text } }),
+        );
+        teamNodes.push(
+          new W.UILabel({ left: 56, top: top + 16, height: 16, verticalAlign: 'middle', text: m.role, style: { fontSize: 12, fillStyle: theme.colors.textSecondary } }),
+        );
+        if (i < teamMembers.length - 1) {
+          teamNodes.push(new W.UISeparator({ left: 16, top: top + 40, width: 224, height: 1 }));
+        }
+      });
+      const teamViewAll = new W.UILabel({
+        left: 16,
+        top: 48 + teamMembers.length * 48 + 4,
+        text: 'View all members',
+        style: { fontSize: 12, fontWeight: '600', fillStyle: theme.colors.primary },
+      });
+      teamNodes.push(teamViewAll);
+
+      const footer = new W.UILabel({
+        left: 28,
+        top: 856,
+        text: 'ICE Admin · Canvas-native UI demo — v0.0.1',
+        style: { fontSize: 12, fillStyle: theme.colors.textTertiary },
+      });
+
+      sidebar.addChildren([brand, menu, sidebarFooterSep, sidebarAvatar, sidebarName, sidebarRole]);
+      header.addChildren([hamburger, pageTitle, search, headerSep, headerAvatar]);
+      content.addChildren([overviewTitle, ...stats, ordersTitle, alert, table, tableCaption]);
+      channelCard.addChildren(channelNodes);
+      statusCard.addChildren([cpuLabel, cpuBar, memLabel, memBar, diskLabel, diskBar, statusSep, emailLabel, emailSwitch, pushLabel, pushSwitch]);
+      actionsCard.addChildren([newOrderBtn, exportBtn]);
+      teamCard.addChildren(teamNodes);
+      content.addChildren([channelCard, statusCard, actionsCard, teamCard, footer]);
       page.addChildren([sidebar, header, content]);
       ice.addChild(page);
 

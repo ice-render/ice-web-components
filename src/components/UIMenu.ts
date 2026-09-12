@@ -2,6 +2,7 @@ import { UIComponent } from '../core/UIComponent';
 import { UIContainer } from '../core/UIContainer';
 import { uiManager } from '../core/UIManager';
 import { createTextNode } from '../util/UIStyle';
+import { ICERect } from 'ice-render';
 
 export type UIMenuItem = {
   key: string;
@@ -12,6 +13,7 @@ export type UIMenuItem = {
 export class UIMenu extends UIContainer {
   private items: UIMenuItem[];
   private itemPanels: any[] = [];
+  private itemBars: any[] = [];
   private selectedKey: string | null;
   private itemHeight: number;
   private onSelect: ((item: UIMenuItem, index: number) => void) | null;
@@ -38,6 +40,7 @@ export class UIMenu extends UIContainer {
 
     this.items = items;
     this.itemHeight = itemHeight;
+    this.itemBars = [];
     this.selectedKey = props.selectedKey ?? null;
     this.onSelect = typeof props.onSelect === 'function' ? props.onSelect : null;
     this.__render();
@@ -106,6 +109,18 @@ export class UIMenu extends UIContainer {
       this.addChild(panel, false);
       this.itemPanels.push(panel);
 
+      const bar = new ICERect({
+        left: 0,
+        top: 0,
+        width: 3,
+        height: this.itemHeight,
+        style: {
+          fillStyle: item.key === this.selectedKey ? theme.colors.primary : 'rgba(0,0,0,0)',
+        },
+      });
+      panel.addChild(bar, false);
+      this.itemBars.push(bar);
+
       if (item.icon) {
         panel.addChild(
           createTextNode({
@@ -125,11 +140,12 @@ export class UIMenu extends UIContainer {
         );
       }
 
+      const labelLeft = item.icon ? theme.spacing.xl + 8 : theme.spacing.md;
       panel.addChild(
         createTextNode({
-          left: item.icon ? theme.spacing.xl : theme.spacing.md,
+          left: labelLeft,
           top: 0,
-          width: Math.max(0, width - theme.spacing.xl),
+          width: Math.max(0, width - labelLeft - theme.spacing.sm),
           height: this.itemHeight,
           text: item.label,
           fillStyle: item.key === this.selectedKey ? theme.colors.primary : theme.colors.text,
@@ -154,7 +170,15 @@ export class UIMenu extends UIContainer {
           fillStyle: active ? theme.colors.primaryBg : 'rgba(0,0,0,0)',
         },
       });
-      const labels = panel.childNodes || [];
+      const bar = this.itemBars[index];
+      if (bar) {
+        bar.setState({
+          style: {
+            fillStyle: active ? theme.colors.primary : 'rgba(0,0,0,0)',
+          },
+        });
+      }
+      const labels = (panel.childNodes || []).filter((c: any) => this.itemBars.indexOf(c) === -1);
       labels.forEach((label: any) => {
         label.setState({
           style: {

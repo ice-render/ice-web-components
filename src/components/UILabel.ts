@@ -18,6 +18,11 @@ export class UILabel extends UIComponent {
       stroke: false,
       ...props,
     });
+    const vAlign = props.verticalAlign;
+    // 默认居中：无显式 height 时 ICEText 自动按文字尺寸包裹，文字从 top 起绘；
+    // 有显式 height（如与控件同行）时文字在 box 内垂直居中，与相邻控件对齐。
+    const baseline =
+      vAlign === 'top' ? 'top' : vAlign === 'bottom' ? 'bottom' : 'middle';
     this.textNode = new ICEText({
       left: 0,
       top: 0,
@@ -25,6 +30,7 @@ export class UILabel extends UIComponent {
       stroke: false,
       style: {
         ...font,
+        ...(baseline ? { textBaseline: baseline } : {}),
         ...(props.style || {}),
       },
     });
