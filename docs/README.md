@@ -8,6 +8,7 @@
 |---|---|
 | 第一次接触这个库，想搞懂它怎么运转 | [架构思路](./architecture.md) |
 | 找某个组件怎么用、有哪些参数 | [组件速查](./components.md) → [API 参考](./api/README.md) |
+| **写自己的组件、接进这套体系** | [写一个自己的组件](./guides/custom-components.md) |
 | 想换配色 / 加一套主题 | [主题与配色](./guides/theming.md) |
 | 做表单、写校验（含异步） | [表单与校验](./guides/forms.md) |
 | 弹窗 / 抽屉 / 下拉 / 提示怎么用 | [浮层指南](./guides/overlays.md) |
@@ -31,6 +32,8 @@ docs/
     layout.md            坐标、zIndex 与创建顺序、簇+货架布局、裁剪与滚动
     testing.md           单测套路（假 ICE + 真组件）、浏览器 QA（qa:admin）
     migration.md         UI* → ICE*、业界组件库 → Bootstrap、API 变更
+    custom-components.md 三档写法、构造约定、交互/表单/浮层/主题接入、注册与踩坑
+  examples/ICEMetric.ts  「写自己的组件」的完整示例（有单测 + 示例页）
   images/                README 与文档用的截图
 ```
 

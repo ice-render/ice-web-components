@@ -12,7 +12,7 @@
   "scripts": {
     "build": "npm run clean && npm run build:types && npm run build:js",
     "build:js": "rollup -c --environment NODE_ENV:production",
-    "build:types": "tsc --emitDeclarationOnly",
+    "build:types": "tsc --emitDeclarationOnly -p tsconfig.build.json",
     "clean": "rimraf dist",
     "dev": "rollup -c -w --environment NODE_ENV:development",
     "test": "jest --runInBand",

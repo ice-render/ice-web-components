@@ -300,6 +300,64 @@ check('设置页三个 Tab 面板高度均 > 300', heights.every((h) => h > 300)
 /* ---------- 3. 全程无 console error ---------- */
 check('无 console error / pageerror', errors.length === 0, errors.slice(0, 3).join(' | '));
 
+/* ---------- 4. 自定义组件示例页 ---------- */
+const custom = await browser.newPage({ viewport: { width: 1000, height: 620 }, deviceScaleFactor: 1 });
+const customErrors = [];
+custom.on('pageerror', (e) => customErrors.push('pageerror: ' + e.message));
+custom.on('console', (m) => {
+  if (m.type() === 'error') customErrors.push('console: ' + m.text());
+});
+await custom.goto('file://' + path.resolve(process.cwd(), 'examples/custom-component.html'));
+await custom.waitForTimeout(700);
+const customRect = await custom.evaluate(() => {
+  const r = document.getElementById('canvas').getBoundingClientRect();
+  return { x: r.x, y: r.y };
+});
+const metric = await custom.evaluate(() => {
+  const node = window.__result.metrics[0];
+  let l = 0;
+  let t = 0;
+  let x = node;
+  while (x && x.state) {
+    l += Number(x.state.left) || 0;
+    t += Number(x.state.top) || 0;
+    x = x.parentNode;
+  }
+  return { l, t, w: Number(node.state.width) || 0, h: Number(node.state.height) || 0, before: node.getValue() };
+});
+await custom.mouse.click(customRect.x + metric.l + metric.w / 2, customRect.y + metric.t + metric.h / 2);
+await custom.waitForTimeout(320);
+const afterClick = await custom.evaluate(() => ({
+  value: window.__result.metrics[0].getValue(),
+  hovered: window.__result.metrics[0].isHovered(),
+}));
+await custom.keyboard.press('ArrowUp');
+await custom.waitForTimeout(260);
+const afterKey = await custom.evaluate(() => window.__result.metrics[0].getValue());
+check('自定义组件：点击 +1', afterClick.value === metric.before + 1, `${metric.before} → ${afterClick.value}`);
+check('自定义组件：悬停生效', afterClick.hovered === true);
+check('自定义组件：聚焦后 ↑ 调值', afterKey === afterClick.value + 1, `${afterClick.value} → ${afterKey}`);
+const submit = await custom.evaluate(() => {
+  const node = window.__result.submitButton;
+  let l = 0;
+  let t = 0;
+  let x = node;
+  while (x && x.state) {
+    l += Number(x.state.left) || 0;
+    t += Number(x.state.top) || 0;
+    x = x.parentNode;
+  }
+  return { l, t, w: Number(node.state.width) || 0, h: Number(node.state.height) || 0 };
+});
+await custom.mouse.click(customRect.x + submit.l + submit.w / 2, customRect.y + submit.t + submit.h / 2);
+await custom.waitForTimeout(420);
+const formState = await custom.evaluate(() => ({
+  error: window.__result.form.getModel().getError('stock'),
+  stroke: window.__result.metricInForm.state.style.strokeStyle,
+}));
+check('自定义组件：表单错误态标红', !!formState.error && formState.stroke === '#dc3545', String(formState.error));
+check('自定义组件示例页无 console error', customErrors.length === 0, customErrors.slice(0, 3).join(' | '));
+
 await browser.close();
 console.log(`\n${failures.length === 0 ? 'QA 通过' : 'QA 失败 ' + failures.length + ' 项'}（截图在 /tmp/qa-*.png）`);
 process.exit(failures.length === 0 ? 0 : 1);

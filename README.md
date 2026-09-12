@@ -34,9 +34,21 @@ rings and shadows) is drawn by the engine.
 
 ## Quick start
 
+> **安装**：引擎 `ice-render` 已经发布到 npm；**组件库本身还没发布**，所以用下面任一种方式装：
+
 ```bash
-npm install ice-render ice-web-components
+# ① 本地路径（monorepo / workspace 常用）
+npm install /path/to/ice-web-components
+
+# ② 直接从 git 安装
+npm install git+https://github.com/ice-render/ice-web-components.git
+
+# ③ 先打包再装
+(cd /path/to/ice-web-components && npm pack)     # 产出 ice-web-components-0.0.1.tgz
+npm install /path/to/ice-web-components-0.0.1.tgz
 ```
+
+三种方式都会带上依赖 `ice-render@^1.3.0`（从 npm 拉取）。包内只有 `dist/`（cjs + esm + umd + 类型声明）。
 
 ```ts
 import { ICE } from 'ice-render';
@@ -84,12 +96,13 @@ Full docs live in [`docs/`](./docs/README.md):
 | [表单与校验](./docs/guides/forms.md) | 三层结构、规则清单、异步校验、自定义控件接入 |
 | [浮层指南](./docs/guides/overlays.md) | 弹窗/抽屉/下拉/提示的三种用法、定位、关闭策略、内容工厂 |
 | [画布内布局](./docs/guides/layout.md) | 坐标与 zIndex、簇+货架布局、裁剪与滚动、尺寸时机 |
+| [写一个自己的组件](./docs/guides/custom-components.md) | 三档写法、构造约定、交互/表单/浮层/主题接入、类型注册与踩坑 |
 | [测试](./docs/guides/testing.md) | 单测套路（假 ICE + 真组件）与浏览器 QA 脚本 |
 | [迁移说明](./docs/guides/migration.md) | `UI*` → `ICE*`、业界组件库 → Bootstrap 主题等破坏性变更 |
 
 ## Demos
 
-Both pages under `examples/` are plain HTML — build the package, then open them
+All pages under `examples/` are plain HTML — build the package, then open them
 (or serve the folder with any static server).
 
 ### `gallery.html` — every component in one page
@@ -116,6 +129,15 @@ Popup layers used by that demo:
 | Order detail drawer | New-order dialog | Notification dropdown |
 |---|---|---|
 | ![Drawer](docs/images/popup-drawer.png) | ![Modal](docs/images/popup-modal.png) | ![Dropdown](docs/images/popup-dropdown.png) |
+
+### `custom-component.html` — write your own component
+
+The same “write a component and plug it into ICE” story as
+[`docs/guides/custom-components.md`](./docs/guides/custom-components.md), but
+runnable: a hand-written `ICEMetric` card that reacts to clicks, hover and
+keyboard, and participates in `ICEForm` validation.
+
+![Custom component](docs/images/custom-component.png)
 
 ## Components
 

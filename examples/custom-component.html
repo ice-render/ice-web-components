@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <meta charset="utf-8" />
+  <title>自定义组件示例 — ice-web-components</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      font: 14px/1.6 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f8f9fa;
+      color: #212529;
+    }
+    h1 {
+      font-size: 20px;
+      margin: 0 0 4px;
+    }
+    p.hint {
+      margin: 0 0 16px;
+      color: #6c757d;
+    }
+    canvas {
+      display: block;
+      border-radius: 12px;
+      background: #ffffff;
+      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+  </style>
+  <body>
+    <h1>写一个自己的组件</h1>
+    <p class="hint">
+      下面是 docs/guides/custom-components.md 的完整示例（ICEMetric）：点击整块 +1、聚焦后 ↑/↓ 调值、可直接放进
+      ICEForm。源码见 docs/examples/ICEMetric.ts。
+    </p>
+    <canvas id="canvas" width="880" height="520"></canvas>
+
+    <script src="../node_modules/ice-render/dist/index.umd.js"></script>
+    <script src="../dist/index.umd.js"></script>
+    <script>
+      const ice = new ICE.ICE().init('canvas');
+      const W = ICEWEB;
+      new W.ICEHoverManager(ice).start();
+      W.getICEFocusManager(ice).start();
+
+      /* ------------------------------------------------------------------
+       * 自己的组件：与 docs/examples/ICEMetric.ts 同一份逻辑，这里用 UMD 写法。
+       * ------------------------------------------------------------------ */
+      class ICEMetric extends W.ICEWidget {
+        constructor(props) {
+          const theme = W.iceUIManager.getTheme();
+          // ① 展开 props（别把调用方的 id 吞掉），再覆盖自己关心的字段
+          super({
+            ...props,
+            fill: true,
+            stroke: true,
+            width: props.width ?? 200,
+            height: props.height ?? 88,
+            radius: theme.radius.md,
+            style: {
+              fillStyle: theme.colors.surface,
+              strokeStyle: theme.colors.border,
+              lineWidth: theme.control.lineWidth,
+            },
+          });
+          this.labelText = props.label;
+          this.unit = props.unit ?? '';
+          this.status = props.status || 'primary';
+          this.step = Number(props.step) || 1;
+          // 先赋 min/max 再算 value：子类字段没有提升，顺序写反会算出 NaN
+          this.min = props.min === undefined ? -Infinity : Number(props.min);
+          this.max = props.max === undefined ? Infinity : Number(props.max);
+          this.value = this.clamp(Number(props.value) || 0);
+          this.onChange = typeof props.onChange === 'function' ? props.onChange : null;
+          this.focusable = true;
+          this.renderMetric();
+        }
+
+        // 组件加入 ICE 场景后订阅全局键盘事件（处理函数里必须判空）
+        afterAddHandler() {
+          super.afterAddHandler();
+          if (this.ice && this.ice.evtBus) {
+            this.ice.evtBus.on('keydown', this.onKeyDown, this);
+          }
+        }
+
+        getValue() {
+          return this.value;
+        }
+
+        setValue(value) {
+          const next = this.clamp(value);
+          if (next === this.value) {
+            return this;
+          }
+          this.value = next;
+          this.renderMetric();
+          this.trigger('change', null, { value: next });
+          return this;
+        }
+
+        // 表单约定
+        getFormValue() {
+          return this.value;
+        }
+
+        setFormValue(value) {
+          this.setValue(Number(value));
+        }
+
+        // 键盘激活（Enter / Space）
+        activate() {
+          this.stepBy(this.step);
+        }
+
+        // 悬停反馈（由 ICEHoverManager 触发）
+        __applyHoverState() {
+          const theme = W.iceUIManager.getTheme();
+          this.setState({
+            style: { ...this.state.style, strokeStyle: this.hovered ? theme.colors.primary : this.borderColor() },
+          });
+        }
+
+        // 校验态：错误时描边标红
+        __applyValidateState() {
+          const theme = W.iceUIManager.getTheme();
+          this.setState({
+            style: {
+              ...this.state.style,
+              strokeStyle: this.validateStatus === 'error' ? theme.colors.error : this.borderColor(),
+              lineWidth: this.validateStatus === 'error' ? theme.control.lineWidthFocused : theme.control.lineWidth,
+            },
+          });
+          this.revalidate();
+        }
+
+        borderColor() {
+          const theme = W.iceUIManager.getTheme();
+          return this.enabled ? theme.colors.border : theme.colors.disabled;
+        }
+
+        clamp(value) {
+          const base = Number.isFinite(value) ? value : 0;
+          return Math.min(this.max, Math.max(this.min, base));
+        }
+
+        stepBy(delta) {
+          if (!this.enabled) {
+            return;
+          }
+          const before = this.value;
+          this.setValue(this.value + delta);
+          if (this.value !== before && this.onChange) {
+            this.onChange(this.value);
+          }
+        }
+
+        onKeyDown(evt) {
+          if (!this.ice || !this.isFocused() || !this.enabled) {
+            return;
+          }
+          const raw = evt && (evt.originalEvent || evt);
+          const key = raw && (raw.key || raw.code);
+          if (key === 'ArrowUp') {
+            this.stepBy(this.step);
+          } else if (key === 'ArrowDown') {
+            this.stepBy(-this.step);
+          }
+        }
+
+        renderMetric() {
+          const theme = W.iceUIManager.getTheme();
+          const colors = W.getStatusColors(theme, this.status);
+          const width = Number(this.state.width) || 200;
+          const height = Number(this.state.height) || 88;
+          this.removeChildren([...this.childNodes]);
+          this.setState({
+            style: {
+              ...this.state.style,
+              fillStyle: this.enabled ? theme.colors.surface : theme.colors.disabled,
+              strokeStyle: this.validateStatus === 'error' ? theme.colors.error : this.borderColor(),
+            },
+          });
+          // 装饰节点一律 interactive: false，否则会抢走整块的点击
+          this.addChild(
+            new W.ICEWidget({
+              left: 0,
+              top: 0,
+              width: 4,
+              height,
+              radius: theme.radius.sm,
+              fill: true,
+              stroke: false,
+              interactive: false,
+              style: { fillStyle: colors.solid },
+            }),
+            false,
+          );
+          this.addChild(
+            new W.ICELabel({
+              interactive: false,
+              left: 14,
+              top: 14,
+              width: Math.max(0, width - 28),
+              height: 16,
+              verticalAlign: 'middle',
+              text: this.labelText,
+              style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+            }),
+            false,
+          );
+          this.valueNode = new W.ICELabel({
+            interactive: false,
+            left: 14,
+            top: 36,
+            width: Math.max(0, width - 28),
+            height: 30,
+            verticalAlign: 'middle',
+            text: this.unit ? this.value + ' ' + this.unit : String(this.value),
+            style: { fontSize: 24, fontWeight: '600', fillStyle: colors.strong },
+          });
+          this.addChild(this.valueNode, false);
+          this.addChild(
+            new W.ICELabel({
+              interactive: false,
+              left: 14,
+              top: height - 28,
+              width: Math.max(0, width - 28),
+              height: 14,
+              verticalAlign: 'middle',
+              text: '点击 +1 · 聚焦后 ↑/↓ 调整',
+              style: { fontSize: 11, fillStyle: theme.colors.textTertiary },
+            }),
+            false,
+          );
+        }
+
+        // 整块可点：子节点都 interactive: false，不会被抢走
+        initEvents() {
+          super.initEvents();
+          this.on('click', () => this.stepBy(this.step));
+        }
+      }
+
+      /* ------------------------------------------------------------------
+       * 用起来：跟内置组件没有区别
+       * ------------------------------------------------------------------ */
+      // ⚠️ 容器必须先建：引擎按创建顺序定 zIndex，反过来的话面板会盖住所有子组件
+      const host = new W.ICEPanel({ id: 'host', left: 24, top: 24, width: 832, height: 472 });
+
+      const title = new W.ICELabel({
+        left: 24,
+        top: 20,
+        text: '今日指标',
+        style: { fontSize: 15, fontWeight: '600', fillStyle: W.iceUIManager.getTheme().colors.text },
+      });
+
+      const metrics = [
+        new ICEMetric({ id: 'metric-orders', left: 24, top: 52, label: '订单数', value: 128, status: 'primary' }),
+        new ICEMetric({ id: 'metric-revenue', left: 244, top: 52, label: '成交额', value: 86, unit: '万', status: 'success' }),
+        new ICEMetric({ id: 'metric-risk', left: 464, top: 52, label: '风险单', value: 3, status: 'warning', max: 9 }),
+      ];
+
+      // 放进表单：值参与校验（这里故意让它一开始就不满足 min 规则，展示错误态）
+      const form = new W.ICEForm({ left: 24, top: 180, width: 460, gap: 12 });
+      const metricInForm = new ICEMetric({
+        id: 'metric-in-form',
+        label: '库存（表单字段）',
+        value: 2,
+        min: 0,
+        max: 99,
+        width: 260,
+        height: 88,
+      });
+      form.addItem(
+        new W.ICEFormItem({
+          name: 'stock',
+          label: '库存',
+          control: metricInForm,
+          rules: [{ required: true, validator: (value) => (Number(value) >= 10 ? null : '库存不足 10，需要补货') }],
+        }),
+      );
+      const submitButton = new W.ICEButton({ left: 330, top: 288, width: 120, height: 32, text: '校验并提交' });
+      submitButton.on('click', () => {
+        const ok = form.validate();
+        W.ICEMessage.show(ice, ok ? '校验通过：库存 ' + metricInForm.getValue() : '请先处理校验错误', {
+          type: ok ? 'success' : 'error',
+        });
+      });
+
+      const note = new W.ICELabel({
+        left: 24,
+        top: 340,
+        width: 520,
+        text: '提示：点击任一卡片 +1；Tab 把焦点移到卡片后用 ↑/↓ 调整；表单里的卡片违反规则时描边会标红。',
+        style: { fontSize: 12, fillStyle: W.iceUIManager.getTheme().colors.textSecondary },
+      });
+
+      host.addChildren([title, ...metrics, form, submitButton, note]);
+      ice.addChild(host);
+
+      window.__result = { ice, metrics, metricInForm, form, submitButton, ICEMetric };
+    </script>
+  </body>
+</html>
