@@ -454,6 +454,37 @@
         replies: [{ author: '李四', content: '同意，我也这么觉得。', time: '1 小时前' }],
       });
 
+      // 颜色选择器：色板网格 + 选中环（表单控件语义）
+      const colorHint = new W.UILabel({
+        left: 860,
+        top: 1744,
+        text: '已选：#1677ff',
+        style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+      });
+      const colorPicker = new W.UIColorPicker({
+        id: 'color-picker',
+        left: 540,
+        top: 1740,
+        width: 300,
+        columns: 6,
+        value: '#1677ff',
+        colors: [
+          '#1677ff',
+          '#13c2c2',
+          '#52c41a',
+          '#faad14',
+          '#fa541c',
+          '#f5222d',
+          '#eb2f96',
+          '#722ed1',
+          '#2f54eb',
+          '#8c8c8c',
+          '#000000',
+          '#ffffff',
+        ],
+        onChange: (color) => colorHint.setText('已选：' + color),
+      });
+
       panel.addChildren([
         heading('Buttons', 32, 28),
 
@@ -550,6 +581,9 @@
         result,
         heading('Comment', 32, 1700),
         comment,
+        heading('Color picker', 540, 1700),
+        colorPicker,
+        colorHint,
 
         heading('Scroll pane', 32, 706),
         scrollPane,
@@ -617,7 +651,7 @@
       });
 
       ice.addChild(panel);
-      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, comment };
+      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, comment, colorPicker, colorHint };
     </script>
   </body>
 </html>

@@ -87,7 +87,7 @@
 | 数据录入 | TreeSelect | ✅ `UITreeSelect`（下拉里装 UITree） |
 | 数据录入 | Cascader | ⬜ 阶段 D |
 | 数据录入 | Checkbox | ✅ `UICheckBox`（部分：无 Group / 不确定态） |
-| 数据录入 | ColorPicker | ⬜ 低优先（交互重） |
+| 数据录入 | ColorPicker | ✅ `UIColorPicker`（色板网格 + 选中环 + 键盘导航；无取色轮/透明度） |
 | 数据录入 | DatePicker | ✅ `UIDatePicker`（日历浮层，周一开头） |
 | 数据录入 | TimePicker | ⬜ 阶段 D |
 | 数据录入 | Form | ⬜ 阶段 A4 + C |
