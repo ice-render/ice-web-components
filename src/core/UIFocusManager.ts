@@ -2,6 +2,18 @@ import { UIComponent } from './UIComponent';
 import { uiManager } from './UIManager';
 import { getUIWorldBox } from '../util/UIWorldBox';
 
+/** node 是否在 ancestor 子树内（含自身）。 */
+function isDescendantOf(node: any, ancestor: any): boolean {
+  let current = node;
+  while (current) {
+    if (current === ancestor) {
+      return true;
+    }
+    current = current.parentNode;
+  }
+  return false;
+}
+
 /**
  * 键盘焦点与焦点环。
  *
@@ -23,6 +35,8 @@ export class UIFocusManager {
   private focused: any = null;
   private bound = false;
   private ringPadding = 2;
+  /** 焦点范围（模态对话框用）：非空时 Tab 只在该子树里轮转。 */
+  private scope: any = null;
 
   constructor(ice: any) {
     this.ice = ice;
@@ -118,8 +132,30 @@ export class UIFocusManager {
       }
       (node.childNodes || []).forEach(visit);
     };
-    (this.ice.childNodes || []).forEach(visit);
+    if (this.scope) {
+      visit(this.scope);
+    } else {
+      (this.ice.childNodes || []).forEach(visit);
+    }
     return out;
+  }
+
+  /**
+   * 限制焦点范围（模态对话框 / 抽屉的「焦点陷阱」）。
+   *
+   * 传入容器后，Tab/Shift+Tab 只在该子树内轮转；当前焦点若在范围之外会被清掉
+   * （调用方随后可 `focusNext()` 把焦点移进对话框）。传 null 恢复全场景。
+   */
+  public setFocusScope(container: any): this {
+    this.scope = container || null;
+    if (this.focused && this.scope && !isDescendantOf(this.focused, this.scope)) {
+      this.focus(null);
+    }
+    return this;
+  }
+
+  public getFocusScope(): any {
+    return this.scope;
   }
 
   /** 设置焦点（传 null 取消焦点）。非可聚焦对象会被忽略成取消焦点。 */

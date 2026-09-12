@@ -170,4 +170,31 @@ describe('UIFocusManager', () => {
     expect(ice.toolNodes.length).toBe(0);
     expect(ice.getFocusedComponent()).toBeNull();
   });
+
+  it('焦点范围（模态焦点陷阱）：Tab 只在范围内轮转，范围外的焦点被清掉', () => {
+    const { ice, panel, button, checkbox } = makeScene();
+    const dialog = new UIPanel({ left: 20, top: 40, width: 200, height: 120 });
+    const dialogButton = new UIButton({ left: 10, top: 10, width: 80, height: 28, text: 'Confirm' });
+    const dialogSwitch = new UISwitch({ left: 10, top: 60, width: 44, height: 22 });
+    dialog.addChildren([dialogButton, dialogSwitch]);
+    panel.addChild(dialog);
+    const fm = new UIFocusManager(ice).start();
+
+    fm.focus(button);
+    fm.setFocusScope(dialog);
+    expect(fm.getFocused()).toBeNull(); // 原焦点在范围外 → 清掉
+    expect(fm.getFocusables().map((c) => c.state.id)).toEqual(
+      [dialogButton, dialogSwitch].map((c) => c.state.id),
+    );
+
+    fm.focusNext();
+    expect(fm.getFocused() === dialogButton).toBe(true);
+    fm.focusNext();
+    expect(fm.getFocused() === dialogSwitch).toBe(true);
+    fm.focusNext();
+    expect(fm.getFocused() === dialogButton).toBe(true); // 在范围内回绕，不会跑到外侧按钮
+
+    fm.setFocusScope(null);
+    expect(fm.getFocusables().length).toBeGreaterThan(2);
+  });
 });
