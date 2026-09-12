@@ -80,7 +80,7 @@
 | 导航 | Anchor | ⊘ 依赖滚动容器与页面语义，低优先 |
 | 导航 | Breadcrumb | ⬜ 阶段 D |
 | 导航 | Dropdown | ⬜ 阶段 B（A1 已就绪） |
-| 导航 | Menu | ✅ `UIMenu`（部分：无子菜单 / inline 折叠 / 键盘导航） |
+| 导航 | Menu | ✅ `UIMenu`（子菜单内联展开 + 多级嵌套；无键盘导航） |
 | 导航 | Pagination | ⬜ 阶段 B |
 | 导航 | Steps | ✅ `UISteps` |
 | 数据录入 | AutoComplete | ✅ `UIAutoComplete`（输入过滤 + 候选点选/键盘） |
@@ -144,7 +144,7 @@
 
 - `UITable`：分页、滚动、列宽拖拽、空态（排序 ✅ 已做）
 - `UITextField`：多行（TextArea）、密码、前后缀、清除按钮、错误态
-- `UIMenu`：子菜单、键盘操作、折叠
+- `UIMenu`：键盘操作（子菜单 / 折叠 ✅ 已做）
 - `UITabs`：溢出滚动、关闭、位置（上下左右）
 - `UIAlert`：banner 形态（关闭按钮 / 图标 ✅ 已做）
 - `UIProgressBar`：仪表盘形态（环形 + 状态色 ✅ 已做）
