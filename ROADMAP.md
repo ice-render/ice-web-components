@@ -102,9 +102,9 @@
 | 数据录入 | Transfer | ✅ `UITransfer`（双栏勾选搬运 + disabled 行；无搜索/分页） |
 | 数据录入 | Upload | ⬜ 阶段 D（画布内需与 DOM input 桥接） |
 | 数据展示 | Avatar | ✅ `UIAvatar` + `UIAvatarGroup`（重叠 + `+N` 折叠；无图片头像） |
-| 数据展示 | Badge | ✅ `UIBadge`（含红点 `dot`；无计数封顶 99+） |
+| 数据展示 | Badge | ✅ `UIBadge`（红点 `dot` + 计数封顶 `count`/`overflowCount`） |
 | 数据展示 | Calendar | ⬜ 阶段 D |
-| 数据展示 | Card | ✅ `UICard`（部分：无 extra / 操作区 / 底部） |
+| 数据展示 | Card | ✅ `UICard`（含 `extra` 右上角插槽；无操作区 / 底部） |
 | 数据展示 | Carousel | ✅ `UICarousel`（轨道滑动 + 箭头/圆点 + 自动播放；无渐变/多图同屏） |
 | 数据展示 | Collapse | ✅ `UICollapse`（accordion 可选） |
 | 数据展示 | Descriptions | ✅ `UIDescriptions`（1/2 列） |
@@ -123,7 +123,7 @@
 | 数据展示 | Tooltip | ⬜ 阶段 B |
 | 数据展示 | Tour | ⊘ 低优先 |
 | 数据展示 | Tree | ✅ `UITree` |
-| 反馈 | Alert | ✅ `UIAlert`（含 `closable` + onClose；无图标 / banner） |
+| 反馈 | Alert | ✅ `UIAlert`（`closable` + onClose + 类型图标；无 banner） |
 | 反馈 | Drawer | ⬜ 阶段 B |
 | 反馈 | Message | ⬜ 阶段 B |
 | 反馈 | Modal | ⬜ 阶段 B |
@@ -146,11 +146,11 @@
 - `UITextField`：多行（TextArea）、密码、前后缀、清除按钮、错误态
 - `UIMenu`：子菜单、键盘操作、折叠
 - `UITabs`：溢出滚动、关闭、位置（上下左右）
-- `UIAlert`：图标、banner 形态（关闭按钮 ✅）
+- `UIAlert`：banner 形态（关闭按钮 / 图标 ✅ 已做）
 - `UIProgressBar`：仪表盘形态（环形 + 状态色 ✅ 已做）
 - `UISlider`：区间选择、刻度、拖拽 tooltip
-- `UICard`：extra 区、操作区、封面、底部
-- `UIBadge`：计数封顶（99+）（红点 ✅）
+- `UICard`：操作区、封面、底部（右上角 extra ✅ 已做）
+- `UIBadge`：红点 / 计数封顶 ✅ 已做
 - `UIAvatar`：图片头像（头像组 ✅ `UIAvatarGroup`）
 
 ## 工程约定

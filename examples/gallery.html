@@ -709,6 +709,7 @@
         new W.UIBadge({ id: 'badge-warning', left: 128, top: 166, text: 'W', width: 32, height: 24, status: 'warning' }),
         new W.UIBadge({ id: 'badge-error', left: 172, top: 166, text: '5', width: 32, height: 24, status: 'error' }),
         new W.UIBadge({ id: 'badge-dot', left: 604, top: 178, dot: true, dotSize: 10 }),
+        new W.UIBadge({ id: 'badge-count', left: 624, top: 166, width: 46, height: 24, count: 128 }),
 
         new W.UITag({ id: 'tag-default', left: 224, top: 168, text: 'Default', width: 82, height: 24 }),
         new W.UITag({ id: 'tag-success', left: 318, top: 168, text: 'Success', width: 88, height: 24, status: 'success' }),
@@ -749,7 +750,24 @@
 
         heading('Containers', 32, 446),
 
-        new W.UICard({ id: 'card', left: 32, top: 488, title: 'Project summary', width: 300, height: 160 }),
+        new W.UICard({
+          id: 'card',
+          left: 32,
+          top: 488,
+          title: 'Project summary',
+          width: 300,
+          height: 160,
+          // extra 传工厂：节点在卡片之后创建，zIndex 天然在上层
+          extra: () =>
+            new W.UILabel({
+              left: 0,
+              top: 0,
+              width: 40,
+              height: 18,
+              text: 'More',
+              style: { fontSize: 12, fillStyle: theme.colors.primary },
+            }),
+        }),
         new W.UITabs({ id: 'tabs', left: 360, top: 488, tabs: ['Overview', 'Activity', 'Settings'], width: 380, height: 40 }),
 
         new W.UISeparator({ id: 'separator-v', left: 780, top: 488, width: 1, height: 160 }),

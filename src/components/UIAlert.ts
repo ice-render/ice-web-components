@@ -1,4 +1,5 @@
 import { UIComponent } from '../core/UIComponent';
+import { UILabel } from './UILabel';
 import { uiManager } from '../core/UIManager';
 import { createTextNode, getStatusColors } from '../util/UIStyle';
 
@@ -11,6 +12,7 @@ export class UIAlert extends UIComponent {
   private closable: boolean;
   private closed = false;
   private closeButton: UIComponent | null = null;
+  private iconNode: UILabel | null = null;
   private onCloseCallback: (() => void) | null;
 
   constructor(props: any = {}) {
@@ -20,6 +22,7 @@ export class UIAlert extends UIComponent {
     const width = props.width || 420;
     const height = props.height || 60;
     const closable = props.closable === true;
+    const showIcon = props.showIcon !== false;
 
     super({
       ...props,
@@ -39,10 +42,27 @@ export class UIAlert extends UIComponent {
     this.type = type;
     this.closable = closable;
     this.onCloseCallback = typeof props.onClose === 'function' ? props.onClose : null;
+    // 图标时整块文案右移，给图标让位
+    const iconWidth = showIcon ? 24 : 0;
     // 可关闭时给右侧关闭按钮留位
-    const textWidth = Math.max(0, width - theme.spacing.md * 2 - (closable ? 24 : 0));
+    const textWidth = Math.max(0, width - theme.spacing.md * 2 - iconWidth - (closable ? 24 : 0));
+
+    if (showIcon) {
+      this.iconNode = new UILabel({
+        interactive: false,
+        left: theme.spacing.md,
+        top: theme.spacing.xs,
+        width: 18,
+        height: 20,
+        align: 'center',
+        verticalAlign: 'middle',
+        text: UIAlert.__iconOf(type),
+        style: { fontSize: theme.font.size, fontWeight: theme.font.weightSemibold, fillStyle: colors.text },
+      });
+      this.addChild(this.iconNode, false);
+    }
     this.titleNode = createTextNode({
-      left: theme.spacing.md,
+      left: theme.spacing.md + iconWidth,
       top: theme.spacing.xs,
       width: textWidth,
       height: 20,
@@ -55,7 +75,7 @@ export class UIAlert extends UIComponent {
       verticalAlign: 'middle',
     });
     this.messageNode = createTextNode({
-      left: theme.spacing.md,
+      left: theme.spacing.md + iconWidth,
       top: theme.spacing.md + 16,
       width: textWidth,
       height: 18,
@@ -115,6 +135,27 @@ export class UIAlert extends UIComponent {
 
   public getType(): UIAlertType {
     return this.type;
+  }
+
+  public getIconNode(): UILabel | null {
+    return this.iconNode;
+  }
+
+  public getTitleNode(): any {
+    return this.titleNode;
+  }
+
+  private static __iconOf(type: UIAlertType): string {
+    if (type === 'success') {
+      return '✓';
+    }
+    if (type === 'warning') {
+      return '!';
+    }
+    if (type === 'error') {
+      return '✕';
+    }
+    return 'ℹ';
   }
 
   /** 关闭（隐藏整棵子树）并回调 onClose；重复调用只生效一次。 */

@@ -31,12 +31,14 @@ describe('admin UI components', () => {
 
   it('creates alert with title and message', () => {
     const alert = new UIAlert({ type: 'success', title: 'Saved', message: 'All changes saved' });
-    expect(alert.childNodes).toHaveLength(2);
+    // 3 = 类型图标（默认显示，文字整体右移让位）+ 标题 + 正文
+    expect(alert.childNodes).toHaveLength(3);
+    expect(alert.getIconNode()!.getText()).toBe('✓');
     expect(alert.state.style.fillStyle).toBe(UI_LIGHT_THEME.colors.successBg);
     alert.setTitle('Updated');
     alert.setMessage('Done');
-    expect(alert.childNodes[0].state.text).toBe('Updated');
-    expect(alert.childNodes[1].state.text).toBe('Done');
+    expect(alert.childNodes[1].state.text).toBe('Updated');
+    expect(alert.childNodes[2].state.text).toBe('Done');
   });
 
   it('renders table columns and updates selection', () => {

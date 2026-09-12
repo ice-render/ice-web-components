@@ -13,6 +13,7 @@ export class UIBadge extends UIComponent {
     const status = props.status || props.color || (dot ? 'error' : 'primary');
     const colors = getStatusColors(theme, status);
     const dotSize = Number(props.dotSize) || 8;
+    const text = props.text !== undefined ? String(props.text) : props.count !== undefined ? UIBadge.__countText(props) : '0';
     const height = dot ? dotSize : props.height || 20;
     const width = dot ? dotSize : props.width || Math.max(24, height);
     super({
@@ -41,7 +42,7 @@ export class UIBadge extends UIComponent {
       top: 0,
       width: Math.max(0, width - padX * 2),
       height,
-      text: props.text ?? '0',
+      text,
       fillStyle: colors.text,
       fontFamily: theme.font.family,
       fontSize: theme.font.sizeSmall,
@@ -66,5 +67,19 @@ export class UIBadge extends UIComponent {
   /** 是否红点模式（只有圆点、没有文字）。 */
   public isDot(): boolean {
     return this.dot;
+  }
+
+  public getText(): string {
+    if (this.dot || !this.textNode) {
+      return '';
+    }
+    return this.textNode.getText();
+  }
+
+  /** 计数文案：超过 overflowCount（默认 99）显示 `N+`。 */
+  private static __countText(props: any): string {
+    const count = Number(props.count) || 0;
+    const overflow = Number(props.overflowCount) || 99;
+    return count > overflow ? `${overflow}+` : String(count);
   }
 }
