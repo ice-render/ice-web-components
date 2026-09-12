@@ -50,6 +50,93 @@
 
 源码：[`src/components/ICEPanel.ts`](../../src/components/ICEPanel.ts)
 
+## `ICESpace`
+
+间距容器（业界组件库 Space / Flex 的最小版）：按固定间距排列一组子组件。
+
+- `direction: 'horizontal'`（默认）横向排列，`'vertical'` 纵向排列；
+- `size` 是子项间距（默认 8）；
+- 交叉轴对齐 `align: 'start' | 'center' | 'end'`；
+- `wrap: true` 时横向超出容器宽度换行；
+- 不传 width / height 时按内容自适应，加了子项就自动重排。 注：布局本身由本组件完成（不是引擎的 `ICEFlowLayout`）——因为 Space 需要同时处理 交叉轴对齐与「按内容回写自身尺寸」，这两件事引擎布局器不管。
+
+源码：[`src/components/ICESpace.ts`](../../src/components/ICESpace.ts)
+
+**构造参数** `ICESpaceOptions` — 间距容器（业界组件库 Space / Flex 的最小版）：按固定间距排列一组子组件。
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `id?` | `string` | 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） |
+| `direction?` | `'horizontal' \| 'vertical'` |  |
+| `size?` | `number` | 子项间距，默认 8 |
+| `align?` | `'start' \| 'center' \| 'end'` |  |
+| `wrap?` | `boolean` |  |
+| `left?` | `number` | 相对父容器的左边距 |
+| `top?` | `number` | 相对父容器的上边距 |
+| `width?` | `number` | 宽度（不传用组件默认值） |
+| `height?` | `number` | 高度（不传用组件默认值） |
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getItems()` | `any[]` | 子项列表（按加入顺序）。 |
+| `setSize(size: number)` | `this` |  |
+| `getSize()` | `number` |  |
+| `setAlign(align: 'start' \| 'center' \| 'end')` | `this` |  |
+| `addItem(child: any)` | `this` | 加入一个子项并立即重排。 |
+| `addChild(child: any, markDirty: boolean)` | `void` | 直接 `addChild` 也当作子项处理（保持容器语义）。 |
+| `removeItem(child: any)` | `this` |  |
+
+## `ICEGrid`
+
+24 栅格列（业界组件库 `Col`）：`span` 占多少格、`offset` 左边空多少格，`content` 是列内容。  一般配合 `ICEGrid`（行）使用，由行统一算宽度与位置，不需要手动设 width。
+
+源码：[`src/components/ICEGrid.ts`](../../src/components/ICEGrid.ts)
+
+**构造参数** `ICEGridOptions` — 24 栅格行（业界组件库 `Row`）：把若干 `ICEGridCol` 排成一行，放不下自动换行。  规则：先按 `span + offset` 把列分行（每行不超过 24 格），再按 `unit = (width - gutter × (列数 - 1)) / 24` 算每格宽度； 行高取该行最高列，行间距离是 `gutterY`。
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `id?` | `string` | 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） |
+| `gutter?` | `number` | 列间距，默认 16 |
+| `gutterY?` | `number` | 行间距，默认 16 |
+| `left?` | `number` | 相对父容器的左边距 |
+| `top?` | `number` | 相对父容器的上边距 |
+| `width?` | `number` | 宽度（不传用组件默认值） |
+| `height?` | `number` | 高度（不传用组件默认值） |
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getCols()` | `ICEGridCol[]` |  |
+| `addCol(col: ICEGridCol)` | `this` |  |
+| `setGutter(gutter: number, gutterY?: number)` | `this` |  |
+
+## `ICEGridCol`
+
+24 栅格列（业界组件库 `Col`）：`span` 占多少格、`offset` 左边空多少格，`content` 是列内容。  一般配合 `ICEGrid`（行）使用，由行统一算宽度与位置，不需要手动设 width。
+
+源码：[`src/components/ICEGrid.ts`](../../src/components/ICEGrid.ts)
+
+**构造参数** `ICEGridColOptions` — 24 栅格列（业界组件库 `Col`）：`span` 占多少格、`offset` 左边空多少格，`content` 是列内容。  一般配合 `ICEGrid`（行）使用，由行统一算宽度与位置，不需要手动设 width。
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `id?` | `string` | 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） |
+| `span?` | `number` | 占多少格（1..24），默认 24 |
+| `offset?` | `number` | 左侧空出多少格，默认 0 |
+| `content?` | `any` | 列内容 |
+| `height?` | `number` | 高度（不传用组件默认值） |
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getContent()` | `any` |  |
+| `applyLayout(left: number, top: number, width: number)` | `void` | 由 `ICEGrid` 调用：设置列宽并把内容撑满列宽。 |
+
 ## `ICEButton`
 
 按钮：`primary` / `default` / `text` / `link` 变体，`danger` 与三种尺寸， 自带 hover / 焦点 / 禁用态，点击时触发 `click`。

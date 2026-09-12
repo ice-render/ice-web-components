@@ -7,6 +7,9 @@
 | [基础组件](./api/basic.md) | [`ICEWidget`](./api/basic.md#icewidget) | 所有 UI 组件的基类（继承引擎 ICEGroup）。  在引擎的绘制能力之上只加四件事：交互态（enabled / hovered / focused）、键盘焦点 （`focusable` / `activate()`）、表单校验态（`validateStatus`）、表单取值约定 （`getFormValue` / `setFormValue`）。 |
 |  | [`ICEContainer`](./api/basic.md#icecontainer) | 容器基类：在此挂布局策略（`setLayout`，链式返回自身）。 |
 |  | [`ICEPanel`](./api/basic.md#icepanel) | 面板：带填充、描边、圆角与阴影的基础容器，业务页面的“卡片底座”。 |
+|  | [`ICESpace`](./api/basic.md#icespace) | 间距容器（业界组件库 Space / Flex 的最小版）：按固定间距排列一组子组件。 |
+|  | [`ICEGrid`](./api/basic.md#icegrid) | 24 栅格列（业界组件库 `Col`）：`span` 占多少格、`offset` 左边空多少格，`content` 是列内容。  一般配合 `ICEGrid`（行）使用，由行统一算宽度与位置，不需要手动设 width。 |
+|  | [`ICEGridCol`](./api/basic.md#icegridcol) | 24 栅格列（业界组件库 `Col`）：`span` 占多少格、`offset` 左边空多少格，`content` 是列内容。  一般配合 `ICEGrid`（行）使用，由行统一算宽度与位置，不需要手动设 width。 |
 |  | [`ICEButton`](./api/basic.md#icebutton) | 按钮：`primary` / `default` / `text` / `link` 变体，`danger` 与三种尺寸， 自带 hover / 焦点 / 禁用态，点击时触发 `click`。 |
 |  | [`ICELabel`](./api/basic.md#icelabel) | 文本标签：包装引擎 `ICEText`，支持水平（`align`）与垂直（`verticalAlign`）对齐； 未显式给尺寸时采用文字的实测尺寸，便于参与流式/盒式布局。 |
 |  | [`ICETypography`](./api/basic.md#icetypography) | 排版文本（业界组件库 Typography）：标题层级 / 正文 / 链接，自带省略与折行。 |
@@ -68,6 +71,7 @@
 |  | [`ICESpin`](./api/feedback.md#icespin) | 加载指示器（业界组件库 Spin 的最小版）：一段圆弧绕中心旋转。 |
 |  | [`ICESteps`](./api/feedback.md#icesteps) | 步骤条（业界组件库 Steps）：横向序号 + 标题/描述 + 连接线，当前步骤高亮、已完成打勾。 |
 |  | [`ICETour`](./api/feedback.md#icetour) | 漫游式引导（业界组件库 Tour）：一步一步把用户带过关键界面。 |
+|  | [`ICEFloatButton`](./api/feedback.md#icefloatbutton) | 悬浮操作按钮（业界组件库 FloatButton）：一个圆形主按钮，点击展开一组子按钮。 |
 | [导航](./api/navigation.md) | [`ICEMenu`](./api/navigation.md#icemenu) | 菜单：菜单项 +（可选）子菜单内联展开；选中态与悬停态分离，父项在子项选中时只做“当前分组”提示。 |
 |  | [`ICEBreadcrumb`](./api/navigation.md#icebreadcrumb) | 面包屑（业界组件库 Breadcrumb）：一行「路径 + 分隔符」，最后一项是当前页。 |
 |  | [`ICEAnchor`](./api/navigation.md#iceanchor) | 锚点导航（业界组件库 Anchor）：一列锚点，点击滚到目标位置，滚动时自动高亮当前项。  与 `ICEScrollPane` 配合使用：`target` 传滚动容器，`items[].top` 是该段落在 **内容坐标系**里的纵向位置。滚动事件由 `ICEScrollPane` 的 `scroll` 事件驱动。 |

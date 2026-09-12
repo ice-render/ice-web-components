@@ -1,4 +1,6 @@
 import { ICEWidget } from '../core/ICEWidget';
+import { ICEEmpty } from './ICEEmpty';
+import { ICEPagination } from './ICEPagination';
 import { iceUIManager } from '../core/ICEManager';
 import { createTextNode, readHovered } from '../util/ICEStyle';
 import { ICERect } from 'ice-render';
@@ -25,6 +27,15 @@ export interface ICETableSortState {
   order: 'asc' | 'desc';
 }
 
+export interface ICETablePaginationOptions {
+  pageSize?: number;
+  /** 初始页码（从 1 开始） */
+  page?: number;
+  showTotal?: boolean;
+  /** 换页回调（与 `pagechange` 事件同义） */
+  onChange?: (page: number, pageSize: number) => void;
+}
+
 /**
  * 表格：列定义（宽度 / 对齐 / 排序 / 自定义单元格）+ 行选中 + 悬停反馈 + 斑马纹；
  * 点表头排序（升 → 降 → 恢复），`sorter` 可为布尔或自定义比较函数。
@@ -33,7 +44,14 @@ export class ICETable extends ICEWidget {
   private columns: ICETableColumn[];
   /** 原始数据（排序前的顺序，用于第三次点击恢复） */
   private sourceData: ICETableRow[];
+  /** 排序后的全量数据（分页从这里切片） */
+  private sortedData: ICETableRow[];
+  /** 当前页要渲染的行（不分页时等于 sortedData） */
   private data: ICETableRow[];
+  private pageSize = 0;
+  private page = 1;
+  private paginationOptions: ICETablePaginationOptions | null = null;
+  private paginationNode: ICEPagination | null = null;
   private sortKey: string | null = null;
   private sortOrder: 'asc' | 'desc' | null = null;
   private rowPanels: any[] = [];
@@ -76,22 +94,86 @@ export class ICETable extends ICEWidget {
 
     this.columns = props.columns || [];
     this.sourceData = props.data || [];
-    this.data = props.data || [];
+    this.sortedData = (props.data || []).slice();
+    this.data = this.sortedData;
     this.rowHeight = rowHeight;
     this.headerHeight = headerHeight;
     this.onSelect = typeof props.onSelect === 'function' ? props.onSelect : null;
+    if (props.pagination && typeof props.pagination === 'object') {
+      this.paginationOptions = props.pagination;
+      this.pageSize = Math.max(1, Number(props.pagination.pageSize) || 10);
+      this.page = Math.max(1, Number(props.pagination.page) || 1);
+      this.__applyPage();
+      return;
+    }
     this.__render();
   }
 
   public setData(data: ICETableRow[]): this {
     this.sourceData = data || [];
-    this.data = this.sourceData;
+    this.sortedData = this.sourceData.slice();
     this.sortKey = null;
     this.sortOrder = null;
     this.selectedIndex = -1;
-    this.setState({ height: this.headerHeight + this.rowHeight * this.data.length });
-    this.__render();
+    this.page = 1;
+    this.__applyPage();
     return this;
+  }
+
+  /** 全量行数（排序后、分页前的总数）。 */
+  public getTotalRows(): number {
+    return this.sortedData.length;
+  }
+
+  /** 总页数；不分页时为 1。 */
+  public getPageCount(): number {
+    if (!this.pageSize) {
+      return 1;
+    }
+    return Math.max(1, Math.ceil(this.sortedData.length / this.pageSize));
+  }
+
+  public getPage(): number {
+    return this.page;
+  }
+
+  public getPageSize(): number {
+    return this.pageSize;
+  }
+
+  /** 换页：夹取到 [1, pageCount]，重新渲染并回调。 */
+  public setPage(page: number): this {
+    if (!this.pageSize) {
+      return this;
+    }
+    const next = Math.min(this.getPageCount(), Math.max(1, Math.floor(Number(page) || 1)));
+    if (next === this.page) {
+      return this;
+    }
+    this.page = next;
+    this.selectedIndex = -1;
+    this.__applyPage();
+    this.trigger('pagechange', null, { page: next, pageSize: this.pageSize });
+    if (this.paginationOptions && this.paginationOptions.onChange) {
+      this.paginationOptions.onChange(next, this.pageSize);
+    }
+    return this;
+  }
+
+  public setPageSize(pageSize: number): this {
+    const next = Math.max(1, Math.floor(Number(pageSize) || 10));
+    if (!this.pageSize || next === this.pageSize) {
+      return this;
+    }
+    this.pageSize = next;
+    this.page = 1;
+    this.__applyPage();
+    return this;
+  }
+
+  /** 分页器节点（不分页 / 空数据时为 null）。 */
+  public getPaginationNode(): ICEPagination | null {
+    return this.paginationNode;
   }
 
   /** 当前渲染顺序的数据（排序后）。 */
@@ -141,18 +223,41 @@ export class ICETable extends ICEWidget {
     if (!column || !column.sorter || !order) {
       this.sortKey = null;
       this.sortOrder = null;
-      this.data = this.sourceData.slice();
-      this.__render();
+      this.sortedData = this.sourceData.slice();
+      this.__applyPage();
       return this;
     }
     this.sortKey = key;
     this.sortOrder = order;
     const direction = order === 'asc' ? 1 : -1;
-    this.data = this.sourceData
+    this.sortedData = this.sourceData
       .slice()
       .sort((a, b) => direction * this.__compareRows(a, b, column));
-    this.__render();
+    this.__applyPage();
     return this;
+  }
+
+  /** 按当前页/每页条数切出要渲染的行，并把高度（含分页器 / 空态）算好。 */
+  private __applyPage(): void {
+    const total = this.sortedData.length;
+    this.page = Math.min(this.getPageCount(), Math.max(1, this.page));
+    if (!this.pageSize) {
+      this.data = this.sortedData.slice();
+    } else {
+      const start = (this.page - 1) * this.pageSize;
+      this.data = this.sortedData.slice(start, start + this.pageSize);
+    }
+    const showPagination = this.pageSize > 0 && total > 0;
+    const bodyHeight = this.data.length > 0 ? this.rowHeight * this.data.length : 120;
+    this.setState({
+      height: this.headerHeight + bodyHeight + (showPagination ? this.__footerHeight() : 0),
+    });
+    this.__render();
+  }
+
+  /** 分页器区域高度（分页器本体 32 + 上下留白）。 */
+  private __footerHeight(): number {
+    return 48;
   }
 
   public setSelectedRow(index: number): this {
@@ -326,6 +431,37 @@ export class ICETable extends ICEWidget {
       const values = this.columns.map((column) => this.__format(row[column.key]));
       this.__placeCells(panel, widths, values, false, this.columns, row);
     });
+
+    // 空态：没有数据时给一块 ICEEmpty，而不是留一片空白
+    if (!this.data.length) {
+      this.addChild(
+        new ICEEmpty({
+          left: 0,
+          top: this.headerHeight,
+          width: totalWidth,
+          height: 120,
+          description: this.columns.length ? '暂无数据' : '暂无数据',
+        }),
+        false,
+      );
+    }
+
+    // 分页器：只有真的分了页（且不是空态）才出现
+    this.paginationNode = null;
+    if (this.pageSize > 0 && this.data.length > 0) {
+      const pagination = new ICEPagination({
+        left: 0,
+        top: this.headerHeight + this.data.length * this.rowHeight + 8,
+        width: totalWidth,
+        total: this.sortedData.length,
+        pageSize: this.pageSize,
+        current: this.page,
+        showTotal: this.paginationOptions ? this.paginationOptions.showTotal !== false : true,
+        onChange: (page: number) => this.setPage(page),
+      });
+      this.addChild(pagination, false);
+      this.paginationNode = pagination;
+    }
     this.__syncSelection();
     if (this.ice && this.ice.ctx) {
       this.__layoutCells();

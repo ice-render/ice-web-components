@@ -13,6 +13,13 @@
 | 方法 | 返回 | 说明 |
 |---|---|---|
 | `setData(data: ICETableRow[])` | `this` |  |
+| `getTotalRows()` | `number` | 全量行数（排序后、分页前的总数）。 |
+| `getPageCount()` | `number` | 总页数；不分页时为 1。 |
+| `getPage()` | `number` |  |
+| `getPageSize()` | `number` |  |
+| `setPage(page: number)` | `this` | 换页：夹取到 [1, pageCount]，重新渲染并回调。 |
+| `setPageSize(pageSize: number)` | `this` |  |
+| `getPaginationNode()` | `ICEPagination \| null` | 分页器节点（不分页 / 空数据时为 null）。 |
 | `getRows()` | `ICETableRow[]` | 当前渲染顺序的数据（排序后）。 |
 | `getSortState()` | `ICETableSortState \| null` |  |
 | `getHeaderLabel(key: string)` | `string` | 表头文案（排序中的列带 ▲/▼ 指示）。 |

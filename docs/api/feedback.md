@@ -404,3 +404,44 @@
 | `prev()` | `this` |  |
 | `finish()` | `this` | 完成引导（最后一步的「下一步」/ 外部主动调用）。 |
 | `skip()` | `this` |  |
+
+## `ICEFloatButton`
+
+悬浮操作按钮（业界组件库 FloatButton）：一个圆形主按钮，点击展开一组子按钮。
+
+- 默认收起，子按钮 `display:false`（既不显示也不参与命中）；
+- 展开后子按钮沿 `direction`（默认向上）依次排开；
+- 点子按钮回调 `onItemClick(key)` 与子项自己的 `onClick`，并自动收起；
+- `type: 'primary' | 'default'` 决定主按钮底色。
+
+源码：[`src/components/ICEFloatButton.ts`](../../src/components/ICEFloatButton.ts)
+
+**构造参数** `ICEFloatButtonOptions`
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `id?` | `string` | 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） |
+| `icon?` | `string` | 主按钮图标，默认 ＋（展开时变 ×） |
+| `expandedIcon?` | `string` | 展开后的图标，默认 × |
+| `size?` | `number` | 尺寸 |
+| `gap?` | `number` | 与子按钮的间距，默认 8 |
+| `direction?` | `'up' \| 'down'` |  |
+| `type?` | `'primary' \| 'default'` |  |
+| `items?` | `ICEFloatButtonItem[]` | 数据项 |
+| `left?` | `number` | 相对父容器的左边距 |
+| `top?` | `number` | 相对父容器的上边距 |
+| `onClick?` | `() => void` | 点击回调 |
+| `onItemClick?` | `(key: string) => void` |  |
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `isExpanded()` | `boolean` |  |
+| `getItemNode(key: string)` | `ICEWidget \| null` |  |
+| `getItems()` | `ICEFloatButtonItem[]` |  |
+| `getButtonColor()` | `string` |  |
+| `expand()` | `this` |  |
+| `collapse()` | `this` |  |
+| `toggle()` | `this` |  |
+| `activate()` | `void` | @overwrite 键盘激活等价一次点击（展开 / 收起）。 |

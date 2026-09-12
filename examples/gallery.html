@@ -1031,6 +1031,81 @@
       });
       tourTarget.on('click', () => tour.open());
 
+      // 布局骨架（Space / Grid）+ 悬浮按钮 + 分页表格
+      const layoutSpace = new W.ICESpace({ id: 'layout-space', left: 0, top: 0, direction: 'horizontal', size: 8 });
+      layoutSpace.addItem(new W.ICEButton({ left: 0, top: 0, width: 72, height: 32, text: '保存', variant: 'primary' }));
+      layoutSpace.addItem(new W.ICEButton({ left: 0, top: 0, width: 72, height: 32, text: '取消' }));
+      layoutSpace.addItem(
+        new W.ICETag({ left: 0, top: 0, width: 64, height: 32, text: '草稿', status: 'warning', variant: 'soft' }),
+      );
+      const layoutGrid = new W.ICEGrid({ id: 'layout-grid', left: 0, top: 0, width: 360, gutter: 12 });
+      const gridCell = (label, height) => {
+        const panel = new W.ICEPanel({ left: 0, top: 0, width: 10, height });
+        panel.addChild(
+          new W.ICELabel({
+            left: 12,
+            top: 0,
+            width: 120,
+            height,
+            text: label,
+            verticalAlign: 'middle',
+            style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+          }),
+          false,
+        );
+        return panel;
+      };
+      layoutGrid.addCol(new W.ICEGridCol({ span: 12, content: gridCell('span 12', 56) }));
+      layoutGrid.addCol(new W.ICEGridCol({ span: 12, content: gridCell('span 12', 56) }));
+      layoutGrid.addCol(new W.ICEGridCol({ span: 24, content: gridCell('span 24', 32) }));
+      const fabSpacer = new W.ICEWidget({
+        left: 0,
+        top: 0,
+        width: 0,
+        height: 160,
+        fill: false,
+        stroke: false,
+        interactive: false,
+      });
+      let fabPicked = null;
+      const fab = new W.ICEFloatButton({
+        id: 'float-button',
+        left: 0,
+        top: 116,
+        type: 'primary',
+        items: [
+          { key: 'edit', icon: '✎' },
+          { key: 'share', icon: '↗' },
+        ],
+        onItemClick: (key) => {
+          fabPicked = key;
+        },
+      });
+      window.__fabPicked = () => fabPicked;
+      const pagedTable = new W.ICETable({
+        id: 'paged-table',
+        left: 0,
+        top: 0,
+        width: 420,
+        rowHeight: 34,
+        columns: [
+          { key: 'name', title: '客户' },
+          { key: 'city', title: '城市' },
+          { key: 'amount', title: '金额', align: 'right', sorter: true },
+        ],
+        data: [
+          { name: 'Ava', city: '杭州', amount: 1240 },
+          { name: 'Bob', city: '上海', amount: 860 },
+          { name: 'Cara', city: '北京', amount: 2310 },
+          { name: 'Dan', city: '深圳', amount: 540 },
+          { name: 'Ella', city: '成都', amount: 1780 },
+          { name: 'Finn', city: '广州', amount: 990 },
+          { name: 'Gina', city: '武汉', amount: 320 },
+          { name: 'Hugo', city: '西安', amount: 1450 },
+        ],
+        pagination: { pageSize: 3, showTotal: true },
+      });
+
       // 演示清单：每个 item 要么是单个组件，要么是一组「必须贴在一起」的组件（数组）。
       // 组件自带的 left/top 只是簇内局部坐标，实际位置由 flowSections 统一排。
       const sections = [
@@ -1208,6 +1283,14 @@
           title: 'Calendar & overlays',
           items: [calendar, [previewTarget, tourTarget]],
         },
+        {
+          title: 'Layout & float',
+          items: [layoutSpace, layoutGrid, [fabSpacer, fab]],
+        },
+        {
+          title: 'Table with pagination',
+          items: [pagedTable],
+        },
       ];
 
       // 画布随内容长高：改元素尺寸 + 同步 ice.canvasWidth/Height（渲染器每帧都读它）
@@ -1290,7 +1373,7 @@
         requestAnimationFrame(() => syncCanvasToContent(flowSections(panel, sections))),
       );
 
-      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, submitHint, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, timePicker, timeHint, cascader, transfer, upload, carousel, avatarGroup, closableAlert, progressCircle, progressCircleDone, comment, colorPicker, colorHint, imageFill, imageContain, imageCover, breadcrumb, breadcrumbCollapsed, statistic, countdown, radioGroup, checkboxGroup, splitter, watermark, typographyTitle, typographyParagraph, typographyLink, anchorPane, anchor, backTop, calendar, imagePreview, previewTarget, tour, tourTarget };
+      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, submitHint, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, timePicker, timeHint, cascader, transfer, upload, carousel, avatarGroup, closableAlert, progressCircle, progressCircleDone, comment, colorPicker, colorHint, imageFill, imageContain, imageCover, breadcrumb, breadcrumbCollapsed, statistic, countdown, radioGroup, checkboxGroup, splitter, watermark, typographyTitle, typographyParagraph, typographyLink, anchorPane, anchor, backTop, calendar, imagePreview, previewTarget, tour, tourTarget, layoutSpace, layoutGrid, fab, pagedTable };
     </script>
   </body>
 </html>

@@ -11,12 +11,13 @@
 > `focusRing` 聚焦色）；③ `ICETag`/`ICEBadge` 默认改成 Bootstrap 实底 `.text-bg-*`（`variant:'soft'` 保留浅底风格）。
 > 细节见 README 的 Naming / Theme / Colour variants 三节。
 
-## 现状（71 个组件源文件 / 83 个导出类）
+## 现状（74 个组件源文件 / 87 个导出类）
 
 按分组清点（完整清单与参数见 [`docs/components.md`](./docs/components.md)）：
 
 - **基础**：`ICEWidget` `ICEContainer` `ICEPanel` `ICEButton` `ICELabel` `ICETypography`
   `ICEIcon` `ICESvgIcon` `ICESeparator`
+- **布局**：`ICESpace`（间距容器）、`ICEGrid` + `ICEGridCol`（24 栅格）、`ICESplitter`、`ICEScrollPane`
 - **数据录入**：`ICETextField` `ICETextArea` `ICEPasswordField` `ICEInputNumber`
   `ICECheckBox` `ICECheckboxGroup` `ICERadioButton` `ICERadioGroup` `ICESwitch` `ICESlider`
   `ICESegmented` `ICERate` `ICEUpload` `ICEFormItem` `ICEForm`
@@ -26,7 +27,8 @@
   `ICEDescriptions` `ICETimeline` `ICEProgressBar` `ICEImageView` `ICEImagePreview` `ICECalendar`
   `ICEAvatar` `ICEAvatarGroup` `ICETag` `ICEBadge` `ICECarousel` `ICECollapse` `ICEComment` `ICEWatermark`
 - **反馈**：`ICEAlert` `ICEModal` `ICEDrawer` `ICEMessage` `ICENotification` `ICETooltip`
-  `ICEPopover` `ICEPopconfirm` `ICETour` `ICEResult` `ICEEmpty` `ICESkeleton` `ICESpin` `ICESteps`
+  `ICEPopover` `ICEPopconfirm` `ICETour` `ICEFloatButton` `ICEResult` `ICEEmpty` `ICESkeleton`
+  `ICESpin` `ICESteps`
 - **导航**：`ICEMenu` `ICEBreadcrumb` `ICEAnchor` `ICEBackTop` `ICEDropdown` `ICEPagination` `ICETabs`
 - **核心**：`ICEScrollPane` `ICESplitter` `ICEOverlayManager` `ICEFocusManager`
   `ICEHoverManager` `ICEMessageManager` `ICEManager`
@@ -42,7 +44,9 @@
 > `ICEBackTop`（回到顶部）；`ICEScrollPane` 补 `scroll` 事件（两者的底座）。
 > 第三批：`ICEImagePreview`（缩放/旋转/翻页/键盘）、`ICETour`（聚光引导）、
 > `ICECalendar`（月视图 + 键盘）。
-> 浏览器回归用例：`npm run qa:gallery`（21 项，真实鼠标事件）。
+> 第四批：`ICESpace` / `ICEGrid` + `ICEGridCol`（24 栅格）/ `ICEFloatButton`，
+> 以及 `ICETable` 的分页 + 空态。
+> 浏览器回归用例：`npm run qa:gallery`（25 项，真实鼠标事件）。
 
 ## 阶段 A：底座（先做这个）
 
@@ -101,12 +105,12 @@
 | 业界组件库 分类 | 组件 | 本库 |
 |---|---|---|
 | 通用 | Button | ✅ `ICEButton` |
-| 通用 | FloatButton / BackTop | ✅ `ICEBackTop`（跟随滚动容器，超阈值出现；无速度仪表盘样式） |
+| 通用 | FloatButton / BackTop | ✅ `ICEFloatButton`（展开菜单 + 自动收起）+ `ICEBackTop`（跟随滚动容器） |
 | 通用 | Icon | ✅ `ICEIcon`（字形）/ `ICESvgIcon`（SVG path） |
 | 通用 | Typography | ✅ `ICETypography`（Title 五级 / Paragraph 折行省略 / Link 可点击；无 copyable / editable） |
 | 布局 | Divider | ✅ `ICESeparator` |
-| 布局 | Flex / Space | ⬜ 可用现有 Flow/Box 布局覆盖，低优先 |
-| 布局 | Grid | ⬜ 引擎已有 `ICEGridLayout`，缺 UI 封装 |
+| 布局 | Flex / Space | ✅ `ICESpace`（横向/纵向 + 交叉轴对齐 + wrap + 按内容自适应尺寸） |
+| 布局 | Grid | ✅ `ICEGrid` + `ICEGridCol`（24 栅格 + gutter/offset + 自动换行） |
 | 布局 | Layout（Header/Sider/Content/Footer） | ⬜ 阶段 D（画布内更像「模板」而非组件） |
 | 布局 | Splitter | ✅ `ICESplitter`（两栏拖拽 + min/max 夹取；无三栏 / 嵌套手柄） |
 | 导航 | Anchor | ✅ `ICEAnchor`（点击滚动 + 滚动追随高亮 + ↑↓ 键盘） |
@@ -147,7 +151,7 @@
 | 数据展示 | QRCode | ⊘ 需要编码器，收益低 |
 | 数据展示 | Segmented | ✅ `ICESegmented` |
 | 数据展示 | Statistic | ✅ `ICEStatistic`（精度 / 千分位 / 前缀后缀 / 倒计时）+ `ICEStatCard`（卡片态） |
-| 数据展示 | Table | ✅ `ICETable`（列排序 `sorter` + ▲▼ 指示；无分页 / 滚动 / 列宽拖拽） |
+| 数据展示 | Table | ✅ `ICETable`（列排序 + ▲▼ 指示 + 分页 + 空态；无滚动 / 列宽拖拽 / 展开行） |
 | 数据展示 | Tabs | ✅ `ICETabs`（部分：无溢出滚动 / 关闭 / 卡片态） |
 | 数据展示 | Tag | ✅ `ICETag`（部分：无可关闭 / 多彩） |
 | 数据展示 | Timeline | ✅ `ICETimeline` |
@@ -184,9 +188,9 @@
 7. **QRCode**（需自带编码器，约 200 行）—— 收益中等，排最后；
 8. **Layout / Grid / Space**（Header-Sider-Content-Footer、Row-Col、间距容器）——
    引擎已有 `ICEGridLayout`，缺 UI 封装；定位更接近「模板」，**下一批第一顺位**；
-9. **FloatButton 完整形态**（悬浮按钮组 / 展开菜单）—— 现在只有 `ICEBackTop`；
-10. **Table 的「做满」**（分页 / 滚动 / 列宽拖拽）与 **Form 的跨字段依赖重校验** ——
-    不缺组件，缺的是现有组件的能力补齐。
+9. ~~FloatButton 完整形态~~ ✅ `ICEFloatButton`（展开菜单 / 自动收起）
+10. **Table 的剩余部分**（滚动 / 列宽拖拽 / 展开行）与 **Form 的跨字段依赖重校验**、
+    **QRCode**（需自带编码器）—— **下一批第一顺位是 Form 的跨字段重校验**（业务感知最强）。
 
 ## 现有组件的「做满」清单
 

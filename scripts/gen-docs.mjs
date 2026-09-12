@@ -32,6 +32,9 @@ const GROUPS = [
       'ICEWidget',
       'ICEContainer',
       'ICEPanel',
+      'ICESpace',
+      'ICEGrid',
+      'ICEGridCol',
       'ICEButton',
       'ICELabel',
       'ICETypography',
@@ -114,6 +117,7 @@ const GROUPS = [
       'ICESpin',
       'ICESteps',
       'ICETour',
+      'ICEFloatButton',
     ],
   },
   {

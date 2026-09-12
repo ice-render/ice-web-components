@@ -372,6 +372,70 @@ await page.waitForTimeout(320);
 const previewClosed = await page.evaluate(() => window.__result.imagePreview.isOpen());
 check('图片预览：Esc 关闭', previewClosed === false, String(previewClosed));
 
+// —— 13. 布局骨架：Space / Grid ——
+const layoutInfo = await page.evaluate(() => {
+  const space = window.__result.layoutSpace;
+  const grid = window.__result.layoutGrid;
+  const items = space.getItems();
+  const cols = grid.getCols();
+  return {
+    spaceGap: items[1].state.left - (Number(items[0].state.width) || 0),
+    spaceHeight: space.state.height,
+    colWidths: cols.map((col) => Math.round(Number(col.state.width))),
+    colLefts: cols.map((col) => Math.round(Number(col.state.left))),
+    colTops: cols.map((col) => Math.round(Number(col.state.top))),
+  };
+});
+check(
+  'Space：按 size 排列并自适应高度',
+  layoutInfo.spaceGap === 8 && layoutInfo.spaceHeight === 32,
+  JSON.stringify(layoutInfo),
+);
+check(
+  'Grid：12+12 等宽、24 格整行、超行换行',
+  layoutInfo.colWidths[0] === layoutInfo.colWidths[1] &&
+    layoutInfo.colLefts[0] === 0 &&
+    layoutInfo.colTops[2] > layoutInfo.colTops[0],
+  JSON.stringify(layoutInfo),
+);
+
+// —— 14. 悬浮按钮：展开 → 点子项 → 收起 ——
+const fabExpanded = await clickExpr('window.__result.fab');
+const fabState = await page.evaluate(() => ({
+  expanded: window.__result.fab.isExpanded(),
+  itemVisible: window.__result.fab.getItemNode('edit').state.display,
+}));
+check('悬浮按钮：点击展开子项', fabExpanded && fabState.expanded === true && fabState.itemVisible === true, JSON.stringify(fabState));
+const fabItemClicked = await clickExpr("window.__result.fab.getItemNode('edit')");
+const fabAfter = await page.evaluate(() => ({
+  expanded: window.__result.fab.isExpanded(),
+  picked: window.__fabPicked(),
+}));
+check(
+  '悬浮按钮：点子项回调并自动收起',
+  fabItemClicked && fabAfter.expanded === false && fabAfter.picked === 'edit',
+  JSON.stringify(fabAfter),
+);
+
+// —— 15. 表格分页 ——
+const tablePage1 = await page.evaluate(() => ({
+  page: window.__result.pagedTable.getPage(),
+  count: window.__result.pagedTable.getPageCount(),
+  rows: window.__result.pagedTable.getRows().length,
+  first: window.__result.pagedTable.getRows()[0].name,
+}));
+check(
+  '表格分页：首页 3 行、共 3 页',
+  tablePage1.page === 1 && tablePage1.count === 3 && tablePage1.rows === 3 && tablePage1.first === 'Ava',
+  JSON.stringify(tablePage1),
+);
+const pagerClicked = await clickExpr('window.__result.pagedTable.getPaginationNode().getNextButton()');
+const tablePage2 = await page.evaluate(() => ({
+  page: window.__result.pagedTable.getPage(),
+  first: window.__result.pagedTable.getRows()[0].name,
+}));
+check('表格分页：点下一页换到第 2 页', pagerClicked && tablePage2.page === 2 && tablePage2.first === 'Dan', JSON.stringify(tablePage2));
+
 check('无 console error / pageerror', errors.length === 0, errors.slice(0, 3).join(' | '));
 
 await page.screenshot({ path: '/tmp/qa-gallery.png', fullPage: true });
