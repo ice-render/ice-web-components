@@ -440,7 +440,7 @@
           top: 696,
           width: COLUMN_W,
           height: 20,
-          text: '三个纯逻辑模型（ICETetrisModel / ICESnakeModel / ICE2048Model）+ ICE 组件绘制 · 规则与渲染完全解耦',
+          text: '四个纯逻辑模型（ICETetrisModel / ICESnakeModel / ICE2048Model / ICEChip8Model）+ ICE 组件绘制 · 规则与渲染完全解耦',
           style: { fontSize: 12, fillStyle: theme.colors.textTertiary },
         });
         soundSwitch.on('change', () => {
@@ -1234,6 +1234,204 @@
               };
             },
           },
+          chip8: {
+            key: 'chip8',
+            name: 'CHIP-8',
+            subtitle: '第 4 弹 · CHIP-8 虚拟机 · 自写 demo ROM',
+            hud: { scoreCaption: '指令 CYCLES', mid: '地址 PC', right: '状态 STATE', progressCaption: '累计指令' },
+            side: '机器 MACHINE',
+            help: [
+              ['1 2 3 4', '机器键盘 1-4'],
+              ['Q W E R', '机器键盘 5-8'],
+              ['A S D F', '机器键盘 9-C'],
+              ['Z X C V', '机器键盘 D-F'],
+              ['P', '暂停 / 继续'],
+              ['重开 / 排行榜', '按钮上（R 让给机器键盘）'],
+            ],
+            /** 声明这 16 个键归机器键盘，外壳的快捷键让路（见键盘路由）。 */
+            mount(ctx) {
+              const COLS = 64;
+              const ROWS = 32;
+              const CELL = 6;
+              const KEY_CELL = 24;
+              /** 机器键盘：CHIP-8 原版排布 1234 / QWER / ASDF / ZXCV（数组下标就是键码 0-F）。 */
+              const KEY_MAP = { '1': 0, '2': 1, '3': 2, '4': 3, q: 4, w: 5, e: 6, r: 7, a: 8, s: 9, d: 10, f: 11, z: 12, x: 13, c: 14, v: 15 };
+              /** 机器键盘占用的 16 个键：外壳看到这个清单就让路（R 也得让给它）。 */
+              const OWNED_KEYS = Object.keys(KEY_MAP);
+              const boardW = COLS * CELL;
+              const boardH = ROWS * CELL;
+              const originX = Math.round((ctx.screen.state.width - boardW) / 2);
+              // 屏幕里上下居中地摆「显存 + 机器键盘」这一组内容
+              const keyboardH = 4 * KEY_CELL;
+              const originY = Math.round((ctx.screen.state.height - (boardH + 28 + keyboardH)) / 2);
+              // 64×32 = 2048 格，依然只有 1 个节点（ICETileMap 的自绘）
+              const board = new W.ICETileMap({
+                id: 'chip8-board',
+                left: originX,
+                top: originY,
+                rows: ROWS,
+                cols: COLS,
+                cellSize: CELL,
+                gap: 1,
+                cellRadius: 1,
+                palette: PALETTE,
+                fill: true,
+                stroke: true,
+                style: { fillStyle: '#0b0f14', strokeStyle: '#1f2733', lineWidth: 2 },
+              });
+              ctx.screen.addChild(board, false);
+              /**
+               * 机器键盘可视化：4×4 = 16 格，按下去就点亮。
+               * 这不只是装饰 —— 它把「按下 / 松开」这条链路摆在屏幕上，FX0A 等按键时一眼能看出卡在哪。
+               */
+              const KEY_LABELS = Object.keys(KEY_MAP).map((key) => key.toUpperCase());
+              const keyboard = new W.ICETileMap({
+                id: 'chip8-keyboard',
+                left: Math.round((ctx.screen.state.width - 4 * KEY_CELL) / 2),
+                top: originY + boardH + 28,
+                rows: 4,
+                cols: 4,
+                cellSize: KEY_CELL,
+                gap: 4,
+                cellRadius: 4,
+                palette: {
+                  key: {
+                    fillStyle: '#141c26',
+                    strokeStyle: '#28323f',
+                    lineWidth: 1,
+                    textColor: '#7d8b9c',
+                    fontSize: 12,
+                    fontFamily: '"Courier New", monospace',
+                  },
+                  pressed: {
+                    fillStyle: '#9be7ff',
+                    strokeStyle: '#4aa8c9',
+                    lineWidth: 1,
+                    textColor: '#0b0f14',
+                    fontSize: 12,
+                    fontFamily: '"Courier New", monospace',
+                  },
+                },
+                fill: false,
+                stroke: false,
+                interactive: false,
+              });
+              keyboard.setTiles(new Array(16).fill('key'));
+              keyboard.setLabels(KEY_LABELS);
+              ctx.screen.addChild(keyboard, false);
+              const pauseBox = ctx.messageBox(
+                'chip8-paused',
+                { left: originX, top: originY + boardH / 2 - 46, width: boardW, height: 92 },
+                '已暂停',
+                '按 P 继续',
+                theme.colors.warning,
+              );
+              const info = [['ROM', 'demo · 绕屏笑脸'], ['频率', '600 指令/秒'], ['按键', '1234 QWER ASDF ZXCV']].map(([label, value], index) => {
+                const key = new W.ICELabel({ interactive: false, left: 0, top: index * 26, width: 60, height: 22, text: label, verticalAlign: 'middle', style: { fontSize: 12, fillStyle: theme.colors.textSecondary } });
+                const val = new W.ICELabel({ interactive: false, left: 62, top: index * 26, width: 206, height: 22, text: value, verticalAlign: 'middle', style: { fontSize: 12, fontFamily: '"Courier New", monospace', fillStyle: theme.colors.text } });
+                ctx.sideBody.addChild(key, false);
+                ctx.sideBody.addChild(val, false);
+                return val;
+              });
+              const model = new W.ICEChip8Model();
+              model.loadProgram(W.ICE_CHIP8_DEMO_ROM);
+              const state = { accumulator: 0, timer: 0, pausedShown: false, lastBeep: 0, lastPaint: '', lastKeyPaint: '' };
+              const paint = () => {
+                const display = model.getDisplay();
+                let key = '';
+                const tiles = new Array(display.length);
+                for (let i = 0; i < display.length; i += 1) {
+                  tiles[i] = display[i] ? 'chip8On' : 'chip8Off';
+                  key += display[i] ? '1' : '0';
+                }
+                // 单色屏只有两种状态，整屏签名的比较比逐格 setState 便宜得多
+                if (key !== state.lastPaint) {
+                  state.lastPaint = key;
+                  board.setTiles(tiles);
+                }
+                // 键盘同理：只在「按下的键变了」时重画那 16 格
+                let keyState = '';
+                const keyTiles = new Array(16);
+                for (let i = 0; i < 16; i += 1) {
+                  const down = model.isKeyDown(i);
+                  keyTiles[i] = down ? 'pressed' : 'key';
+                  keyState += down ? '1' : '0';
+                }
+                if (keyState !== state.lastKeyPaint) {
+                  state.lastKeyPaint = keyState;
+                  keyboard.setTiles(keyTiles);
+                }
+                info[1].setText(`600 指令/秒 · ${model.getCycles()} 条`);
+              };
+              return {
+                model,
+                board,
+                keyboard,
+                keys: OWNED_KEYS,
+                paint,
+                hud: () => ({
+                  score: String(model.getCycles()),
+                  mid: `0x${model.getPC().toString(16).toUpperCase().padStart(3, '0')}`,
+                  right: model.isWaitingForKey() ? '按键' : '运行',
+                  progress: { value: Math.min(10, Math.round(model.getCycles() / 600) % 10), text: 'CHIP-8' },
+                }),
+                keydown(key) {
+                  const index = KEY_MAP[key];
+                  if (index === undefined) return;
+                  model.setKey(index, true);
+                },
+                keyup(key) {
+                  const index = KEY_MAP[key];
+                  if (index === undefined) return;
+                  model.setKey(index, false);
+                },
+                frame(dt) {
+                  if (model.isPaused()) return;
+                  const perInstruction = 1000 / 600;
+                  state.accumulator += dt;
+                  let budget = 80;
+                  while (state.accumulator >= perInstruction && budget > 0) {
+                    state.accumulator -= perInstruction;
+                    budget -= 1;
+                    try {
+                      model.step();
+                    } catch (err) {
+                      break; // ROM 跑飞了：停下来，别把页面搞崩
+                    }
+                  }
+                  state.timer += dt;
+                  while (state.timer >= 1000 / 60) {
+                    state.timer -= 1000 / 60;
+                    model.tickTimers();
+                  }
+                  if (model.getSoundTimer() > 0 && Date.now() - state.lastBeep > 90) {
+                    state.lastBeep = Date.now();
+                    playCue('eat');
+                  }
+                },
+                setOverlay(paused) {
+                  if (paused !== state.pausedShown) {
+                    state.pausedShown = paused;
+                    pauseBox.setState({ display: paused });
+                    if (paused) W.fadeIn(pauseBox, { duration: 160 });
+                  }
+                },
+                restart() {
+                  model.reset();
+                  model.loadProgram(W.ICE_CHIP8_DEMO_ROM);
+                  state.lastPaint = '';
+                  state.lastKeyPaint = '';
+                  state.accumulator = 0;
+                  state.timer = 0;
+                },
+                destroy() {
+                  model.clearKeys();
+                  board.removeChildren([...board.childNodes]);
+                  keyboard.removeChildren([...keyboard.childNodes]);
+                },
+              };
+            },
+          },
         };
 
         /* --------------------------------- 卡带切换与 HUD --------------------------------- */
@@ -1242,10 +1440,15 @@
           { key: 'tetris', label: '俄罗斯方块' },
           { key: 'snake', label: '贪吃蛇' },
           { key: '2048', label: '2048' },
+          { key: 'chip8', label: 'CHIP-8' },
         ];
+        const CART_WIDTH = 108;
+        /** 卡带位：和上下几排面板一个节奏（20px 缝），一共 5 格正好铺满 COLUMN_W */
+        const CART_GAP = 20;
+        const CART_PITCH = CART_WIDTH + CART_GAP;
         /**
          * 卡带位。ICEButton 的 variant 是构造期决定的（没有 setVariant），所以选中态不靠
-         * 改属性，而是**每次切换重建这一行按钮** —— 反正只有三个，重建最省心。
+         * 改属性，而是**每次切换重建这一行按钮** —— 反正只有四五个，重建最省心。
          */
         const cartridgeBar = new W.ICEWidget({
           id: 'arcade-cartridges',
@@ -1264,9 +1467,9 @@
           CART_RIDGE.forEach((item, index) => {
             const button = new W.ICEButton({
               id: `arcade-cart-${item.key}`,
-              left: index * 160,
+              left: index * CART_PITCH,
               top: 0,
-              width: 140,
+              width: CART_WIDTH,
               height: 32,
               text: item.label,
               variant: item.key === currentKey ? 'primary' : 'default',
@@ -1278,9 +1481,9 @@
           });
           const soonButton = new W.ICEButton({
             id: 'arcade-cart-soon',
-            left: 480,
+            left: CART_RIDGE.length * CART_PITCH,
             top: 0,
-            width: 140,
+            width: CART_WIDTH,
             height: 32,
             text: '中国象棋',
             variant: 'default',
@@ -1296,6 +1499,8 @@
           snake: new W.ICEHighScoreModel({ key: 'snake', maxEntries: 5 }),
           '2048': new W.ICEHighScoreModel({ key: '2048', maxEntries: 5 }),
         };
+        /** 有没有排行榜：CHIP-8 是台机器，跑的是 ROM，没有"分数"这回事。 */
+        const hasScores = (key) => !!scores[key];
         const pad2 = (value) => String(value).padStart(2, '0');
         const formatAt = (at) => {
           const date = new Date(Number(at) || Date.now());
@@ -1343,6 +1548,10 @@
         const openLeaderboard = () => {
           if (!currentKey) return null;
           const game = GAMES[currentKey];
+          if (!hasScores(currentKey)) {
+            toast('CHIP-8 卡带没有排行榜 · 它只负责跑 ROM', 'info');
+            return null;
+          }
           const modal = W.openModal(ice, {
             title: `排行榜 · ${game.name}`,
             width: 460,
@@ -1386,7 +1595,7 @@
             pauseButton.setText(nextPauseText);
           }
           runtime.setOverlay(paused, over);
-          bestLabel.setText(`最高分 ${scores[currentKey].getBest()}`);
+          bestLabel.setText(hasScores(currentKey) ? `最高分 ${scores[currentKey].getBest()}` : 'CHIP-8 · 无排行榜');
           runtime.paint();
           ice.dirty = true;
         };
@@ -1396,7 +1605,7 @@
         const watch = () => {
           const model = runtime.model;
           const off = model.addChangeListener(() => {
-            if (model.isGameOver() && !announcedOver) {
+            if (model.isGameOver() && !announcedOver && hasScores(currentKey)) {
               announcedOver = true;
               const score = model.getScore();
               const inTop = scores[currentKey].isInTop(score);
@@ -1421,8 +1630,10 @@
           announcedOver = false;
           pauseText = '';
           subtitle.setText(game.subtitle);
+          scoreCard.caption.setText(game.hud.scoreCaption || '得分 SCORE');
           midCard.caption.setText(game.hud.mid);
           rightCard.caption.setText(game.hud.right);
+          progressCaption.setText(game.hud.progressCaption || '升级进度');
           sideCaption.setText(game.side);
           setHelpRows(game.help);
           renderCartridges();
@@ -1469,34 +1680,53 @@
         };
         requestAnimationFrame(frame);
 
+        /** 掌机键：方向键 + 空格，任何卡带都收。 */
+        const PAD_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowDown', 'ArrowUp', ' ', 'Spacebar'];
+        /** 卡带常用字母/数字键（俄罗斯方块 ZX、贪吃蛇 WASD、2048 用方向键）。 */
+        const LETTER_KEYS = ['w', 'a', 's', 'd', 'z', 'x', 'c', 'v', 'q', 'e', 'f', '1', '2', '3', '4'];
         window.addEventListener('keydown', (event) => {
           if (!runtime) return;
+          if (event.ctrlKey || event.metaKey || event.altKey) return; // 不抢浏览器的组合键
           const key = event.key;
-          const known = [
-            'ArrowLeft', 'ArrowRight', 'ArrowDown', 'ArrowUp', ' ', 'Spacebar',
-            'w', 'W', 'a', 'A', 's', 'S', 'd', 'D', 'z', 'Z', 'x', 'X', 'p', 'P', 'r', 'R', 'l', 'L',
-          ];
-          if (known.indexOf(key) === -1) return;
-          event.preventDefault();
+          const lower = key.length === 1 ? key.toLowerCase() : key;
           const repeating = event.repeat === true;
-          if (key === 'p' || key === 'P') {
-            if (!repeating) togglePause();
-            return;
+          /**
+           * 卡带自己声明的键优先。CHIP-8 的机器键盘占满 1234 QWER ASDF ZXCV，
+           * 连 R 都得让给它（否则那块 ROM 永远按不出 7 号键）；暂停/重开用按钮，
+           * P 仍然留给外壳（CHIP-8 键盘里没有 P）。
+           */
+          const owned = Array.isArray(runtime.keys) && runtime.keys.indexOf(lower) !== -1;
+          if (!owned) {
+            if (lower === 'p') {
+              if (!repeating) togglePause();
+              return;
+            }
+            if (lower === 'r') {
+              if (!repeating) restart();
+              return;
+            }
+            if (lower === 'l') {
+              if (!repeating) openLeaderboard();
+              return;
+            }
           }
-          if (key === 'r' || key === 'R') {
-            if (!repeating) restart();
-            return;
-          }
-          if (key === 'l' || key === 'L') {
-            if (!repeating) openLeaderboard();
-            return;
-          }
-          runtime.keydown(key, repeating);
+          if (!owned && PAD_KEYS.indexOf(key) === -1 && LETTER_KEYS.indexOf(lower) === -1) return;
+          event.preventDefault();
+          runtime.keydown(lower, repeating);
+        });
+
+        // CHIP-8 需要「按下 / 松开」两个事件（其它卡带用不到 keyup，实现了也没关系）
+        window.addEventListener('keyup', (event) => {
+          if (!runtime || typeof runtime.keyup !== 'function') return;
+          runtime.keyup(event.key.length === 1 ? event.key.toLowerCase() : event.key);
         });
 
         // 切走标签页自动暂停，回来接着玩（游戏机也这么干）
         window.addEventListener('blur', () => {
-          if (runtime && !runtime.model.isGameOver() && !runtime.model.isPaused()) runtime.model.pause();
+          if (!runtime) return;
+          // 失焦时按键的「松开」事件会丢，机器键盘得手动清（否则 FX0A 会一直等）
+          if (typeof runtime.model.clearKeys === 'function') runtime.model.clearKeys();
+          if (!runtime.model.isGameOver() && !runtime.model.isPaused()) runtime.model.pause();
         });
 
         /* --------------------------------- 组装 --------------------------------- */
@@ -1540,11 +1770,12 @@
           scoreCard: scoreCard.value,
           midCard: midCard.value,
           rightCard: rightCard.value,
+          captions: { score: scoreCard.caption, mid: midCard.caption, right: rightCard.caption, progress: progressCaption },
           bestLabel,
           scores,
           openLeaderboard,
           leaderboard: null,
-          nodes: { shell, bezel, screen, sidePanel, helpPanel, progressBar, sideBody, helpBody },
+          nodes: { shell, bezel, screen, sidePanel, helpPanel, progressBar, sideBody, helpBody, cartridgeBar },
         };
         selectGame('tetris');
       })();

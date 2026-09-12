@@ -271,6 +271,8 @@ XP 扫雷的三档标准难度。
 
 ## `ICEChip8Model`
 
+状态变化通知（掌机外壳拿它驱动重绘，和另外三个游戏模型是同一套契约）。
+
 源码：[`src/model/ICEChip8Model.ts`](../../src/model/ICEChip8Model.ts)
 
 **方法**
@@ -288,6 +290,11 @@ XP 扫雷的三档标准难度。
 | `isWaitingForKey()` | `boolean` |  |
 | `memoryRead(address: number)` | `number` |  |
 | `isKeyDown(index: number)` | `boolean` |  |
+| `isPaused()` | `boolean` | 暂停中（调试/切走标签页）：`step()` 与 `tickTimers()` 都不推进。 |
+| `isGameOver()` | `boolean` | VM 没有"输赢"，但掌机外壳按统一契约询问，这里老实回答"没结束"。 |
+| `pause()` | `void` |  |
+| `resume()` | `void` |  |
+| `addChangeListener(listener: ICEChip8Listener)` | `() => void` | 订阅状态变化：显存画了新东西、按键变了、定时器走了、机器复位了都会通知。 |
 | `loadProgram(bytes: ArrayLike<number>, address: number)` | `void` |  |
 | `memoryWrite(address: number, value: number)` | `void` |  |
 | `setKey(index: number, down: boolean)` | `void` |  |

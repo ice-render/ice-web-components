@@ -14,6 +14,10 @@
  *    吃食物（长度 +1 / 分数 / HUD）、撞墙 game over（overlay + 最高分落盘）、
  *    暂停时 tick 无效、R 重开；
  * 4. 卡带切换：切回去俄罗斯方块是一个全新的模型，卡带按钮高亮跟着换；
+ * 4.5 2048：4×4 棋盘 + 数字标签层、合并脉冲、推不动判负；
+ * 4.6 CHIP-8：64×32 单节点自绘屏、自写 demo ROM 在跑（方块绕屏且不残留）、
+ *    机器键盘按下/松开（keyup）、R 让给机器键 7、P 暂停冻住指令流、重开按钮复位、
+ *    没有排行榜的卡带点「排行榜」只提示不报错；
  * 5. 引擎能力：棋盘是**单个自绘节点**（ICETileMap，无子节点、有自绘计数）、
  *    消行 / 吃食物会触发 tween 脉冲、换卡带棋盘淡入、主题走 registerTheme('arcade')；
  * 6. 排行榜：点「排行榜」按钮弹出 ICEModal（内含 ICETable + ICEScrollPane），
@@ -142,8 +146,8 @@ const boot = await page.evaluate(() => {
   };
 });
 check(
-  '开局：默认插着俄罗斯方块卡带，HUD 与模型一致',
-  boot.game === 'tetris' && boot.cells === 0 && boot.pieceCells === 4 && boot.scoreText === '0' && boot.cartridges === 3,
+  '开局：默认插着俄罗斯方块卡带（卡带架上共 4 块），HUD 与模型一致',
+  boot.game === 'tetris' && boot.cells === 0 && boot.pieceCells === 4 && boot.scoreText === '0' && boot.cartridges === 4,
   JSON.stringify(boot),
 );
 check('零 console error', errors.length === 0, errors.join(' | '));
@@ -159,6 +163,8 @@ const engineUse = await page.evaluate(() => {
     paintCount: board && board.getPaintCount ? board.getPaintCount() : -1,
     themeName: window.ICEWEB.iceUIManager.getThemeName(),
     paletteFromToken: window.ICEWEB.ICE_ARCADE_PALETTE.I.fillStyle,
+    chip8On: window.ICEWEB.ICE_ARCADE_PALETTE.chip8On.fillStyle,
+    chip8Off: window.ICEWEB.ICE_ARCADE_PALETTE.chip8Off.fillStyle,
   };
 });
 check(
@@ -167,9 +173,10 @@ check(
   JSON.stringify(engineUse),
 );
 check(
-  '引擎能力：主题走 registerTheme(\'arcade\')，棋盘配色来自 token',
-  engineUse.themeName === 'arcade' && engineUse.paletteFromToken === '#0dcaf0',
-  JSON.stringify({ theme: engineUse.themeName, piece: engineUse.paletteFromToken }),
+  '引擎能力：主题走 registerTheme(\'arcade\')，棋盘与 CHIP-8 单色屏配色都来自 token',
+  engineUse.themeName === 'arcade' && engineUse.paletteFromToken === '#0dcaf0' &&
+    engineUse.chip8On === '#9be7ff' && engineUse.chip8Off === '#0d1218',
+  JSON.stringify({ theme: engineUse.themeName, piece: engineUse.paletteFromToken, on: engineUse.chip8On, off: engineUse.chip8Off }),
 );
 
 /* ---------- 2. 俄罗斯方块 ---------- */
@@ -715,6 +722,165 @@ check(
   JSON.stringify(restart2048),
 );
 
+/* ---------- 4.6 第四块卡带：CHIP-8 虚拟机 ---------- */
+const switchedChip8 = await clickExpr('window.__arcade.cartridges.chip8');
+await page.waitForTimeout(400);
+const bootChip8 = await page.evaluate(() => {
+  const r = window.__arcade;
+  const board = (r.nodes.screen.childNodes || []).find((n) => n.state && n.state.id === 'chip8-board');
+  const keyboard = (r.nodes.screen.childNodes || []).find((n) => n.state && n.state.id === 'chip8-keyboard');
+  const display = r.model.getDisplay();
+  return {
+    game: r.game,
+    childNodes: board ? board.childNodes.length : -1,
+    rows: board ? board.getRows() : -1,
+    cols: board ? board.getCols() : -1,
+    keyboardNodes: keyboard ? keyboard.childNodes.length : -1,
+    keyboardLabels: keyboard ? keyboard.getLabels().join('') : '',
+    pixels: display.reduce((sum, pixel) => sum + pixel, 0),
+    pc: r.model.getPC(),
+    cycles: r.model.getCycles(),
+    ownedKeys: Array.isArray(r.runtime.keys) ? r.runtime.keys.length : -1,
+    scoreCaption: r.captions.score.getText(),
+    midCaption: r.captions.mid.getText(),
+  };
+});
+check(
+  'CHIP-8：点卡带切换（64×32 单节点自绘屏 + 单节点机器键盘 + 声明 16 个机器键）',
+  switchedChip8 && bootChip8.game === 'chip8' && bootChip8.childNodes === 0 &&
+    bootChip8.rows === 32 && bootChip8.cols === 64 && bootChip8.ownedKeys === 16 &&
+    bootChip8.keyboardNodes === 0 && bootChip8.keyboardLabels === '1234QWERASDFZXCV',
+  JSON.stringify(bootChip8),
+);
+check(
+  'CHIP-8：HUD 跟着换成「指令 / 地址 / 状态」，ROM 已经在跑',
+  bootChip8.scoreCaption === '指令 CYCLES' && bootChip8.midCaption === '地址 PC' && bootChip8.cycles > 0,
+  JSON.stringify({ scoreCaption: bootChip8.scoreCaption, midCaption: bootChip8.midCaption, cycles: bootChip8.cycles }),
+);
+
+// demo ROM 在画一个绕屏移动的方块：像素位置要随时间变
+// （注意：清屏到重画之间有几毫秒的空屏，所以只看「亮着的那些采样」，别要求每一帧都有像素）
+const chip8Frames = [];
+for (let i = 0; i < 8; i += 1) {
+  // eslint-disable-next-line no-await-in-loop
+  chip8Frames.push(
+    await page.evaluate(() => {
+      const display = window.__arcade.model.getDisplay();
+      let first = -1;
+      let count = 0;
+      let minCol = 64;
+      let maxCol = -1;
+      let minRow = 32;
+      let maxRow = -1;
+      display.forEach((pixel, index) => {
+        if (!pixel) return;
+        count += 1;
+        if (first === -1) first = index;
+        const row = Math.floor(index / 64);
+        const col = index % 64;
+        minCol = Math.min(minCol, col);
+        maxCol = Math.max(maxCol, col);
+        minRow = Math.min(minRow, row);
+        maxRow = Math.max(maxRow, row);
+      });
+      return { first, count, spanX: maxCol - minCol, spanY: maxRow - minRow };
+    }),
+  );
+  // eslint-disable-next-line no-await-in-loop
+  await page.waitForTimeout(80);
+}
+const litPixels = chip8Frames.map((frame) => frame.count);
+const litPositions = new Set(chip8Frames.filter((frame) => frame.count > 0).map((frame) => frame.first));
+check(
+  'CHIP-8：ROM 真的在跑（8×8 笑脸 26 个像素、撞边反弹不裂到对边、不累积残留）',
+  Math.max(...litPixels) === 26 && litPixels.every((count) => count <= 26) && litPositions.size >= 3 &&
+    chip8Frames.every((frame) => frame.count === 0 || (frame.spanX <= 7 && frame.spanY <= 7)),
+  JSON.stringify(chip8Frames),
+);
+
+// 机器键盘：真实按下 / 松开，V 寄存器侧的 keys[] 要跟着变（FX0A 就靠这个）
+const chip8Keys = await page.evaluate(() => ({ before: window.__arcade.model.isKeyDown(5) }));
+await page.keyboard.down('w');
+await page.waitForTimeout(80);
+const chip8KeyDown = await page.evaluate(() => {
+  const keyboard = (window.__arcade.nodes.screen.childNodes || []).find((n) => n.state && n.state.id === 'chip8-keyboard');
+  return { down: window.__arcade.model.isKeyDown(5), tile: keyboard.getTiles()[5] };
+});
+await page.keyboard.up('w');
+await page.waitForTimeout(80);
+const chip8KeyUp = await page.evaluate(() => {
+  const keyboard = (window.__arcade.nodes.screen.childNodes || []).find((n) => n.state && n.state.id === 'chip8-keyboard');
+  return { down: window.__arcade.model.isKeyDown(5), tile: keyboard.getTiles()[5] };
+});
+check(
+  'CHIP-8：真实键盘 w → 机器键 5 按下并点亮键盘格，松开也收得到（其它卡带用不到 keyup）',
+  chip8Keys.before === false && chip8KeyDown.down === true && chip8KeyDown.tile === 'pressed' &&
+    chip8KeyUp.down === false && chip8KeyUp.tile === 'key',
+  JSON.stringify({ ...chip8Keys, down: chip8KeyDown, up: chip8KeyUp }),
+);
+
+// R 让给机器键盘（键 7）：不该触发外壳的「重开」
+const chip8BeforeR = await page.evaluate(() => ({ cycles: window.__arcade.model.getCycles() }));
+await page.keyboard.down('r');
+await page.waitForTimeout(80);
+const chip8RDown = await page.evaluate(() => ({ key7: window.__arcade.model.isKeyDown(7), cycles: window.__arcade.model.getCycles() }));
+await page.keyboard.up('r');
+const chip8AfterR = await page.evaluate(() => window.__arcade.model.getCycles());
+check(
+  'CHIP-8：R 归机器键盘（键 7），不会触发外壳重开',
+  chip8RDown.key7 === true && chip8RDown.cycles >= chip8BeforeR.cycles && chip8AfterR >= chip8BeforeR.cycles,
+  JSON.stringify({ before: chip8BeforeR, down: chip8RDown, after: chip8AfterR }),
+);
+
+// P 暂停：指令数冻住、overlay 弹出来，再按一次接着跑
+await page.keyboard.press('p');
+await page.waitForTimeout(200);
+const chip8Paused = await page.evaluate(() => {
+  const r = window.__arcade;
+  const overlay = (r.nodes.screen.childNodes || []).find((n) => n.state && n.state.id === 'chip8-paused');
+  return {
+    paused: r.model.isPaused(),
+    cycles: r.model.getCycles(),
+    overlay: overlay ? !!overlay.state.display : false,
+    buttonText: r.buttons.pauseButton.getText(),
+  };
+});
+await page.waitForTimeout(420);
+const chip8StillPaused = await page.evaluate(() => window.__arcade.model.getCycles());
+await page.keyboard.press('p');
+await page.waitForTimeout(320);
+const chip8Resumed = await page.evaluate(() => ({ paused: window.__arcade.model.isPaused(), cycles: window.__arcade.model.getCycles() }));
+check(
+  'CHIP-8：P 暂停（指令数冻住 + overlay + 按钮变「继续」），再按 P 接着跑',
+  chip8Paused.paused === true && chip8StillPaused === chip8Paused.cycles && chip8Paused.overlay === true &&
+    chip8Paused.buttonText.indexOf('继续') !== -1 && chip8Resumed.paused === false && chip8Resumed.cycles > chip8Paused.cycles,
+  JSON.stringify({ paused: chip8Paused, stillPaused: chip8StillPaused, resumed: chip8Resumed }),
+);
+
+// 重开按钮（R 已经不是外壳的了，按钮必须真的能重开）
+const chip8Restart = await page.evaluate(async () => {
+  const r = window.__arcade;
+  r.restart();
+  return { cycles: r.model.getCycles(), pixels: r.model.getDisplay().reduce((sum, pixel) => sum + pixel, 0), paused: r.model.isPaused() };
+});
+check(
+  'CHIP-8：重开按钮把机器复位（指令数归零、屏幕清空、回到运行态）',
+  chip8Restart.cycles === 0 && chip8Restart.pixels === 0 && chip8Restart.paused === false,
+  JSON.stringify(chip8Restart),
+);
+
+// 没有排行榜：点按钮给一条提示，不该报错（曾经直接拿 scores[key] 用）
+const chip8Leaderboard = await page.evaluate(() => {
+  const r = window.__arcade;
+  const modal = r.openLeaderboard();
+  return { modal: !!modal, game: r.game };
+});
+check(
+  'CHIP-8：没有排行榜的卡带点「排行榜」只提示、不报错（scores 兜底）',
+  chip8Leaderboard.modal === false && chip8Leaderboard.game === 'chip8',
+  JSON.stringify(chip8Leaderboard),
+);
+
 /* ---------- 5. 切回第一块卡带 ---------- */
 // 点击前先看一眼命中：卡带行是「切换时重建」的，这里顺便验证重建后的按钮真的可点
 const cartHit = await page.evaluate(() => {
@@ -744,12 +910,13 @@ const backState = await page.evaluate(() => {
     board: screenIds.indexOf('tetris-board') !== -1,
     snakeGone: screenIds.indexOf('snake-board') === -1,
     game2048Gone: screenIds.indexOf('game2048-board') === -1,
+    chip8Gone: screenIds.indexOf('chip8-board') === -1,
     midCaption: r.midCard.getText(),
   };
 });
 check(
-  '切回俄罗斯方块：拿到一个全新的模型，另外两块棋盘都被拆掉',
-  backToTetris && backGame === 'tetris' && backState.game === 'tetris' && backState.board && backState.snakeGone && backState.game2048Gone && backState.cells === 0 && backState.score === 0,
+  '切回俄罗斯方块：拿到一个全新的模型，另外三块棋盘都被拆掉',
+  backToTetris && backGame === 'tetris' && backState.game === 'tetris' && backState.board && backState.snakeGone && backState.game2048Gone && backState.chip8Gone && backState.cells === 0 && backState.score === 0,
   JSON.stringify({ cartHit, backGame, backState }),
 );
 
@@ -801,6 +968,57 @@ await page.waitForTimeout(240);
 const layout2048 = await layoutOf('game2048-board');
 check('布局：2048 棋盘也在屏幕框内', inside(layout2048.board, layout2048.bezel), JSON.stringify({ board: layout2048.board, bezel: layout2048.bezel }));
 
+// CHIP-8 的屏幕里有两块东西（显存 + 机器键盘），都量一下
+await page.evaluate(() => window.__arcade.selectGame('chip8'));
+await page.waitForTimeout(240);
+const layoutChip8 = await page.evaluate(() => {
+  const nodes = window.__arcade.nodes;
+  const box = (node) => {
+    let l = 0;
+    let t = 0;
+    let cursor = node;
+    while (cursor && cursor.state) {
+      l += Number(cursor.state.left) || 0;
+      t += Number(cursor.state.top) || 0;
+      cursor = cursor.parentNode;
+    }
+    return { l, t, w: Number(node.state.width) || 0, h: Number(node.state.height) || 0 };
+  };
+  const find = (id) => (nodes.screen.childNodes || []).find((n) => n.state && n.state.id === id);
+  return { board: box(find('chip8-board')), keyboard: box(find('chip8-keyboard')), bezel: box(nodes.bezel), side: box(nodes.sidePanel) };
+});
+check(
+  '布局：CHIP-8 的显存与机器键盘都在屏幕框内、互不重叠，也不压住侧栏',
+  inside(layoutChip8.board, layoutChip8.bezel) && inside(layoutChip8.keyboard, layoutChip8.bezel) &&
+    !overlap(layoutChip8.board, layoutChip8.keyboard) && !overlap(layoutChip8.board, layoutChip8.side),
+  JSON.stringify(layoutChip8),
+);
+
+// 卡带行：5 个格子（4 块卡带 + 中国象棋占位）要等缝铺满、不越界（曾经挤到机壳右边缘）
+const ridge = await page.evaluate(() => {
+  const bar = window.__arcade.nodes.cartridgeBar;
+  const box = (node) => {
+    let l = 0;
+    let cursor = node;
+    while (cursor && cursor.state) {
+      l += Number(cursor.state.left) || 0;
+      cursor = cursor.parentNode;
+    }
+    return { l, w: Number(node.state.width) || 0 };
+  };
+  const buttons = (bar.childNodes || []).map(box);
+  return { bar: box(bar), buttons };
+});
+const ridgeGaps = ridge.buttons.slice(1).map((button, index) => button.l - (ridge.buttons[index].l + ridge.buttons[index].w));
+check(
+  '布局：卡带行 5 格等缝铺满、不越出机壳右边缘',
+  ridge.buttons.length === 5 &&
+    ridgeGaps.every((gap) => Math.abs(gap - ridgeGaps[0]) < 0.5) &&
+    Math.abs(ridgeGaps[0] - 20) < 0.5 &&
+    ridge.buttons[4].l + ridge.buttons[4].w <= ridge.bar.l + ridge.bar.w,
+  JSON.stringify(ridge),
+);
+
 /* ---------- 收尾 ---------- */
 await page.evaluate(() => window.__arcade.selectGame('tetris'));
 await page.waitForTimeout(300);
@@ -811,6 +1029,9 @@ await page.screenshot({ path: '/tmp/qa-arcade-snake.png' });
 await page.evaluate(() => window.__arcade.selectGame('2048'));
 await page.waitForTimeout(300);
 await page.screenshot({ path: '/tmp/qa-arcade-2048.png' });
+await page.evaluate(() => window.__arcade.selectGame('chip8'));
+await page.waitForTimeout(300);
+await page.screenshot({ path: '/tmp/qa-arcade-chip8.png' });
 check('全程零 console error', errors.length === 0, errors.join(' | '));
 
 await browser.close();
@@ -821,4 +1042,4 @@ if (failures.length) {
   failures.forEach((item) => console.log(` - ${item}`));
   process.exit(1);
 }
-console.log('\n全部通过（截图 /tmp/qa-arcade.png、/tmp/qa-arcade-snake.png）');
+console.log('\n全部通过（截图 /tmp/qa-arcade.png、/tmp/qa-arcade-snake.png、/tmp/qa-arcade-2048.png、/tmp/qa-arcade-chip8.png）');

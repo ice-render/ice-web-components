@@ -23,27 +23,41 @@ const FONT_BASE = 0x50;
 /**
  * 自带的 demo ROM（自写，不依赖任何外部 ROM，避开版权）。
  *
- * 它做的事：清屏 → 在 (V0,V1) 画一个 2×2 小方块 → 延时 10 帧 → 坐标各 +1 → 跳回**清屏**重画。
- * 因为 DXYN 的坐标会对 64/32 取模，小方块会沿对角线**绕屏移动**，看起来就是一台在跑的机器。
- * 地址：程序 0x200 起（10 条指令 = 20 字节），精灵数据在 0x218。
+ * 它做的事：清屏 → 在 (V0,V1) 画一个 8×8 笑脸 → 按 (V2,V3) 走一步 → 撞到边就把速度取反 → 跳回清屏重画。
+ * 也就是**在屏幕里来回弹**的笑脸：既不会裂到对边，也把条件跳过（4XNN）、补码减法（7XNN / 6XNN 的 0xFE）
+ * 和自建循环这几条最常用的指令演了一遍。
+ * 地址：程序 0x200 起（20 条指令 = 40 字节），精灵数据在 0x228（8 字节）。
  */
 export const ICE_CHIP8_DEMO_ROM: number[] = [
   0x60, 0x00, // V0 = 0（列）
   0x61, 0x00, // V1 = 0（行）
+  0x62, 0x02, // V2 = +2（列速度）
+  0x63, 0x02, // V3 = +2（行速度）
   0x64, 0x0a, // V4 = 10（每帧延时）
-  0x00, 0xe0, // 清屏                     ← 循环入口 0x206
-  0xa2, 0x18, // I = 0x218（精灵数据地址，见本数组末尾）
-  0xd0, 0x12, // 画 2 行精灵到 (V0,V1)
+  0x00, 0xe0, // 清屏                     ← 循环入口 0x20A
+  0xa2, 0x28, // I = 0x228（精灵数据地址，见本数组末尾）
+  0xd0, 0x18, // 画 8 行精灵到 (V0,V1)
   0xf0, 0x15, // delay = V4
-  0x70, 0x01, // V0 += 1
-  0x71, 0x01, // V1 += 1
-  0x12, 0x06, // 跳回循环入口（0x206 的清屏）
-  0x00, 0x00, 0x00, 0x00,
-  0xc0, 0xc0, // 精灵：2×2 小方块（放在 0x220）
+  0x80, 0x24, // V0 += V2（8XY4 的 X/Y 在低两位 nibble：0x8024）
+  0x81, 0x34, // V1 += V3
+  0x40, 0x38, // if V0 != 56 跳过下一条（列最大 64-8）
+  0x62, 0xfe, // V2 = -2
+  0x40, 0x00, // if V0 != 0 跳过下一条
+  0x62, 0x02, // V2 = +2
+  0x41, 0x18, // if V1 != 24 跳过下一条（行最大 32-8）
+  0x63, 0xfe, // V3 = -2
+  0x41, 0x00, // if V1 != 0 跳过下一条
+  0x63, 0x02, // V3 = +2
+  0x12, 0x0a, // 跳回循环入口（0x20A 的清屏）
+  // 8×8 笑脸（放在 0x228，点亮 26 个像素）
+  0x3c, 0x42, 0xa5, 0x81, 0xa5, 0x99, 0x42, 0x3c,
 ];
 
 export const ICE_CHIP8_WIDTH = 64;
 export const ICE_CHIP8_HEIGHT = 32;
+
+/** 状态变化通知（掌机外壳拿它驱动重绘，和另外三个游戏模型是同一套契约）。 */
+export type ICEChip8Listener = (model: ICEChip8Model) => void;
 
 export class ICEChip8Model {
   private memory = new Uint8Array(4096);
@@ -58,6 +72,10 @@ export class ICEChip8Model {
   private sound = 0;
   private cycles = 0;
   private random: () => number;
+  private paused = false;
+  /** 本条指令改了显存 → 执行完统一通知一次（别在 600 条/秒的频率上惊动渲染） */
+  private displayDirty = false;
+  private listeners: ICEChip8Listener[] = [];
   /** FX0A 正在等按键时记住键位寄存器 */
   private waitingForKey: number | null = null;
 
@@ -82,15 +100,50 @@ export class ICEChip8Model {
   public isWaitingForKey(): boolean { return this.waitingForKey !== null; }
   public memoryRead(address: number): number { return this.memory[address & 0xfff]; }
   public isKeyDown(index: number): boolean { return !!this.keys[index & 0xf]; }
+  /** 暂停中（调试/切走标签页）：`step()` 与 `tickTimers()` 都不推进。 */
+  public isPaused(): boolean { return this.paused; }
+  /** VM 没有"输赢"，但掌机外壳按统一契约询问，这里老实回答"没结束"。 */
+  public isGameOver(): boolean { return false; }
 
   // ---------------------------------------------------------------- 操作
+  public pause(): void {
+    if (this.paused) return;
+    this.paused = true;
+    this.notify();
+  }
+  public resume(): void {
+    if (!this.paused) return;
+    this.paused = false;
+    this.notify();
+  }
+  /**
+   * 订阅状态变化：显存画了新东西、按键变了、定时器走了、机器复位了都会通知。
+   * 返回取消订阅的函数（和其它模型一致）。
+   */
+  public addChangeListener(listener: ICEChip8Listener): () => void {
+    this.listeners.push(listener);
+    return () => {
+      const index = this.listeners.indexOf(listener);
+      if (index !== -1) this.listeners.splice(index, 1);
+    };
+  }
   public loadProgram(bytes: ArrayLike<number>, address: number = 0x200): void {
     for (let i = 0; i < bytes.length; i += 1) this.memory[(address + i) & 0xfff] = bytes[i] & 0xff;
   }
   public memoryWrite(address: number, value: number): void { this.memory[address & 0xfff] = value & 0xff; }
-  public setKey(index: number, down: boolean): void { this.keys[index & 0xf] = !!down; }
+  public setKey(index: number, down: boolean): void {
+    const slot = index & 0xf;
+    const next = !!down;
+    if (this.keys[slot] === next) return; // 状态没变就不通知
+    this.keys[slot] = next;
+    this.notify();
+  }
   /** 清掉所有按键（切卡带/失焦时用）。 */
-  public clearKeys(): void { this.keys = new Array(16).fill(false); }
+  public clearKeys(): void {
+    if (!this.keys.some(Boolean)) return;
+    this.keys = new Array(16).fill(false);
+    this.notify();
+  }
   public setVForTest(index: number, value: number): void { this.v[index & 0xf] = value & 0xff; }
   public reset(): void {
     this.memory.fill(0);
@@ -98,23 +151,30 @@ export class ICEChip8Model {
     this.v.fill(0);
     this.display.fill(0);
     this.i = 0; this.pc = 0x200; this.sp = 0; this.delay = 0; this.sound = 0; this.cycles = 0;
-    this.waitingForKey = null; this.clearKeys();
+    this.waitingForKey = null; this.keys = new Array(16).fill(false);
+    this.paused = false;
+    this.notify();
   }
 
   /** 60Hz：递减延时/声音定时器。 */
   public tickTimers(): void {
-    if (this.delay > 0) this.delay -= 1;
-    if (this.sound > 0) this.sound -= 1;
+    if (this.paused) return;
+    let changed = false;
+    if (this.delay > 0) { this.delay -= 1; changed = true; }
+    if (this.sound > 0) { this.sound -= 1; changed = true; }
+    if (changed) this.notify();
   }
 
   /** 执行一条指令（FX0A 等按键时 PC 不动，直接返回）。 */
   public step(): void {
+    if (this.paused) return;
     if (this.waitingForKey !== null) {
       const key = this.keys.findIndex(Boolean);
       if (key < 0) return;
       this.v[this.waitingForKey] = key;
       this.waitingForKey = null;
       this.pc = (this.pc + 2) & 0xfff;
+      this.notify();
       return;
     }
     const opcode = (this.memory[this.pc] << 8) | this.memory[this.pc + 1];
@@ -130,7 +190,7 @@ export class ICEChip8Model {
     if (head === 0xf && nn === 0x0a) { this.waitingForKey = x; return; }
     switch (head) {
       case 0x0:
-        if (opcode === 0x00e0) this.display.fill(0);
+        if (opcode === 0x00e0) { this.display.fill(0); this.displayDirty = true; }
         else if (opcode === 0x00ee) { this.sp = (this.sp - 1) & 0xf; this.pc = this.stack[this.sp]; jumped = true; }
         break;
       case 0x1: this.pc = nnn; jumped = true; break;
@@ -157,9 +217,18 @@ export class ICEChip8Model {
     }
     if (!jumped) this.pc = nextPC;
     this.cycles += 1;
+    if (this.displayDirty) {
+      this.displayDirty = false;
+      this.notify();
+    }
   }
 
   // ---------------------------------------------------------------- 内部
+  private notify(): void {
+    if (!this.listeners.length) return;
+    [...this.listeners].forEach((listener) => listener(this));
+  }
+
   private __alu(opcode: number, x: number, y: number, n: number): void {
     const vy = this.v[y];
     switch (n) {
@@ -181,6 +250,8 @@ export class ICEChip8Model {
     const startCol = this.v[x] % ICE_CHIP8_WIDTH;
     const startRow = this.v[y] % ICE_CHIP8_HEIGHT;
     this.v[0xf] = 0;
+    if (rows === 0) return; // DXYN 画 0 行 = 空操作
+    this.displayDirty = true;
     for (let row = 0; row < rows; row += 1) {
       const bits = this.memory[(this.i + row) & 0xfff];
       for (let bit = 0; bit < 8; bit += 1) {

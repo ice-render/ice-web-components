@@ -48,6 +48,13 @@ export const ICE_ARCADE_PALETTE: ICETileMapPalette = {
   snakeBody: { fillStyle: '#198754', strokeStyle: '#0f5634' },
   snakeBodyAlt: { fillStyle: '#157347', strokeStyle: '#0d4a2e' },
   food: { fillStyle: '#dc3545', strokeStyle: '#8f222d', radius: 9 },
+  /**
+   * CHIP-8 单色屏：亮像素 + 暗像素。
+   * 64×32 = 2048 格，用棋盘那种「暗格 + 描边」会糊成一片摩尔纹，所以暗像素只留一点点微光的圆点，
+   * 屏幕读起来才像 CRT 而不是表格。
+   */
+  chip8On: { fillStyle: '#9be7ff', strokeStyle: '#4aa8c9', lineWidth: 1, radius: 2 },
+  chip8Off: { fillStyle: '#0d1218', strokeStyle: '#141b24', lineWidth: 1, radius: 2 },
   /* 2048：块值 → 颜色（数字大的暖色化，和原版观感一致） */
   '2': { fillStyle: '#eee4da', strokeStyle: '#d8cdc4', radius: 6, fontSize: 34, fontWeight: '700', textColor: '#776e65' },
   '4': { fillStyle: '#ede0c8', strokeStyle: '#d8c9ad', radius: 6, fontSize: 34, fontWeight: '700', textColor: '#776e65' },
