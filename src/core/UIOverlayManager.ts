@@ -1,5 +1,6 @@
 import { UIComponent } from './UIComponent';
 import { resolveUIOverlayPosition, UIOverlayPlacement } from '../util/UIOverlayPosition';
+import { fadeIn, fadeOut, scaleIn, UIEasing, UIFrameDriver } from '../util/UIAnimation';
 
 /**
  * 弹层/浮层底座。
@@ -33,6 +34,12 @@ export interface UIOverlayOptions {
   closeOnEsc?: boolean;
   /** 打开时先关闭其它浮层（默认 true） */
   exclusive?: boolean;
+  /** 入场动效：none（默认）/ fade / scale（淡入 + 轻微放大） */
+  enterAnimation?: 'none' | 'fade' | 'scale';
+  /** 出场动效：none（默认，立即移除）/ fade（淡出后再移除） */
+  exitAnimation?: 'none' | 'fade';
+  /** 动效参数（时长/缓动/帧驱动，测试可注入 driver） */
+  animation?: { duration?: number; delay?: number; easing?: UIEasing; driver?: UIFrameDriver };
   onClose?: (reason: UIOverlayCloseReason) => void;
 }
 
@@ -160,6 +167,12 @@ export class UIOverlayManager {
     this.layer.addChild(content);
     this.entries.push(entry);
     this.__place(entry);
+    const enter = options.enterAnimation || 'none';
+    if (enter === 'fade') {
+      fadeIn(content, options.animation);
+    } else if (enter === 'scale') {
+      scaleIn(content, options.animation);
+    }
     this.__markDirty();
     return handle;
   }
@@ -171,6 +184,14 @@ export class UIOverlayManager {
     }
     const entry = this.entries[index];
     this.entries.splice(index, 1);
+    if (entry.options.exitAnimation === 'fade') {
+      // 淡出完再真正移除（等待期间 entry 已从列表里摘掉，isOpen 立即变 false）
+      fadeOut(entry.content, {
+        ...(entry.options.animation || {}),
+        onFinish: () => this.__destroyEntry(entry, reason),
+      });
+      return;
+    }
     this.__destroyEntry(entry, reason);
   }
 

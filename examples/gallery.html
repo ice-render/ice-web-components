@@ -125,6 +125,46 @@
         }),
       ]);
 
+      // 浮层演示：点 Primary 弹出 popover（弹层底座 + 入场缩放/出场淡出）
+      const primaryButton = panel.childNodes.find((node) => node.state && node.state.id === 'btn-primary');
+      const makePopover = () => {
+        const popover = new W.UIPanel({ width: 208, height: 84, radius: 8 });
+        popover.addChild(
+          new W.UILabel({ left: 12, top: 10, text: 'Popover', style: { fontSize: 13, fontWeight: '600' } }),
+        );
+        popover.addChild(
+          new W.UILabel({
+            left: 12,
+            top: 32,
+            text: 'Anchored + animated',
+            style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+          }),
+        );
+        popover.addChild(
+          new W.UILabel({
+            left: 12,
+            top: 54,
+            text: 'Click outside to close',
+            style: { fontSize: 12, fillStyle: theme.colors.textTertiary },
+          }),
+        );
+        return popover;
+      };
+      primaryButton.on('click', () => {
+        const overlays = W.getUIOverlayManager(ice);
+        if (overlays.isOpen()) {
+          overlays.closeAll();
+          return;
+        }
+        overlays.open({
+          anchor: primaryButton,
+          content: makePopover(),
+          placement: 'bottomLeft',
+          enterAnimation: 'scale',
+          exitAnimation: 'fade',
+        });
+      });
+
       ice.addChild(panel);
       window.__result = { ice, panel };
     </script>

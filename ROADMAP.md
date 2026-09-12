@@ -20,7 +20,7 @@
 | A2 | 滚动容器 | ✅ 已完成 | 引擎侧新增**子树裁剪** `clipChildren`（ice-render 1.2.0：设备空间裁剪、多层求交、命中检测同样尊重裁剪、被裁剪组件不参与离屏缓存）；组件侧 `UIScrollPane`（内容盒 + 滚动条 + 滚轮/API 滚动）。 |
 | A3 | 焦点与键盘导航 | 🟡 基础已做 | `UIFocusManager`：Tab/Shift+Tab 循环、Esc 取消、Enter/Space 激活（控件自定义 `activate()`）、鼠标点击聚焦（沿父链上溯到最近控件）、焦点环画在工具层并跟随组件移动。**待补**：方向键在组内移动（Radio 组 / Menu / Tabs）、模态焦点陷阱、Slider 方向键调值。 |
 | A4 | 表单与校验 | ⬜ 待做 | 值收集 + 校验规则 + 错误态渲染（依赖 A3）。 |
-| A5 | 动画/过渡 | ⬜ 待做 | 浮层淡入淡出 + 缩放、折叠展开、消息滑入。引擎有 AnimationManager 可复用。 |
+| A5 | 动画/过渡 | 🟡 基础已做 | 引擎侧新增**子树不透明度** `opacity`（1.3.0，整棵子树一起淡入淡出）；组件侧 `UIAnimation`（`tween` + `fadeIn/fadeOut/fadeTo/slideIn/scaleIn`，frame driver 可注入、可取消）；`UIOverlayManager` 支持 `enterAnimation: 'fade'｜'scale'`、`exitAnimation: 'fade'`。**待补**：折叠/展开的高度过渡、消息堆叠的错峰入场。 |
 
 ## 阶段 B：第一批组件（A1 已就绪，直接可做）
 

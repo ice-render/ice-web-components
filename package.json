@@ -19,7 +19,7 @@
     "types:check": "tsc --noEmit"
   },
   "dependencies": {
-    "ice-render": "^1.2.0"
+    "ice-render": "^1.3.0"
   },
   "devDependencies": {
     "@babel/core": "7.17.8",

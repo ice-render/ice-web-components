@@ -43,6 +43,25 @@ function panel(width: number, height: number) {
   return new UIComponent({ fill: true, stroke: true, width, height });
 }
 
+/** 手动推进帧的 driver（动效断言不依赖真实 rAF） */
+function makeFrameDriver() {
+  let queue: Array<(time: number) => void> = [];
+  return {
+    driver: {
+      request(callback: (time: number) => void) {
+        queue.push(callback);
+        return queue.length;
+      },
+      cancel() {},
+    },
+    step(time: number) {
+      const pending = queue;
+      queue = [];
+      pending.forEach((callback) => callback(time));
+    },
+  };
+}
+
 describe('resolveUIOverlayPosition', () => {
   const base = {
     anchor: { left: 100, top: 100, width: 80, height: 30 },
@@ -231,5 +250,36 @@ describe('UIOverlayManager', () => {
     expect(ice.toolNodes).toHaveLength(0);
     ice.evtBus.trigger('keydown', { key: 'Escape' }); // 已解绑，不应再出错
     expect(manager.isOpen()).toBe(false);
+  });
+
+  it('入场动效：enterAnimation=scale 先透明缩小，默认不动效', () => {
+    const ice = makeICE();
+    const manager = new UIOverlayManager(ice);
+    const anchor = new UIComponent({ left: 0, top: 0, width: 10, height: 10 });
+    const content = panel(50, 20);
+    manager.open({ anchor, content, enterAnimation: 'scale' });
+    expect(content.state.opacity).toBe(0);
+    expect(content.state.transform.scale[0]).toBeLessThan(1);
+
+    const plainContent = panel(50, 20);
+    manager.open({ anchor, content: plainContent });
+    expect(plainContent.state.opacity).toBe(1);
+  });
+
+  it('出场动效：exitAnimation=fade 时淡出结束才移除（isOpen 立即为 false）', () => {
+    const ice = makeICE();
+    const manager = new UIOverlayManager(ice);
+    const { driver, step } = makeFrameDriver();
+    const anchor = new UIComponent({ left: 0, top: 0, width: 10, height: 10 });
+    const content = panel(50, 20);
+    const handle = manager.open({ anchor, content, exitAnimation: 'fade', animation: { duration: 100, driver } });
+
+    handle.close();
+    expect(handle.isOpen()).toBe(false);
+    expect(manager.getLayer().childNodes.indexOf(content) >= 0).toBe(true); // 正在淡出
+
+    step(0);
+    step(100);
+    expect(manager.getLayer().childNodes.indexOf(content) >= 0).toBe(false);
   });
 });

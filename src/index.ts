@@ -11,6 +11,7 @@ export * from './layouts/UIBoxLayout';
 export * from './layouts/UIFlowLayout';
 export * from './util/UIOverlayPosition';
 export * from './util/UIWorldBox';
+export * from './util/UIAnimation';
 export * from './components/UILabel';
 export * from './components/UIButton';
 export * from './components/UIPanel';
