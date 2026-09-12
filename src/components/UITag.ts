@@ -38,7 +38,8 @@ export class UITag extends UIComponent {
       fontFamily: theme.font.family,
       fontSize: theme.font.sizeSmall,
       fontWeight: theme.font.weightMedium,
-      align: 'left',
+      // 与 UIBadge 一致：在去掉左右内边距后的内盒里居中
+      align: 'center',
       verticalAlign: 'middle',
     });
     this.addChild(this.textNode, false);

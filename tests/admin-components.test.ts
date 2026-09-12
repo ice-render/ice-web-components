@@ -102,10 +102,13 @@ describe('admin UI components', () => {
     expect(texts).toContain('-3%');
   });
 
-  it('left-aligns badge text so table status pills stay flush with headers', () => {
+  it('badge text is centered inside the pill (padding kept as an inset)', () => {
     const badge = new UIBadge({ text: 'Paid', width: 86, height: 22, status: 'success' });
     const textNode = badge.childNodes[0];
-    expect(textNode.state.style.textAlign !== 'center').toBe(true);
+    // 居中而不是左对齐：固定宽度的胶囊（表格状态列）左对齐会让短标签明显偏左
+    // （实测 "Paid" 在 86px 胶囊里偏左 18.5px）。居中后宽度贴合文字的胶囊同样成立。
+    expect(textNode.state.style.textAlign).toBe('center');
     expect(textNode.state.left).toBeGreaterThan(0);
+    expect(textNode.state.width).toBeLessThan(badge.state.width);
   });
 });

@@ -36,7 +36,9 @@ export class UIBadge extends UIComponent {
       fontFamily: theme.font.family,
       fontSize: theme.font.sizeSmall,
       fontWeight: theme.font.weightSemibold,
-      align: 'left',
+      // 在「去掉左右内边距后的内盒」里居中：按文字宽度给的胶囊依然贴合文字，
+      // 固定宽度的胶囊（如表格状态列）文字也不会偏左。
+      align: 'center',
       verticalAlign: 'middle',
     });
     this.addChild(this.textNode, false);

@@ -29,7 +29,7 @@ export class UILabel extends UIComponent {
         : props.height !== undefined
         ? 'middle'
         : undefined;
-    this.textNode = new ICEText({
+    const textProps: any = {
       left: 0,
       top: 0,
       text: props.text ?? '',
@@ -39,7 +39,18 @@ export class UILabel extends UIComponent {
         ...(baseline ? { textBaseline: baseline } : {}),
         ...(props.style || {}),
       },
-    });
+    };
+    // 调用方显式给了宽高时，让内层文字用**同一个盒子**：这样 verticalAlign / textAlign 才是
+    // 相对标签盒居中/对齐的。否则文字盒会缩到文字自身大小，`middle` 变成「在这个小盒子里居中」
+    // —— 20px 高的标签里文字会整体偏高约 5px（admin 示例状态卡的文字比进度条高、
+    // 团队卡姓名/角色相对头像偏上，都是这个原因）。
+    if (props.width !== undefined) {
+      textProps.width = props.width;
+    }
+    if (props.height !== undefined) {
+      textProps.height = props.height;
+    }
+    this.textNode = new ICEText(textProps);
     this.addChild(this.textNode, false);
     // 构造期 ICEText 已经量过一次（此时还没有 ctx，走 DOM 兜底），直接取用即可；
     // 这里**不能**再强制 refreshParams，否则会打乱引擎首帧的 canvas 实测时序，让文字轻微位移。
