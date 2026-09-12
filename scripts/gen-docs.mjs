@@ -149,6 +149,7 @@ const GROUPS = [
     intro: '挂载浮层、开弹窗/抽屉、做过渡动画的便捷入口。',
     entries: [
       'attachTooltip',
+      'ICENativeInput',
       'attachPopover',
       'attachPopconfirm',
       'attachDropdown',

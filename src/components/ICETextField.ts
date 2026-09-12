@@ -1,6 +1,7 @@
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { createTextNode } from '../util/ICEStyle';
+import { ICENativeInput } from '../util/ICENativeInput';
 
 /**
  * 单行文本输入：聚焦边框、错误态、表单取值约定与键盘输入；
@@ -12,8 +13,18 @@ export class ICETextField extends ICEWidget {
   private placeholder: string;
   private maxLength: number;
   private __bound = false;
+  /**
+   * 鼠标是否正按在组件上。
+   *
+   * 为什么需要它：`mousedown` 的默认动作会（在 canvas 这种不可聚焦元素上）把焦点挪到 body，
+   * 于是「按下时就挂原生输入」会被紧接着的 blur 当成失焦、刚挂上就被拆掉。
+   * 所以鼠标路径改成**松开鼠标之后再挂**（键盘 Tab 进来时没有这个手势，照常立即挂）。
+   */
+  private __pointerDown = false;
   /** 子类扩展点：是否允许多行（Enter 插入换行）。 */
   protected allowNewline = false;
+  /** 聚焦期间挂载的原生输入替身（浏览器环境才有；见 ICENativeInput） */
+  private nativeInput: ICENativeInput | null = null;
 
   constructor(props: any = {}) {
     const theme = iceUIManager.getTheme();
@@ -74,6 +85,7 @@ export class ICETextField extends ICEWidget {
 
   public setValue(value: string): this {
     this.value = this.__normalize(String(value ?? ''));
+    if (this.nativeInput) this.nativeInput.setValue(this.value);
     this.__sync();
     this.__emitChange();
     return this;
@@ -105,6 +117,8 @@ export class ICETextField extends ICEWidget {
   protected afterAddHandler(): void {
     super.afterAddHandler();
     this.__bindGlobalEvents();
+    // 组件被移出场景时收起替身，别在 DOM 里留一个孤儿 input
+    this.once('AFTER_REMOVE', () => this.__unmountNativeInput(), this);
   }
 
   private __bindGlobalEvents(): void {
@@ -113,23 +127,46 @@ export class ICETextField extends ICEWidget {
     }
     this.__bound = true;
     this.ice.evtBus.on('mousedown', this.__onGlobalMouseDown, this);
+    this.ice.evtBus.on('mouseup', this.__onGlobalMouseUp, this);
     this.ice.evtBus.on('keydown', this.__onGlobalKeyDown, this);
   }
 
   private __onGlobalMouseDown(evt: any): void {
     if (!this.enabled) return;
+    this.__pointerDown = true;
     this.setFocused(this.__isPointInside(evt));
+  }
+
+  /** 松开鼠标：这时候再挂原生输入，就不会被 mousedown 的默认焦点转移打掉。 */
+  private __onGlobalMouseUp(): void {
+    this.__pointerDown = false;
+    if (!this.focused || this.nativeInput) return;
+    // 再等一拍：click 的默认动作（浏览器把焦点从 canvas 挪走那一下）跑完再挂，
+    // 否则替身刚拿到焦点就被「假失焦」打掉（QA 里表现为“点了输入框却打不进字”）。
+    if (typeof setTimeout === 'function') {
+      setTimeout(() => {
+        if (this.focused && !this.nativeInput) this.__mountNativeInput();
+      }, 0);
+    } else {
+      this.__mountNativeInput();
+    }
   }
 
   private __onGlobalKeyDown(evt: any): void {
     if (!this.enabled || !this.focused) {
       return;
     }
+    // 原生替身在时它接管一切输入（含 IME），这里必须让路，否则同一个字符进两次
+    if (this.nativeInput) return;
     const key = evt && evt.key;
     if (key === 'Enter' && this.allowNewline) {
       this.value = this.__normalize(this.value + '\n');
       this.__sync();
       this.__emitChange();
+      return;
+    }
+    if (key === 'Enter') {
+      this.trigger('submit', null, { value: this.value });
       return;
     }
     if (key === 'Backspace') {
@@ -151,6 +188,84 @@ export class ICETextField extends ICEWidget {
 
   private __emitChange(): void {
     this.trigger('change', null, { value: this.value });
+  }
+
+  /**
+   * 挂载原生输入替身（见 `ICENativeInput`）。
+   *
+   * 只在浏览器环境挂：没有 `document`（Node / 小程序）时直接返回，输入走原来的 keydown 路径。
+   * 组件的包围盒在「还没渲染过」（单测）时拿不到，这里兜底成 (0,0) —— 定位不准也只影响
+   * 光标的落点，不影响输入本身。
+   */
+  private __mountNativeInput(): void {
+    if (this.nativeInput || !this.enabled) return;
+    const doc = this.ice && this.ice.root ? this.ice.root.document : null;
+    if (!doc || !doc.body) return;
+    const theme = iceUIManager.getTheme();
+    let left = 0;
+    let top = 0;
+    try {
+      const box = this.getMinBoundingBox(true);
+      if (box && box.tl) {
+        left = Number(box.tl[0]) || 0;
+        top = Number(box.tl[1]) || 0;
+      }
+    } catch (err) {
+      /* 未渲染（单测）时用 0,0 */
+    }
+    const canvasRect =
+      this.ice && this.ice.canvasEl && typeof this.ice.canvasEl.getBoundingClientRect === 'function'
+        ? this.ice.canvasEl.getBoundingClientRect()
+        : { left: 0, top: 0 };
+    this.nativeInput = new ICENativeInput({
+      doc,
+      box: {
+        left: (Number(canvasRect.left) || 0) + left,
+        top: (Number(canvasRect.top) || 0) + top,
+        width: Number(this.state.width) || 0,
+        height: Number(this.state.height) || 0,
+      },
+      value: this.value,
+      font: `${theme.font.weightNormal} ${theme.font.size}px ${theme.font.family}`,
+      caretColor: theme.colors.text,
+      maxLength: this.maxLength,
+      multiline: this.allowNewline,
+      onInput: (value) => this.__applyNativeValue(value),
+      onEnter: () => this.trigger('submit', null, { value: this.value }),
+      onEscape: () => this.blur(),
+      onBlur: () => this.__handleNativeBlur(),
+    });
+    this.nativeInput.mount();
+  }
+
+  /**
+   * 替身失焦时的处理。
+   *
+   * DOM 层失焦**不等于**组件失焦：`mousedown` / `click` 的默认动作、focus 管理器重新聚焦、
+   * 浏览器的一些内部行为都可能让替身瞬间丢焦点（QA 里表现为「点了输入框，输入框却立刻丢焦点，
+   * 字打不进去」）。所以这里只看**组件自己**的状态：
+   * - 组件仍然聚焦 → 把 DOM 焦点抢回来（不是我们想失焦，是别人捣乱）；
+   * - 组件已经失焦（例如点到了别的控件、焦点管理器清了焦点）→ 什么都不用做，
+   *   因为那条路径已经由 `__applyFocusState` 收起替身了。
+   */
+  private __handleNativeBlur(): void {
+    if (!this.focused || !this.nativeInput) return;
+    this.nativeInput.focus();
+  }
+
+  private __unmountNativeInput(): void {
+    if (!this.nativeInput) return;
+    this.nativeInput.unmount();
+    this.nativeInput = null;
+  }
+
+  /** 原生输入回写：**同值不重复触发 change**（IME 收尾时会再补一次同值事件）。 */
+  private __applyNativeValue(value: string): void {
+    const next = this.__normalize(String(value ?? ''));
+    if (next === this.value) return;
+    this.value = next;
+    this.__sync();
+    this.__emitChange();
   }
 
   private __isPointInside(evt: any): boolean {
@@ -189,6 +304,13 @@ export class ICETextField extends ICEWidget {
 
   /** 基类在焦点变化后回调：同步边框与光标显示。 */
   protected __applyFocusState(): void {
+    // 聚焦就挂原生输入替身：中文输入法、粘贴、光标拖动都由浏览器负责
+    if (!this.focused) {
+      this.__unmountNativeInput();
+    } else if (!this.__pointerDown) {
+      // 鼠标手势中先不挂，等 __onGlobalMouseUp
+      this.__mountNativeInput();
+    }
     this.__sync();
   }
 

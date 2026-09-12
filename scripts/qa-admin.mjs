@@ -516,6 +516,55 @@ check('设置：通知渠道多选上限 2', channelLimit.value.join(',') === 'e
 /* ---------- 3. 全程无 console error ---------- */
 check('无 console error / pageerror', errors.length === 0, errors.slice(0, 3).join(' | '));
 
+/* ---------- 3.5 文本输入：原生输入替身 + 中文 IME ---------- */
+// 以前 canvas 文本框自己吃 keydown，中文输入法（组字阶段没有 keydown）根本打不进去；
+// 现在聚焦时会在组件上方挂一个透明的原生 input，由浏览器 + 输入法负责，再回写组件。
+await page.evaluate(() => window.__result.showPage('orders'));
+await page.waitForTimeout(420);
+const keywordBox = await page.evaluate(() => {
+  const node = window.__qa.find('order-keyword');
+  return node ? window.__qa.box(node) : null;
+});
+await page.mouse.click(rect.left + keywordBox.l + keywordBox.w / 2, rect.top + keywordBox.t + keywordBox.h / 2);
+await page.waitForTimeout(320);
+const nativeMounted = await page.evaluate(() => {
+  const inputs = Array.from(document.querySelectorAll('input'));
+  const active = document.activeElement;
+  return {
+    count: inputs.length,
+    transparent: inputs.length ? inputs[0].style.color === 'transparent' : false,
+    focusedIsInput: !!active && active.tagName === 'INPUT',
+  };
+});
+check(
+  '文本输入：聚焦时挂上透明原生输入（替身就位、拿到 DOM 焦点）',
+  nativeMounted.count >= 1 && nativeMounted.transparent && nativeMounted.focusedIsInput,
+  JSON.stringify(nativeMounted),
+);
+
+await page.keyboard.insertText('中文搜索');
+await page.waitForTimeout(200);
+const typedChinese = await page.evaluate(() => window.__qa.find('order-keyword').getValue());
+check('文本输入：insertText 直接打进中文（以前只吃单字符 keydown）', typedChinese === '中文搜索', typedChinese);
+
+// 输入法组字：compositionend 才算落字（中文/日文输入法走这条）
+const composed = await page.evaluate(() => {
+  const element = document.activeElement;
+  if (!element || element.tagName !== 'INPUT') return null;
+  element.value = '深圳';
+  element.dispatchEvent(new Event('compositionstart'));
+  element.dispatchEvent(new Event('compositionupdate', { data: '深圳' }));
+  element.dispatchEvent(new Event('compositionend'));
+  return window.__qa.find('order-keyword').getValue();
+});
+check('文本输入：IME 组字结束就落字（compositionend → 组件 value）', composed === '深圳', String(composed));
+
+// 失焦要收起来，别在 DOM 里留孤儿 input
+await page.mouse.click(rect.left + 1100, rect.top + 780);
+await page.waitForTimeout(320);
+const nativeUnmounted = await page.evaluate(() => document.querySelectorAll('input').length);
+check('文本输入：失焦收起替身（DOM 里不留孤儿 input）', nativeUnmounted === 0, String(nativeUnmounted));
+
 /* ---------- 4. 自定义组件示例页 ---------- */
 const custom = await browser.newPage({ viewport: { width: 1000, height: 620 }, deviceScaleFactor: 1 });
 const customErrors = [];

@@ -10,6 +10,44 @@
 attachTooltip(ice: any, target: any, options: ICETooltipOptions): ICETooltip
 ```
 
+## `ICENativeInput`
+
+原生输入替身（canvas 里支持中文 IME 的关键一步）。  问题：canvas 组件自己处理 `keydown` 只能吃单字符键 —— **中文输入法在组字阶段根本没有 keydown**，所以「打中文」一直打不进去（只能 `setValue`）。  做法（和引擎 `ICEText.startEditing()` 同一套路）：聚焦时在组件上方挂一个**完全透明**的 原生 `<input>` / `<textarea>`，让浏览器和输入法去做它们擅长的事，再把结果回写：
+
+- `input`：普通输入（打字、粘贴、删除）
+- `compositionend`：输入法组字结束（中文/日文/韩文走这条）
+- `Enter` / `Escape` / `blur`：交给组件决定（提交、取消、收尾） 元素是透明的（文字透明、背景透明、无边框），**画面仍然由 canvas 画**，元素只提供光标与输入法。 没有 `document` 的运行时（Node / 小程序）里 `mount()` 是空操作，组件据此降级回 keydown 输入。
+
+源码：[`src/util/ICENativeInput.ts`](../../src/util/ICENativeInput.ts)
+
+**构造参数** `ICENativeInputOptions`
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `doc?` | `any` | 注入 document（测试用假对象）；不传则取全局 document |
+| `box` | `ICENativeInputBox` | 组件的世界坐标盒（CSS 像素，相对画布左上角） |
+| `value?` | `string` | 当前值 |
+| `font?` | `string` | 与 canvas 完全一致的字体串（`400 14px Tahoma`），否则光标与文本对不齐 |
+| `caretColor?` | `string` |  |
+| `maxLength?` | `number` | 0 / 不传 = 不限制 |
+| `multiline?` | `boolean` | 多行模式：创建 textarea（Enter 换行，不触发 onEnter） |
+| `onInput?` | `(value: string) => void` |  |
+| `onEnter?` | `() => void` |  |
+| `onEscape?` | `() => void` |  |
+| `onBlur?` | `() => void` |  |
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `isMounted()` | `boolean` |  |
+| `getElement()` | `any` |  |
+| `getValue()` | `string` |  |
+| `mount()` | `this` | 挂载：创建元素、定位、聚焦、把光标放到末尾。重复调用是幂等的。 |
+| `unmount()` | `void` | 卸载并解绑；重复调用安全。 |
+| `setValue(value: string)` | `this` | 外部改值（例如 setValue）：同步到元素并把光标移到末尾。 |
+| `focus()` | `this` |  |
+
 ### `attachPopover` — 函数
 
 ```ts

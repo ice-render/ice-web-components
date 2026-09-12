@@ -64,7 +64,7 @@ PLAYWRIGHT_PATH=/path/to/playwright npm run qa:arcade
 
 | 脚本 | 页面 | 项数 | 覆盖 |
 |---|---|---|---|
-| `qa:admin` | `examples/admin.html` | 44 | 6 个页面顶层零交叠 / 首元素边距一致；逐页新组件（面包屑、浮动按钮+引导、回到顶部、库存分页、履约分栏拖动与锚点、图片预览、订单多选与批量发货、跨字段校验、通知渠道上限）；全部弹层开关 + Esc；零 console error |
+| `qa:admin` | `examples/admin.html` | 48 | 6 个页面顶层零交叠 / 首元素边距一致；逐页新组件（面包屑、浮动按钮+引导、回到顶部、库存分页、履约分栏拖动与锚点、图片预览、订单多选与批量发货、跨字段校验、通知渠道上限）；全部弹层开关 + Esc；**文本输入：原生替身挂载/中文 insertText/IME 组字/失焦收起**；零 console error |
 | `qa:gallery` | `examples/gallery.html` | 32 | 顶层零交叠；面包屑折叠、统计倒计时、单选/多选组、分栏拖动、水印、排版折行、锚点、日历、引导、图片预览、Space/Grid、表格换页、跨字段校验、**焦点环策略（拖手柄无环 / Tab 有环 / 文本框点击有环）** |
 | `qa:workbench` | `examples/workbench.html` | 15 | 三栏零交叠、队列→档案联动、筛选（含骨架/空态）、回复发送、快捷回复模板、标签/评分/坐席状态、引导、回到顶部、分栏拖动 |
 | `qa:xp` | `examples/windows-xp.html` | 40 | **开机画面 → 欢迎界面 → 点用户 → 密码页 → 真键盘输入 + 回车登录（开机音效确实触发）→ 注销回登录 → 关机 → 重新开机 → 点「登录」按钮二次登录**；桌面/任务栏零交叠；图标选中与双击开窗、拖动标题栏、最小化与任务栏恢复、开始菜单、托盘喇叭静音、扫雷（首点安全/插旗循环/难度/计时/胜利）、画图笔画、换壁纸、时钟、**IE 真抓网页 + 404 错误页 + 后退 + about:xp 表格 + 收藏夹**、**ICE Arcade 窗口（单节点自绘棋盘 / 键盘路由 / 暂停 / 切卡带 / 关窗收尾）** |
@@ -87,9 +87,11 @@ PLAYWRIGHT_PATH=/path/to/playwright npm run qa:arcade
   `qa:arcade` 挂的句柄叫 `window.__arcade`（`ice` / `game` / `model` / `buttons` / `nodes`）；
 * `shotOverlay(name)`：把最上层浮层裁剪截图到 `/tmp/qa-<name>.png`。
 
-> **输入文本请用 ASCII**：canvas 文本框目前只处理单字符 `keydown`，IME 组字（中文输入）
-> 尚未接入，`page.keyboard.type('中文')` 不会产生按键事件。中文场景请用
-> `control.setValue('中文')` 驱动，或用例里改成英文。
+> **输入文本可以直接打中文了**：聚焦文本框时组件会挂一个透明原生 `<input>`（见
+> `ICENativeInput`），`page.keyboard.insertText('中文')` / `page.keyboard.type('中文')`
+> 都能直接落字；要模拟输入法组字，就派发 `compositionstart` / `compositionupdate` /
+> `compositionend`（`qa:admin` 里三条断言就是这两种打法）。只有在没有 `document` 的运行时
+> （Node 单测）才退回单字符 `keydown` 路径。
 
 ### 断言什么（经验）
 

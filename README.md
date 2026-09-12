@@ -27,10 +27,10 @@ rings and shadows) is drawn by the engine.
 - **Bootstrap 5 token theme** (plus a dark theme) — swap with one call.
 - **No name collisions with the engine** — the package’s runtime exports are
   disjoint from `ice-render`’s (there is a regression test for it).
-- **Actually tested** — 609 unit tests (86 suites: form validation, overlay
+- **Actually tested** — 629 unit tests (88 suites: form validation, overlay
   positioning, keyboard navigation, sort/hover/focus edge cases, the Minesweeper,
   Tetris and Snake rule models) plus five browser QA suites (`qa:admin`, `qa:gallery`,
-  `qa:workbench`, `qa:xp`, `qa:arcade` — 177 assertions) that drive the demo pages with
+  `qa:workbench`, `qa:xp`, `qa:arcade` — 181 assertions) that drive the demo pages with
   real mouse and keyboard events and fail on any console error.
 
 ## Quick start
@@ -388,9 +388,13 @@ panel.setLayout(new ICEFlowLayout({ gap: 8 }));
   manager can't focus it (no ring, and `getFocused()` returns null while the field
   still accepts typing through its own point-in-box check). `ICEFormItem`,
   `ICEForm`, `ICESpace`, `ICEGrid` and `ICESplitter` are all `interactive: false`.
-- **Text input & IME** — canvas text fields handle per-key `keydown` (ASCII letters,
-  digits, backspace…). IME composition (Chinese / Japanese input) is not wired yet,
-  so CJK text currently has to go through `setValue()`.
+- **Text input & IME** — focusing a text field mounts a **fully transparent native
+  `<input>` / `<textarea>`** over it (`ICENativeInput`): the browser and the IME do the
+  typing, `input` / `compositionend` write the value back, and `change` / form binding
+  keep working. So Chinese / Japanese / Korean input works, paste works, and the caret
+  is a real DOM caret — the canvas still draws every pixel (the element is invisible).
+  In a runtime without `document` (Node / mini-program) it degrades to the old
+  per-key `keydown` path. Pressing Enter emits `submit` on single-line fields.
 
 ## Development
 
