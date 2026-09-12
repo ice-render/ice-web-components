@@ -245,6 +245,7 @@ export class UIDropdown {
         : theme.colors.text;
       row.addChild(
         new UILabel({
+          interactive: false,
           left: 12,
           top: 0,
           height: itemHeight,
@@ -257,6 +258,7 @@ export class UIDropdown {
       if (selected) {
         row.addChild(
           new UILabel({
+            interactive: false,
             left: width - 34,
             top: 0,
             width: 18,

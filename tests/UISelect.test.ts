@@ -138,6 +138,18 @@ describe('UISelect', () => {
     expect(select.isOpen()).toBe(true);
   });
 
+  it('鼠标点击字段开关下拉（再点关闭）', () => {
+    const { select } = setup();
+    select.trigger('click', null, {});
+    expect(select.isOpen()).toBe(true);
+    select.trigger('click', null, {});
+    expect(select.isOpen()).toBe(false);
+
+    const disabled = setup({ disabled: true });
+    disabled.select.trigger('click', null, {});
+    expect(disabled.select.isOpen()).toBe(false);
+  });
+
   it('表单集成：getFormValue/setFormValue 与错误态边框', () => {
     const { select } = setup();
     select.setFormValue('beijing');

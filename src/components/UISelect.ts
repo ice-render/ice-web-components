@@ -98,6 +98,8 @@ export class UISelect extends UIComponent {
       if (this.ice && this.ice.evtBus && typeof this.ice.evtBus.on === 'function') {
         this.ice.evtBus.on('keydown', this.__onKeyDown, this);
       }
+      // 鼠标点击开关下拉（键盘走 activate()）
+      this.on('click', this.__onClick, this);
       this.running = true;
     }
   }
@@ -168,7 +170,18 @@ export class UISelect extends UIComponent {
   }
 
   public activate(): void {
-    this.open();
+    this.toggle();
+  }
+
+  public toggle(): this {
+    return this.isOpen() ? this.close() : this.open();
+  }
+
+  private __onClick(): void {
+    if (this.disabled) {
+      return;
+    }
+    this.toggle();
   }
 
   public open(): this {
@@ -314,6 +327,7 @@ export class UISelect extends UIComponent {
       })
       .join('、');
     this.fieldLabel = new UILabel({
+      interactive: false,
       left: 10,
       top: 0,
       width: Math.max(0, width - 34),
@@ -328,6 +342,7 @@ export class UISelect extends UIComponent {
     this.addChild(this.fieldLabel, false);
     this.addChild(
       new UILabel({
+        interactive: false,
         left: width - 22,
         top: 0,
         width: 14,
@@ -375,6 +390,7 @@ export class UISelect extends UIComponent {
     if (this.showSearch) {
       panel.addChild(
         new UILabel({
+          interactive: false,
           left: 10,
           top: 0,
           width: width - 20,
@@ -410,6 +426,7 @@ export class UISelect extends UIComponent {
         : theme.colors.text;
       row.addChild(
         new UILabel({
+          interactive: false,
           left: 10,
           top: 0,
           height: this.optionHeight,
@@ -422,6 +439,7 @@ export class UISelect extends UIComponent {
       if (selected) {
         row.addChild(
           new UILabel({
+            interactive: false,
             left: width - 32,
             top: 0,
             width: 16,
