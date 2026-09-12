@@ -44,6 +44,14 @@ export class ICEAnchor extends ICEWidget {
   private labelNodes: ICELabel[] = [];
   private barNodes: ICEWidget[] = [];
   private bound = false;
+  /**
+   * 点击锚点后由我们自己触发的那次滚动位置。
+   *
+   * 目标滚不到底时（最后一节下面没有内容了）滚动会被夹取，随后的 `scroll` 事件
+   * 会把活动项算回「上一个够得着的锚点」—— 表现为「点了最后一个锚点，高亮又跳回去」。
+   * 这里把这一次事件认出来并忽略，用户后续真正滚动时（位置不同）再恢复跟随。
+   */
+  private ignoreNextScroll = false;
 
   constructor(props: ICEAnchorOptions) {
     const theme = iceUIManager.getTheme();
@@ -148,7 +156,15 @@ export class ICEAnchor extends ICEWidget {
     this.activeKey = item.key;
     this.__syncActive();
     if (this.target && typeof this.target.setScroll === 'function') {
+      if (user) {
+        // setScroll 是同步派发 scroll 的：先立标志，再滚（否则下面的同步逻辑会立刻把高亮算回去）
+        this.ignoreNextScroll = true;
+      }
       this.target.setScroll(0, item.top);
+      if (user && this.ignoreNextScroll) {
+        // 位置没变就不会派发 scroll 事件 → 别把这个标志留给下一次真实滚动
+        this.ignoreNextScroll = false;
+      }
     }
     if (user) {
       this.trigger('change', null, { key: item.key });
@@ -162,6 +178,10 @@ export class ICEAnchor extends ICEWidget {
   /** 滚动带出来的高亮：取最后一个「已经越过」的锚点。 */
   private __syncFromScroll(): void {
     if (!this.target || typeof this.target.getScroll !== 'function' || !this.items.length) {
+      return;
+    }
+    if (this.ignoreNextScroll) {
+      this.ignoreNextScroll = false;
       return;
     }
     const y = Number(this.target.getScroll()[1]) || 0;

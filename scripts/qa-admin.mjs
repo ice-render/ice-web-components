@@ -40,7 +40,7 @@ function loadPlaywright() {
 
 const { chromium } = loadPlaywright();
 const ADMIN_URL = 'file://' + path.resolve(process.cwd(), 'examples/admin.html');
-const PAGE_KEYS = ['dashboard', 'orders', 'products', 'customers', 'settings'];
+const PAGE_KEYS = ['dashboard', 'orders', 'fulfillment', 'products', 'customers', 'settings'];
 
 const failures = [];
 const check = (name, ok, detail = '') => {
@@ -125,6 +125,67 @@ const shotOverlay = async (name) => {
 const closeOverlay = async () => {
   await page.keyboard.press('Escape');
   await page.waitForTimeout(420);
+};
+
+/**
+ * 把节点滚进内容视口。
+ *
+ * admin 的页面都挂在 contentHost（ICEScrollPane）里，节点可能远在首屏之外，
+ * 直接按世界坐标点会落到窗口外 —— 桌面端 Playwright 的坐标是视口坐标。
+ * shell 级别的悬浮件（FAB / 回到顶部）不在 pageHost 里，跳过。
+ */
+const scrollIntoView = async (source) => {
+  await page.evaluate((src) => {
+    // eslint-disable-next-line no-eval
+    const node = eval(src);
+    if (!node || !node.state) return;
+    const pane = window.__result.contentHost;
+    const content = typeof pane.getContent === 'function' ? pane.getContent() : null;
+    let relativeTop = 0;
+    let cursor = node;
+    let inside = false;
+    while (cursor && cursor !== pane) {
+      relativeTop += Number(cursor.state && cursor.state.top) || 0;
+      if (cursor === content) inside = true;
+      cursor = cursor.parentNode;
+    }
+    if (!inside) return;
+    const viewportHeight = pane.getViewportSize()[1];
+    const next = Math.max(0, Math.round(relativeTop - viewportHeight / 3));
+    pane.setScroll(0, next);
+  }, source);
+  await page.waitForTimeout(220);
+};
+
+/** 按表达式取节点并点它的中心（qa-admin 里的页面句柄走 window.__result.state.*）。 */
+const clickExpr = async (source) => {
+  await scrollIntoView(source);
+  const b = await page.evaluate((src) => {
+    // eslint-disable-next-line no-eval
+    const node = eval(src);
+    return node && node.state ? window.__qa.box(node) : null;
+  }, source);
+  if (!b) return false;
+  await page.mouse.click(rect.left + b.l + b.w / 2, rect.top + b.t + b.h / 2);
+  await page.waitForTimeout(420);
+  return true;
+};
+const dragExpr = async (source, dx, dy) => {
+  await scrollIntoView(source);
+  const b = await page.evaluate((src) => {
+    // eslint-disable-next-line no-eval
+    const node = eval(src);
+    return node && node.state ? window.__qa.box(node) : null;
+  }, source);
+  if (!b) return false;
+  const x = rect.left + b.l + b.w / 2;
+  const y = rect.top + b.t + b.h / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x + dx, y + dy, { steps: 8 });
+  await page.mouse.up();
+  await page.waitForTimeout(320);
+  return true;
 };
 
 /* ---------- 1. 逐页：布局一致性 + 顶层交叠 ---------- */
@@ -296,6 +357,129 @@ for (const i of [0, 1, 2]) {
   heights.push(await page.evaluate(() => Math.round(window.__result.builtPages.settings.state.height)));
 }
 check('设置页三个 Tab 面板高度均 > 300', heights.every((h) => h > 300), heights.join(' / '));
+
+/* ---------- 2.5 业务场景细化后的回归（面包屑 / 引导 / 回到顶部 / 各页新组件） ---------- */
+
+// 面包屑跟随页面
+await page.evaluate(() => window.__result.showPage('dashboard'));
+await page.waitForTimeout(380);
+const crumbDashboard = await page.evaluate(() => window.__result.breadcrumb.getLabelTexts().join('>'));
+await page.evaluate(() => window.__result.showPage('orders'));
+await page.waitForTimeout(380);
+const crumbOrders = await page.evaluate(() => window.__result.breadcrumb.getLabelTexts().join('>'));
+check('面包屑跟随当前页面', crumbDashboard === '首页>仪表盘' && crumbOrders === '首页>订单管理', `${crumbDashboard} → ${crumbOrders}`);
+
+// 悬浮按钮（快捷键）→ 新手引导
+const fabOpened = await clickExpr('window.__result.fab');
+const fabExpanded = await page.evaluate(() => window.__result.fab.isExpanded());
+const tourStarted = await clickExpr("window.__result.fab.getItemNode('tour')");
+const tourState = await page.evaluate(() => ({ open: window.__result.tour.isOpen(), counter: window.__result.tour.getCounterText() }));
+check('悬浮按钮展开 + 唤起新手引导', fabOpened && fabExpanded && tourStarted && tourState.open && tourState.counter === '1/4', JSON.stringify(tourState));
+await shotOverlay('tour');
+await closeOverlay();
+check('引导 Esc 可关闭', !(await page.evaluate(() => window.__result.tour.isOpen())));
+
+// 回到顶部：滚动后出现，点击回顶并隐藏（用内容更高的仪表盘页验证）
+await page.evaluate(() => {
+  window.__result.showPage('dashboard');
+  window.__result.contentHost.setScroll(0, 600);
+});
+await page.waitForTimeout(320);
+const backTopVisible = await page.evaluate(() => window.__result.backTop.isVisible());
+const backTopClicked = await clickExpr('window.__result.backTop');
+const backTopAfter = await page.evaluate(() => ({
+  y: window.__result.contentHost.getScroll()[1],
+  visible: window.__result.backTop.isVisible(),
+}));
+check(
+  '回到顶部：滚动出现 → 点击回顶',
+  backTopVisible && backTopClicked && backTopAfter.y === 0 && backTopAfter.visible === false,
+  JSON.stringify(backTopAfter),
+);
+
+// 仪表盘：库存预警分页 + 今日待办
+await page.evaluate(() => window.__result.showPage('dashboard'));
+await page.waitForTimeout(420);
+const inventory = await page.evaluate(() => {
+  const table = window.__result.state.dashboard.inventoryTable;
+  return { rows: table.getRows().length, pages: table.getPageCount(), page: table.getPage() };
+});
+const inventoryNext = await clickExpr('window.__result.state.dashboard.inventoryTable.getPaginationNode().getNextButton()');
+const inventoryAfter = await page.evaluate(() => window.__result.state.dashboard.inventoryTable.getPage());
+check(
+  '库存预警：每页 3 条 + 翻页',
+  inventory.rows === 3 && inventory.pages === 3 && inventoryNext && inventoryAfter === 2,
+  `${JSON.stringify(inventory)} → page ${inventoryAfter}`,
+);
+const todoClicked = await clickExpr("window.__result.state.dashboard.todoGroups.getItemNode('stock')");
+const todoValue = await page.evaluate(() => window.__result.state.dashboard.todoGroups.getValue().join(','));
+check('今日待办：勾选追加', todoClicked && todoValue === 'ship,stock', todoValue);
+
+// 履约页：Splitter 拖动 + 选单更新详情 + 锚点跳转
+await page.evaluate(() => window.__result.showPage('fulfillment'));
+await page.waitForTimeout(420);
+const splitBefore = await page.evaluate(() => window.__result.state.fulfillment.splitter.getSize());
+const splitDragged = await dragExpr('window.__result.state.fulfillment.splitter.getDividerNode()', 80, 0);
+const splitAfter = await page.evaluate(() => window.__result.state.fulfillment.splitter.getSize());
+check('履约：拖动分隔条改尺寸', splitDragged && splitBefore === 300 && splitAfter > splitBefore, `${splitBefore} → ${splitAfter}`);
+const queueClicked = await clickExpr("window.__result.state.fulfillment.list.getRowNode ? window.__result.state.fulfillment.list.getRowNode('o2') : null");
+const detailText = await page.evaluate(() => window.__result.state.fulfillment.progressLabel.getText());
+check('履约：切换订单详情跟随', queueClicked && /待支付确认/.test(detailText), detailText);
+const anchorClicked = await clickExpr("window.__result.state.fulfillment.anchor.getItemNode('service')");
+const anchorState = await page.evaluate(() => ({
+  active: window.__result.state.fulfillment.anchor.getActiveKey(),
+  y: window.__result.state.fulfillment.detailScroll.getScroll()[1],
+}));
+check('履约：锚点跳转 + 高亮', anchorClicked && anchorState.active === 'service' && anchorState.y > 0, JSON.stringify(anchorState));
+
+// 商品页：图片预览 + 状态单选组 + 折扣滑块
+await page.evaluate(() => window.__result.showPage('products'));
+await page.waitForTimeout(420);
+const galleryStarted = await clickExpr('window.__result.state.products.galleryButton');
+const previewOpen = await page.evaluate(() => window.__result.state.products.gallery.isOpen());
+const galleryNext = await clickExpr("window.__result.state.products.gallery.getToolbarButton('next')");
+const previewIndex = await page.evaluate(() => window.__result.state.products.gallery.getIndex());
+check(
+  '商品：图片预览打开 + 翻页',
+  galleryStarted && previewOpen && galleryNext && previewIndex === 1,
+  `open=${previewOpen} index=${previewIndex}`,
+);
+await shotOverlay('image-preview');
+await closeOverlay();
+const statusClicked = await clickExpr("window.__result.state.products.productStatus.getItemNode('presale')");
+const statusValue = await page.evaluate(() => window.__result.state.products.productStatus.getValue());
+check('商品：状态单选组切换', statusClicked && statusValue === 'presale', String(statusValue));
+
+// 设置页：第四个 Tab（业务偏好）+ 跨字段校验 + 多选上限
+await page.evaluate(() => window.__result.showPage('settings'));
+await page.waitForTimeout(420);
+const bizShown = await page.evaluate(() => {
+  window.__result.state.showSettingsPane(3);
+  const panel = window.__result.state.settings.panels.biz;
+  return { display: panel.state.display, height: Math.round(window.__result.builtPages.settings.state.height) };
+});
+check('设置：业务偏好 Tab 可切换', bizShown.display === true && bizShown.height > 300, JSON.stringify(bizShown));
+const crossField = await page.evaluate(() => {
+  const biz = window.__result.state.biz;
+  const model = biz.passwordForm.getModel();
+  model.setValue('newPassword', 'abc12345');
+  model.setValue('confirmPassword', 'abc12345');
+  const matched = model.getError('confirmPassword');
+  model.setValue('newPassword', 'zzz99999');
+  return { matched, mismatched: model.getError('confirmPassword') };
+});
+check(
+  '设置：确认密码跨字段重校验',
+  crossField.matched === null && crossField.mismatched === '两次输入的密码不一致',
+  JSON.stringify(crossField),
+);
+const channelLimit = await page.evaluate(() => {
+  const group = window.__result.state.biz.channelGroup;
+  group.clear();
+  group.setValue(['email', 'sms']);
+  return { value: group.getValue(), max: group.getCheckedCount() };
+});
+check('设置：通知渠道多选上限 2', channelLimit.value.join(',') === 'email,sms', JSON.stringify(channelLimit));
 
 /* ---------- 3. 全程无 console error ---------- */
 check('无 console error / pageerror', errors.length === 0, errors.slice(0, 3).join(' | '));

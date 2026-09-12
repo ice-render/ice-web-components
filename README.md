@@ -12,7 +12,7 @@ rings and shadows) is drawn by the engine.
 
 ## Highlights
 
-- **60+ components** — buttons, inputs, selects, tables, trees, menus, modals,
+- **80+ components** — buttons, inputs, selects, tables, trees, menus, modals,
   drawers, notifications, uploads, date/time pickers, cascader, transfer, carousel,
   colour picker… and the small stuff (tags, badges, avatars, skeletons, spins).
 - **One overlay stack for every popup** — Modal / Drawer / Dropdown / Tooltip /
@@ -90,7 +90,7 @@ Full docs live in [`docs/`](./docs/README.md):
 | | |
 |---|---|
 | [架构思路](./docs/architecture.md) | 分层、组件模型、渲染与重绘、事件与悬停、浮层/焦点/表单/主题，以及一张“踩坑表” |
-| [组件速查](./docs/components.md) | 60+ 组件按分组的一句话说明 + 跳转 API |
+| [组件速查](./docs/components.md) | 80+ 组件按分组的一句话说明 + 跳转 API |
 | [API 参考](./docs/api/README.md) | 每个组件的构造参数与 public 方法（**从源码生成**，不会漂移） |
 | [主题与配色](./docs/guides/theming.md) | token 分组、状态色、`*TextEmphasis`、自定义主题 |
 | [表单与校验](./docs/guides/forms.md) | 三层结构、规则清单、异步校验、自定义控件接入 |
@@ -113,16 +113,24 @@ free coordinates.
 
 ![Component gallery](docs/images/gallery.png)
 
-### `admin.html` — a five-page back-office
+### `admin.html` — a six-page back-office
 
-A small “ICE Shop” admin: sidebar with submenus, header search/notifications/user
-menu, and five pages that switch inside a scroll pane.
+A small “ICE Shop” admin: sidebar with submenus, breadcrumb + page search +
+notifications/user menu in the header, a floating action button, a first-run tour,
+and six pages that switch inside a scroll pane.
+
+The business flow is deliberately complete: order filtering (keyword / region /
+amount range / abnormal-only) with a batch toolbar, an order drawer with
+fulfilment steps and a service timeline, inventory warnings with pagination,
+product gallery preview, customer insights with satisfaction scoring, a
+splitter-based fulfilment workbench with anchors, and a settings pane whose
+password form validates across fields.
 
 | Dashboard | Orders |
 |---|---|
 | ![Dashboard](docs/images/admin-dashboard.png) | ![Orders](docs/images/admin-orders.png) |
-| ![Products](docs/images/admin-products.png) | ![Customers](docs/images/admin-customers.png) |
-| ![Settings](docs/images/admin-settings.png) | |
+| ![Fulfilment](docs/images/admin-fulfillment.png) | ![Products](docs/images/admin-products.png) |
+| ![Customers](docs/images/admin-customers.png) | ![Settings](docs/images/admin-settings.png) |
 
 Popup layers used by that demo:
 
@@ -249,8 +257,12 @@ npm run docs
 `npm run qa:admin` drives a real browser: it asserts every page has zero overlapping
 top-level nodes and identical first-element offsets, opens every popup layer and
 asserts it can be closed again, checks that clicking an in-row action button does
-not select the row, screenshots each popup to `/tmp/qa-*.png`, and fails on any
-console error.
+not select the row, then walks the business scenario — breadcrumb follows the page,
+the floating button opens the tour, the back-to-top button returns to the top, the
+inventory table pages, the order queue drives the detail pane, anchors scroll the
+detail, the image preview opens/zooms, and the settings password form revalidates
+across fields. Every popup is screenshotted to `/tmp/qa-*.png`, and any console
+error fails the run.
 
 `npm run qa:gallery` does the same for the full gallery page with real mouse
 events (hit-test path): it asserts no two top-level clusters overlap, drives the

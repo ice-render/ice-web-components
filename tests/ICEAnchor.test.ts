@@ -88,4 +88,24 @@ describe('ICEAnchor', () => {
     ice.evtBus.trigger('keydown', { key: 'ArrowUp' });
     expect(anchor.getActiveKey()).toBe('basic');
   });
+
+  it('点击够不着的最后一项（目标滚不到底）时，高亮停在点中的锚点', () => {
+    const pane = makePane();
+    const anchor = new ICEAnchor({
+      target: pane,
+      width: 160,
+      items: [
+        { key: 'basic', label: '基本信息', top: 0 },
+        { key: 'logs', label: '操作日志', top: 600 },
+        // 视口 120 / 内容 800 → 最多滚到 680，这一项滚不到顶部
+        { key: 'deep', label: '归档记录', top: 780 },
+      ],
+    });
+    anchor.getItemNode('deep')!.trigger('click', null, {});
+    expect(pane.getScroll()[1]).toBe(680); // 被夹取
+    expect(anchor.getActiveKey()).toBe('deep'); // 高亮仍然停在被点的那一项
+    // 用户自己再滚动，跟随逻辑恢复
+    pane.setScroll(0, 0);
+    expect(anchor.getActiveKey()).toBe('basic');
+  });
 });

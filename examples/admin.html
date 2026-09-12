@@ -248,6 +248,7 @@
             ],
           },
           { key: 'products', label: '商品', iconPath: 'M21 16V8l-9-5-9 5v8l9 5 9-5zM3.3 7.3L12 12l8.7-4.7M12 22V12' },
+          { key: 'fulfillment', label: '履约', iconPath: 'M1 3h15v13H1zM16 8h4l3 3v5h-7zM5.5 21a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM18.5 21a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z' },
           { key: 'customers', label: '客户', iconPath: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75' },
           { key: 'settings', label: '设置', iconPath: 'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6' },
         ],
@@ -295,11 +296,23 @@
       const hamburger = new W.ICEIcon({ id: 'hamburger', left: 22, top: 20, size: 24, icon: '☰', color: theme.colors.textSecondary });
       const pageTitle = new W.ICELabel({
         left: 56,
-        top: 0,
-        height: 64,
+        top: 8,
+        height: 26,
         verticalAlign: 'middle',
         text: '仪表盘',
         style: { fontSize: 18, fontWeight: '600', fillStyle: theme.colors.text },
+      });
+      // 面包屑：跟着当前页面走（首页 › 当前页），点「首页」回仪表盘
+      const breadcrumb = new W.ICEBreadcrumb({
+        id: 'breadcrumb',
+        left: 56,
+        top: 36,
+        width: 420,
+        fontSize: 11,
+        items: [{ label: '首页' }, { label: '仪表盘' }],
+        onNavigate: (item, index) => {
+          if (index === 0) showPage('dashboard');
+        },
       });
       const search = new W.ICEAutoComplete({
         id: 'search',
@@ -320,7 +333,7 @@
       const bellDot = new W.ICEBadge({ id: 'bell-dot', left: 1196, top: 16, dot: true, dotSize: 10 });
       const headerSep = new W.ICESeparator({ left: 1220, top: 16, width: 1, height: 32 });
       const headerAvatar = new W.ICEAvatar({ id: 'header-avatar', left: 1240, top: 12, text: 'FM', size: 40 });
-      header.addChildren([hamburger, pageTitle, search, bellIcon, bellDot, headerSep, headerAvatar]);
+      header.addChildren([hamburger, pageTitle, breadcrumb, search, bellIcon, bellDot, headerSep, headerAvatar]);
 
       const contentHost = new W.ICEScrollPane({
         id: 'content',
@@ -337,6 +350,50 @@
       const pageHost = new W.ICEWidget({ width: PAGE_W, height: 10, fill: false, stroke: false });
       contentHost.setContent(pageHost);
       let currentPageKey = 'dashboard';
+
+      /* ------------------------- 悬浮层：回到顶部 / 快捷操作 / 新手引导 ------------------------- */
+      // 都挂在 shell 上（不随页面滚动）：回到顶部跟随内容滚动容器，FAB 是全局快捷入口
+      const backTop = new W.ICEBackTop({
+        id: 'back-top',
+        left: 1402,
+        top: 860,
+        target: contentHost,
+        visibilityHeight: 120,
+        onClick: () => toast('已回到顶部', 'info'),
+      });
+      W.attachTooltip(ice, backTop, { title: '回到顶部', placement: 'left' });
+      const fab = new W.ICEFloatButton({
+        id: 'fab',
+        left: 1454,
+        top: 852,
+        size: 44,
+        type: 'primary',
+        items: [
+          { key: 'tour', icon: '?', onClick: () => tour.open() },
+          { key: 'export', icon: '↧', onClick: () => exportReport() },
+          { key: 'product', icon: '▤', onClick: () => { showPage('products'); toast('去新建商品', 'info'); } },
+          { key: 'order', icon: '✚', onClick: () => openNewOrderModal() },
+        ],
+        onItemClick: (key) => toast('快捷操作：' + key, 'info'),
+      });
+      const exportReport = () => {
+        toast('正在导出报表…', 'loading');
+        setTimeout(() => notify('导出完成', 'recent-orders-2026-09.csv 已生成', 'success'), 700);
+      };
+      // 页面内容是懒构建的（创建更晚 → zIndex 更高），把这两个悬浮件抬到页面之上，
+      // 否则它们会被页面卡片盖住（浮层工具层不受影响，仍然在最上面）
+      raise(backTop, 9000);
+      raise(fab, 9000);
+      // 新手引导：把侧边栏 → 搜索 → 内容区 → 快捷按钮串一遍
+      const tour = new W.ICETour(ice, {
+        steps: [
+          { target: menu, title: '① 从侧边栏开始', description: '订单、商品、客户、设置都在这里切换，订单还有二级菜单。' },
+          { target: search, title: '② 顶部搜索', description: '按客户名快速跳到订单列表，候选超过一屏会自动出现滚动条。' },
+          { target: contentHost, title: '③ 内容区', description: '每个页面都是可滚动的；右下角的回到顶部按钮会在滚动后出现。' },
+          { target: fab, title: '④ 快捷操作', description: '新建订单、新建商品、导出报表都在这个悬浮按钮里，随时可以重开引导。' },
+        ],
+        onFinish: () => notify('引导完成', '随时点悬浮按钮里的「?」重新查看', 'success'),
+      });
 
       /* ---------------------------------- 仪表盘 ---------------------------------- */
       const buildDashboard = () => {
@@ -489,9 +546,109 @@
         });
         channelCard.addChildren(channelNodes);
 
+        /* ---- 本批新增：倒计时 / 待办 / 库存预警 / 水印看板 ---- */
+        const campaignCountdown = new W.ICEStatistic({
+          left: 0,
+          top: 0,
+          width: 220,
+          title: '距大促结束',
+          countdown: 3 * 86400000 + 3661000,
+          status: 'error',
+          onFinish: () => notify('大促已结束', '记得把活动价改回去', 'warning'),
+        });
+        const countdownCard = card(
+          '活动倒计时',
+          300,
+          campaignCountdown,
+          new W.ICELabel({
+            left: 0,
+            top: 0,
+            width: 268,
+            text: '倒计时归零时会自动提醒一次（业界组件库 Statistic.Countdown）。',
+            style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+          }),
+        );
+
+        const todoGroups = new W.ICECheckboxGroup({
+          left: 0,
+          top: 0,
+          width: 360,
+          direction: 'vertical',
+          value: ['ship'],
+          options: [
+            { value: 'ship', label: '处理 12 笔待发货订单' },
+            { value: 'stock', label: '补货：秋季基础 T 恤' },
+            { value: 'refund', label: '审核 3 笔退款申请' },
+            { value: 'price', label: '核对双十一活动价' },
+          ],
+          onChange: (values) => toast(`今日待办已完成 ${values.length} / 4`, 'info'),
+        });
+        const todoCard = card('今日待办', 420, todoGroups);
+
+        const INVENTORY = [
+          { sku: 'TS-001', name: '秋季基础 T 恤', stock: 8, safe: 20, channel: '天猫' },
+          { sku: 'TS-002', name: '加绒卫衣', stock: 64, safe: 30, channel: '自营商城' },
+          { sku: 'PT-101', name: '直筒牛仔裤', stock: 12, safe: 25, channel: '天猫' },
+          { sku: 'SH-210', name: '轻跑鞋', stock: 5, safe: 15, channel: '抖音' },
+          { sku: 'BG-330', name: '通勤双肩包', stock: 42, safe: 20, channel: '自营商城' },
+          { sku: 'HT-040', name: '针织帽', stock: 0, safe: 10, channel: '天猫' },
+          { sku: 'SC-050', name: '撞色围巾', stock: 27, safe: 12, channel: '抖音' },
+          { sku: 'JK-060', name: '防风外套', stock: 3, safe: 18, channel: '官网' },
+        ];
+        const inventoryTable = new W.ICETable({
+          id: 'inventory-table',
+          left: 0,
+          top: 0,
+          width: 744,
+          rowHeight: 36,
+          columns: [
+            { key: 'sku', title: 'SKU' },
+            { key: 'name', title: '商品' },
+            { key: 'channel', title: '渠道' },
+            { key: 'stock', title: '库存', align: 'right' },
+            { key: 'safe', title: '安全线', align: 'right' },
+          ],
+          data: INVENTORY,
+          // 表格自带分页 + 空态（空数据时会画 ICEEmpty）
+          pagination: { pageSize: 3, showTotal: true, onChange: (page) => toast(`库存预警：第 ${page} 页`, 'info') },
+        });
+        const inventoryCard = card('库存预警', 800, inventoryTable);
+
+        const boardInner = new W.ICECard({ left: 0, top: 0, width: 584, height: 232, title: '商品看板（内部预览）' });
+        const boardHint = new W.ICELabel({
+          left: 16,
+          top: 50,
+          width: 552,
+          text: '水印组件盖在卡片上，用于「草稿 / 内部资料」这类需要一眼看出的场景；它不参与交互，不会挡住下面的点击。',
+          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+        });
+        boardInner.addChild(boardHint, false);
+        boardInner.addChildren([
+          new W.ICEProgressBar({ left: 16, top: 92, width: 248, value: 62, height: 10 }),
+          new W.ICELabel({ left: 16, top: 112, text: '上新完成度 62%', style: { fontSize: 12, fillStyle: theme.colors.textSecondary } }),
+          new W.ICETag({ left: 280, top: 92, width: 72, height: 24, text: '草稿', status: 'warning' }),
+          new W.ICEButton({ left: 16, top: 148, width: 120, height: 32, text: '提交审核', size: 'small' }),
+        ], { align: 'top' });
+        const boardWatermark = new W.ICEWatermark({
+          left: 0,
+          top: 0,
+          width: 584,
+          height: 232,
+          text: 'ICE 内部预览',
+          gapX: 200,
+          gapY: 90,
+          color: 'rgba(13, 110, 253, 0.13)',
+        });
+        const board = new W.ICEWidget({ left: 0, top: 0, width: 584, height: 232, fill: false, stroke: false });
+        board.addChild(boardInner, false);
+        board.addChild(boardWatermark, false);
+        // QA / 外部调试用句柄
+        state.dashboard = { campaignCountdown, todoGroups, inventoryTable };
+
         flow(node, [
           { title: '经营概览', items: stats },
           { title: '运营动态', items: [card('活动与投放', 792, campaign, carousel), statusCard, quickCard, teamCard, channelCard] },
+          { title: '经营看板', items: [countdownCard, todoCard, inventoryCard, board] },
           // 这里不再另起小节标题：卡片自带「最近订单」标题，避免重复
           { items: [card('最近订单', 1192, dashboardTable, tableCaption)] },
         ], { align: 'top' });
@@ -581,16 +738,22 @@
           rowHeight: 40,
           columns,
           data: ORDERS.slice(0, 6),
-          onSelect: (row) => row && openOrderDrawer(row),
+          // 页面可以覆盖选中行为（订单页要保持「选中提示」同步）
+          onSelect: options.onSelect || ((row) => row && openOrderDrawer(row)),
         });
         return table;
       };
 
       const filteredOrders = () => {
         const keyword = orderState.keyword.trim().toLowerCase();
+        const range = orderState.amountRange;
+        const regions = orderState.regions || [];
         return ORDERS.filter((row) => {
           if (orderState.status !== 'all' && row.status.toLowerCase() !== orderState.status) return false;
           if (orderState.region && row.region !== orderState.region) return false;
+          if (regions.length && regions.indexOf(row.region) === -1) return false;
+          if (range && (row.amount < range[0] || row.amount > range[1])) return false;
+          if (orderState.onlyAbnormal && row.status !== 'Refunded' && row.status !== 'Pending') return false;
           if (keyword && !(`${row.order} ${row.customer}`.toLowerCase().includes(keyword))) return false;
           return true;
         });
@@ -646,7 +809,99 @@
         const resetButton = new W.ICEButton({ left: 0, top: 0, width: 76, height: 32, text: '重置', variant: 'default' });
         const createButton = new W.ICEButton({ left: 0, top: 0, width: 104, height: 32, text: '新建订单' });
 
-        const table = buildOrderTable({ id: 'orders-full' });
+        /* ---- 高级筛选：金额区间（Slider）+ 区域多选（CheckboxGroup） ---- */
+        const amountRange = new W.ICESlider({
+          left: 0,
+          top: 0,
+          width: 260,
+          height: 18,
+          range: true,
+          min: 0,
+          max: 4000,
+          step: 100,
+          value: [0, 4000],
+          onChange: () => {
+            orderState.amountRange = amountRange.getRangeValue();
+            orderState.page = 1;
+            applyFilter();
+          },
+        });
+        const amountLabel = new W.ICELabel({
+          left: 0,
+          top: 0,
+          height: 18,
+          verticalAlign: 'middle',
+          text: '金额：$0 – $4,000',
+          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+        });
+        const regionGroup = new W.ICECheckboxGroup({
+          left: 0,
+          top: 0,
+          width: 360,
+          itemGap: 12,
+          options: [
+            { value: '华东', label: '华东' },
+            { value: '华南', label: '华南' },
+            { value: '华北', label: '华北' },
+            { value: '西南', label: '西南' },
+          ],
+          onChange: (values) => {
+            orderState.regions = values;
+            orderState.page = 1;
+            applyFilter();
+          },
+        });
+        const onlyAbnormal = new W.ICESwitch({
+          left: 0,
+          top: 0,
+          width: 44,
+          height: 22,
+          selected: false,
+          onChange: () => {
+            orderState.onlyAbnormal = onlyAbnormal.isSelected();
+            orderState.page = 1;
+            applyFilter();
+          },
+        });
+        const onlyAbnormalLabel = new W.ICELabel({
+          left: 0,
+          top: 0,
+          height: 22,
+          verticalAlign: 'middle',
+          text: '只看异常单',
+          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+        });
+        const clearAdvanced = () => {
+          amountRange.setRangeValue([0, 4000]);
+          amountLabel.setText('金额：$0 – $4,000');
+          regionGroup.setValue([]);
+          onlyAbnormal.setSelected(false);
+          orderState.amountRange = null;
+          orderState.regions = [];
+          orderState.onlyAbnormal = false;
+          orderState.page = 1;
+          applyFilter();
+          toast('高级筛选已清空', 'info');
+        };
+        const advancedReset = new W.ICEButton({ left: 0, top: 0, width: 76, height: 32, text: '清空条件', variant: 'default' });
+        advancedReset.on('click', clearAdvanced);
+        amountRange.on('change', () => {
+          const range = amountRange.getRangeValue() || [0, 4000];
+          amountLabel.setText(`金额：${money(range[0])} – ${money(range[1])}`);
+        });
+
+        const refreshSelectedHint = () => {
+          const index = table.getSelectedIndex();
+          const row = index >= 0 ? table.getRows()[index] : null;
+          selectedHint.setText(row ? `已选中 ${row.order} · ${row.customer} · ${money(row.amount)}` : '未选中任何订单');
+        };
+        const table = buildOrderTable({
+          id: 'orders-full',
+          onSelect: (row) => {
+            refreshSelectedHint();
+            openOrderDrawer(row);
+          },
+        });
         const total = new W.ICELabel({ left: 0, top: 0, text: '', style: { fontSize: 12, fillStyle: theme.colors.textSecondary } });
         const pagination = new W.ICEPagination({
           left: 0,
@@ -679,9 +934,76 @@
           total.setText(`共 ${rows.length} 条 · 第 ${orderState.page} 页 / 每页 ${orderState.pageSize} 条`);
           emptyState.setState({ display: rows.length === 0 });
           table.setState({ display: rows.length > 0 });
+          refreshSelectedHint();
         };
         state.applyFilter = applyFilter;
         state.segmented = segmented;
+
+        /* ---- 批量操作：作用于表格里选中的那一行 ---- */
+        const selectedHint = new W.ICELabel({
+          left: 0,
+          top: 0,
+          height: 32,
+          verticalAlign: 'middle',
+          text: '未选中任何订单',
+          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+        });
+        const bulkShip = new W.ICEButton({ left: 0, top: 0, width: 104, height: 32, text: '批量发货' });
+        const bulkExport = new W.ICEButton({ left: 0, top: 0, width: 104, height: 32, text: '导出所选', variant: 'default' });
+        const bulkMore = new W.ICEButton({ left: 0, top: 0, width: 104, height: 32, text: '更多操作', variant: 'text' });
+        const bulkDelete = new W.ICEButton({ left: 0, top: 0, width: 104, height: 32, text: '删除所选', danger: true });
+        const currentSelection = () => {
+          const index = table.getSelectedIndex();
+          return index >= 0 ? table.getRows()[index] : null;
+        };
+        const requireSelection = () => {
+          const row = currentSelection();
+          if (!row) {
+            toast('请先在表格里选中一行订单', 'warning');
+            return null;
+          }
+          return row;
+        };
+        bulkShip.on('click', () => {
+          const row = requireSelection();
+          if (!row) return;
+          row.status = 'Shipped';
+          applyFilter();
+          notify('已发货', `${row.order} · ${row.customer}`, 'success');
+        });
+        bulkExport.on('click', () => {
+          const row = requireSelection();
+          if (!row) return;
+          toast(`已导出 ${row.order} 的明细`, 'success');
+        });
+        W.attachPopconfirm(ice, bulkDelete, {
+          title: '删除所选订单？',
+          description: '删除后不可恢复。',
+          danger: true,
+          onConfirm: () => {
+            const row = currentSelection();
+            if (!row) {
+              toast('请先在表格里选中一行订单', 'warning');
+              return;
+            }
+            const index = ORDERS.findIndex((o) => o.order === row.order);
+            if (index >= 0) ORDERS.splice(index, 1);
+            applyFilter();
+            toast('已删除 ' + row.order, 'success');
+          },
+        });
+        W.attachDropdown(ice, bulkMore, {
+          items: [
+            { key: 'print', label: '打印面单' },
+            { key: 'urge', label: '催付' },
+            { key: 'tag', label: '打标签' },
+          ],
+          onSelect: (item) => {
+            const row = requireSelection();
+            if (!row) return;
+            toast(`${row.order}：${item.label}`, 'info');
+          },
+        });
 
         keywordField.on('change', (evt) => {
           const value = evt && evt.value !== undefined ? evt.value : keywordField.getValue();
@@ -701,6 +1023,13 @@
           segmented.setValue('all');
           keywordField.setValue('');
           regionSelect.setValue(undefined);
+          orderState.amountRange = null;
+          orderState.regions = [];
+          orderState.onlyAbnormal = false;
+          amountRange.setRangeValue([0, 4000]);
+          amountLabel.setText('金额：$0 – $4,000');
+          regionGroup.setValue([]);
+          onlyAbnormal.setSelected(false);
           applyFilter();
           toast('筛选条件已重置', 'info');
         });
@@ -726,6 +1055,20 @@
                 createButton,
               ),
             ],
+          },
+          {
+            items: [
+              card(
+                '高级筛选',
+                1192,
+                column(8, amountLabel, amountRange),
+                column(8, onlyAbnormalLabel, ...row(8, onlyAbnormal, advancedReset)),
+                regionGroup,
+              ),
+            ],
+          },
+          {
+            items: [card('批量操作', 1192, selectedHint, bulkShip, bulkExport, bulkMore, bulkDelete)],
           },
           {
             items: [
@@ -1050,6 +1393,108 @@
         stockButton.on('click', () => notify('补货提醒已设置', '库存低于 20 件时会通知你', 'info'));
         W.attachTooltip(ice, stockButton, { title: '设置库存阈值', placement: 'top' });
 
+        /* ---- 本批新增：状态单选组 / 折扣滑块 / 分类树 / 图片预览 / 商品描述 ---- */
+        const productStatus = new W.ICERadioGroup({
+          left: 0,
+          top: 0,
+          width: 360,
+          value: 'onsale',
+          options: [
+            { value: 'onsale', label: '在售' },
+            { value: 'presale', label: '预售' },
+            { value: 'offline', label: '已下架', disabled: true },
+          ],
+          onChange: (value) => toast('商品状态：' + value, 'info'),
+        });
+        const discountLabel = new W.ICELabel({
+          left: 0,
+          top: 0,
+          height: 18,
+          verticalAlign: 'middle',
+          text: '折扣：8.5 折',
+          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+        });
+        const discountSlider = new W.ICESlider({
+          left: 0,
+          top: 0,
+          width: 260,
+          height: 18,
+          min: 1,
+          max: 10,
+          step: 0.5,
+          value: 8.5,
+          onChange: (value) => discountLabel.setText(`折扣：${Number(value).toFixed(1)} 折`),
+        });
+        const categoryTree = new W.ICETree({
+          left: 0,
+          top: 0,
+          width: 300,
+          height: 168,
+          nodes: [
+            {
+              key: 'clothes',
+              label: '服饰',
+              children: [
+                { key: 'tee', label: 'T 恤' },
+                { key: 'coat', label: '外套' },
+              ],
+            },
+            {
+              key: 'digital',
+              label: '数码',
+              children: [
+                { key: 'phone', label: '手机' },
+                { key: 'pad', label: '平板' },
+              ],
+            },
+          ],
+          onSelect: (node) => node && toast('分类筛选：' + node.label, 'info'),
+        });
+        const gallery = new W.ICEImagePreview(ice, {
+          images: [
+            'data:image/svg+xml;utf8,' +
+              encodeURIComponent(
+                "<svg xmlns='http://www.w3.org/2000/svg' width='480' height='360'><rect width='480' height='360' fill='#cfe2ff'/><circle cx='240' cy='150' r='70' fill='#0d6efd'/><rect x='80' y='250' width='320' height='60' rx='18' fill='#198754'/></svg>",
+              ),
+            'data:image/svg+xml;utf8,' +
+              encodeURIComponent(
+                "<svg xmlns='http://www.w3.org/2000/svg' width='480' height='360'><rect width='480' height='360' fill='#d1e7dd'/><rect x='60' y='60' width='360' height='240' rx='24' fill='#198754'/></svg>",
+              ),
+            'data:image/svg+xml;utf8,' +
+              encodeURIComponent(
+                "<svg xmlns='http://www.w3.org/2000/svg' width='480' height='360'><rect width='480' height='360' fill='#fff3cd'/><polygon points='240,60 400,300 80,300' fill='#ffc107'/></svg>",
+              ),
+          ],
+          onIndexChange: (index) => toast(`预览第 ${index + 1} 张`, 'info'),
+        });
+        const galleryButton = new W.ICEButton({ left: 0, top: 0, width: 120, height: 32, text: '预览大图', variant: 'default' });
+        galleryButton.on('click', () => {
+          gallery.open(0);
+          // 示例页的画布比窗口高，把预览框滚进视口（真实应用不需要）
+          const frame = gallery.getFrame();
+          const canvasEl = document.getElementById('canvas');
+          if (frame && canvasEl) {
+            const rect = canvasEl.getBoundingClientRect();
+            window.scrollTo(0, Math.max(0, window.scrollY + rect.top + Number(frame.state.top) - 120));
+          }
+        });
+        previewImage.on('click', () => gallery.open(0));
+        const productDescriptions = new W.ICEDescriptions({
+          left: 0,
+          top: 0,
+          width: 480,
+          column: 2,
+          items: [
+            { label: '商品编号', value: 'TS-001' },
+            { label: '品牌', value: 'ICE Basics' },
+            { label: '上架时间', value: '2026-08-18' },
+            { label: '产地', value: '杭州' },
+            { label: '税率', value: '13%' },
+            { label: '保修', value: '7 天无理由' },
+          ],
+        });
+        state.products = { gallery, productStatus, discountSlider, previewImage, galleryButton };
+
         flow(node, [
           {
             items: [
@@ -1057,7 +1502,18 @@
               card('主图', 548, uploader, previewCard),
             ],
           },
-          { items: [card('营销标签', 612, transfer), card('发布操作', 548, offlineButton, stockButton)] },
+          {
+            items: [
+              card('营销标签', 612, transfer),
+              card('发布操作', 548, offlineButton, stockButton, galleryButton, productStatus),
+            ],
+          },
+          {
+            items: [
+              card('售价与折扣', 612, column(8, discountLabel, discountSlider), categoryTree),
+              card('商品参数', 548, productDescriptions),
+            ],
+          },
         ], { align: 'top' });
         return node;
       };
@@ -1176,6 +1632,63 @@
           onAction: (key) => toast(key === 'pin' ? '已置顶这条跟进' : '回复功能演示', 'info'),
         });
 
+        /* ---- 本批新增：满意度评分 / 客户标签多选 / 洞察指标 ---- */
+        const satisfaction = new W.ICERate({
+          left: 0,
+          top: 0,
+          value: 4,
+          count: 5,
+          onChange: (value) => toast(`满意度评分：${value} 星`, 'info'),
+        });
+        const satisfactionCard = card(
+          '服务满意度',
+          320,
+          satisfaction,
+          new W.ICELabel({
+            left: 0,
+            top: 0,
+            width: 288,
+            text: '基于最近 200 条评价（4.6 / 5）',
+            style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+          }),
+        );
+        const customerTags = new W.ICECheckboxGroup({
+          left: 0,
+          top: 0,
+          width: 420,
+          value: ['vip'],
+          options: [
+            { value: 'vip', label: '高价值' },
+            { value: 'repeat', label: '复购' },
+            { value: 'risk', label: '流失风险' },
+            { value: 'new', label: '新客' },
+          ],
+          onChange: (values) => toast(`已同步 ${values.length} 个客户标签`, 'info'),
+        });
+        const tagCard = card('客户标签', 480, customerTags);
+        const customerStats = [
+          new W.ICEStatistic({ left: 0, top: 0, width: 200, title: '客户总数', value: 18204, groupSeparator: true }),
+          new W.ICEStatistic({
+            left: 0,
+            top: 0,
+            width: 200,
+            title: '复购率',
+            value: 42.6,
+            precision: 1,
+            suffix: '%',
+            status: 'success',
+          }),
+          new W.ICEStatistic({
+            left: 0,
+            top: 0,
+            width: 200,
+            title: '流失预警',
+            value: 37,
+            status: 'error',
+          }),
+        ];
+        const insightCard = card('客户洞察', 800, ...customerStats);
+
         selectCustomer('ava');
         flow(node, [
           {
@@ -1190,6 +1703,7 @@
               card('跟进记录', 584, comment, followers, followerNote),
             ],
           },
+          { title: '客户经营', items: [insightCard, satisfactionCard, tagCard] },
         ], { align: 'top' });
         return node;
       };
@@ -1374,17 +1888,136 @@
         );
         panels.notify = notifyPane;
 
+        /* ---------- 业务偏好（本批新增：跨字段表单 + 单选组 + 多选组 + 阈值） ---------- */
+        const bizPane = new W.ICEWidget({ width: PAGE_W, height: 10, fill: false, stroke: false });
+        const themeRadio = new W.ICERadioGroup({
+          left: 0,
+          top: 0,
+          width: 360,
+          value: 'light',
+          options: [
+            { value: 'light', label: '浅色' },
+            { value: 'dark', label: '深色' },
+            { value: 'auto', label: '跟随系统' },
+          ],
+          onChange: (value) => toast('主题偏好：' + value, 'info'),
+        });
+        const channelGroup = new W.ICECheckboxGroup({
+          left: 0,
+          top: 0,
+          width: 420,
+          value: ['email'],
+          max: 2,
+          options: [
+            { value: 'email', label: '邮件' },
+            { value: 'sms', label: '短信' },
+            { value: 'push', label: 'App Push' },
+            { value: 'webhook', label: 'Webhook' },
+          ],
+          onChange: (values) => toast(`已开启 ${values.length} 个渠道（最多 2 个）`, 'info'),
+        });
+        const stockThreshold = new W.ICESlider({
+          left: 0,
+          top: 0,
+          width: 300,
+          height: 18,
+          min: 5,
+          max: 100,
+          step: 5,
+          value: 20,
+          onChange: (value) => stockThresholdLabel.setText(`库存预警阈值：低于 ${value} 件时提醒`),
+        });
+        const stockThresholdLabel = note('库存预警阈值：低于 20 件时提醒');
+
+        // 跨字段校验：新密码改一次，确认框立刻重算（dependencies）
+        const passwordForm = new W.ICEForm({ width: 420, gap: 12 });
+        const newPassword = new W.ICEPasswordField({ width: 280, placeholder: '新密码（≥8 位）', showToggle: true });
+        const confirmPassword = new W.ICEPasswordField({ width: 280, placeholder: '再输一次', showToggle: true });
+        const strengthBar = new W.ICEProgressBar({ left: 0, top: 0, width: 280, value: 0, height: 8 });
+        const strengthNote = note('密码强度：待输入');
+        passwordForm.addItems([
+          new W.ICEFormItem({
+            name: 'newPassword',
+            label: '新密码',
+            control: newPassword,
+            rules: [{ required: true, minLength: 8 }],
+          }),
+          new W.ICEFormItem({
+            name: 'confirmPassword',
+            label: '确认新密码',
+            control: confirmPassword,
+            dependencies: ['newPassword'],
+            rules: [
+              { required: true },
+              { validator: (value, values) => (value === values.newPassword ? null : '两次输入的密码不一致') },
+            ],
+          }),
+        ]);
+        newPassword.on('change', () => {
+          const value = String(newPassword.getFormValue() || '');
+          const score = Math.min(100, value.length * 9 + (/[0-9]/.test(value) ? 15 : 0) + (/[^A-Za-z0-9]/.test(value) ? 20 : 0));
+          strengthBar.setValue(score);
+          strengthNote.setText(
+            score === 0 ? '密码强度：待输入' : `密码强度：${score >= 80 ? '强' : score >= 50 ? '中' : '弱'}（${score}%）`,
+          );
+        });
+        const savePassword = new W.ICEButton({ left: 0, top: 0, width: 140, height: 32, text: '更新密码' });
+        savePassword.on('click', () => {
+          if (passwordForm.validate()) {
+            notify('密码已更新', '下次登录请使用新密码', 'success');
+          } else {
+            toast('请检查密码填写', 'error');
+          }
+        });
+
+        flow(
+          bizPane,
+          [
+            {
+              items: [
+                card(
+                  '界面与提醒',
+                  612,
+                  themeRadio,
+                  column(10, stockThresholdLabel, stockThreshold),
+                  channelGroup,
+                ),
+                card(
+                  '账号安全',
+                  548,
+                  column(14, passwordForm, savePassword, strengthBar, strengthNote),
+                  new W.ICEAlert({
+                    left: 0,
+                    top: 0,
+                    width: 516,
+                    height: 56,
+                    type: 'info',
+                    title: '跨字段校验',
+                    message: '「确认新密码」依赖「新密码」：改上面那栏，下面的错误会立刻重算。',
+                  }),
+                ),
+              ],
+            },
+          ],
+          { align: 'top' },
+        );
+        panels.biz = bizPane;
+        paneKeys.push('biz');
+        state.biz = { themeRadio, channelGroup, stockThreshold, passwordForm, newPassword, confirmPassword, strengthBar };
+
         const tabs = new W.ICETabs({
           id: 'settings-tabs',
           left: 0,
           top: 0,
-          width: 480,
+          width: 600,
           height: 36,
-          tabs: ['基本资料', '安全设置', '通知偏好'],
+          tabs: ['基本资料', '安全设置', '通知偏好', '业务偏好'],
           onChange: (index) => showSettingsPane(index),
         });
         const showSettingsPane = (index) => {
           const clamped = Math.max(0, Math.min(paneKeys.length - 1, Number(index) || 0));
+          // 程序式切面板时同步高亮 Tab（setActiveIndex 不会反过来触发 onChange）
+          tabs.setActiveIndex(clamped);
           paneKeys.forEach((key, i) => panels[key].setState({ display: i === clamped }));
           const active = panels[paneKeys[clamped]];
           const top = tabs.state.top + Number(tabs.state.height) + 18;
@@ -1395,6 +2028,7 @@
           ice.dirty = true;
         };
         state.showSettingsPane = showSettingsPane;
+        state.settings = { tabs, panels, paneKeys };
 
         tabs.setState({ left: 24, top: 20 });
         node.addChild(tabs, false);
@@ -1408,10 +2042,138 @@
       };
 
       /* ---------------------------------- 页面注册与切换 ---------------------------------- */
+      /* ---------------------------------- 履约工作台（Splitter + Anchor） ---------------------------------- */
+      const buildFulfillment = () => {
+        const node = new W.ICEWidget({ width: PAGE_W, height: 10, fill: false, stroke: false });
+        const queue = [
+          { key: 'o1', order: '#10321', customer: 'Ava Thompson', region: '华东', amount: 1240.0, progress: 60, stage: '待拣货' },
+          { key: 'o2', order: '#10322', customer: 'Liam Chen', region: '华南', amount: 860.5, progress: 30, stage: '待支付确认' },
+          { key: 'o3', order: '#10323', customer: 'Mia Rodriguez', region: '华北', amount: 2190.0, progress: 80, stage: '已出库' },
+          { key: 'o4', order: '#10324', customer: 'Noah Wilson', region: '西南', amount: 540.2, progress: 100, stage: '已签收' },
+          { key: 'o5', order: '#10325', customer: 'Emma Brown', region: '华东', amount: 3120.0, progress: 45, stage: '待拣货' },
+          { key: 'o6', order: '#10326', customer: 'Lucas Martin', region: '华南', amount: 1005.8, progress: 15, stage: '待支付确认' },
+        ];
+        const detail = new W.ICEWidget({ width: 600, height: 620, fill: false, stroke: false });
+        const info = new W.ICEDescriptions({ left: 0, top: 0, width: 600, column: 2, items: [] });
+        const progressLabel = note('履约进度');
+        const progress = new W.ICEProgressBar({ left: 0, top: 0, width: 600, value: 0, height: 10 });
+        const track = new W.ICETimeline({ left: 0, top: 0, width: 600, items: [] });
+        const service = new W.ICEComment({
+          left: 0,
+          top: 0,
+          width: 600,
+          author: '仓储 · 老周',
+          avatarText: '周',
+          time: '1 小时前',
+          content: '已按客户要求改用顺丰，今晚 20:00 前出库。',
+          actions: [
+            { key: 'reply', text: '回复' },
+            { key: 'urge', text: '催办' },
+          ],
+          onAction: (key) => toast(key === 'urge' ? '已催办仓储' : '回复功能演示', 'info'),
+        });
+        // 商品明细：既补充业务信息，也让详情区真的比视口高（否则锚点/滚动无从演示）
+        const items = new W.ICEDescriptions({
+          left: 0,
+          top: 0,
+          width: 600,
+          column: 2,
+          items: [
+            { label: '商品', value: '秋季基础 T 恤' },
+            { label: '数量', value: '2 件' },
+            { label: '规格', value: 'M / 米白' },
+            { label: '单价', value: '¥129.00' },
+            { label: '承运商', value: '顺丰速运' },
+            { label: '运单号', value: 'SF1234567890' },
+          ],
+        });
+        const selectOrder = (key) => {
+          const row = queue.find((item) => item.key === key) || queue[0];
+          info.setItems([
+            { label: '订单号', value: row.order },
+            { label: '客户', value: row.customer },
+            { label: '金额', value: money(row.amount) },
+            { label: '配送区域', value: row.region },
+            { label: '当前环节', value: row.stage },
+            { label: '预计送达', value: '2026-09-14' },
+          ]);
+          progress.setValue(row.progress);
+          progressLabel.setText(`履约进度 ${row.progress}%（${row.stage}）`);
+          track.setItems([
+            { title: '订单创建', time: '09-12 09:12', description: row.customer + ' 提交订单' },
+            { title: '支付完成', time: '09-12 09:15', color: theme.colors.success, description: money(row.amount) },
+            { title: '仓库拣货', time: '09-12 14:02', description: row.stage },
+          ]);
+        };
+        selectOrder('o1');
+        // 显式纵向排列（这几个组件都是 (0,0) 创建的，不排会全叠在一起）
+        detail.addChildren(column(14, info, progressLabel, progress, track, items, service));
+        const offsetOf = (node) => Number(node.state.top) || 0;
+        const detailHeight = Math.max(430, offsetOf(service) + (Number(service.state.height) || 120) + 20);
+        const detailScroll = new W.ICEScrollPane({ left: 0, top: 0, width: 600, height: 460 });
+        detailScroll.setContent(detail);
+        detailScroll.setContentSize(600, detailHeight);
+
+        const list = new W.ICEList({
+          left: 0,
+          top: 0,
+          width: 300,
+          height: 460,
+          itemHeight: 52,
+          items: queue.map((row) => ({ key: row.key, label: `${row.order}  ${row.customer}  ·  ${row.stage}` })),
+          onChange: (keys) => keys.length && selectOrder(keys[keys.length - 1]),
+        });
+        const splitter = new W.ICESplitter({
+          left: 0,
+          top: 0,
+          width: 900,
+          height: 460,
+          size: 300,
+          min: 200,
+          first: list,
+          second: detailScroll,
+          onResize: () => {
+            const [viewportWidth] = detailScroll.getViewportSize();
+            detailScroll.setContentSize(viewportWidth, detailHeight);
+            detail.setState({ width: viewportWidth });
+          },
+        });
+        const anchor = new W.ICEAnchor({
+          left: 0,
+          top: 0,
+          width: 140,
+          target: detailScroll,
+          itemHeight: 30,
+          items: [
+            { key: 'info', label: '订单信息', top: 0 },
+            { key: 'track', label: '物流轨迹', top: offsetOf(track) },
+            { key: 'service', label: '客户沟通', top: offsetOf(service) },
+          ],
+        });
+        const splitterCard = card('派单队列', 1192, row(16, splitter, anchor));
+        state.fulfillment = { splitter, detailScroll, anchor, list, info, progress, progressLabel, service, items };
+
+        const stats = [
+          new W.ICEStatistic({ left: 0, top: 0, width: 220, title: '待发货', value: 12, status: 'warning' }),
+          new W.ICEStatistic({ left: 0, top: 0, width: 220, title: '今日已出库', value: 86, status: 'success' }),
+          new W.ICEStatistic({ left: 0, top: 0, width: 220, title: '平均履约时长', value: 1.8, precision: 1, suffix: ' 天' }),
+          new W.ICEStatistic({ left: 0, top: 0, width: 220, title: '超时风险', value: 3, status: 'error' }),
+        ];
+        flow(node, [
+          { items: [splitterCard] },
+          {
+            title: '履约指标',
+            items: stats,
+          },
+        ], { align: 'top' });
+        return node;
+      };
+
       // 懒构建：只有真正切到某页才创建它的组件（否则各页构造期的副作用会一起冒出来）
       const PAGE_DEFS = {
         dashboard: { title: '仪表盘', build: buildDashboard },
         orders: { title: '订单管理', build: buildOrders },
+        fulfillment: { title: '履约中心', build: buildFulfillment },
         products: { title: '商品管理', build: buildProducts },
         customers: { title: '客户管理', build: buildCustomers },
         settings: { title: '设置', build: buildSettings },
@@ -1443,6 +2205,7 @@
         contentHost.setScroll(0, 0);
         contentHost.setContentSize(node.state.width, node.state.height);
         pageTitle.setText(def.title);
+        breadcrumb.setItems([{ label: '首页' }, { label: def.title }]);
         menu.setSelectedKey(menuKey || key);
         if (key === 'settings' && state.showSettingsPane) state.showSettingsPane(0);
         ice.dirty = true;
@@ -1504,11 +2267,29 @@
         },
       });
 
-      shell.addChildren([sidebar, header, contentHost]);
+      shell.addChildren([sidebar, header, contentHost, backTop, fab]);
       ice.addChild(shell);
       showPage('dashboard');
 
-      window.__result = { ice, shell, sidebar, header, contentHost, pageHost, menu, pages, builtPages, showPage, orderState, ORDERS, state };
+      window.__result = {
+        ice,
+        shell,
+        sidebar,
+        header,
+        contentHost,
+        pageHost,
+        menu,
+        pages,
+        builtPages,
+        showPage,
+        orderState,
+        ORDERS,
+        state,
+        breadcrumb,
+        backTop,
+        fab,
+        tour,
+      };
     </script>
   </body>
 </html>
