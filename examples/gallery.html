@@ -1106,6 +1106,31 @@
         pagination: { pageSize: 3, showTotal: true },
       });
 
+      // 跨字段依赖：确认密码（改密码 → 确认框立刻重算）
+      const crossForm = new W.ICEForm({ id: 'cross-form', left: 0, top: 0, width: 300, gap: 12 });
+      const passwordInput = new W.ICEPasswordField({ width: 220, height: 32, placeholder: '密码（≥6 位）' });
+      const confirmInput = new W.ICEPasswordField({ width: 220, height: 32, placeholder: '再输一次' });
+      crossForm.addItems([
+        new W.ICEFormItem({
+          name: 'password',
+          label: '密码',
+          control: passwordInput,
+          rules: [{ required: true, minLength: 6 }],
+        }),
+        new W.ICEFormItem({
+          name: 'confirm',
+          label: '确认密码',
+          control: confirmInput,
+          dependencies: ['password'],
+          rules: [
+            { required: true },
+            {
+              validator: (value, values) => (value === values.password ? null : '两次输入的密码不一致'),
+            },
+          ],
+        }),
+      ]);
+
       // 演示清单：每个 item 要么是单个组件，要么是一组「必须贴在一起」的组件（数组）。
       // 组件自带的 left/top 只是簇内局部坐标，实际位置由 flowSections 统一排。
       const sections = [
@@ -1291,6 +1316,10 @@
           title: 'Table with pagination',
           items: [pagedTable],
         },
+        {
+          title: 'Cross-field validation',
+          items: [crossForm],
+        },
       ];
 
       // 画布随内容长高：改元素尺寸 + 同步 ice.canvasWidth/Height（渲染器每帧都读它）
@@ -1373,7 +1402,7 @@
         requestAnimationFrame(() => syncCanvasToContent(flowSections(panel, sections))),
       );
 
-      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, submitHint, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, timePicker, timeHint, cascader, transfer, upload, carousel, avatarGroup, closableAlert, progressCircle, progressCircleDone, comment, colorPicker, colorHint, imageFill, imageContain, imageCover, breadcrumb, breadcrumbCollapsed, statistic, countdown, radioGroup, checkboxGroup, splitter, watermark, typographyTitle, typographyParagraph, typographyLink, anchorPane, anchor, backTop, calendar, imagePreview, previewTarget, tour, tourTarget, layoutSpace, layoutGrid, fab, pagedTable };
+      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, submitHint, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, timePicker, timeHint, cascader, transfer, upload, carousel, avatarGroup, closableAlert, progressCircle, progressCircleDone, comment, colorPicker, colorHint, imageFill, imageContain, imageCover, breadcrumb, breadcrumbCollapsed, statistic, countdown, radioGroup, checkboxGroup, splitter, watermark, typographyTitle, typographyParagraph, typographyLink, anchorPane, anchor, backTop, calendar, imagePreview, previewTarget, tour, tourTarget, layoutSpace, layoutGrid, fab, pagedTable, crossForm };
     </script>
   </body>
 </html>

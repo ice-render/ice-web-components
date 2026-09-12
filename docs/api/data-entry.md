@@ -371,6 +371,7 @@
 | `label?` | `string` |  |
 | `control` | `any` |  |
 | `rules?` | `ICEFormRule[]` | 校验规则（透传给 ICEFormModel） |
+| `dependencies?` | `string[]` | 依赖的字段名：这些字段变化时本项自动重算（跨字段校验，如「确认密码」）。 |
 | `layout?` | `'vertical' \| 'horizontal'` |  |
 | `labelWidth?` | `number` |  |
 | `width?` | `number` | 宽度（不传用组件默认值） |
@@ -385,6 +386,7 @@
 | `getName()` | `string` |  |
 | `getLabel()` | `string` |  |
 | `getRules()` | `ICEFormRule[]` |  |
+| `getDependencies()` | `string[]` | 依赖的字段名（跨字段重校验用）。 |
 | `getControl()` | `any` |  |
 | `getLabelNode()` | `ICELabel` |  |
 | `getErrorNode()` | `ICELabel` |  |

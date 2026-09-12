@@ -126,7 +126,7 @@
 | 数据录入 | ColorPicker | ✅ `ICEColorPicker`（色板网格 + 选中环 + 键盘导航；无取色轮/透明度） |
 | 数据录入 | DatePicker | ✅ `ICEDatePicker`（日历浮层，周一开头） |
 | 数据录入 | TimePicker | ✅ `ICETimePicker`（时/分/秒滚动列 + 步进 + HH:mm 两列模式；无 12 小时制/范围选择） |
-| 数据录入 | Form | ✅ `ICEForm` + `ICEFormItem` + `ICEFormModel`（含异步校验 / submitAsync；无跨字段依赖重校验） |
+| 数据录入 | Form | ✅ `ICEForm` + `ICEFormItem` + `ICEFormModel`（异步校验 / submitAsync / **跨字段依赖 `dependencies`**） |
 | 数据录入 | Input | ✅ `ICETextField`（部分：无多行 / 密码 / 前后缀 / 清空） |
 | 数据录入 | InputNumber | ✅ `ICEInputNumber`（步进 + 键盘 + 精度） |
 | 数据录入 | Mentions | ⊘ 低优先 |
@@ -189,8 +189,9 @@
 8. **Layout / Grid / Space**（Header-Sider-Content-Footer、Row-Col、间距容器）——
    引擎已有 `ICEGridLayout`，缺 UI 封装；定位更接近「模板」，**下一批第一顺位**；
 9. ~~FloatButton 完整形态~~ ✅ `ICEFloatButton`（展开菜单 / 自动收起）
-10. **Table 的剩余部分**（滚动 / 列宽拖拽 / 展开行）与 **Form 的跨字段依赖重校验**、
-    **QRCode**（需自带编码器）—— **下一批第一顺位是 Form 的跨字段重校验**（业务感知最强）。
+10. ~~Form 跨字段依赖重校验~~ ✅ `dependencies` + 空值上也跑自定义 validator；
+11. **Table 的剩余部分**（滚动 / 列宽拖拽 / 展开行）、**QRCode**（需自带编码器）、
+    **FloatButton 的「速度仪表盘」形态** —— **下一批第一顺位是 Table 的滚动与列宽拖拽**。
 
 ## 现有组件的「做满」清单
 

@@ -31,6 +31,11 @@ export interface ICEFormFieldOptions {
   name: string;
   label?: string;
   rules?: ICEFormRule[];
+  /**
+   * 依赖的字段名：**这些字段变化时本字段自动重算**。
+   * 典型场景「确认密码」「结束日期 ≥ 开始日期」——本字段的合法性取决于别的字段。
+   */
+  dependencies?: string[];
   value?: any;
 }
 
@@ -45,6 +50,7 @@ interface ICEFormField {
   name: string;
   label: string;
   rules: ICEFormRule[];
+  dependencies: string[];
   value: any;
   initialValue: any;
   error: string | null;
@@ -88,6 +94,7 @@ export class ICEFormModel {
       name: options.name,
       label: options.label || options.name,
       rules: options.rules ? options.rules.slice() : [],
+      dependencies: options.dependencies ? options.dependencies.slice() : [],
       value: options.value,
       initialValue: options.value,
       error: null,
@@ -113,6 +120,11 @@ export class ICEFormModel {
 
   public getFieldNames(): string[] {
     return this.fields.map((field) => field.name);
+  }
+
+  /** 直接依赖 `name` 的字段（反向查询）。 */
+  public getDependents(name: string): string[] {
+    return this.fields.filter((field) => field.dependencies.indexOf(name) !== -1).map((field) => field.name);
   }
 
   public getLabel(name: string): string {
@@ -148,6 +160,7 @@ export class ICEFormModel {
     }
     if (this.validateTrigger === 'change') {
       this.validateField(name, { silent: true });
+      this.__validateDependents(name);
     }
     this.__notify();
     return this;
@@ -165,9 +178,15 @@ export class ICEFormModel {
     }
     if (this.validateTrigger === 'change') {
       Object.keys(values).forEach((name) => this.validateField(name, { silent: true }));
+      Object.keys(values).forEach((name) => this.__validateDependents(name));
     }
     this.__notify();
     return this;
+  }
+
+  /** 依赖 `name` 的字段重算（静默：调用方统一 __notify）。 */
+  private __validateDependents(name: string): void {
+    this.getDependents(name).forEach((dependent) => this.validateField(dependent, { silent: true }));
   }
 
   public getError(name: string): string | null | undefined {
@@ -288,7 +307,11 @@ export class ICEFormModel {
         return rule.message || `${label}不能为空`;
       }
       if (isMissing(value)) {
-        continue; // 非必填且为空：其余规则跳过
+        // 非必填且为空：跳过内置约束（min/max/长度/pattern），但**自定义 validator 仍然执行**
+        // —— 「跨字段 / 至少填一个」这类规则的生命周期就在空值上（例如 A、B 都不填才算错）。
+        if (!rule.validator) {
+          continue;
+        }
       }
       const numeric = Number(value);
       if (rule.min !== undefined && Number.isFinite(numeric) && numeric < rule.min) {

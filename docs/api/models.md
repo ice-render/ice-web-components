@@ -93,6 +93,7 @@
 | `removeField(name: string)` | `this` |  |
 | `getField(name: string)` | `ICEFormField \| undefined` |  |
 | `getFieldNames()` | `string[]` |  |
+| `getDependents(name: string)` | `string[]` | 直接依赖 `name` 的字段（反向查询）。 |
 | `getLabel(name: string)` | `string` |  |
 | `getValue(name: string)` | `any` |  |
 | `getValues()` | `Record<string, any>` |  |

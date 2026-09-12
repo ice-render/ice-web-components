@@ -67,6 +67,7 @@ export class ICEForm extends ICEContainer {
       name,
       label: item.getLabel(),
       rules: item.getRules() as ICEFormRule[],
+      dependencies: item.getDependencies ? item.getDependencies() : [],
       value: control.getFormValue ? control.getFormValue() : undefined,
     });
     if (control && typeof control.on === 'function') {

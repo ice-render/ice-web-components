@@ -97,3 +97,38 @@ class MyControl extends ICEWidget {
 ```ts
 form.reset();   // 回到初始值、清空错误，并把值写回控件的显示
 ```
+
+## 跨字段校验（`dependencies`）
+
+「确认密码」「结束日期不能早于开始日期」「手机与邮箱至少填一个」这类规则，字段的合法性
+取决于**别的字段**。给 `ICEFormItem`（或直接给 `ICEFormModel.addField`）加 `dependencies`
+即可 —— 被依赖字段一变，本字段立刻重算，不需要用户再动本字段一次：
+
+```ts
+form.addItems([
+  new ICEFormItem({
+    name: 'password',
+    label: '密码',
+    control: passwordInput,
+    rules: [{ required: true, minLength: 6 }],
+  }),
+  new ICEFormItem({
+    name: 'confirm',
+    label: '确认密码',
+    control: confirmInput,
+    dependencies: ['password'],          // ← password 变了就重算 confirm
+    rules: [
+      { required: true },
+      { validator: (value, values) => (value === values.password ? null : '两次输入的密码不一致') },
+    ],
+  }),
+]);
+```
+
+配套行为：
+
+- `model.getDependents('password')` → `['confirm']`（反向查依赖者）；
+- `setValues({...})` 批量写入时同样会重算依赖字段；
+- `validateTrigger: 'none'` 时连依赖重算一起关掉（只在显式校验时算）；
+- **自定义 `validator` 在空值上也会执行**（内置的 min/max/长度/pattern 仍然跳过）——
+  这是「至少填一个」这类规则能写出来的前提。

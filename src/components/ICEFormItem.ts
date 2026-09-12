@@ -22,6 +22,11 @@ export interface ICEFormItemOptions {
   control: any;
   /** 校验规则（透传给 ICEFormModel） */
   rules?: ICEFormRule[];
+  /**
+   * 依赖的字段名：这些字段变化时本项自动重算（跨字段校验，如「确认密码」）。
+   * 透传给 ICEFormModel。
+   */
+  dependencies?: string[];
   layout?: 'vertical' | 'horizontal';
   labelWidth?: number;
   width?: number;
@@ -36,6 +41,7 @@ export class ICEFormItem extends ICEWidget {
   private labelText: string;
   private control: any;
   private rules: ICEFormRule[];
+  private dependencies: string[];
   private validating = false;
   private itemLayout: 'vertical' | 'horizontal';
   private labelWidth: number;
@@ -77,6 +83,7 @@ export class ICEFormItem extends ICEWidget {
     this.labelText = props.label || props.name;
     this.control = control;
     this.rules = props.rules ? props.rules.slice() : [];
+    this.dependencies = props.dependencies ? props.dependencies.slice() : [];
     this.itemLayout = itemLayout;
     this.labelWidth = labelWidth;
     this.labelHeight = labelHeight;
@@ -117,6 +124,11 @@ export class ICEFormItem extends ICEWidget {
 
   public getRules(): ICEFormRule[] {
     return this.rules.slice();
+  }
+
+  /** 依赖的字段名（跨字段重校验用）。 */
+  public getDependencies(): string[] {
+    return this.dependencies.slice();
   }
 
   public getControl(): any {

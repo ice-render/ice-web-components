@@ -436,6 +436,29 @@ const tablePage2 = await page.evaluate(() => ({
 }));
 check('表格分页：点下一页换到第 2 页', pagerClicked && tablePage2.page === 2 && tablePage2.first === 'Dan', JSON.stringify(tablePage2));
 
+// —— 16. 跨字段依赖：改密码 → 确认密码立刻重算 ——
+const crossForm = await page.evaluate(() => {
+  const form = window.__result.crossForm;
+  form.getModel().setValue('password', 'abc123');
+  form.getModel().setValue('confirm', 'abc123');
+  const matched = form.getModel().getError('confirm');
+  form.getModel().setValue('password', 'xyz789');
+  const mismatched = form.getModel().getError('confirm');
+  // 界面上确实把错误画出来了
+  const item = form.getItems()[1];
+  return {
+    matched,
+    mismatched,
+    errorText: item.getErrorText ? item.getErrorText() : '',
+    deps: form.getModel().getDependents('password'),
+  };
+});
+check(
+  '跨字段校验：改密码后确认框立刻重算并显示错误',
+  crossForm.matched === null && crossForm.mismatched === '两次输入的密码不一致' && crossForm.deps.join() === 'confirm',
+  JSON.stringify(crossForm),
+);
+
 check('无 console error / pageerror', errors.length === 0, errors.slice(0, 3).join(' | '));
 
 await page.screenshot({ path: '/tmp/qa-gallery.png', fullPage: true });
