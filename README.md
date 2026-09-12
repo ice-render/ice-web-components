@@ -12,7 +12,7 @@ rings and shadows) is drawn by the engine.
 
 ## Highlights
 
-- **89 components** — buttons, inputs, selects, tables, trees, menus, modals,
+- **84 components** — buttons, inputs, selects, tables, trees, menus, modals,
   drawers, notifications, uploads, date/time pickers, cascader, transfer, carousel,
   colour picker… and the small stuff (tags, badges, avatars, skeletons, spins).
 - **One overlay stack for every popup** — Modal / Drawer / Dropdown / Tooltip /
@@ -27,28 +27,31 @@ rings and shadows) is drawn by the engine.
 - **Bootstrap 5 token theme** (plus a dark theme) — swap with one call.
 - **No name collisions with the engine** — the package’s runtime exports are
   disjoint from `ice-render`’s (there is a regression test for it).
-- **Actually tested** — 350+ unit tests (form validation, overlay positioning,
-  keyboard navigation, sort/hover/focus edge cases) plus `npm run qa:admin`, a real
-  browser pass over the demo: layout consistency, every popup layer, zero console
-  errors.
+- **Actually tested** — 539 unit tests (81 suites: form validation, overlay
+  positioning, keyboard navigation, sort/hover/focus edge cases, the Minesweeper and
+  Tetris rule models) plus five browser QA suites (`qa:admin`, `qa:gallery`,
+  `qa:workbench`, `qa:xp`, `qa:tetris` — 149 assertions) that drive the demo pages with
+  real mouse and keyboard events and fail on any console error.
 
 ## Quick start
 
-> **安装**：引擎 `ice-render` 已经发布到 npm；**组件库本身还没发布**，所以用下面任一种方式装：
+> **Install**: the engine (`ice-render`) is on npm, but this library is not published
+> yet — use one of the following:
 
 ```bash
-# ① 本地路径（monorepo / workspace 常用）
+# ① a local path (the usual thing inside a monorepo / workspace)
 npm install /path/to/ice-web-components
 
-# ② 直接从 git 安装
+# ② straight from git
 npm install git+https://github.com/ice-render/ice-web-components.git
 
-# ③ 先打包再装
-(cd /path/to/ice-web-components && npm pack)     # 产出 ice-web-components-0.0.1.tgz
+# ③ pack it, then install the tarball
+(cd /path/to/ice-web-components && npm pack)     # produces ice-web-components-0.0.1.tgz
 npm install /path/to/ice-web-components-0.0.1.tgz
 ```
 
-三种方式都会带上依赖 `ice-render@^1.3.0`（从 npm 拉取）。包内只有 `dist/`（cjs + esm + umd + 类型声明）。
+All three pull the `ice-render@^1.3.0` dependency from npm. The published tarball
+contains `dist/` only (cjs + esm + umd + type declarations).
 
 ```ts
 import { ICE } from 'ice-render';
@@ -89,17 +92,19 @@ Full docs live in [`docs/`](./docs/README.md):
 
 | | |
 |---|---|
-| [架构思路](./docs/architecture.md) | 分层、组件模型、渲染与重绘、事件与悬停、浮层/焦点/表单/主题，以及一张“踩坑表” |
-| [组件速查](./docs/components.md) | 90 个组件类按分组的一句话说明 + 跳转 API |
-| [API 参考](./docs/api/README.md) | 每个组件的构造参数与 public 方法（**从源码生成**，不会漂移） |
-| [示例与场景](./docs/guides/examples.md) | 六个示例页分别演示什么、各自用到哪些组件、照着做新场景的清单 |
-| [主题与配色](./docs/guides/theming.md) | token 分组、状态色、`*TextEmphasis`、自定义主题 |
-| [表单与校验](./docs/guides/forms.md) | 三层结构、规则清单、异步校验、自定义控件接入 |
-| [浮层指南](./docs/guides/overlays.md) | 弹窗/抽屉/下拉/提示的三种用法、定位、关闭策略、内容工厂 |
-| [画布内布局](./docs/guides/layout.md) | 坐标与 zIndex、簇+货架布局、裁剪与滚动、尺寸时机 |
-| [写一个自己的组件](./docs/guides/custom-components.md) | 三档写法、构造约定、交互/表单/浮层/主题接入、类型注册与踩坑 |
-| [测试](./docs/guides/testing.md) | 单测套路（假 ICE + 真组件）与浏览器 QA 脚本 |
-| [迁移说明](./docs/guides/migration.md) | `UI*` → `ICE*`、业界组件库 → Bootstrap 主题等破坏性变更 |
+| [Architecture](./docs/architecture.md) | Layers, component model, rendering & repaint, events & hover, overlays / focus / forms / theming, plus a “pitfalls” table |
+| [Component cheat sheet](./docs/components.md) | 84 component classes, one line each, grouped, with links into the API |
+| [API reference](./docs/api/README.md) | Constructor props and public methods for every component (**generated from source**, so it cannot drift) |
+| [Examples & scenarios](./docs/guides/examples.md) | What each of the six demo pages shows, which components it uses, and a checklist for building your own |
+| [Theming & colour](./docs/guides/theming.md) | Token groups, status colours, `*TextEmphasis`, custom themes |
+| [Forms & validation](./docs/guides/forms.md) | The three layers, the rule list, async validation, wiring a custom control |
+| [Overlay guide](./docs/guides/overlays.md) | The three ways to use popups, positioning, close policies, content factories |
+| [Canvas layout](./docs/guides/layout.md) | Coordinates & zIndex, cluster + shelf layout, clipping & scrolling, when sizes are ready |
+| [Writing your own component](./docs/guides/custom-components.md) | Three levels of effort, constructor conventions, interaction / form / overlay / theme hooks, type registration and pitfalls |
+| [Testing](./docs/guides/testing.md) | Unit-test recipes (fake ICE + real components) and the browser QA scripts |
+| [Migration](./docs/guides/migration.md) | `UI*` → `ICE*`, 业界组件库 → Bootstrap theming, other breaking changes |
+
+> The guide pages themselves are written in Chinese for now; this README is English-only.
 
 ## Demos
 
@@ -208,23 +213,30 @@ title bar, drag, resize, maximise/restore, activate event) and `ICEIconTile`
 
 ![Windows XP desktop](docs/images/xp-desktop.png)
 
-### `tetris.html` — ICE Arcade（掌机上的俄罗斯方块）
+### `tetris.html` — ICE Arcade (a handheld console)
 
-第一个“小游戏合集”入口：做的不是网页而是**一台掌机**——机壳、屏幕框、HUD 卡片、
-按键、音效开关全是 ICE 组件，游戏规则则是纯逻辑的 `ICETetrisModel`。
+The first entry in a small “mini-game collection” — and it is not a web page but a
+**handheld console**: the shell, the screen bezel, the HUD cards, the buttons and the
+sound switch are all ICE components, while the rules live in a pure model
+(`ICETetrisModel`) that never touches the canvas.
 
-规则按现代标准俄罗斯方块：7-bag 公平随机、简易踢墙（0/±1/±2）、幽灵落点、
-软降 +1/格、硬降 +2/格、消 1/2/3/4 行 = 100/300/500/800 × 等级、每 10 行升一级
-（下落间隔 800ms 起按等级递减）。键盘：`←/→` 移动、`↓` 软降、`空格` 硬降、
-`↑`/`X` 顺时针、`Z` 逆时针、`P` 暂停、`R` 重开；切走标签页会自动暂停。
+The rules are modern-standard Tetris: 7-bag fairness, simple wall kicks (0 / ±1 / ±2),
+a ghost landing preview, soft drop +1/cell, hard drop +2/cell, line scores of
+100/300/500/800 × level, a level-up every 10 lines, and a gravity interval that starts
+at 800 ms and shrinks with the level. Keyboard: `←` / `→` move, `↓` soft drop, `Space`
+hard drop, `↑` / `X` rotate clockwise, `Z` rotate counter-clockwise, `P` pause,
+`R` restart — and switching away from the tab pauses the game for you.
 
-模型和 UI 是彻底分开的：`ICETetrisModel`（81 个用例里的 16 条）不碰 canvas，
-页面只负责“读模型 → 画格子”，所以规则可以在 node 里跑测试、也能以后接别的皮肤。
+Model and UI are completely separate: `ICETetrisModel` (16 of the repo’s 539 unit
+tests) imports no canvas at all; the page only reads the model and paints cells. That
+keeps the rules testable in node and the rendering swappable.
 
 ![ICE Arcade tetris](docs/images/tetris.png)
 
-> 这一页**不启动** `ICEFocusManager`：它会用 Enter/Space 激活「有焦点的按钮」，
-> 正好和「空格硬降」打架。游戏页把键盘完全留给自己，鼠标 hover 照常接管。
+> This page deliberately does **not** start `ICEFocusManager` — it activates the
+> focused button with Enter/Space, which collides head-on with “Space = hard drop”.
+> A game page keeps the keyboard for itself; mouse hover still goes through
+> `ICEHoverManager`.
 
 ## Components
 
@@ -359,7 +371,7 @@ npm run qa:xp
 # hard drop / pause / line clear / game over / restart) + real clicks on the HUD
 npm run qa:tetris
 
-# 文档：重新生成 API 参考并检查链接
+# docs: regenerate the API reference and check relative links
 npm run docs
 ```
 
@@ -382,7 +394,7 @@ checks the watermark tiling, then screenshots to `/tmp/qa-gallery*.png`.
 quick replies, tags, rating, tour, back-to-top, splitter drag) and `npm run qa:xp`
 covers the Windows XP desktop: the boot splash → welcome screen → typing a password and
 pressing Enter (the run asserts the startup cue actually fired), log off back to the
-welcome screen, shut down, power back on, logging in again with the 登录 button, the
+welcome screen, shut down, power back on, logging in again with the **Log in** button, the
 tray mute toggle, icons, window drag/minimise/restore, Start menu,
 Minesweeper (first-click-safe, flag cycle, difficulty, timer, win), the Paint canvas,
 the wallpaper switch, the clock — and the IE window really fetching pages (plus its
