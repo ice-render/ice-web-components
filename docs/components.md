@@ -60,6 +60,7 @@
 |  | [`ICECollapse`](./api/data-display.md#icecollapse) | 折叠面板（业界组件库 Collapse / Swing 无直接对应物）。 |
 |  | [`ICEComment`](./api/data-display.md#icecomment) | 评论（业界组件库 Comment 的最小版）：文字头像 + 作者 + 时间 + 正文 + 操作按钮 + 嵌套回复。  布局自上而下：头像在左，右侧依次是「作者 · 时间」「正文」「操作」「回复（缩进）」。 高度按内容自动累加（正文单行 20px，多行请自行用 content 组件工厂）。 |
 |  | [`ICEWatermark`](./api/data-display.md#icewatermark) | 水印（业界组件库 Watermark）：把一段旋转文字平铺在自己的区域上。 |
+|  | [`ICETileMap`](./api/data-display.md#icetilemap) | 单个格子的绘制样式。 |
 | [反馈与状态](./api/feedback.md) | [`ICEAlert`](./api/feedback.md#icealert) | 提示条：info / success / warning / error 四种状态 + 类型图标，可关闭。 |
 |  | [`ICEModal`](./api/feedback.md#icemodal) | 模态对话框：全屏遮罩 + 居中面板 + 焦点陷阱。 |
 |  | [`ICEDrawer`](./api/feedback.md#icedrawer) | 抽屉：从屏幕某一边滑入的面板（带遮罩与焦点陷阱）。  与 ICEModal 同源（遮罩 + 焦点范围 + 关闭途径），差别只在： |

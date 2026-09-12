@@ -11,7 +11,7 @@
 > `focusRing` 聚焦色）；③ `ICETag`/`ICEBadge` 默认改成 Bootstrap 实底 `.text-bg-*`（`variant:'soft'` 保留浅底风格）。
 > 细节见 README 的 Naming / Theme / Colour variants 三节。
 
-## 现状（76 个组件源文件 / 92 个导出类 / 557 条单测 / 159 项浏览器断言）
+## 现状（77 个组件源文件 / 94 个导出类 / 582 条单测 / 165 项浏览器断言）
 
 按分组清点（完整清单与参数见 [`docs/components.md`](./docs/components.md)）：
 
@@ -68,7 +68,7 @@
 > `windows-xp.html`（全屏 XP 桌面）、`arcade.html`（ICE Arcade 掌机：两块卡带）、
 > `custom-component.html`（自定义组件）——见[示例与场景](./docs/guides/examples.md)。
 > 浏览器回归：`qa:admin` 44 项 + `qa:gallery` 32 项 + `qa:workbench` 15 项 + `qa:xp` 35 项
-> + `qa:arcade` 33 项，全部走真实鼠标/键盘事件。
+> + `qa:arcade` 39 项，全部走真实鼠标/键盘事件。
 >
 > 第九批（小游戏合集第 1 弹）：`ICETetrisModel`（俄罗斯方块纯逻辑模型：7-bag 随机、踢墙旋转、
 > 软/硬降、消行计分与升级、暂停/重置、变化监听；另导出 `ICE_TETROMINOES` /
@@ -87,6 +87,15 @@
 > （model / paint / hud / keydown / frame / setOverlay / destroy）插拔，换卡带连带重写
 > HUD 卡片标题与操作说明；`qa:tetris` 也随之扩成 `qa:arcade`（23 → 33 项，覆盖两块卡带
 > 与切换）。
+>
+> 第十二批（引擎能力补课：让游戏真的用上引擎）：新增 `ICETileMap`（**一个节点画整块棋盘**：
+> 自绘 `doRender` + 数据签名跳过空刷 + 高亮层 + `pulse()` tween 脉冲 + `cellclick` 命中）、
+> `ICE_ARCADE_THEME` / `ICE_ARCADE_PALETTE`（游戏配色进 token，页面不再硬编码色值）、
+> `ICEHighScoreModel`（排行榜纯逻辑：排序 / 截断 / 存档容错 / 注入 storage）。arcade 页面
+> 随之改成：棋盘 1 个节点（原先 200 / 400 个）、换卡带 `fadeIn`、消行与吃食物 `pulse`、
+> GAME OVER `scaleIn`、「排行榜 (L)」弹 `ICEModal`（内嵌 `ICETable` + `ICEScrollPane`）。
+> `qa:arcade` 33 → 39 项（新增单节点自绘、tween 淡入、排行榜弹窗与降序、点格子转向）。
+> 踩坑入档：`super.doRender()` 之后自绘要 `applyActiveTransform()`，否则坐标跑到画布左上角。
 
 ## 阶段 A：底座（先做这个）
 

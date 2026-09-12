@@ -14,8 +14,12 @@
  *    吃食物（长度 +1 / 分数 / HUD）、撞墙 game over（overlay + 最高分落盘）、
  *    暂停时 tick 无效、R 重开；
  * 4. 卡带切换：切回去俄罗斯方块是一个全新的模型，卡带按钮高亮跟着换；
- * 5. 鼠标：点「暂停」「重新开始」「音效开关」都有反应；
- * 6. 布局：两种卡带的棋盘都在屏幕框内，侧栏与操作面板不交叠，所有面板都在机壳里。
+ * 5. 引擎能力：棋盘是**单个自绘节点**（ICETileMap，无子节点、有自绘计数）、
+ *    消行 / 吃食物会触发 tween 脉冲、换卡带棋盘淡入、主题走 registerTheme('arcade')；
+ * 6. 排行榜：点「排行榜」按钮弹出 ICEModal（内含 ICETable + ICEScrollPane），
+ *    分数降序、Esc 能关掉；
+ * 7. 鼠标：点「暂停」「重新开始」「音效开关」都有反应；
+ * 8. 布局：两种卡带的棋盘都在屏幕框内，侧栏与操作面板不交叠，所有面板都在机壳里。
  */
 import { createRequire } from 'node:module';
 import http from 'node:http';
@@ -123,6 +127,8 @@ const ensureRunning = () =>
     const model = window.__arcade.model;
     if (!model.isGameOver() && model.isPaused()) model.resume();
   });
+/** 屏幕里当前卡带的棋盘节点（ICETileMap）。 */
+const boardExpr = (id) => `(window.__arcade.nodes.screen.childNodes || []).find((n) => n.state && n.state.id === '${id}')`;
 
 /* ---------- 1. 开局：默认卡带 ---------- */
 const boot = await page.evaluate(() => {
@@ -141,6 +147,30 @@ check(
   JSON.stringify(boot),
 );
 check('零 console error', errors.length === 0, errors.join(' | '));
+
+/* ---------- 1.5 引擎能力：自绘棋盘 + 主题 token ---------- */
+const engineUse = await page.evaluate(() => {
+  const board = (window.__arcade.nodes.screen.childNodes || []).find((n) => n.state && n.state.id === 'tetris-board');
+  const oldCellNodes = (window.__arcade.nodes.screen.childNodes || []).filter((n) => n.state && /^tetris-cell-/.test(n.state.id || ''));
+  return {
+    boardFound: !!board,
+    childNodes: board ? board.childNodes.length : -1,
+    oldCellNodes: oldCellNodes.length,
+    paintCount: board && board.getPaintCount ? board.getPaintCount() : -1,
+    themeName: window.ICEWEB.iceUIManager.getThemeName(),
+    paletteFromToken: window.ICEWEB.ICE_ARCADE_PALETTE.I.fillStyle,
+  };
+});
+check(
+  '引擎能力：整块棋盘是单个自绘节点（ICETileMap，不再一格一个组件）',
+  engineUse.boardFound && engineUse.childNodes === 0 && engineUse.oldCellNodes === 0 && engineUse.paintCount > 0,
+  JSON.stringify(engineUse),
+);
+check(
+  '引擎能力：主题走 registerTheme(\'arcade\')，棋盘配色来自 token',
+  engineUse.themeName === 'arcade' && engineUse.paletteFromToken === '#0dcaf0',
+  JSON.stringify({ theme: engineUse.themeName, piece: engineUse.paletteFromToken }),
+);
 
 /* ---------- 2. 俄罗斯方块 ---------- */
 await ensureRunning();
@@ -256,20 +286,18 @@ await page.keyboard.press('Space');
 await page.waitForTimeout(40);
 const cleared = await page.evaluate(() => {
   const model = window.__arcade.model;
-  const flash = window.__arcade.nodes.screen.childNodes
-    .filter((n) => n.state && n.state.id === 'tetris-board')
-    .map((board) => (board.childNodes || []).find((n) => n.state && n.state.id === 'tetris-flash'))
-    .find(Boolean);
+  const board = (window.__arcade.nodes.screen.childNodes || []).find((n) => n.state && n.state.id === 'tetris-board');
   return {
     lines: model.getLines(),
     last: model.getLastClearedLines(),
-    flash: flash ? flash.state.display !== false : false,
+    // 消行现在是 ICETileMap 的 tween 脉冲（不再是手搓的闪屏遮罩）
+    pulse: board && board.getPulseAlpha ? board.getPulseAlpha() : -1,
     leftover: model.getBoard()[19].filter((cell) => cell === 'J').length,
   };
 });
 check(
-  '俄罗斯方块：消一行（行数 +1、底行清空、闪屏亮起）',
-  cleared.lines === prepared.lines + 1 && cleared.last === 1 && cleared.leftover === 0 && cleared.flash === true,
+  '俄罗斯方块：消一行（行数 +1、底行清空、tween 脉冲亮起）',
+  cleared.lines === prepared.lines + 1 && cleared.last === 1 && cleared.leftover === 0 && cleared.pulse > 0,
   JSON.stringify(cleared),
 );
 
@@ -282,13 +310,14 @@ await page.waitForTimeout(300);
 const overState = await page.evaluate(() => ({
   over: window.__arcade.model.isGameOver(),
   overlay: window.__arcade.nodes.screen.childNodes.some((n) => n.state && n.state.id === 'tetris-over' && n.state.display !== false),
-  best: window.__arcade.bestOf('tetris'),
+  best: window.__arcade.scores.tetris.getBest(),
   bestText: window.__arcade.bestLabel.getText(),
   score: window.__arcade.model.getScore(),
+  entries: window.__arcade.scores.tetris.getScores().map((item) => item.score),
 }));
 check(
-  '俄罗斯方块：硬降到底 game over（提示出现 + 最高分落盘）',
-  overState.over === true && overState.overlay === true && overState.best === overState.score && overState.best > 0,
+  '俄罗斯方块：硬降到底 game over（提示出现 + 成绩进榜）',
+  overState.over === true && overState.overlay === true && overState.best === overState.score && overState.best > 0 && overState.entries.indexOf(overState.score) !== -1,
   JSON.stringify(overState),
 );
 check('俄罗斯方块：最高分标签跟着更新', overState.bestText.indexOf(String(overState.best)) !== -1, overState.bestText);
@@ -334,12 +363,63 @@ const soundAfter = await page.evaluate(() => ({
 check('鼠标：音效开关与 sound.enabled 同步', soundBefore === true && soundAfter.selected === false && soundAfter.enabled === false, JSON.stringify(soundAfter));
 await clickExpr('window.__arcade.buttons.soundSwitch');
 
+/* ---------- 3.5 排行榜：ICEModal + ICETable + ICEScrollPane ---------- */
+await page.evaluate(() => {
+  // 先塞两条成绩，保证表格里有内容可查（同时验证模型的排序/截断）
+  const scores = window.__arcade.scores.tetris;
+  scores.clear();
+  scores.add(120, { at: Date.now() - 60000 });
+  scores.add(480, { at: Date.now() - 30000 });
+  scores.add(300, { at: Date.now() });
+});
+const leaderboardOpened = await clickExpr('window.__arcade.buttons.leaderboardButton');
+await page.waitForTimeout(320);
+const leaderboardState = await page.evaluate(() => {
+  const info = window.__arcade.leaderboard;
+  const layer = window.ICEWEB.getICEOverlayManager(window.__arcade.ice).getLayer();
+  const find = (node, predicate) => {
+    if (!node) return null;
+    if (predicate(node)) return node;
+    const children = node.childNodes || [];
+    for (let i = 0; i < children.length; i += 1) {
+      const found = find(children[i], predicate);
+      if (found) return found;
+    }
+    return null;
+  };
+  const table = find(layer, (n) => n.state && n.state.id === 'arcade-leaderboard-table');
+  const scroll = find(layer, (n) => n.state && n.state.id === 'arcade-leaderboard-scroll');
+  return {
+    open: window.ICEWEB.getICEOverlayManager(window.__arcade.ice).isOpen(),
+    hasHandle: !!info,
+    entries: info ? info.entries.map((item) => item.score) : [],
+    hasTable: !!table,
+    hasScroll: !!scroll,
+  };
+});
+check(
+  '排行榜：点按钮弹出 ICEModal（内含 ICETable + ICEScrollPane）且分数降序',
+  leaderboardOpened && leaderboardState.open === true && leaderboardState.hasHandle && leaderboardState.hasTable && leaderboardState.hasScroll &&
+    JSON.stringify(leaderboardState.entries) === JSON.stringify([480, 300, 120]),
+  JSON.stringify(leaderboardState),
+);
+await page.keyboard.press('Escape');
+await page.waitForTimeout(240);
+const leaderboardClosed = await page.evaluate(() => window.ICEWEB.getICEOverlayManager(window.__arcade.ice).isOpen());
+check('排行榜：Esc 能关掉', leaderboardClosed === false, String(leaderboardClosed));
+
 /* ---------- 4. 换卡带：贪吃蛇 ---------- */
 const switched = await clickExpr('window.__arcade.cartridges.snake');
-await page.waitForTimeout(260);
+// 换卡带会 fadeIn 新棋盘：刚切完透明度还没到 1（这就是「动画真的在跑」的证据）
+const fading = await page.evaluate(() => {
+  const board = (window.__arcade.nodes.screen.childNodes || []).find((n) => n.state && n.state.id === 'snake-board');
+  return board ? Number(board.state.opacity) : -1;
+});
+await page.waitForTimeout(400);
 const snakeBoot = await page.evaluate(() => {
   const r = window.__arcade;
   const screenIds = (r.nodes.screen.childNodes || []).map((n) => (n.state && n.state.id) || '');
+  const board = (r.nodes.screen.childNodes || []).find((n) => n.state && n.state.id === 'snake-board');
   return {
     game: r.game,
     length: r.model.getLength(),
@@ -347,14 +427,21 @@ const snakeBoot = await page.evaluate(() => {
     food: r.model.getFood(),
     board: screenIds.indexOf('snake-board') !== -1,
     tetrisGone: screenIds.indexOf('tetris-board') === -1,
-    midCaption: r.midCard.getText(),
     hudScore: Number(r.scoreCard.getText()),
+    childNodes: board ? board.childNodes.length : -1,
+    paintCount: board && board.getPaintCount ? board.getPaintCount() : -1,
+    opacity: board ? Number(board.state.opacity) : -1,
   };
 });
 check(
-  '换卡带：点「贪吃蛇」真的插上第二块卡带（棋盘换、HUD 卡片换）',
+  '换卡带：点「贪吃蛇」真的插上第二块卡带（棋盘换、HUD 卡片换、整块棋盘仍是单节点）',
   switched && snakeBoot.game === 'snake' && snakeBoot.length === 3 && snakeBoot.score === 0 && !!snakeBoot.food && snakeBoot.board && snakeBoot.tetrisGone,
   JSON.stringify(snakeBoot),
+);
+check(
+  '换卡带：新棋盘用 tween 淡入（切换瞬间透明度 < 1，之后回到 1）',
+  fading >= 0 && fading < 1 && snakeBoot.opacity === 1 && snakeBoot.childNodes === 0 && snakeBoot.paintCount > 0,
+  JSON.stringify({ fading, opacity: snakeBoot.opacity, childNodes: snakeBoot.childNodes, paintCount: snakeBoot.paintCount }),
 );
 
 // 真实按键：↑ 应该进转向队列（不能 180°，所以不会立刻改当前方向）
@@ -406,6 +493,39 @@ check(
   JSON.stringify(snakeHud),
 );
 
+// 点格子转向：ICETileMap 的 cellclick（真实鼠标命中 + 组件内坐标换算）
+await page.evaluate(() => window.__arcade.model.reset());
+await page.waitForTimeout(120);
+const clickTarget = await page.evaluate(() => {
+  const board = (window.__arcade.nodes.screen.childNodes || []).find((n) => n.state && n.state.id === 'snake-board');
+  const head = window.__arcade.model.getHead();
+  // 点蛇头**上方**两格 → 应该转成 up（朝右时掉头是非法的，向上才是合法 90°）
+  const cell = { row: head[0] - 2, col: head[1] };
+  const rect = board.getCellRect(cell.row, cell.col);
+  const origin = board.state.localOrigin || [0, 0];
+  const box = board.getMinBoundingBox(true);
+  return {
+    canvasLeft: document.getElementById('canvas').getBoundingClientRect().left,
+    canvasTop: document.getElementById('canvas').getBoundingClientRect().top,
+    x: box.tl[0] + rect.left + rect.width / 2,
+    y: box.tl[1] + rect.top + rect.height / 2,
+    cell,
+    originX: origin[0],
+    originY: origin[1],
+  };
+});
+await page.mouse.click(clickTarget.canvasLeft + clickTarget.x, clickTarget.canvasTop + clickTarget.y);
+await page.waitForTimeout(120);
+const afterCellClick = await page.evaluate(() => ({
+  pending: window.__arcade.model.getPendingDirections(),
+  direction: window.__arcade.model.getDirection(),
+}));
+check(
+  '贪吃蛇：点棋盘格子即转向（ICETileMap 的 cellclick 真实命中）',
+  afterCellClick.direction === 'up' || afterCellClick.pending.indexOf('up') !== -1,
+  JSON.stringify({ afterCellClick, target: clickTarget.cell, originX: clickTarget.originX }),
+);
+
 await page.keyboard.press('p');
 await page.waitForTimeout(120);
 const snakePaused = await page.evaluate(() => {
@@ -444,7 +564,7 @@ const snakeOver = await page.evaluate(() => {
   return {
     score,
     over: model.isGameOver(),
-    best: window.__arcade.bestOf('snake'),
+    best: window.__arcade.scores.snake.getBest(),
     overlay: window.__arcade.nodes.screen.childNodes.some((n) => n.state && n.state.id === 'snake-over' && n.state.display !== false),
     bestText: window.__arcade.bestLabel.getText(),
   };

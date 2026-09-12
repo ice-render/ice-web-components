@@ -12,7 +12,7 @@ rings and shadows) is drawn by the engine.
 
 ## Highlights
 
-- **84 components** — buttons, inputs, selects, tables, trees, menus, modals,
+- **85 components** — buttons, inputs, selects, tables, trees, menus, modals,
   drawers, notifications, uploads, date/time pickers, cascader, transfer, carousel,
   colour picker… and the small stuff (tags, badges, avatars, skeletons, spins).
 - **One overlay stack for every popup** — Modal / Drawer / Dropdown / Tooltip /
@@ -27,10 +27,10 @@ rings and shadows) is drawn by the engine.
 - **Bootstrap 5 token theme** (plus a dark theme) — swap with one call.
 - **No name collisions with the engine** — the package’s runtime exports are
   disjoint from `ice-render`’s (there is a regression test for it).
-- **Actually tested** — 557 unit tests (82 suites: form validation, overlay
+- **Actually tested** — 582 unit tests (85 suites: form validation, overlay
   positioning, keyboard navigation, sort/hover/focus edge cases, the Minesweeper,
   Tetris and Snake rule models) plus five browser QA suites (`qa:admin`, `qa:gallery`,
-  `qa:workbench`, `qa:xp`, `qa:arcade` — 159 assertions) that drive the demo pages with
+  `qa:workbench`, `qa:xp`, `qa:arcade` — 165 assertions) that drive the demo pages with
   real mouse and keyboard events and fail on any console error.
 
 ## Quick start
@@ -93,7 +93,7 @@ Full docs live in [`docs/`](./docs/README.md):
 | | |
 |---|---|
 | [Architecture](./docs/architecture.md) | Layers, component model, rendering & repaint, events & hover, overlays / focus / forms / theming, plus a “pitfalls” table |
-| [Component cheat sheet](./docs/components.md) | 84 component classes, one line each, grouped, with links into the API |
+| [Component cheat sheet](./docs/components.md) | 85 component classes, one line each, grouped, with links into the API |
 | [API reference](./docs/api/README.md) | Constructor props and public methods for every component (**generated from source**, so it cannot drift) |
 | [Examples & scenarios](./docs/guides/examples.md) | What each of the six demo pages shows, which components it uses, and a checklist for building your own |
 | [Theming & colour](./docs/guides/theming.md) | Token groups, status colours, `*TextEmphasis`, custom themes |
@@ -236,11 +236,33 @@ on every meal (+10 points × level), 5 meals per level, an interval that drops f
 170 ms per cell towards 70 ms, a two-deep turn queue that refuses 180° reversals (and
 lets you survive moving into the tail cell that is about to vacate), and walls that
 kill. Keyboard: arrows or `W` / `A` / `S` / `D` to steer, `P` pause, `R` restart.
+Clicking a cell on the board steers towards it — that is the tile map’s `cellclick`,
+i.e. a real hit test inside a single component.
 
 Both games are pure models that never touch the canvas; the page only reads the model
 and paints cells. Switching a cartridge tears the old board down, builds the new one
 and re-captions the HUD, so a third game is a registry entry plus a `mount()`.
 Switching away from the tab pauses whatever is running.
+
+Under the hood this page is where the engine work happens:
+
+- **`ICETileMap`** paints a whole board (10×20 or 20×20 cells) inside **one** node —
+  it extends the widget base, draws the grid in `doRender()` with the engine context and
+  keeps its own dirty flag, so a 400-cell snake board is 1 node instead of 400 (the QA
+  asserts `childNodes.length === 0`). Ghost landing spots go through its highlight layer,
+  line clears and meals go through `pulse()`, which fades the overlay with a `tween`.
+- **`registerTheme('arcade', ICE_ARCADE_THEME)`** moves the game palette into tokens:
+  pieces and snake colours ship as `ICE_ARCADE_PALETTE`, so the board re-skins with the
+  rest of the UI instead of hard-coded hex values in the page.
+- **`ICEHighScoreModel`** keeps a per-cartridge top-5 (sorting, capping, corrupt-storage
+  tolerance, injected storage) and the **Leaderboard (L)** button opens an `ICEModal`
+  containing an `ICETable` inside an `ICEScrollPane`.
+- `fadeIn` on cartridge switch, `scaleIn` on game over, `pulse` on line clears — all
+  from `ICEAnimation`, so the “juice” is library code rather than hand-rolled decay.
+
+| Leaderboard (`ICEModal` + `ICETable` + `ICEScrollPane`) |
+|---|
+| ![Leaderboard](docs/images/arcade-leaderboard.png) |
 
 > This page deliberately does **not** start `ICEFocusManager` — it activates the
 > focused button with Enter/Space, which collides head-on with “Space = hard drop”.
@@ -377,7 +399,8 @@ npm run qa:workbench
 npm run qa:xp
 
 # browser QA for examples/arcade.html: both cartridges played with real key presses,
-# cartridge switching, and real clicks on the HUD
+# cartridge switching, the self-drawn tile map, tweens, the leaderboard modal, and
+# real clicks on the HUD
 npm run qa:arcade
 
 # docs: regenerate the API reference and check relative links

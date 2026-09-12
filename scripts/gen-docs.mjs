@@ -97,6 +97,7 @@ const GROUPS = [
       'ICECollapse',
       'ICEComment',
       'ICEWatermark',
+      'ICETileMap',
     ],
   },
   {
@@ -185,6 +186,8 @@ const GROUPS = [
       'ICE_LIGHT_THEME',
       'ICE_DARK_THEME',
       'ICE_XP_THEME',
+      'ICE_ARCADE_THEME',
+      'ICE_ARCADE_PALETTE',
     ],
   },
   {
@@ -204,6 +207,7 @@ const GROUPS = [
       'ICE_TETRIS_LINE_SCORES',
       'ICESnakeModel',
       'ICE_SNAKE_DIRECTIONS',
+      'ICEHighScoreModel',
     ],
   },
 ];

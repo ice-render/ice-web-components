@@ -630,3 +630,51 @@
 | `getTileNodes()` | `ICELabel[]` |  |
 | `setText(text: string)` | `this` |  |
 | `setSize(width: number, height: number)` | `this` | 改尺寸后重排瓦片（数量跟着变）。 |
+
+## `ICETileMap`
+
+单个格子的绘制样式。
+
+源码：[`src/components/ICETileMap.ts`](../../src/components/ICETileMap.ts)
+
+**构造参数** `ICETileMapOptions`
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `id?` | `string` | 组件 id（引擎用它做唯一标识；e2e/调试时可按 id 定位） |
+| `left?` | `number` | 相对父容器的左边距 |
+| `top?` | `number` | 相对父容器的上边距 |
+| `rows` | `number` | 行数 |
+| `cols` | `number` |  |
+| `cellSize?` | `number` | 每格边长（含间隙），默认 20 |
+| `gap?` | `number` | 格子之间的间隙，默认 2（均分在格子两边） |
+| `cellRadius?` | `number` | 格子圆角默认值，默认 4 |
+| `width?` | `number` | 整块棋盘的宽高（默认 cols*cellSize / rows*cellSize；给大了就留白，便于居中摆放） |
+| `height?` | `number` | 高度（不传用组件默认值） |
+| `palette?` | `ICETileMapPalette` |  |
+| `pulseColor?` | `string` | 脉冲默认颜色 |
+| `highlightColor?` | `string` | 高亮默认描边色 |
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getRows()` | `number` |  |
+| `getCols()` | `number` |  |
+| `getCellSize()` | `number` |  |
+| `getGap()` | `number` |  |
+| `getCellRect(row: number, col: number)` | `{ left: number; top: number; width: number; height: number }` | 格子在组件内的矩形（gap 均分在两边）。 |
+| `getCellAt(x: number, y: number)` | `{ row: number; col: number } \| null` | 组件内坐标 → 格子（边界外返回 null；落在间隙里算最近的格子）。 |
+| `setTiles(tiles: Array<string \| null> \| Array<Array<string \| null>>)` | `this` | 设置格子数据：一维（长度 = rows*cols）或二维（rows 行）。 |
+| `getTiles()` | `Array<string \| null>` |  |
+| `setPalette(palette: ICETileMapPalette)` | `this` |  |
+| `getPalette()` | `ICETileMapPalette` | 调色板拷贝（改返回值不会影响组件内部）。 |
+| `resolveCellStyle(key: string \| null)` | `ICETileMapCellStyle \| null` | 某个 key 对应的样式（未知 key 返回 null = 不绘制）。 |
+| `setHighlights(highlights: ICETileMapHighlight[])` | `this` |  |
+| `getHighlights()` | `ICETileMapHighlight[]` |  |
+| `pulse(cells: ICETileMapPulse[], options: { duration?: number; color?: string; driver?: ICEFrameDriver })` | `this` | 闪一下（消行 / 吃到食物）：用 tween 把 alpha 从 1 拉到 0，结束后自动清空。 |
+| `getPulses()` | `ICETileMapPulse[]` |  |
+| `getPulseAlpha()` | `number` |  |
+| `getPaintCount()` | `number` |  |
+| `paintBoard()` | `void` | 自绘整块网格。浏览器里由 `doRender()` 自动调用；单测可以直接调来数自绘次数。 |
+| `initEvents()` | `void` |  |

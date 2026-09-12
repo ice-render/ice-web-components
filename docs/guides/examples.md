@@ -271,6 +271,23 @@ setInterval(() => model.tick(), 1000);      // 计时（只有 playing 会累加
 （`消行 LINES` ↔ `长度 LENGTH`）和操作说明都是卡带自己声明的。加第三块卡带只需要：
 写一个可单测的模型 + 在 `GAMES` 里加一项。
 
+### 这一页用到的引擎 / 组件能力
+
+| 能力 | 用在哪 | 为什么值得看 |
+|---|---|---|
+| `ICETileMap`（自绘格子图） | 两块棋盘各是**一个**节点 | 以前「一格一个 ICEWidget」= 400 个节点；现在格子在自己的 `doRender()` 里用引擎 ctx 画，数据没变就不置 dirty。QA 直接断言 `childNodes.length === 0` 且有自绘计数 |
+| `registerTheme('arcade', ICE_ARCADE_THEME)` | HUD + 棋盘配色 | 方块 / 蛇 / 食物的颜色以 `ICE_ARCADE_PALETTE` 形式进 token，不再是页面里的硬编码 hex；换主题整套跟着走 |
+| `tween` / `fadeIn` / `scaleIn` | 消行与吃食物脉冲、换卡带淡入、GAME OVER 弹出 | 动画走库里的 `ICEAnimation`，不再手搓衰减；`ICETileMap.pulse()` 内部就是 tween |
+| `ICEHighScoreModel` | 每块卡带各一份 Top 5 | 纯逻辑（排序 / 截断 / 并列 / 存档容错 / 注入 storage），有单测；页面只负责展示 |
+| `ICEModal` + `ICETable` + `ICEScrollPane` | 「排行榜 (L)」 | 排行榜 = 弹窗里的表格（榜长了能滚），内容建在内容工厂里，避开 zIndex 坑 |
+| `ICETileMap` 的 `cellclick` | 贪吃蛇点格子转向 | 组件内部做「组件坐标 → 格子」换算，外部只接事件 |
+
+![排行榜](../images/arcade-leaderboard.png)
+
+> **自绘组件的必知坑**：`super.doRender()` 会把 CTM 换成「世界 → 设备」去画调试包围盒，
+> 所以在它**之后**自绘必须调 `this.applyActiveTransform()` 把本渲染通道的完整变换取回来，
+> 否则画出来的东西会跑到画布左上角（这条是引擎专门为「super 之后再画」留的口子）。
+
 > 卡带按钮的选中态不靠改属性实现：`ICEButton` 的 `variant` 是构造期定的（没有
 > `setVariant`），所以切换时**重建这一行按钮**最省心 —— 反正只有三格。
 

@@ -242,3 +242,29 @@ XP 扫雷的三档标准难度。
 按上、右、下、左顺序排列的方向表（UI 画方向盘可以直接用）。
 
 源码：`src/model/ICESnakeModel.ts`
+
+## `ICEHighScoreModel`
+
+排行榜的纯逻辑模型（不碰 canvas，也不直接依赖 localStorage）。
+
+- `add(score)` 插入后按**分数降序**排，并列时保持先来后到，超过 `maxEntries` 截断；
+- `getBest()` 给最高分（空榜 0）；`isInTop(score)` 判断「这一局值不值得炫耀」；
+- 存储通过构造函数注入（默认 `globalThis.localStorage`）：key 按卡带隔离；
+- 存档损坏（非法 JSON / 结构不对 / 里层字段不合法）一律降级成空榜，绝不抛；
+- 写盘失败（隐私模式、配额满）不影响内存里的成绩。
+
+源码：[`src/model/ICEHighScoreModel.ts`](../../src/model/ICEHighScoreModel.ts)
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getKey()` | `string` |  |
+| `getStorageKey()` | `string` |  |
+| `getMaxEntries()` | `number` |  |
+| `getScores()` | `ICEHighScoreEntry[]` | 榜单拷贝（降序）。 |
+| `getBest()` | `number` | 最高分（空榜为 0）。 |
+| `isInTop(score: number)` | `boolean` | 这个分数能不能进榜（榜没满一律能进；并列最小分也算能进）。 |
+| `add(score: number, options: { label?: string; at?: number })` | `ICEHighScoreEntry[]` | 记一笔成绩，返回更新后的榜单。非法分数直接忽略。 |
+| `clear()` | `void` |  |
+| `reload()` | `ICEHighScoreEntry[]` | 从存储重新读一遍（多标签页/多窗口场景）。 |

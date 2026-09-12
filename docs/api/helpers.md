@@ -267,3 +267,15 @@ isPointInsideICEBox(box: ICEWorldBox, x: number, y: number): boolean
 Windows XP 经典主题（Luna 蓝 + 米灰控件）。  用途：桌面 / 怀旧风格的应用。用 `iceUIManager.registerTheme('xp', ICE_XP_THEME).setTheme('xp')` 切换（主题在组件构造时读取，先切主题再建组件）。  取色要点：
 
 源码：`src/theme/ICETheme.ts`
+
+### `ICE_ARCADE_THEME` — 常量
+
+街机主题：给「掌机 / 游戏」这类深色场景用的一套 token。  为什么要有它：arcade 示例一开始把方块和蛇的颜色写死在页面里，结果是**面板文字跟着主题走、 游戏美术不跟** —— 一个页面两套配色来源。现在游戏配色也收进 token：  ```ts iceUIManager.registerTheme('arcade', ICE_ARCADE_THEME).setTheme('arcade'); const board = new ICETileMap({ rows, cols, palette: ICE_ARCADE_PALETTE }); ```  它是**完整主题**（不是补丁）：token 组与内置 dark 完全一致，只换颜色，所以任何组件切过去 都不会缺 token。
+
+源码：`src/theme/ICEArcadeTheme.ts`
+
+### `ICE_ARCADE_PALETTE` — 常量
+
+游戏调色板：方块 7 种 + 蛇头 / 蛇身 / 食物。 颜色取 Bootstrap 语义色，描边统一是填充色压暗 35%（和页面里 `shade(color, -0.35)` 一致）。
+
+源码：`src/theme/ICEArcadeTheme.ts`

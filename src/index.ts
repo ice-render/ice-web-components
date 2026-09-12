@@ -1,4 +1,5 @@
 export * from './theme/ICETheme';
+export * from './theme/ICEArcadeTheme';
 export * from './core/ICEManager';
 export * from './core/ICEHoverManager';
 export * from './core/ICEPainter';
@@ -83,6 +84,7 @@ export * from './components/ICERadioGroup';
 export * from './components/ICECheckboxGroup';
 export * from './components/ICESplitter';
 export * from './components/ICEWatermark';
+export * from './components/ICETileMap';
 export * from './components/ICETypography';
 export * from './components/ICEBackTop';
 export * from './components/ICEAnchor';
@@ -102,3 +104,4 @@ export * from './model/ICESelectionModel';
 export * from './model/ICEMinesweeperModel';
 export * from './model/ICETetrisModel';
 export * from './model/ICESnakeModel';
+export * from './model/ICEHighScoreModel';
