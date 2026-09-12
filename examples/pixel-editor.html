@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <meta charset="utf-8" />
+  <title>ICE Pixel Studio</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f8f9fa;
+      color: #212529;
+    }
+    canvas {
+      display: block;
+      border-radius: 12px;
+      background: #ffffff;
+      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+  </style>
+  <body>
+    <h1 style="font-size: 20px; margin: 0 0 4px">ICE Pixel Studio</h1>
+    <p style="margin: 0 0 16px; color: #6c757d">
+      像素画板：铅笔 / 橡皮 / 直线 / 矩形 / 油漆桶，撤销重做 + PNG / SVG 导出，全部由 canvas 组件绘制
+    </p>
+    <canvas id="canvas" width="1280" height="820"></canvas>
+
+    <script src="../node_modules/ice-render/dist/index.umd.js"></script>
+    <script src="../dist/index.umd.js"></script>
+    <script>
+      (function () {
+        const ice = new ICE.ICE().init('canvas');
+        const W = ICEWEB;
+        const theme = W.iceUIManager.getTheme();
+        new W.ICEHoverManager(ice).start();
+        W.getICEFocusManager(ice).start();
+
+        /**
+         * 只保留一条状态提示：像素编辑器顶部的动作按钮就在气泡落点附近，
+         * 连着导出 / 换尺寸会叠出四五条气泡把按钮盖住（掌机那边踩过同一个坑）。
+         */
+        let statusToast = null;
+        const toast = (text, type = 'success') => {
+          if (statusToast && typeof statusToast.close === 'function') statusToast.close();
+          statusToast = W.ICEMessage.show(ice, text, { type });
+          return statusToast;
+        };
+
+        /* --------------------------------- 布局常量 --------------------------------- */
+
+        const SHELL = { left: 24, top: 24, width: 1232, height: 772 };
+        const TOOL_PANEL = { left: 48, top: 160, width: 168, height: 560 };
+        const BOARD_PANEL = { left: 240, top: 160, width: 576, height: 560 };
+        const SIDE_PANEL = { left: 840, top: 160, width: 416, height: 560 };
+        const STATUS_BAR = { left: 48, top: 740, width: 1208, height: 32 };
+        /** 画板区域固定 512×512，像素格大小按画布尺寸算，保证三种尺寸都塞得下 */
+        const BOARD_AREA = 512;
+
+        /* --------------------------------- 模型 --------------------------------- */
+
+        /** 12 色调色板：下标 0 是「纸」的颜色（橡皮 = 画背景色）。 */
+        const PALETTE = ['#ffffff', '#212529', '#adb5bd', '#e9ecef', '#dc3545', '#fd7e14', '#ffc107', '#198754', '#0dcaf0', '#0d6efd', '#6f42c1', '#d63384'];
+        const model = new W.ICEPixelModel({ rows: 32, cols: 32, palette: PALETTE, background: 0 });
+
+        const TOOLS = [
+          { key: 'pencil', label: '铅笔 Pencil', hint: '一格一格画' },
+          { key: 'eraser', label: '橡皮 Eraser', hint: '擦回纸色' },
+          { key: 'line', label: '直线 Line', hint: '拖一条直线' },
+          { key: 'rect', label: '矩形 Rect', hint: '拖一个框' },
+          { key: 'fill', label: '油漆桶 Fill', hint: '四邻域灌色' },
+        ];
+        const state = {
+          tool: 'pencil',
+          color: 1,
+          drawing: false,
+          anchor: null,
+          hover: null,
+          historyText: '',
+        };
+
+        /** 工具 → 用哪种颜色落笔（橡皮固定画背景色）。 */
+        const activeColor = () => (state.tool === 'eraser' ? model.getBackground() : state.color);
+
+        /* --------------------------------- 外壳 --------------------------------- */
+
+        const shell = new W.ICEPanel({
+          left: SHELL.left,
+          top: SHELL.top,
+          width: SHELL.width,
+          height: SHELL.height,
+          radius: 12,
+          fill: true,
+          stroke: true,
+          interactive: false,
+        });
+        ice.addChild(shell);
+
+        const title = new W.ICELabel({
+          interactive: false,
+          left: 48,
+          top: 44,
+          width: 420,
+          height: 30,
+          text: 'ICE Pixel Studio',
+          style: { fontSize: 22, fontWeight: '700', fillStyle: theme.colors.text },
+        });
+        const subtitle = new W.ICELabel({
+          interactive: false,
+          left: 48,
+          top: 78,
+          width: 640,
+          height: 20,
+          text: '像素画板 · 一格一格画，撤销重做，导出 PNG / SVG',
+          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+        });
+        ice.addChild(title);
+        ice.addChild(subtitle);
+
+        /* --------------------------------- 工具栏 --------------------------------- */
+
+        const toolPanel = new W.ICEPanel({ left: TOOL_PANEL.left, top: TOOL_PANEL.top, width: TOOL_PANEL.width, height: TOOL_PANEL.height, interactive: false });
+        const toolCaption = new W.ICELabel({
+          interactive: false,
+          left: 16,
+          top: 14,
+          width: 140,
+          height: 18,
+          text: '工具 TOOLS',
+          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+        });
+        const toolHint = new W.ICELabel({
+          interactive: false,
+          left: 16,
+          top: 300,
+          width: 136,
+          height: 20,
+          text: '',
+          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+        });
+        const shortcutHint = new W.ICELabel({
+          interactive: false,
+          left: 16,
+          top: 356,
+          width: 136,
+          height: 20,
+          text: '快捷键',
+          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+        });
+        const shortcutRows = ['1-5 切工具', 'Ctrl+Z 撤销', 'Ctrl+Y 重做', '画布上可拖动'].map(
+          (text, index) =>
+            new W.ICELabel({
+              interactive: false,
+              left: 16,
+              top: 380 + index * 24,
+              width: 136,
+              height: 20,
+              text,
+              style: { fontSize: 12, fontFamily: '"Courier New", monospace', fillStyle: theme.colors.textTertiary },
+            }),
+        );
+        toolPanel.addChild(toolCaption, false);
+        toolPanel.addChild(toolHint, false);
+        toolPanel.addChild(shortcutHint, false);
+        shortcutRows.forEach((label) => toolPanel.addChild(label, false));
+        ice.addChild(toolPanel);
+
+        /** 工具按钮：ICEButton 的 variant 是构造期定的 → 换工具时重建这一列（和掌机卡带同一招）。 */
+        const toolButtons = {};
+        const renderTools = () => {
+          [...toolPanel.childNodes].forEach((node) => {
+            if (node.state && /^pixel-tool-/.test(node.state.id || '')) toolPanel.removeChild(node);
+          });
+          Object.keys(toolButtons).forEach((key) => delete toolButtons[key]);
+          TOOLS.forEach((tool, index) => {
+            const button = new W.ICEButton({
+              id: `pixel-tool-${tool.key}`,
+              left: 16,
+              top: 44 + index * 46,
+              width: 136,
+              height: 36,
+              text: tool.label,
+              variant: tool.key === state.tool ? 'primary' : 'default',
+            });
+            button.on('click', () => selectTool(tool.key));
+            toolPanel.addChild(button, false);
+            toolButtons[tool.key] = button;
+          });
+        };
+
+        /* --------------------------------- 画板 --------------------------------- */
+
+        const boardPanel = new W.ICEPanel({ left: BOARD_PANEL.left, top: BOARD_PANEL.top, width: BOARD_PANEL.width, height: BOARD_PANEL.height, interactive: false });
+        const boardCaption = new W.ICELabel({
+          interactive: false,
+          left: 24,
+          top: 16,
+          width: 300,
+          height: 20,
+          text: '画板 CANVAS',
+          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+        });
+        boardPanel.addChild(boardCaption, false);
+        ice.addChild(boardPanel);
+
+        /** 调色板 → ICETileMap 的格子样式（下标 i 的 key 是 `c{i}`）。 */
+        const boardPalette = () => {
+          const palette = {};
+          PALETTE.forEach((color, index) => {
+            palette[`c${index}`] = {
+              fillStyle: color,
+              strokeStyle: theme.colors.borderSecondary,
+              lineWidth: 1,
+              radius: 0,
+            };
+          });
+          return palette;
+        };
+
+        let cellSize = 16;
+        const boardOrigin = (rows = model.getRows(), cols = model.getCols()) => {
+          const span = Math.max(rows, cols) * cellSize;
+          return { left: Math.round((BOARD_PANEL.width - span) / 2), top: Math.round(24 + (BOARD_AREA + 32 - span) / 2) };
+        };
+        let origin = boardOrigin();
+        const board = new W.ICETileMap({
+          id: 'pixel-board',
+          left: origin.left,
+          top: origin.top,
+          rows: model.getRows(),
+          cols: model.getCols(),
+          cellSize,
+          gap: 0,
+          cellRadius: 0,
+          palette: boardPalette(),
+          fill: true,
+          stroke: true,
+          style: { fillStyle: '#ffffff', strokeStyle: theme.colors.border, lineWidth: 1 },
+        });
+        boardPanel.addChild(board, false);
+        const boardPreview = new W.ICELabel({
+          interactive: false,
+          left: 24,
+          top: 528,
+          width: 528,
+          height: 18,
+          text: '',
+          style: { fontSize: 12, fontFamily: '"Courier New", monospace', fillStyle: theme.colors.textSecondary },
+        });
+        boardPanel.addChild(boardPreview, false);
+
+        /* --------------------------------- 右侧：颜色 / 状态 --------------------------------- */
+
+        const sidePanel = new W.ICEPanel({ left: SIDE_PANEL.left, top: SIDE_PANEL.top, width: SIDE_PANEL.width, height: SIDE_PANEL.height, interactive: false });
+        const colorCaption = new W.ICELabel({
+          interactive: false,
+          left: 24,
+          top: 16,
+          width: 300,
+          height: 20,
+          text: '颜色 COLORS',
+          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+        });
+        sidePanel.addChild(colorCaption, false);
+
+        /** 色板也用 ICETileMap：12 个色块只有 1 个节点，选中的用高亮层圈出来。 */
+        const SWATCH_CELL = 56;
+        const swatchPalette = {};
+        PALETTE.forEach((color, index) => {
+          swatchPalette[`s${index}`] = { fillStyle: color, strokeStyle: theme.colors.border, lineWidth: 1, radius: 6 };
+        });
+        const swatches = new W.ICETileMap({
+          id: 'pixel-swatches',
+          left: 24,
+          top: 46,
+          rows: 2,
+          cols: 6,
+          cellSize: SWATCH_CELL,
+          gap: 8,
+          cellRadius: 6,
+          palette: swatchPalette,
+          fill: false,
+          stroke: false,
+          highlightColor: theme.colors.primary,
+        });
+        swatches.setTiles(PALETTE.map((_color, index) => `s${index}`));
+        swatches.on('cellclick', (evt) => {
+          const cell = evt && evt.param ? evt.param : null;
+          if (cell) selectColor(cell.row * 6 + cell.col);
+        });
+        sidePanel.addChild(swatches, false);
+
+        const statusCaption = new W.ICELabel({
+          interactive: false,
+          left: 24,
+          top: 200,
+          width: 300,
+          height: 20,
+          text: '状态 STATUS',
+          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+        });
+        sidePanel.addChild(statusCaption, false);
+
+        const statusLabels = {};
+        const STATUS_ROWS = [
+          ['size', '画布'],
+          ['tool', '工具'],
+          ['cursor', '光标'],
+          ['history', '历史'],
+          ['dirty', '改动'],
+          ['export', '导出'],
+        ];
+        STATUS_ROWS.forEach(([key, label], index) => {
+          const caption = new W.ICELabel({
+            interactive: false,
+            left: 24,
+            top: 232 + index * 30,
+            width: 70,
+            height: 22,
+            text: label,
+            verticalAlign: 'middle',
+            style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+          });
+          const value = new W.ICELabel({
+            id: `pixel-status-${key}`,
+            interactive: false,
+            left: 100,
+            top: 232 + index * 30,
+            width: 290,
+            height: 22,
+            text: '—',
+            verticalAlign: 'middle',
+            style: { fontSize: 12, fontFamily: '"Courier New", monospace', fillStyle: theme.colors.text },
+          });
+          sidePanel.addChild(caption, false);
+          sidePanel.addChild(value, false);
+          statusLabels[key] = value;
+        });
+        ice.addChild(sidePanel);
+
+        /* --------------------------------- 顶部动作与尺寸 --------------------------------- */
+
+        const actions = [
+          { key: 'undo', text: '撤销 (Z)', variant: 'default', handler: () => undo() },
+          { key: 'redo', text: '重做 (Y)', variant: 'default', handler: () => redo() },
+          { key: 'clear', text: '清空', variant: 'default', handler: () => clearBoard() },
+          { key: 'demo', text: '示例图案', variant: 'default', handler: () => drawDemo() },
+          { key: 'png', text: '导出 PNG', variant: 'primary', handler: () => exportPng() },
+          { key: 'svg', text: '导出 SVG', variant: 'primary', handler: () => exportSvg() },
+        ];
+        const actionButtons = {};
+        let actionX = 48;
+        actions.forEach((action) => {
+          const width = action.key === 'clear' ? 80 : 100;
+          const button = new W.ICEButton({
+            id: `pixel-action-${action.key}`,
+            left: actionX,
+            top: 104,
+            width,
+            height: 34,
+            text: action.text,
+            variant: action.variant,
+          });
+          button.on('click', action.handler);
+          ice.addChild(button);
+          actionButtons[action.key] = button;
+          actionX += width + 10;
+        });
+
+        const SIZES = [
+          { rows: 16, cols: 16, label: '16×16' },
+          { rows: 32, cols: 32, label: '32×32' },
+          { rows: 48, cols: 48, label: '48×48' },
+        ];
+        const sizeButtons = {};
+        /** 尺寸按钮同样靠重建换选中态（ICEButton 的 variant 是构造期的）。 */
+        const renderSizeButtons = () => {
+          Object.keys(sizeButtons).forEach((key) => {
+            ice.removeChild(sizeButtons[key]);
+            delete sizeButtons[key];
+          });
+          let sizeX = 1024;
+          SIZES.forEach((size) => {
+            const button = new W.ICEButton({
+              id: `pixel-size-${size.rows}`,
+              left: sizeX,
+              top: 104,
+              width: 70,
+              height: 34,
+              text: size.label,
+              variant: model.getRows() === size.rows && model.getCols() === size.cols ? 'primary' : 'default',
+            });
+            button.on('click', () => resizeBoard(size.rows, size.cols));
+            ice.addChild(button);
+            sizeButtons[size.rows] = button;
+            sizeX += 78;
+          });
+          ice.dirty = true;
+        };
+
+        const statusBar = new W.ICEPanel({ left: STATUS_BAR.left, top: STATUS_BAR.top, width: STATUS_BAR.width, height: STATUS_BAR.height, radius: 6, interactive: false });
+        const statusText = new W.ICELabel({
+          id: 'pixel-status-text',
+          interactive: false,
+          left: 16,
+          top: 4,
+          width: 1160,
+          height: 24,
+          text: '',
+          verticalAlign: 'middle',
+          style: { fontSize: 12, fontFamily: '"Courier New", monospace', fillStyle: theme.colors.textSecondary },
+        });
+        statusBar.addChild(statusText, false);
+        ice.addChild(statusBar);
+
+        /* --------------------------------- 交互逻辑 --------------------------------- */
+
+        const renderBoard = () => {
+          const cells = model.getCells();
+          // 换尺寸的中间态：模型已经通知了，画板还没跟上 —— 先不动，等 resizeBoard 里再刷一次
+          if (cells.length !== board.getRows() * board.getCols()) return;
+          board.setTiles(cells.map((value) => `c${value}`));
+          boardPreview.setText(`${model.getCols()} × ${model.getRows()} 像素 · 每格 ${cellSize}px · 当前色 ${PALETTE[state.color]}`);
+        };
+
+        const renderHistory = () => {
+          const depth = model.getHistoryDepth();
+          const text = `撤销 ${depth.undo} / 重做 ${depth.redo}`;
+          if (text === state.historyText) return;
+          state.historyText = text;
+          statusLabels.history.setText(text);
+        };
+
+        const renderSwatchHighlight = () => {
+          const row = Math.floor(state.color / 6);
+          const col = state.color % 6;
+          swatches.setHighlights([{ row, col, strokeStyle: theme.colors.primary, lineWidth: 3, radius: 8 }]);
+        };
+
+        const refresh = () => {
+          renderBoard();
+          renderHistory();
+          statusLabels.size.setText(`${model.getCols()} × ${model.getRows()}`);
+          const tool = TOOLS.find((item) => item.key === state.tool);
+          statusLabels.tool.setText(tool ? tool.label : state.tool);
+          statusLabels.cursor.setText(state.hover ? `行 ${state.hover.row} · 列 ${state.hover.col}` : '—');
+          statusLabels.dirty.setText(model.isDirty() ? '未提交（拖动中）' : '已提交');
+          statusLabels.export.setText(`${model.getCols() * 16} × ${model.getRows() * 16} PNG`);
+          toolHint.setText(tool ? tool.hint : '');
+          actionButtons.undo.setEnabled(model.canUndo());
+          actionButtons.redo.setEnabled(model.canRedo());
+          statusText.setText(
+            `${model.getCols()}×${model.getRows()}  ·  ${tool ? tool.label : ''}  ·  ${PALETTE[state.color]}  ·  ${state.historyText}  ·  1-5 切工具 / Ctrl+Z 撤销 / Ctrl+Y 重做`,
+          );
+          ice.dirty = true;
+        };
+
+        function selectTool(key) {
+          if (!TOOLS.some((tool) => tool.key === key)) return;
+          state.tool = key;
+          renderTools();
+          refresh();
+        }
+
+        function selectColor(color) {
+          if (!(color >= 0 && color < PALETTE.length)) return;
+          state.color = color;
+          if (state.tool === 'eraser') state.tool = 'pencil';
+          renderTools();
+          renderSwatchHighlight();
+          refresh();
+        }
+
+        function undo() {
+          if (!model.undo()) {
+            toast('没有可撤销的步骤', 'info');
+            return;
+          }
+          refresh();
+        }
+
+        function redo() {
+          if (!model.redo()) {
+            toast('没有可重做的步骤', 'info');
+            return;
+          }
+          refresh();
+        }
+
+        function clearBoard() {
+          if (!model.clear()) {
+            toast('画布本来就是空的', 'info');
+            return;
+          }
+          model.commit();
+          state.hover = null;
+          refresh();
+        }
+
+        /** 示例图案：把掌机那块 CHIP-8 笑脸搬过来（8×8 放大到画布中央）。 */
+        function drawDemo() {
+          const smiley = [0x3c, 0x42, 0xa5, 0x81, 0xa5, 0x99, 0x42, 0x3c];
+          const rows = model.getRows();
+          const cols = model.getCols();
+          const top = Math.round((rows - 8) / 2);
+          const left = Math.round((cols - 8) / 2);
+          model.clear();
+          smiley.forEach((bits, row) => {
+            for (let bit = 0; bit < 8; bit += 1) {
+              if (bits & (0x80 >> bit)) model.setPixel(top + row, left + bit, state.color);
+            }
+          });
+          model.commit();
+          refresh();
+        }
+
+        function resizeBoard(rows, cols) {
+          cellSize = Math.max(6, Math.floor(BOARD_AREA / Math.max(rows, cols)));
+          origin = boardOrigin(rows, cols);
+          // 尺寸必须走 setSize：只 setState 的话组件内部的行列字段还是旧的，下一次 setTiles 会抛错
+          board.setSize(rows, cols, cellSize);
+          board.setState({ left: origin.left, top: origin.top });
+          board.setPalette(boardPalette());
+          // 先让画板换好尺寸，再改模型（模型的变更通知会立刻触发一次 refresh）
+          model.resize(rows, cols);
+          renderTools();
+          renderSizeButtons();
+          state.hover = null;
+          refresh();
+          toast(`画布切成 ${cols}×${rows}`, 'info');
+        }
+
+        /* --------- 鼠标：按下画 / 拖动画 / 松手提交 --------- */
+
+        /** 屏幕坐标 → 画板内的格子（和 ICETileMap 自己的 `cellclick` 用同一套换算）。 */
+        const cellFromEvent = (evt) => {
+          if (!evt || typeof evt.offsetX !== 'number' || typeof evt.offsetY !== 'number') return null;
+          if (!ice || typeof ice.screenToWorld !== 'function') return null;
+          const [wx, wy] = ice.screenToWorld(evt.offsetX, evt.offsetY);
+          const box = board.getMinBoundingBox(true);
+          if (!box) return null;
+          return board.getCellAt(wx - box.tl[0], wy - box.tl[1]);
+        };
+
+        const showPreview = (cells) => {
+          board.setHighlights(
+            cells.map(([row, col]) => ({ row, col, fillStyle: 'rgba(13, 110, 253, 0.35)', strokeStyle: theme.colors.primary, lineWidth: 1 })),
+          );
+        };
+
+        const onMouseDown = (evt) => {
+          const cell = cellFromEvent(evt);
+          if (!cell) return;
+          state.drawing = true;
+          state.anchor = cell;
+          state.hover = cell;
+          if (state.tool === 'pencil' || state.tool === 'eraser') {
+            model.setPixel(cell.row, cell.col, activeColor());
+          } else if (state.tool === 'fill') {
+            model.fill(cell.row, cell.col, activeColor());
+            model.commit();
+          } else {
+            const cells = state.tool === 'line' ? model.getLineCells(cell.row, cell.col, cell.row, cell.col) : model.getRectCells(cell.row, cell.col, cell.row, cell.col);
+            showPreview(cells);
+          }
+          refresh();
+        };
+
+        const onMouseMove = (evt) => {
+          const cell = cellFromEvent(evt);
+          if (!cell) return;
+          state.hover = cell;
+          if (state.drawing) {
+            if (state.tool === 'pencil' || state.tool === 'eraser') {
+              // 从上一点连到当前点：鼠标移动快的时候不会画出断点
+              model.drawLine(state.anchor.row, state.anchor.col, cell.row, cell.col, activeColor());
+              state.anchor = cell;
+            } else if (state.tool === 'line') {
+              showPreview(model.getLineCells(state.anchor.row, state.anchor.col, cell.row, cell.col));
+            } else if (state.tool === 'rect') {
+              showPreview(model.getRectCells(state.anchor.row, state.anchor.col, cell.row, cell.col));
+            }
+          }
+          refresh();
+        };
+
+        const onMouseUp = (evt) => {
+          if (!state.drawing) return;
+          const cell = cellFromEvent(evt);
+          if (cell && state.tool === 'line') {
+            model.drawLine(state.anchor.row, state.anchor.col, cell.row, cell.col, activeColor());
+          } else if (cell && state.tool === 'rect') {
+            model.drawRect(state.anchor.row, state.anchor.col, cell.row, cell.col, activeColor());
+          }
+          state.drawing = false;
+          state.anchor = null;
+          board.setHighlights([]);
+          model.commit(); // 一次拖动 = 一次历史
+          refresh();
+        };
+
+        ice.evtBus.on('mousedown', onMouseDown, null);
+        ice.evtBus.on('mousemove', onMouseMove, null);
+        ice.evtBus.on('mouseup', onMouseUp, null);
+
+        /* --------- 键盘 --------- */
+
+        window.addEventListener('keydown', (event) => {
+          const meta = event.ctrlKey || event.metaKey;
+          const key = event.key;
+          if (meta && (key === 'z' || key === 'Z')) {
+            event.preventDefault();
+            if (event.shiftKey) redo();
+            else undo();
+            return;
+          }
+          if (meta && (key === 'y' || key === 'Y')) {
+            event.preventDefault();
+            redo();
+            return;
+          }
+          if (!meta && key >= '1' && key <= '5') {
+            selectTool(TOOLS[Number(key) - 1].key);
+          }
+        });
+
+        /* --------- 导出 --------- */
+
+        const download = (href, filename) => {
+          try {
+            const link = document.createElement('a');
+            link.href = href;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          } catch (error) {
+            /* 下载被浏览器挡了也不影响导出结果本身（QA 断言的是内容） */
+          }
+        };
+
+        const EXPORT_SCALE = 16;
+        function exportPng() {
+          const width = model.getCols() * EXPORT_SCALE;
+          const height = model.getRows() * EXPORT_SCALE;
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.putImageData(new ImageData(model.toRGBA(EXPORT_SCALE), width, height), 0, 0);
+          const dataUrl = canvas.toDataURL('image/png');
+          window.__pixel.lastPng = dataUrl;
+          download(dataUrl, 'ice-pixel.png');
+          toast('PNG 导出完成', 'success');
+          return dataUrl;
+        }
+
+        function exportSvg() {
+          const svg = model.toSVG({ cellSize: EXPORT_SCALE });
+          window.__pixel.lastSvg = svg;
+          download(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`, 'ice-pixel.svg');
+          toast('SVG 导出完成', 'success');
+          return svg;
+        }
+
+        /* --------------------------------- 启动 --------------------------------- */
+
+        renderTools();
+        renderSizeButtons();
+        renderSwatchHighlight();
+        renderBoard();
+        model.addChangeListener(() => refresh());
+        refresh();
+
+        /** 浏览器 QA / 调试句柄（和另外几个示例一个套路）。 */
+        window.__pixel = {
+          ice,
+          W,
+          model,
+          board,
+          swatches,
+          TOOLS,
+          PALETTE,
+          state,
+          selectTool,
+          selectColor,
+          undo,
+          redo,
+          clearBoard,
+          drawDemo,
+          resizeBoard,
+          exportPng,
+          exportSvg,
+          refresh,
+          lastPng: null,
+          lastSvg: null,
+          nodes: { shell, toolPanel, boardPanel, sidePanel, statusBar, statusText, toolHint, boardPreview, statusLabels, toolButtons, actionButtons, sizeButtons },
+        };
+      })();
+    </script>
+  </body>
+</html>

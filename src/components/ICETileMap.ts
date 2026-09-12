@@ -117,6 +117,9 @@ export class ICETileMap extends ICEWidget {
   private highlightColor: string;
   private labelFontSize: number;
   private labelColor: string;
+  /** 构造期是否显式给过 width/height（`props` 里已被默认值填过，只能在这里记一笔） */
+  private explicitWidth: boolean;
+  private explicitHeight: boolean;
   /** 自绘流程执行次数（浏览器里由 render() 驱动；单测可直接调 paintBoard()） */
   private paintCount = 0;
 
@@ -136,6 +139,8 @@ export class ICETileMap extends ICEWidget {
     this.cols = cols;
     this.cellSize = cellSize;
     this.gap = gap;
+    this.explicitWidth = props.width !== undefined;
+    this.explicitHeight = props.height !== undefined;
     this.cellRadius = Math.max(0, Number(props.cellRadius === undefined ? 4 : props.cellRadius));
     this.pulseColor = props.pulseColor || 'rgba(255, 255, 255, 0.42)';
     this.highlightColor = props.highlightColor || 'rgba(255, 255, 255, 0.45)';
@@ -162,6 +167,36 @@ export class ICETileMap extends ICEWidget {
 
   public getGap(): number {
     return this.gap;
+  }
+
+  /**
+   * 换网格尺寸（行列 / 格子大小一起换），并清空格子数据与高亮。
+   *
+   * 为什么必须有这个方法：`rows/cols/cellSize` 在构造期就被缓存进实例字段，
+   * 只 `setState({ rows, cols })` 的话**内部字段还是旧的** —— 下一次 `setTiles` 会按旧尺寸
+   * 抛错（像素编辑器把 32×32 切成 16×16 时就是这么炸的）。
+   * 显式给过 `width/height` 的（想自己留白）保持不动，没给过的跟着格子尺寸重算。
+   */
+  public setSize(rows: number, cols: number, cellSize?: number): this {
+    const nextRows = Math.max(1, Math.floor(rows));
+    const nextCols = Math.max(1, Math.floor(cols));
+    const nextCell = Math.max(2, Math.floor(cellSize === undefined ? this.cellSize : cellSize));
+    if (this.rows === nextRows && this.cols === nextCols && this.cellSize === nextCell) return this;
+    this.rows = nextRows;
+    this.cols = nextCols;
+    this.cellSize = nextCell;
+    // 旧数据是按旧尺寸排的，换尺寸后没有意义：清空比「尽力保留」更好懂
+    this.tiles = new Array(nextRows * nextCols).fill(null);
+    this.labels = new Array(nextRows * nextCols).fill(null);
+    this.highlights = [];
+    this.pulses = [];
+    this.tileKey = '';
+    this.labelKey = '';
+    const width = this.explicitWidth ? this.state.width : nextCols * nextCell;
+    const height = this.explicitHeight ? this.state.height : nextRows * nextCell;
+    this.setState({ rows: nextRows, cols: nextCols, cellSize: nextCell, width, height });
+    this.requestPaint();
+    return this;
   }
 
   /** 格子在组件内的矩形（gap 均分在两边）。 */

@@ -67,6 +67,40 @@ describe('尺寸与几何', () => {
     expect(map.getCellAt(100, 5)).toBeNull(); // 正好在右边界外（col 5 不存在）
     expect(map.getCellAt(5, 80)).toBeNull();
   });
+
+  /**
+   * 换网格尺寸：像素编辑器把 32×32 切成 16×16 时踩到的坑 ——
+   * 只 `setState({ rows, cols })` 的话组件内部的 rows/cols/cellSize 还是旧的，
+   * 下一次 `setTiles` 会按旧尺寸抛错（「需要 1024 个格子，实际 256 个」）。
+   * 所以尺寸必须有一个**同时改内部字段与 state** 的正经入口。
+   */
+  it('setSize 换行列与格子大小：内部字段、state、格子数据一起换', () => {
+    const map = makeMap();
+    map.setTiles(new Array(20).fill('a'));
+    map.setHighlights([{ row: 0, col: 0 }]);
+    map.setSize(2, 3, 30);
+    expect(map.getRows()).toBe(2);
+    expect(map.getCols()).toBe(3);
+    expect(map.getCellSize()).toBe(30);
+    expect(map.state.rows).toBe(2);
+    expect(map.state.cols).toBe(3);
+    expect(map.state.cellSize).toBe(30);
+    // 默认没有显式 width/height → 跟着格子尺寸重算
+    expect([map.state.width, map.state.height]).toEqual([90, 60]);
+    // 旧数据按新尺寸已无意义：清空 tiles / labels / highlights
+    expect(map.getTiles()).toEqual([null, null, null, null, null, null]);
+    expect(map.getHighlights()).toEqual([]);
+    // 新尺寸下 setTiles 正常，不再抛错
+    expect(() => map.setTiles(['a', 'a', 'a', 'a', 'a', 'a'])).not.toThrow();
+    expect(map.getTiles()).toHaveLength(6);
+  });
+
+  it('setSize 不动显式给的 width/height（留白由调用方说了算）', () => {
+    const map = makeMap({ width: 400, height: 400 });
+    map.setSize(2, 2, 10);
+    expect([map.state.width, map.state.height]).toEqual([400, 400]);
+    expect(map.getCellSize()).toBe(10);
+  });
 });
 
 describe('数据与调色板', () => {

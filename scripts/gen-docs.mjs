@@ -218,6 +218,7 @@ const GROUPS = [
       'ICEBoundedRangeModel',
       'ICESelectionModel',
       'ICEFormModel',
+      'ICEHistoryModel',
       'ICEMinesweeperModel',
       'ICE_MINESWEEPER_DIFFICULTIES',
       'ICETetrisModel',
@@ -230,6 +231,9 @@ const GROUPS = [
       'ICE_CHIP8_KEYS',
       'ICE2048Model',
       'ICE_2048_DIRECTIONS',
+      'ICEPixelModel',
+      'ICE_PIXEL_DEFAULT_PALETTE',
+      'icePixelParseColor',
     ],
   },
 ];

@@ -660,7 +660,17 @@ const pulseRightAfter = await page.evaluate(() => {
   return { before: board.getPulseAlpha() };
 });
 await page.keyboard.press('ArrowLeft');
-await page.waitForTimeout(60);
+// 轮询峰值而不是死等 60ms：机器负载高的时候（并行跑几套 QA）tween 可能已经跑完了
+await page
+  .waitForFunction(
+    () => {
+      const board = (window.__arcade.nodes.screen.childNodes || []).find((n) => n.state && n.state.id === 'game2048-board');
+      return !!board && board.getPulseAlpha() > 0;
+    },
+    null,
+    { timeout: 2000, polling: 16 },
+  )
+  .catch(() => {});
 const pulsePeak = await page.evaluate(() => {
   const board = (window.__arcade.nodes.screen.childNodes || []).find((n) => n.state && n.state.id === 'game2048-board');
   return { alpha: board.getPulseAlpha(), merged: window.__arcade.model.getLastMerged() };
@@ -761,7 +771,7 @@ check(
 // demo ROM 在画一个绕屏移动的方块：像素位置要随时间变
 // （注意：清屏到重画之间有几毫秒的空屏，所以只看「亮着的那些采样」，别要求每一帧都有像素）
 const chip8Frames = [];
-for (let i = 0; i < 8; i += 1) {
+for (let i = 0; i < 12; i += 1) {
   // eslint-disable-next-line no-await-in-loop
   chip8Frames.push(
     await page.evaluate(() => {
@@ -787,7 +797,7 @@ for (let i = 0; i < 8; i += 1) {
     }),
   );
   // eslint-disable-next-line no-await-in-loop
-  await page.waitForTimeout(80);
+  await page.waitForTimeout(60);
 }
 const litPixels = chip8Frames.map((frame) => frame.count);
 const litPositions = new Set(chip8Frames.filter((frame) => frame.count > 0).map((frame) => frame.first));
