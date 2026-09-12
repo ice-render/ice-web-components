@@ -19,7 +19,7 @@
   </style>
   <body>
     <h1 style="font-size: 20px; margin: 0 0 16px">ice-web-components gallery</h1>
-    <canvas id="canvas" width="1400" height="1700"></canvas>
+    <canvas id="canvas" width="1400" height="1960"></canvas>
 
     <script src="../node_modules/ice-render/dist/index.umd.js"></script>
     <script src="../dist/index.umd.js"></script>
@@ -42,7 +42,7 @@
           },
         });
 
-      const panel = new W.UIPanel({ id: 'panel', left: 24, top: 24, width: 1352, height: 1652 });
+      const panel = new W.UIPanel({ id: 'panel', left: 24, top: 24, width: 1352, height: 1912 });
 
       // 滚动视口演示：内容比视口高，靠引擎的 clipChildren 裁掉溢出部分
       // 注意：容器要先创建、再加子组件（引擎按全局 zIndex 排序渲染）
@@ -437,6 +437,23 @@
         onChange: (value) => datePickerHint.setText('已选：' + value),
       });
 
+      // 评论区（含嵌套回复与操作）
+      const comment = new W.UIComment({
+        id: 'comment',
+        left: 32,
+        top: 1730,
+        width: 460,
+        author: '张三',
+        avatarText: '张',
+        time: '2 小时前',
+        content: '这条评论用于验证嵌套回复与操作按钮。',
+        actions: [
+          { key: 'reply', text: '回复' },
+          { key: 'like', text: '点赞' },
+        ],
+        replies: [{ author: '李四', content: '同意，我也这么觉得。', time: '1 小时前' }],
+      });
+
       panel.addChildren([
         heading('Buttons', 32, 28),
 
@@ -531,6 +548,8 @@
         rate,
         steps,
         result,
+        heading('Comment', 32, 1700),
+        comment,
 
         heading('Scroll pane', 32, 706),
         scrollPane,
@@ -598,7 +617,7 @@
       });
 
       ice.addChild(panel);
-      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint };
+      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, comment };
     </script>
   </body>
 </html>

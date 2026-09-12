@@ -119,6 +119,7 @@
 | 数据展示 | Tabs | ✅ `UITabs`（部分：无溢出滚动 / 关闭 / 卡片态） |
 | 数据展示 | Tag | ✅ `UITag`（部分：无可关闭 / 多彩） |
 | 数据展示 | Timeline | ✅ `UITimeline` |
+| 数据展示 | Comment | ✅ `UIComment`（嵌套回复 + 操作） |
 | 数据展示 | Tooltip | ⬜ 阶段 B |
 | 数据展示 | Tour | ⊘ 低优先 |
 | 数据展示 | Tree | ✅ `UITree` |
