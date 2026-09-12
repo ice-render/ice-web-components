@@ -153,6 +153,24 @@
         onConfirm: () => deleteHint.setText('已删除 ✓'),
       });
 
+      const pageHint = new W.UILabel({
+        left: 820,
+        top: 776,
+        text: '第 1 页 / 每页 10 条',
+        style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+      });
+      const pagination = new W.UIPagination({
+        id: 'pagination',
+        left: 820,
+        top: 800,
+        width: 420,
+        total: 238,
+        pageSize: 10,
+        showTotal: true,
+        showSizeChanger: true,
+        onChange: (page, pageSize) => pageHint.setText(`第 ${page} 页 / 每页 ${pageSize} 条`),
+      });
+
       panel.addChildren([
         heading('Buttons', 32, 28),
 
@@ -216,6 +234,8 @@
         modalHint,
         messageTarget,
         notifyTarget,
+        pagination,
+        pageHint,
 
         heading('Scroll pane', 32, 706),
         scrollPane,
@@ -269,7 +289,7 @@
       });
 
       ice.addChild(panel);
-      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal };
+      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint };
     </script>
   </body>
 </html>

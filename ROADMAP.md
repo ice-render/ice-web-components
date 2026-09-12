@@ -33,7 +33,7 @@
 | ~~`UIModal`~~ ✅ | 遮罩层 + 居中 + 焦点陷阱 + 缩放进入 | A1 + A3 + A5 |
 | `UIDrawer` | 从边缘滑入的面板 | A1 + A5 |
 | ~~`UIMessage` / `UINotification`~~ ✅ | 顶部/右下角堆叠、自动消失、可单独关闭 | A5 |
-| `UIPagination` | 页码、每页条数、跳转 | — |
+| ~~`UIPagination`~~ ✅ | 页码窗口 + 省略号、每页条数切换、共 N 条 | — |
 | ~~`UIPopconfirm`~~ ✅ | 气泡确认（取消/确定 + danger） | A1 |
 
 ## 阶段 C：Swing 对应物（补齐 README 的定位）
