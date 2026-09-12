@@ -17,7 +17,7 @@
 | # | 底座 | 状态 | 说明 |
 |---|---|---|---|
 | A1 | 弹层 / 浮层 | ✅ 已完成 | `UIOverlayManager`：浮层根节点挂在 ICE **工具层**（递归渲染、绘制在组件之上、不参与 `getComponentById`）；12 种 placement、空间不足自动翻转、夹进可见范围；点外关闭 / Esc / exclusive。带视口缩放平移也正确。 |
-| A2 | 滚动容器 | ⬜ 待做 | 需要**引擎侧配合**：给组件加「子树裁剪」能力（`clipChildren`），渲染时对子树 `ctx.clip()`。引擎现有的 `ctx.clip` 只用于脏矩形。ScrollPane / List / Tree / 长表格 / TextArea 都依赖它。 |
+| A2 | 滚动容器 | ✅ 已完成 | 引擎侧新增**子树裁剪** `clipChildren`（ice-render 1.2.0：设备空间裁剪、多层求交、命中检测同样尊重裁剪、被裁剪组件不参与离屏缓存）；组件侧 `UIScrollPane`（内容盒 + 滚动条 + 滚轮/API 滚动）。 |
 | A3 | 焦点与键盘导航 | ⬜ 待做 | 引擎已有 `focusedComponent` 与 a11y `focusable` 元数据，但 UI 层没有 Tab 序、焦点环、方向键选择、Enter/Space 激活、模态焦点陷阱。做表单前必须补。 |
 | A4 | 表单与校验 | ⬜ 待做 | 值收集 + 校验规则 + 错误态渲染（依赖 A3）。 |
 | A5 | 动画/过渡 | ⬜ 待做 | 浮层淡入淡出 + 缩放、折叠展开、消息滑入。引擎有 AnimationManager 可复用。 |
@@ -40,7 +40,7 @@
 
 | Swing | 本库计划 | 依赖 |
 |---|---|---|
-| `JScrollPane` | `UIScrollPane` | A2 |
+| `JScrollPane` | ✅ `UIScrollPane` | A2 |
 | `JList` | `UIList` + `UISelectionModel` | A2 + A3 |
 | `JComboBox` | 阶段 B 的 `UIComboBox` | A1/A2/A3 |
 | `JSpinner` | `UISpinner`（数值/步进） | A3 |
@@ -157,3 +157,11 @@
 - 涉及浮层的组件**必须**走 `UIOverlayManager`，不要各自实现定位与关闭逻辑。
 - 主题色一律取自 `uiManager.getTheme()`，禁止硬编码色值（示例除外）。
 - 提交前跑 `npm run types:check && npm test && npm run build`。
+
+## 引擎已知约束（组件作者必读）
+
+- **渲染顺序是全局 `zIndex`**（构造时按自增赋值），不是「父先子后」：**先创建子组件、后创建父容器**
+  会导致父容器的背景盖住子组件。组装顺序按「容器 → 子组件」写；需要时显式指定 `state.zIndex`
+  （`UIScrollPane` 内部就是这么自保的）。
+- **子树裁剪**：容器设 `state.clipChildren = true` 可把后代裁到自己的盒子里（滚动容器在用）。
+- **离屏缓存**：被裁剪的组件不参与缓存；视口变化帧整体不缓存。

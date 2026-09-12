@@ -23,6 +23,7 @@ export * from './components/UIRadioButton';
 export * from './components/UISwitch';
 export * from './components/UIProgressBar';
 export * from './components/UISlider';
+export * from './components/UIScrollPane';
 export * from './components/UICard';
 export * from './components/UITabs';
 export * from './components/UITextField';

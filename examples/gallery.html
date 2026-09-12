@@ -43,6 +43,27 @@
 
       const panel = new W.UIPanel({ id: 'panel', left: 24, top: 24, width: 1352, height: 852 });
 
+      // 滚动视口演示：内容比视口高，靠引擎的 clipChildren 裁掉溢出部分
+      // 注意：容器要先创建、再加子组件（引擎按全局 zIndex 排序渲染）
+      const scrollPane = new W.UIScrollPane({ id: 'scroll-pane', left: 32, top: 736, width: 300, height: 96 });
+      const scrollContent = new W.UIComponent({ width: 268, height: 264 });
+      for (let i = 0; i < 12; i++) {
+        const row = new W.UIPanel({
+          left: 0,
+          top: i * 22,
+          width: 268,
+          height: 20,
+          radius: 4,
+          style: {
+            fillStyle: i % 2 ? theme.colors.background : theme.colors.surface,
+            strokeStyle: theme.colors.border,
+          },
+        });
+        row.addChild(new W.UILabel({ left: 8, top: 3, text: 'Row #' + (i + 1), style: { fontSize: 12 } }), false);
+        scrollContent.addChild(row, false);
+      }
+      scrollPane.setContent(scrollContent);
+
       panel.addChildren([
         heading('Buttons', 32, 28),
 
@@ -91,6 +112,9 @@
 
         new W.UISeparator({ id: 'separator-v', left: 780, top: 488, width: 1, height: 160 }),
         new W.UISeparator({ id: 'separator-h', left: 32, top: 700, width: 500, height: 1 }),
+
+        heading('Scroll pane', 32, 706),
+        scrollPane,
 
         new W.UILabel({
           left: 812,
