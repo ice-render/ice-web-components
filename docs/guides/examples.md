@@ -154,6 +154,22 @@ Windows 里的「IE」是真会抓网页的（下图是它 `fetch()` 本目录 `
 定位在开始按钮上方，点外关闭）、窗口焦点（点谁谁的标题栏变蓝、其余变灰）、最小化到任务栏、
 双击桌面图标打开程序、点桌面空白取消图标选中。
 
+### 第八个应用：ICE Arcade（掌机进窗口）
+
+桌面/开始菜单里多了一个 **ICE Arcade**：它就是 `arcade.html` 那台掌机，跑在 `ICEWindow` 里。
+两块卡带都复用**同一套纯逻辑模型**和**同一个 `ICETileMap`** —— 所以窗口里的棋盘依旧只有
+**1 个节点**（`childNodes.length === 0`），换卡带照样 `fadeIn`、消行照样 `pulse`。
+
+两个接进 XP 体系时必须处理的点，写在这里方便照抄：
+
+* **键盘归属**：XP 的键盘平时归焦点管理器（Tab / Enter / Esc）。Arcade 窗口激活时
+  （`activeKey === 'arcade'`）才把方向键/空格/WASD 转给游戏，窗口一失活或最小化就完全不拦；
+* **生命周期**：应用可以声明 `onClosed`，`closeWindow()` 会回调它 —— 掌机用它停掉自己那个
+  60ms 的步进定时器（否则关掉窗口后定时器还在后台跑）；
+* **图标**：`xpIcon('arcade', size)` 多了掌机一档（自绘：机身 + 屏幕 + 十字键 + 两个按钮）。
+
+![ICE Arcade 在 XP 窗口里](../images/xp-arcade.png)
+
 ### 美化：主题、图标、Retina
 
 - **主题**：注册并使用库内置的 `ICE_XP_THEME`（`iceUIManager.registerTheme('xp', …).setTheme('xp')`）——

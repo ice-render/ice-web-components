@@ -442,6 +442,69 @@ check(
 const clock = await page.evaluate(() => window.__result.clockLabel.getText());
 check('任务栏时钟是 HH:MM', /^\d{2}:\d{2}$/.test(clock), clock);
 
+/* ---------- 6.5 ICE Arcade：把掌机塞进 XP 窗口 ---------- */
+const arcadeOpened = await page.evaluate(() => {
+  window.__result.openApp(window.__result.APPS.find((a) => a.key === 'arcade'));
+  return window.__result.openWindows.has('arcade');
+});
+await page.waitForTimeout(500);
+const arcadeBoot = await page.evaluate(() => {
+  const api = window.__result.handles.arcade;
+  return {
+    key: api.key,
+    childNodes: api.board ? api.board.childNodes.length : -1,
+    paintCount: api.board && api.board.getPaintCount ? api.board.getPaintCount() : -1,
+    pieceCells: api.model.getCurrent().cells.length,
+  };
+});
+check(
+  'ICE Arcade：从应用注册表打开窗口，棋盘同样是单个自绘节点',
+  arcadeOpened && arcadeBoot.key === 'tetris' && arcadeBoot.childNodes === 0 && arcadeBoot.paintCount > 0 && arcadeBoot.pieceCells === 4,
+  JSON.stringify(arcadeBoot),
+);
+
+const arcadeBefore = await page.evaluate(() => window.__result.handles.arcade.model.getCurrent().col);
+await page.keyboard.press('ArrowRight');
+await page.waitForTimeout(140);
+const arcadeAfter = await page.evaluate(() => window.__result.handles.arcade.model.getCurrent().col);
+check('ICE Arcade：窗口激活时键盘归游戏（→ 真的移动了方块）', arcadeAfter === arcadeBefore + 1, `${arcadeBefore} → ${arcadeAfter}`);
+
+const arcadePaused = await page.evaluate(() => {
+  window.__result.handles.arcade.keydown('p', false);
+  return window.__result.handles.arcade.model.isPaused();
+});
+await page.keyboard.press('p');
+await page.waitForTimeout(120);
+const arcadeResumed = await page.evaluate(() => window.__result.handles.arcade.model.isPaused());
+check('ICE Arcade：P 暂停 / 恢复', arcadePaused === true && arcadeResumed === false, `${arcadePaused} → ${arcadeResumed}`);
+
+const arcadeSwitched = await page.evaluate(() => {
+  const api = window.__result.handles.arcade;
+  api.switchTo('snake');
+  return { key: api.key, length: api.model.getLength(), childNodes: api.board.childNodes.length };
+});
+await page.waitForTimeout(300);
+await page.keyboard.press('ArrowUp');
+await page.waitForTimeout(160);
+const arcadeSnake = await page.evaluate(() => ({
+  pending: window.__result.handles.arcade.model.getPendingDirections(),
+  direction: window.__result.handles.arcade.model.getDirection(),
+  hudScore: window.__result.handles.arcade.model.getScore(),
+}));
+check(
+  'ICE Arcade：窗口内切到贪吃蛇，方向键同样有效',
+  arcadeSwitched.key === 'snake' && arcadeSwitched.length === 3 && arcadeSwitched.childNodes === 0 &&
+    (arcadeSnake.pending.indexOf('up') !== -1 || arcadeSnake.direction === 'up'),
+  JSON.stringify({ arcadeSwitched, arcadeSnake }),
+);
+
+const arcadeClosed = await page.evaluate(() => {
+  window.__result.openWindows.get('arcade').window.getCloseButton();
+  window.__result.closeWindow('arcade');
+  return { open: window.__result.openWindows.has('arcade') };
+});
+check('ICE Arcade：关窗后从 openWindows 摘掉（定时器一并停掉）', arcadeClosed.open === false, JSON.stringify(arcadeClosed));
+
 /* ---------- 7. IE：真的会 fetch 网页 ---------- */
 await page.evaluate(() => window.__result.openApp(window.__result.APPS.find((a) => a.key === 'ie')));
 await page.waitForTimeout(1400);

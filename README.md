@@ -30,7 +30,7 @@ rings and shadows) is drawn by the engine.
 - **Actually tested** — 582 unit tests (85 suites: form validation, overlay
   positioning, keyboard navigation, sort/hover/focus edge cases, the Minesweeper,
   Tetris and Snake rule models) plus five browser QA suites (`qa:admin`, `qa:gallery`,
-  `qa:workbench`, `qa:xp`, `qa:arcade` — 165 assertions) that drive the demo pages with
+  `qa:workbench`, `qa:xp`, `qa:arcade` — 170 assertions) that drive the demo pages with
   real mouse and keyboard events and fail on any console error.
 
 ## Quick start
@@ -206,6 +206,13 @@ way to the dispatcher (ice-render 1.4.1).
 Two new generic components came out of it: `ICEWindow` (window chrome with an XP Luna
 title bar, drag, resize, maximise/restore, activate event) and `ICEIconTile`
 (selectable icon tile that opens on double click).
+
+The eighth app is **ICE Arcade** — the handheld console from `arcade.html`, running
+inside an XP window. It reuses the same two pure models and the same `ICETileMap`
+(so the board is still one node), and the desktop routes the keyboard to it only while
+that window is active; closing the window stops its step timer.
+
+![ICE Arcade inside a Windows XP window](docs/images/xp-arcade.png)
 
 | Boot splash | Welcome screen | Password page |
 |---|---|---|

@@ -11,7 +11,7 @@
 > `focusRing` 聚焦色）；③ `ICETag`/`ICEBadge` 默认改成 Bootstrap 实底 `.text-bg-*`（`variant:'soft'` 保留浅底风格）。
 > 细节见 README 的 Naming / Theme / Colour variants 三节。
 
-## 现状（77 个组件源文件 / 94 个导出类 / 582 条单测 / 165 项浏览器断言）
+## 现状（77 个组件源文件 / 94 个导出类 / 582 条单测 / 170 项浏览器断言）
 
 按分组清点（完整清单与参数见 [`docs/components.md`](./docs/components.md)）：
 
@@ -67,7 +67,7 @@
 > 示例：`gallery.html`（组件总览）、`admin.html`（6 页后台）、`workbench.html`（客服工单工作台）、
 > `windows-xp.html`（全屏 XP 桌面）、`arcade.html`（ICE Arcade 掌机：两块卡带）、
 > `custom-component.html`（自定义组件）——见[示例与场景](./docs/guides/examples.md)。
-> 浏览器回归：`qa:admin` 44 项 + `qa:gallery` 32 项 + `qa:workbench` 15 项 + `qa:xp` 35 项
+> 浏览器回归：`qa:admin` 44 项 + `qa:gallery` 32 项 + `qa:workbench` 15 项 + `qa:xp` 40 项
 > + `qa:arcade` 39 项，全部走真实鼠标/键盘事件。
 >
 > 第九批（小游戏合集第 1 弹）：`ICETetrisModel`（俄罗斯方块纯逻辑模型：7-bag 随机、踢墙旋转、
@@ -96,6 +96,11 @@
 > GAME OVER `scaleIn`、「排行榜 (L)」弹 `ICEModal`（内嵌 `ICETable` + `ICEScrollPane`）。
 > `qa:arcade` 33 → 39 项（新增单节点自绘、tween 淡入、排行榜弹窗与降序、点格子转向）。
 > 踩坑入档：`super.doRender()` 之后自绘要 `applyActiveTransform()`，否则坐标跑到画布左上角。
+>
+> 第十三批（组合）：把掌机塞进 XP 桌面 —— 新增「ICE Arcade」应用（桌面图标 + 开始菜单都能开），
+> 窗口里复用同一套纯模型与 `ICETileMap`（棋盘仍是 1 个节点），键盘只在窗口激活时归游戏、
+> 关窗即停步进定时器；XP 侧自带掌机图标（自绘）。`qa:xp` 35 → 40 项（窗口内开局/按键/暂停/
+> 切卡带/关窗收尾）。
 
 ## 阶段 A：底座（先做这个）
 

@@ -107,7 +107,7 @@
           style: { fillStyle: fill, strokeStyle: stroke || fill, lineWidth: 1 },
         });
 
-      /** kind: computer | folder | notepad | paint | mine | ie | display | recycle | windows */
+      /** kind: computer | folder | notepad | paint | mine | ie | display | recycle | windows | arcade */
       const xpIcon = (kind, size = 32) => {
         const s = size;
         const r = (ratio) => Math.round(s * ratio);
@@ -195,6 +195,16 @@
               pixel(r(0.5), r(0.16), r(0.4), r(0.34), '#7ab648', 1, { transform: { rotate: -8 } }),
               pixel(r(0.06), r(0.56), r(0.4), r(0.34), '#2f7bd6', 1, { transform: { rotate: -8 } }),
               pixel(r(0.5), r(0.52), r(0.4), r(0.34), '#f2c33d', 1, { transform: { rotate: -8 } }),
+            ]);
+          case 'arcade':
+            // 掌机：机身 + 屏幕 + 十字键 + 两个按钮
+            return iconBox(s, [
+              outlined(r(0.16), r(0.06), r(0.68), r(0.88), '#2b3340', '#141a24', 3),
+              pixel(r(0.26), r(0.16), r(0.48), r(0.3), '#7fd4ff'),
+              pixel(r(0.28), r(0.56), r(0.18), r(0.07), '#d8d8d8'),
+              pixel(r(0.34), r(0.5), r(0.06), r(0.19), '#d8d8d8'),
+              disc(r(0.36), r(0.74), r(0.08), '#c1272d'),
+              disc(r(0.62), r(0.6), r(0.08), '#e0a92e'),
             ]);
           default:
             return iconBox(s, [disc(r(0.16), r(0.16), r(0.34), '#8a8a8a', '#5a5a5a')]);
@@ -607,6 +617,8 @@
       const closeWindow = (key) => {
         const entry = openWindows.get(key);
         if (!entry) return;
+        // 应用自己的收尾（比如 Arcade 要停掉它那个 60ms 的步进定时器）
+        if (typeof entry.onClosed === 'function') entry.onClosed();
         windowLayer.removeChild(entry.window);
         openWindows.delete(key);
         if (activeKey === key) activeKey = null;
@@ -650,6 +662,7 @@
           icon: app.icon,
           iconKind: app.iconKind,
           minimized: false,
+          onClosed: app.onClosed,
         });
         focusWindow(app.key);
         // 应用可以在窗口就绪后调整自身尺寸（例如扫雷按难度换棋盘大小）
@@ -1889,6 +1902,368 @@
       };
 
       /* ============================ 应用注册表 ============================ */
+      /* ============================ 应用：ICE Arcade（把掌机塞进 XP 窗口） ============================
+       * 复用组件库里的两个纯逻辑模型（ICETetrisModel / ICESnakeModel）+ ICETileMap 自绘棋盘：
+       * 整块棋盘仍然只是一个节点，XP 这边只做「窗口 + 键盘路由 + 每帧步进」三件事。
+       */
+      const buildArcade = () => {
+        const PANE_W = 620;
+        const PANE_H = 372;
+        const pane = new W.ICEWidget({
+          width: PANE_W,
+          height: PANE_H,
+          fill: true,
+          stroke: false,
+          interactive: false,
+          style: { fillStyle: '#1b2130' },
+        });
+        const screenBox = new W.ICEWidget({
+          id: 'xp-arcade-screen',
+          left: 12,
+          top: 12,
+          width: 340,
+          height: 348,
+          radius: 10,
+          fill: true,
+          stroke: true,
+          interactive: false,
+          style: { fillStyle: '#0d1117', strokeStyle: '#2b3340', lineWidth: 2 },
+        });
+        pane.addChild(screenBox, false);
+
+        const hud = new W.ICEWidget({ left: 366, top: 12, width: PANE_W - 378, height: PANE_H - 24, fill: false, stroke: false, interactive: false });
+        pane.addChild(hud, false);
+        const titleLabel = new W.ICELabel({
+          interactive: false,
+          left: 0,
+          top: 0,
+          width: 220,
+          height: 24,
+          text: 'ICE ARCADE',
+          style: { fontSize: 18, fontWeight: '700', fillStyle: '#f8f9fa' },
+        });
+        const scoreLabel = new W.ICELabel({
+          id: 'xp-arcade-score',
+          interactive: false,
+          left: 0,
+          top: 34,
+          width: 220,
+          height: 30,
+          text: '0',
+          style: { fontSize: 24, fontWeight: '700', fontFamily: '"Courier New", monospace', fillStyle: '#f8f9fa' },
+        });
+        const infoLabel = new W.ICELabel({
+          id: 'xp-arcade-info',
+          interactive: false,
+          left: 0,
+          top: 68,
+          width: 220,
+          height: 60,
+          text: '',
+          style: { fontSize: 12, fontFamily: '"Courier New", monospace', fillStyle: '#adb5bd' },
+        });
+        const cartridgeButtons = ['tetris', 'snake'].map((key, index) => {
+          const button = new W.ICEButton({
+            id: `xp-arcade-cart-${key}`,
+            left: 0,
+            top: 140 + index * 38,
+            width: 224,
+            height: 32,
+            text: key === 'tetris' ? '俄罗斯方块' : '贪吃蛇',
+            variant: key === 'tetris' ? 'primary' : 'default',
+            size: 'small',
+          });
+          button.on('click', () => switchGame(key));
+          hud.addChild(button, false);
+          return { key, button };
+        });
+        const hintLabel = new W.ICELabel({
+          interactive: false,
+          left: 0,
+          top: 226,
+          width: 224,
+          height: 100,
+          text: '← → 移动 · 空格硬降\n↑/X 旋转 · Z 反转\n贪吃蛇用方向键 / WASD\nP 暂停 · R 重开\n（本窗口激活时键盘才归游戏）',
+          style: { fontSize: 11, fillStyle: '#8a93a0' },
+        });
+        hud.addChild(titleLabel, false);
+        hud.addChild(scoreLabel, false);
+        hud.addChild(infoLabel, false);
+        hud.addChild(hintLabel, false);
+
+        const PALETTE = W.ICE_ARCADE_PALETTE;
+        const TETRIS = { rows: 20, cols: 10, cell: 16 };
+        const SNAKE = { rows: 20, cols: 20, cell: 16 };
+        const state = { key: null, model: null, board: null, runtime: null, accumulator: 0, last: 0 };
+
+        const makeBoard = (rows, cols, cell) => {
+          const width = cols * cell;
+          const height = rows * cell;
+          const board = new W.ICETileMap({
+            id: 'xp-arcade-board',
+            left: Math.round((screenBox.state.width - width) / 2),
+            top: Math.round((screenBox.state.height - height) / 2),
+            rows,
+            cols,
+            cellSize: cell,
+            gap: 2,
+            cellRadius: 3,
+            palette: PALETTE,
+            fill: true,
+            stroke: true,
+            style: { fillStyle: '#12161d', strokeStyle: '#1f2733', lineWidth: 1 },
+          });
+          screenBox.addChild(board, false);
+          return board;
+        };
+        const clearBoard = () => {
+          screenBox.removeChildren([...screenBox.childNodes]);
+          state.board = null;
+          state.runtime = null;
+        };
+
+        const mountTetris = () => {
+          clearBoard();
+          const board = makeBoard(TETRIS.rows, TETRIS.cols, TETRIS.cell);
+          const model = new W.ICETetrisModel({ rows: TETRIS.rows, cols: TETRIS.cols });
+          const local = { piece: null, accumulator: 0 };
+          const allCells = [];
+          for (let row = 0; row < TETRIS.rows; row += 1) {
+            for (let col = 0; col < TETRIS.cols; col += 1) allCells.push({ row, col });
+          }
+          const paint = () => {
+            const boardRows = model.getBoard();
+            const tiles = new Array(TETRIS.rows * TETRIS.cols).fill('empty');
+            for (let row = 0; row < TETRIS.rows; row += 1) {
+              for (let col = 0; col < TETRIS.cols; col += 1) {
+                if (boardRows[row][col]) tiles[row * TETRIS.cols + col] = boardRows[row][col];
+              }
+            }
+            const highlights = [];
+            if (!model.isGameOver()) {
+              const type = model.getCurrent().type;
+              const color = (PALETTE[type] || {}).fillStyle || '#adb5bd';
+              model.getGhost().forEach(([row, col]) => {
+                const index = row * TETRIS.cols + col;
+                if (index >= 0 && index < tiles.length && !tiles[index]) {
+                  highlights.push({ row, col, fillStyle: 'rgba(0,0,0,0)', strokeStyle: color, lineWidth: 1 });
+                }
+              });
+              model.getCurrent().cells.forEach(([row, col]) => {
+                if (row < 0) return;
+                tiles[row * TETRIS.cols + col] = type;
+              });
+            }
+            board.setTiles(tiles);
+            board.setHighlights(highlights);
+          };
+          model.addChangeListener(() => {
+            if (model.getLastClearedLines() > 0) {
+              board.pulse(allCells, { duration: 220, color: 'rgba(255,255,255,0.45)' });
+              playCue('eat');
+            }
+            syncHud();
+            paint();
+          });
+          return {
+            model,
+            board,
+            paint,
+            keydown(key, repeating) {
+              switch (key) {
+                case 'ArrowLeft': model.moveLeft(); return true;
+                case 'ArrowRight': model.moveRight(); return true;
+                case 'ArrowDown': model.softDrop(); return true;
+                case 'ArrowUp':
+                case 'x':
+                case 'X':
+                  if (!repeating) { model.rotateCW(); playCue('click'); }
+                  return true;
+                case 'z':
+                case 'Z':
+                  if (!repeating) { model.rotateCCW(); playCue('click'); }
+                  return true;
+                case ' ':
+                  if (!repeating) { model.hardDrop(); playCue('click'); }
+                  return true;
+                default:
+                  return false;
+              }
+            },
+            frame(dt) {
+              const piece = model.getCurrent();
+              if (piece !== local.piece) {
+                local.piece = piece;
+                local.accumulator = 0;
+              }
+              if (model.isPaused() || model.isGameOver()) {
+                local.accumulator = 0;
+                return;
+              }
+              local.accumulator += dt;
+              const interval = model.getDropInterval();
+              while (local.accumulator >= interval) {
+                local.accumulator -= interval;
+                model.tick();
+              }
+            },
+            hud() {
+              return {
+                score: String(model.getScore()),
+                info: `消行 ${model.getLines()} · 等级 ${model.getLevel()}`,
+              };
+            },
+          };
+        };
+
+        const mountSnake = () => {
+          clearBoard();
+          const board = makeBoard(SNAKE.rows, SNAKE.cols, SNAKE.cell);
+          const model = new W.ICESnakeModel({ rows: SNAKE.rows, cols: SNAKE.cols });
+          const local = { accumulator: 0 };
+          board.on('cellclick', (evt) => {
+            const cell = evt && evt.param ? evt.param : null;
+            if (!cell) return;
+            const head = model.getHead();
+            const dRow = cell.row - head[0];
+            const dCol = cell.col - head[1];
+            if (!dRow && !dCol) return;
+            const direction = Math.abs(dRow) >= Math.abs(dCol) ? (dRow > 0 ? 'down' : 'up') : dCol > 0 ? 'right' : 'left';
+            model.setDirection(direction);
+          });
+          const paint = () => {
+            const tiles = new Array(SNAKE.rows * SNAKE.cols).fill('empty');
+            const food = model.getFood();
+            if (food) tiles[food[0] * SNAKE.cols + food[1]] = 'food';
+            model.getBody().forEach(([row, col], index) => {
+              if (row < 0 || row >= SNAKE.rows || col < 0 || col >= SNAKE.cols) return;
+              tiles[row * SNAKE.cols + col] = index === 0 ? 'snakeHead' : index % 2 === 0 ? 'snakeBody' : 'snakeBodyAlt';
+            });
+            board.setTiles(tiles);
+          };
+          const DIRECTIONS = {
+            ArrowUp: 'up', w: 'up', W: 'up',
+            ArrowDown: 'down', s: 'down', S: 'down',
+            ArrowLeft: 'left', a: 'left', A: 'left',
+            ArrowRight: 'right', d: 'right', D: 'right',
+          };
+          model.addChangeListener(() => {
+            syncHud();
+            paint();
+          });
+          return {
+            model,
+            board,
+            paint,
+            keydown(key) {
+              const direction = DIRECTIONS[key];
+              if (!direction) return false;
+              if (model.setDirection(direction)) playCue('click');
+              return true;
+            },
+            frame(dt) {
+              if (model.isPaused() || model.isGameOver()) {
+                local.accumulator = 0;
+                return;
+              }
+              local.accumulator += dt;
+              const interval = model.getTickInterval();
+              while (local.accumulator >= interval) {
+                local.accumulator -= interval;
+                const before = model.getScore();
+                model.tick();
+                if (model.getScore() > before) {
+                  playCue('eat');
+                  const head = model.getHead();
+                  board.pulse([{ row: head[0], col: head[1] }], { duration: 180, color: 'rgba(255,255,255,0.35)' });
+                }
+              }
+            },
+            hud() {
+              return {
+                score: String(model.getScore()),
+                info: `长度 ${model.getLength()} · ${model.getTickInterval()}ms/格`,
+              };
+            },
+          };
+        };
+
+        const api = {
+          get key() {
+            return state.key;
+          },
+          get model() {
+            return state.model;
+          },
+          get board() {
+            return state.board;
+          },
+          keydown(key, repeating) {
+            if (!state.runtime) return false;
+            if (key === 'p' || key === 'P') {
+              if (!repeating) {
+                if (state.model.isPaused()) state.model.resume();
+                else state.model.pause();
+              }
+              return true;
+            }
+            if (key === 'r' || key === 'R') {
+              if (!repeating) {
+                state.model.reset();
+                state.runtime.paint();
+                syncHud();
+              }
+              return true;
+            }
+            return state.runtime.keydown(key, repeating);
+          },
+          frame(dt) {
+            if (state.runtime) state.runtime.frame(dt);
+          },
+          switchTo: switchGame,
+          sync: () => {
+            if (state.runtime) state.runtime.paint();
+            syncHud();
+          },
+        };
+        function syncHud() {
+          if (!state.runtime || !state.model) return;
+          const hudState = state.runtime.hud();
+          scoreLabel.setText(hudState.score);
+          infoLabel.setText(hudState.info);
+        }
+        function switchGame(key) {
+          state.key = key;
+          state.runtime = key === 'snake' ? mountSnake() : mountTetris();
+          state.model = state.runtime.model;
+          state.board = state.runtime.board;
+          state.accumulator = 0;
+          if (state.board) W.fadeIn(state.board, { duration: 220 });
+          cartridgeButtons.forEach((item) => {
+            item.button.setEnabled(true);
+            item.button.setText(item.key === key ? `▶ ${item.key === 'tetris' ? '俄罗斯方块' : '贪吃蛇'}` : item.key === 'tetris' ? '俄罗斯方块' : '贪吃蛇');
+          });
+          scoreLabel.setText('0');
+          state.runtime.paint();
+          syncHud();
+          ice.dirty = true;
+        }
+
+        handles.arcade = api;
+        switchGame('tetris');
+        // 每帧推进（窗口关掉/最小化时自动停摆，见下面的守卫）
+        const timer = setInterval(() => {
+          const entry = openWindows.get('arcade');
+          if (!entry || entry.minimized) return;
+          const now = Date.now();
+          const dt = state.last ? Math.min(120, now - state.last) : 0;
+          state.last = now;
+          api.frame(dt);
+        }, 60);
+        handles.arcade.timer = timer;
+        return pane;
+      };
+
       let currentWallpaper = 'bliss';
       const setWallpaper = (key) => {
         currentWallpaper = key;
@@ -1911,11 +2286,12 @@
         },
         { key: 'ie', title: 'ICE 桌面 - Microsoft Internet Explorer', icon: '🌐', iconKind: 'ie', width: 700, height: 460, build: buildIE },
         { key: 'display', title: '显示 属性', icon: '⚙', iconKind: 'display', width: 500, height: 300, build: buildDisplayProperties },
+        { key: 'arcade', title: 'ICE Arcade', icon: '🕹', iconKind: 'arcade', width: 664, height: 460, build: buildArcade, onClosed: () => clearInterval(handles.arcade.timer) },
       ];
 
       /* ============================ 桌面图标 ============================ */
       const iconTiles = [];
-      const ICON_ORDER = ['computer', 'documents', 'notepad', 'paint', 'minesweeper', 'ie', 'display'];
+      const ICON_ORDER = ['computer', 'documents', 'notepad', 'paint', 'minesweeper', 'ie', 'display', 'arcade'];
       ICON_ORDER.forEach((key, index) => {
         const app = APPS.find((item) => item.key === key);
         const tile = new W.ICEIconTile({
@@ -1972,15 +2348,15 @@
           false,
         );
         pane.addChild(header, false);
-        const programKeys = ['computer', 'documents', 'notepad', 'paint', 'minesweeper', 'ie'];
+        const programKeys = ['computer', 'documents', 'notepad', 'paint', 'minesweeper', 'ie', 'arcade'];
         programKeys.forEach((key, index) => {
           const app = APPS.find((item) => item.key === key);
           const row = new W.ICEWidget({
             id: 'start-program-' + key,
             left: 6,
-            top: 72 + index * 40,
+            top: 72 + index * 34,
             width: 210,
-            height: 36,
+            height: 32,
             radius: 3,
             fill: false,
             stroke: false,
@@ -2762,6 +3138,19 @@
       });
       // 开机画面上点一下也算「任意键」（顺便解锁 AudioContext）
       sessionRoot.on('click', () => skipBoot());
+
+      /* ICE Arcade 窗口激活时键盘归游戏（P/R 由应用自己处理）。 */
+      window.addEventListener('keydown', (event) => {
+        if (activeKey !== 'arcade') return;
+        const entry = openWindows.get('arcade');
+        if (!entry || entry.minimized || !handles.arcade) return;
+        const known = [
+          'ArrowLeft', 'ArrowRight', 'ArrowDown', 'ArrowUp', ' ', 'Spacebar',
+          'w', 'W', 'a', 'A', 's', 'S', 'd', 'D', 'z', 'Z', 'x', 'X', 'p', 'P', 'r', 'R',
+        ];
+        if (known.indexOf(event.key) === -1) return;
+        if (handles.arcade.keydown(event.key, event.repeat === true)) event.preventDefault();
+      });
 
       window.__result = {
         ice,
