@@ -736,6 +736,50 @@ const a11yFocus = await page.evaluate(() => {
 });
 check('无障碍镜像：DOM 焦点映射回画布组件（Tab 进得去）', a11yFocus === 'tip-btn', String(a11yFocus));
 
+/* ---------- 看板：卡片跨列拖拽 ---------- */
+await page.evaluate(() => window.scrollTo(0, 0));
+await page.waitForTimeout(200);
+const kanbanBoot = await page.evaluate(() => {
+  const board = window.__result.kanban;
+  window.__cardMoves = [];
+  board.on('cardmove', (evt) => window.__cardMoves.push([evt.param.cardKey, evt.param.columnKey, evt.param.index]));
+  const boxOf = (node) => {
+    let l = 0;
+    let t = 0;
+    let cursor = node;
+    while (cursor && cursor.state) {
+      l += Number(cursor.state.left) || 0;
+      t += Number(cursor.state.top) || 0;
+      cursor = cursor.parentNode;
+    }
+    return { l, t, w: Number(node.state.width) || 0, h: Number(node.state.height) || 0 };
+  };
+  return { todo: board.getColumns().find((c) => c.key === 'todo').cards.map((c) => c.key), card: boxOf(board.getCardNode('c1')), done: boxOf(board.getColumnNode('done')) };
+});
+const kanbanRect = await canvasRect();
+await page.mouse.move(kanbanRect.left + kanbanBoot.card.l + kanbanBoot.card.w / 2, kanbanRect.top + kanbanBoot.card.t + kanbanBoot.card.h / 2);
+await page.mouse.down();
+await page.mouse.move(kanbanRect.left + kanbanBoot.done.l + 60, kanbanRect.top + kanbanBoot.done.t + 70, { steps: 8 });
+const kanbanMid = await page.evaluate(() => ({ dragging: window.__result.kanban.isDragging(), target: window.__result.kanban.getDropTarget() }));
+await page.mouse.up();
+await page.waitForTimeout(320);
+const kanbanAfter = await page.evaluate(() => {
+  const board = window.__result.kanban;
+  return {
+    todo: board.getColumns().find((c) => c.key === 'todo').cards.map((c) => c.key),
+    done: board.getColumns().find((c) => c.key === 'done').cards.map((c) => c.key),
+    moves: window.__cardMoves,
+    dragging: board.isDragging(),
+  };
+});
+check(
+  '看板：把卡片从「待办」拖到「已完成」（拖拽态 / 落点跟手 / 数据真的搬过去 / cardmove）',
+  kanbanMid.dragging === true && !!kanbanMid.target && kanbanMid.target.columnKey === 'done' &&
+    kanbanAfter.todo.indexOf('c1') === -1 && kanbanAfter.done.indexOf('c1') === 0 &&
+    kanbanAfter.moves.length === 1 && kanbanAfter.dragging === false,
+  JSON.stringify({ mid: kanbanMid, after: kanbanAfter }),
+);
+
 /* ---------- 树：拖节点跨层级排序 ---------- */
 await page.evaluate(() => window.scrollTo(0, 0));
 await page.waitForTimeout(200);

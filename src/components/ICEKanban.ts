@@ -185,7 +185,9 @@ export class ICEKanban extends ICEWidget {
           radius: theme.radius.sm,
           fill: true,
           stroke: true,
-          interactive: false,
+          // 卡片必须是可交互节点：引擎的指针拖拽只会打到可交互目标上，
+          // 拿根节点当拖拽目标时后续 mousemove 的坐标不会跟着指针走（实测踩到）
+          interactive: true,
           style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border, lineWidth: 1, ...theme.shadows.sm },
         });
         node.addChild(

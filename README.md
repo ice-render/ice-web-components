@@ -30,7 +30,7 @@ rings and shadows) is drawn by the engine.
 - **Actually tested** — 705 unit tests (98 suites: form validation, overlay
   positioning, keyboard navigation, sort/hover/focus edge cases, the Minesweeper,
   Tetris and Snake rule models) plus five browser QA suites (`qa:admin`, `qa:gallery`,
-  `qa:workbench`, `qa:xp`, `qa:arcade` — 197 assertions) that drive the demo pages with
+  `qa:workbench`, `qa:xp`, `qa:arcade` — 198 assertions) that drive the demo pages with
   real mouse and keyboard events and fail on any console error.
 
 ## Quick start

@@ -11,7 +11,7 @@
 > `focusRing` 聚焦色）；③ `ICETag`/`ICEBadge` 默认改成 Bootstrap 实底 `.text-bg-*`（`variant:'soft'` 保留浅底风格）。
 > 细节见 README 的 Naming / Theme / Colour variants 三节。
 
-## 现状（78 个组件源文件 / 97 个导出类 / 705 条单测 / 197 项浏览器断言）
+## 现状（78 个组件源文件 / 97 个导出类 / 705 条单测 / 198 项浏览器断言）
 
 按分组清点（完整清单与参数见 [`docs/components.md`](./docs/components.md)）：
 
@@ -227,13 +227,14 @@
       下 1/3 after）+ `moveTreeNode`（新树、跨层级、**拖进自己的后代直接拒绝**、位置没变算没动），
       `ICETree.draggable` 接上拖拽与落点指示（inside 高亮整行、before/after 画细线），落下抛
       `nodedrop` + `onDrop`，另有 `moveNode()` 可直接调。8 + 1 条单测 + `qa:gallery` 1 条真鼠标断言。
-      **看板做了基础版**：`ICEKanban`（列 + 卡片，纯逻辑 `moveKanbanCard` 6 条单测：列内重排 /
-      跨列插入 / 列尾与空列 / 卡片引用不变 / 未知 key 与同位置算没动）+ 卡片可跨列 `moveCard()`
-      API 与 `cardmove` 事件。
-      **未完成**：卡片的鼠标拖拽（`draggable`）—— 探针显示拖拽期间 mousemove 事件里的
-      `offsetX/offsetY` 一直是**按下时**的坐标（落点不跟手），与表格/树的同类实现不同源，
-      需要单独排查引擎指针捕获的坐标语义；演示页因此先保持 `draggable: false`，
-      不把没验过的交互当成品。
+      **看板也补齐了**：`ICEKanban`（列 + 卡片）—— 纯逻辑 `moveKanbanCard` 6 条单测
+      （列内重排 / 跨列插入 / 列尾与空列 / 卡片引用不变 / 未知 key 与同位置算没动）、
+      `moveCard()` API 与 `cardmove` 事件，**卡片跨列拖拽**（落点跟手 + 落点指示线）也跑通了，
+      `qa:gallery` 一条真鼠标断言守着。
+      **拖拽期间「坐标不跟手」的根因（值得记）**：卡片最初写成 `interactive: false`，mousedown
+      落到的是看板根节点 —— 引擎的指针捕获随后派发的 mousemove 里 `offsetX/offsetY` 会一直停在
+      按下那一刻（表格行/树节点都是可交互节点，所以没这个问题）。把卡片改成 `interactive: true`
+      即恢复。**结论：要让某个元素成为拖拽目标，它必须是可交互节点。**
 - [x] **P1 a11y 与 i18n**：a11y 这一半 —— 组件侧 `ariaLabel`（按钮用文字、
       输入框用占位符、勾选用标签，`setAriaLabel` 可显式覆盖）+ 可插拔的 DOM 镜像层
       `mountICEAccessibilityMirror(ice)`（把引擎快照渲染成定位好的 `role`/`aria-label`/`tabindex`
