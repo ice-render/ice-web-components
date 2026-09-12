@@ -1505,7 +1505,20 @@
           style: { fontSize: 12 },
         });
         const go = new W.ICEButton({ id: 'ie-go', left: 424, top: 5, width: 54, height: 24, text: '转到', size: 'small' });
-        toolbar.addChildren([backButton, forwardButton, refreshButton, address, go], { align: 'top' });
+        const bookmarks = new W.ICEButton({ id: 'ie-bookmarks', left: 484, top: 5, width: 62, height: 24, text: '收藏夹', size: 'small', variant: 'default' });
+        toolbar.addChildren([backButton, forwardButton, refreshButton, address, go, bookmarks], { align: 'top' });
+        W.attachDropdown(ice, bookmarks, {
+          items: [
+            { key: 'gallery', label: '组件总览 gallery' },
+            { key: 'workbench', label: '客服工作台 workbench' },
+            { key: 'admin', label: '六页后台 admin' },
+            { key: 'xp', label: '关于本页 about:xp' },
+          ],
+          onSelect: (item) => {
+            const targets = { gallery: './gallery.html', workbench: './workbench.html', admin: './admin.html', xp: 'about:xp' };
+            goTo(targets[item.key] || './gallery.html');
+          },
+        });
 
         const viewport = new W.ICEPanel({
           left: 0,
@@ -1589,6 +1602,29 @@
               top += 158;
               return;
             }
+            if (block.kind === 'hr') {
+              const node = new W.ICESeparator({ left: 14, top, width, height: 1 });
+              page.addChild(node, false);
+              top += 14;
+              return;
+            }
+            if (block.kind === 'table') {
+              // 表格渲染成真正的 ICETable（列排序/悬停/斑马纹都白送）
+              const node = new W.ICETable({
+                left: 14,
+                top,
+                width,
+                rowHeight: 28,
+                columns: block.columns.map((title, index) => ({
+                  key: 'c' + index,
+                  title: title || '列' + (index + 1),
+                })),
+                data: block.rows,
+              });
+              page.addChild(node, false);
+              top += Number(node.state.height) + 10;
+              return;
+            }
             const lines = paragraphLines(block.text, width - 28, 12);
             const node = new W.ICETypography({ left: 14, top, width, rows: Math.max(1, lines.length), text: block.text, variant: 'paragraph' });
             page.addChild(node, false);
@@ -1633,6 +1669,31 @@
             Array.from(el.children || []).forEach((child) => {
               const tag = child.tagName.toLowerCase();
               if (['script', 'style', 'noscript', 'svg', 'canvas', 'iframe'].indexOf(tag) !== -1) return;
+              if (tag === 'hr') {
+                blocks.push({ kind: 'hr' });
+                return;
+              }
+              if (tag === 'table') {
+                const rows = Array.from(child.querySelectorAll('tr'))
+                  .map((tr) => Array.from(tr.querySelectorAll('th,td')).map((cell) => String(cell.textContent || '').replace(/\s+/g, ' ').trim()))
+                  .filter((cells) => cells.length);
+                if (rows.length) {
+                  const headerCell = child.querySelector('th');
+                  const columns = headerCell ? rows[0] : rows[0].map((_v, index) => '列' + (index + 1));
+                  const bodyRows = headerCell ? rows.slice(1) : rows;
+                  blocks.push({
+                    kind: 'table',
+                    columns,
+                    rows: bodyRows.map((cells) => {
+                      const row = {};
+                      cells.forEach((value, index) => (row['c' + index] = value));
+                      return row;
+                    }),
+                  });
+                  count += 1 + bodyRows.length;
+                }
+                return;
+              }
               if (tag === 'h1' || tag === 'h2' || tag === 'h3') {
                 pushText(child, 'heading', tag === 'h1' ? 3 : tag === 'h2' ? 4 : 5);
                 count += 1;
@@ -1676,6 +1737,32 @@
           setStatus('正在打开 ' + url + ' …');
           currentUrl = url;
           address.setValue(url);
+          // 本地彩蛋页：不联网也能玩（about:xp）
+          if (String(url).trim().toLowerCase() === 'about:xp') {
+            renderBlocks(
+              [
+                { kind: 'heading', level: 3, text: '欢迎来到 ICE 桌面' },
+                { kind: 'paragraph', text: '这是一个用 canvas 画出来的网页浏览器：地址栏里输入本目录下的示例页（比如 gallery.html），或者直接打开 about:xp。' },
+                { kind: 'hr' },
+                { kind: 'heading', level: 4, text: '这个「浏览器」能做什么' },
+                { kind: 'paragraph', text: 'fetch 真实网页 → DOMParser 解析 → 标题/段落/列表/链接/图片/表格 用 canvas 组件渲染；带前进后退与刷新。' },
+                { kind: 'table', columns: ['能力', '实现'], rows: [
+                  { c0: '标题与正文', c1: 'ICETypography（自动折行）' },
+                  { c0: '链接', c1: 'ICETypography link + 点击导航' },
+                  { c0: '图片', c1: 'ICEImageView' },
+                  { c0: '表格', c1: 'ICETable（还能点表头排序）' },
+                  { c0: '滚动', c1: 'ICEScrollPane' },
+                ] },
+                { kind: 'hr' },
+                { kind: 'paragraph', text: '受同源策略限制：同源或 CORS 友好的站点能抓，其它站点会落到错误页 —— 和真浏览器一样。' },
+                { kind: 'link', text: '去 gallery.html 看看', href: './gallery.html' },
+              ],
+              'about:xp — ICE 桌面',
+            );
+            setStatus('完成    |    本地页面');
+            loading = false;
+            return;
+          }
           let absolute = url;
           try {
             absolute = new URL(url, origin || location.href).href;
@@ -1749,8 +1836,9 @@
           const width = Number(pane.state.width) || 600;
           const height = Number(pane.state.height) || 400;
           toolbar.setState({ width });
-          address.setState({ width: Math.max(120, width - 500) });
-          go.setState({ left: width - 66 });
+          address.setState({ width: Math.max(120, width - 560) });
+          go.setState({ left: width - 130 });
+          bookmarks.setState({ left: width - 70 });
           viewport.setState({ width, height: height - 58 });
           scroll.setState({ width: width - 2, height: height - 60 });
           status.setState({ top: height - 24, width: width - 12 });
@@ -1766,7 +1854,20 @@
           goTo('./gallery.html');
         }, 0);
 
-        handles.ie = { address, go, page, scroll, status, load, goTo, backButton, forwardButton, refreshButton, getUrl: () => currentUrl };
+        handles.ie = {
+          address,
+          go,
+          page,
+          scroll,
+          status,
+          load,
+          goTo,
+          backButton,
+          forwardButton,
+          refreshButton,
+          bookmarks,
+          getUrl: () => currentUrl,
+        };
         return pane;
       };
 

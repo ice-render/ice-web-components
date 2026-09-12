@@ -399,6 +399,30 @@ const ieBackState = await page.evaluate(() => {
 });
 check('IE：后退回到上一页', ieBack && ieBackState.hasTitle && /完成/.test(ieBackState.status), JSON.stringify(ieBackState));
 
+const ieAbout = await page.evaluate(async () => {
+  const ie = window.__result.handles.ie;
+  await ie.load('about:xp');
+  const texts = ie.page.childNodes.map((n) => (n.getText ? n.getText() : '')).join(' | ');
+  // UMD 构建里类名会被压缩，所以按能力（ICETable 的公开方法）判断，而不是 constructor.name
+  const hasTable = ie.page.childNodes.some(
+    (n) => typeof n.getHeaderLabel === 'function' && typeof n.getRows === 'function' && typeof n.toggleSort === 'function',
+  );
+  return { status: ie.status.getText(), hasTable, hasWelcome: texts.indexOf('欢迎来到 ICE 桌面') !== -1 };
+});
+check(
+  'IE：about:xp 本地页（含 ICETable 表格）',
+  ieAbout.hasWelcome && ieAbout.hasTable && /本地页面/.test(ieAbout.status),
+  JSON.stringify(ieAbout),
+);
+
+// 收藏夹下拉 → 选一项 → 打开对应页面
+const bookmarksClicked = await clickExpr('window.__result.handles.ie.bookmarks || null');
+void bookmarksClicked;
+const bookmarksOpened = await page.evaluate(() => window.ICEWEB.getICEOverlayManager(window.__result.ice).isOpen());
+check('IE：收藏夹下拉可以打开', bookmarksOpened === true, String(bookmarksOpened));
+await page.keyboard.press('Escape');
+await page.waitForTimeout(220);
+
 check('无 console error / pageerror', errors.length === 0, errors.slice(0, 3).join(' | '));
 
 await page.screenshot({ path: '/tmp/qa-xp.png' });

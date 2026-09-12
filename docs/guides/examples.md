@@ -180,6 +180,19 @@ setInterval(() => model.tick(), 1000);      // 计时（只有 playing 会累加
 - **必须用 http(s) 打开示例**（`npx serve .`），因为 `fetch` 在 `file://` 下不可用；
 - 换句话说：能不能"真的访问"，取决于目标站点的 CORS 头，不是我们的渲染能力。
 
+渲染范围与彩蛋：
+
+| 网页元素 | 渲染成 |
+|---|---|
+| `title` / `h1~h3` / `p` / `li` / `blockquote` | `ICETypography`（标题层级、正文自动折行） |
+| `a` | `ICETypography` 的 link 变体，点击即导航 |
+| `img` | `ICEImageView` |
+| `table` | `ICETable`（表头、斑马纹、点表头排序都是白送的） |
+| `hr` | `ICESeparator` |
+
+地址栏里输入 **`about:xp`** 有一个不联网也能看的本地页（介绍这个浏览器、并带一张
+用 `ICETable` 渲染的能力表）；工具栏右侧的**收藏夹**下拉可以直接跳到几个本地示例页。
+
 ---
 
 ## 照着做一个新场景的清单
