@@ -21,6 +21,7 @@
     "qa:gallery": "node scripts/qa-gallery.mjs",
     "qa:workbench": "node scripts/qa-workbench.mjs",
     "qa:xp": "node scripts/qa-xp.mjs",
+    "qa:tetris": "node scripts/qa-tetris.mjs",
     "docs:api": "node scripts/gen-docs.mjs",
     "docs:check": "node scripts/check-docs.mjs",
     "docs": "npm run docs:api && npm run docs:check",

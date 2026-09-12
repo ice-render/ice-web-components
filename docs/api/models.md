@@ -154,3 +154,52 @@
 XP 扫雷的三档标准难度。
 
 源码：`src/model/ICEMinesweeperModel.ts`
+
+## `ICETetrisModel`
+
+七种方块。
+
+源码：[`src/model/ICETetrisModel.ts`](../../src/model/ICETetrisModel.ts)
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getRows()` | `number` |  |
+| `getCols()` | `number` |  |
+| `getBoard()` | `ICETetrisCell[][]` |  |
+| `getCurrent()` | `ICETetrisPiece` |  |
+| `getNextQueue()` | `ICETetrominoType[]` | 预览队列（下一个方块在 `[0]`）。 |
+| `isGameOver()` | `boolean` |  |
+| `isPaused()` | `boolean` |  |
+| `getScore()` | `number` |  |
+| `getLines()` | `number` |  |
+| `getLastClearedLines()` | `number` | 上一次锁定消掉了几行（0 表示没消；UI 用它做特效/连击提示）。 |
+| `getLevel()` | `number` | 每 10 行升一级，从 1 开始。 |
+| `getDropInterval()` | `number` | 当前等级下的自动下落间隔（毫秒），等级越高越短。 |
+| `getGhost()` | `ICETetrisOffset[]` | 当前方块笔直落下去会停在哪（画幽灵投影用）。 |
+| `addChangeListener(listener: ICETetrisListener)` | `() => void` |  |
+| `moveLeft()` | `boolean` |  |
+| `moveRight()` | `boolean` |  |
+| `rotateCW()` | `boolean` | 顺时针旋转（带上踢墙）。 |
+| `rotateCCW()` | `boolean` | 逆时针旋转（带上踢墙）。 |
+| `tick()` | `boolean` | 重力：下落一行；到底就锁定。 |
+| `softDrop()` | `boolean` | 软降：下落一行并 +1 分；到底就锁定。 |
+| `hardDrop()` | `boolean` | 硬降：一步落到底、锁定，按落下的格数 +2 分/格。 |
+| `pause()` | `void` |  |
+| `resume()` | `void` |  |
+| `reset(options: ICETetrisOptions)` | `void` | 重置：可只覆盖部分选项（行列、随机源），其余沿用构造时的配置。 |
+| `setCellForTest(row: number, col: number, type: ICETetrominoType \| null)` | `void` | 直接摆一格（造题、读档、UI demo 都用得上）。 |
+| `setLinesForTest(lines: number)` | `void` | 直接改累计消行数（测试升级曲线用）。 |
+
+### `ICE_TETROMINOES` — 常量
+
+七种方块 × 4 个旋转状态。 旋转在固定的方阵内进行（不做归一化），因此 O 转完还是 O、I 会躺平/立起来。
+
+源码：`src/model/ICETetrisModel.ts`
+
+### `ICE_TETRIS_LINE_SCORES` — 常量
+
+消 1/2/3/4 行的基础分（再乘等级），经典数值。
+
+源码：`src/model/ICETetrisModel.ts`

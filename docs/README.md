@@ -14,7 +14,7 @@
 | 做表单、写校验（含异步） | [表单与校验](./guides/forms.md) |
 | 弹窗 / 抽屉 / 下拉 / 提示怎么用 | [浮层指南](./guides/overlays.md) |
 | 自己排布局、被“组件不见了”坑过 | [画布内布局](./guides/layout.md) |
-| 给库加组件、写测试（含四套浏览器 QA） | [测试](./guides/testing.md) |
+| 给库加组件、写测试（含五套浏览器 QA） | [测试](./guides/testing.md) |
 | 从旧版本升上来 | [迁移说明](./guides/migration.md) |
 
 ## 文档地图
@@ -31,10 +31,10 @@ docs/
     forms.md             表单三层结构、规则、异步校验、自定义控件接入
     overlays.md          三类浮层用法、定位、关闭策略、动画、内容工厂
     layout.md            坐标、zIndex 与创建顺序、簇+货架布局、裁剪与滚动
-    testing.md           单测套路（假 ICE + 真组件）、三套浏览器 QA
+    testing.md           单测套路（假 ICE + 真组件）、五套浏览器 QA
     migration.md         UI* → ICE*、业界组件库 → Bootstrap、API 变更
     custom-components.md 三档写法、构造约定、交互/表单/浮层/主题接入、注册与踩坑
-    examples.md          四个示例页分别演示什么、照着做新场景的清单
+    examples.md          六个示例页分别演示什么、照着做新场景的清单
   examples/ICEMetric.ts  「写自己的组件」的完整示例（有单测 + 示例页）
   images/                README 与文档用的截图
 ```

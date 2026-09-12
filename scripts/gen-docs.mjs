@@ -199,6 +199,9 @@ const GROUPS = [
       'ICEFormModel',
       'ICEMinesweeperModel',
       'ICE_MINESWEEPER_DIFFICULTIES',
+      'ICETetrisModel',
+      'ICE_TETROMINOES',
+      'ICE_TETRIS_LINE_SCORES',
     ],
   },
 ];

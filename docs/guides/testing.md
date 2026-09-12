@@ -48,7 +48,7 @@ const picker = new ICEDatePicker({ /* … */ });
 3. 有全局事件的（`mousedown`/`keydown`/`wheel`）一定要测**组件被移出场景后不崩**（守卫）；
 4. 有浮层的，断言「打开 / 关闭 / 关闭原因」。
 
-## 浏览器 QA（四套）
+## 浏览器 QA（五套）
 
 浏览器 QA 是「真开 Chromium 点一遍」的验收：慢，但能抓到单测抓不到的问题
 （布局交叠、命中被挡、浮层外观、焦点环这种纯视觉行为）。
@@ -59,6 +59,7 @@ PLAYWRIGHT_PATH=/path/to/playwright npm run qa:admin      # 或不设，脚本�
 PLAYWRIGHT_PATH=/path/to/playwright npm run qa:gallery
 PLAYWRIGHT_PATH=/path/to/playwright npm run qa:workbench
 PLAYWRIGHT_PATH=/path/to/playwright npm run qa:xp
+PLAYWRIGHT_PATH=/path/to/playwright npm run qa:tetris
 ```
 
 | 脚本 | 页面 | 项数 | 覆盖 |
@@ -67,6 +68,7 @@ PLAYWRIGHT_PATH=/path/to/playwright npm run qa:xp
 | `qa:gallery` | `examples/gallery.html` | 32 | 顶层零交叠；面包屑折叠、统计倒计时、单选/多选组、分栏拖动、水印、排版折行、锚点、日历、引导、图片预览、Space/Grid、表格换页、跨字段校验、**焦点环策略（拖手柄无环 / Tab 有环 / 文本框点击有环）** |
 | `qa:workbench` | `examples/workbench.html` | 15 | 三栏零交叠、队列→档案联动、筛选（含骨架/空态）、回复发送、快捷回复模板、标签/评分/坐席状态、引导、回到顶部、分栏拖动 |
 | `qa:xp` | `examples/windows-xp.html` | 25 | 桌面/任务栏零交叠；图标选中与双击开窗、拖动标题栏、最小化与任务栏恢复、开始菜单、扫雷（首点安全/插旗循环/难度/计时/胜利）、画图笔画、换壁纸、时钟、**IE 真抓网页 + 404 错误页 + 后退 + about:xp 表格 + 收藏夹** |
+| `qa:tetris` | `examples/tetris.html` | 23 | 开局/零 error；真实按键驱动（← → 移动、↑ 旋转、↓ 软降、空格硬降、P 暂停且重力真的停、R 重开）；造题强制消行（分数/闪屏/HUD 同步）；一路硬降到 game over 并写入最高分；鼠标点 HUD 按钮与音效开关；棋盘在屏幕框内、面板不交叠 |
 
 > `qa:xp` 会**自己起一个静态服务器用 http 打开页面**（而不是 `file://`）：XP 里的「IE」是真的会
 > `fetch()` 的，而 `fetch` 在 `file://` 下不可用 —— 要演示真导航就必须走 http。用例还会故意访问
@@ -82,6 +84,7 @@ PLAYWRIGHT_PATH=/path/to/playwright npm run qa:xp
   必须先滚进视野再点**，否则 Playwright 的鼠标坐标落在窗口外（这是最常踩的一条）；
 * `clickExpr('window.__result.xxx')` / `dragExpr(...)`：按表达式取节点 → 量世界坐标 → 真鼠标
   点击/拖动。示例页把关键句柄挂在 `window.__result`（页面再暴露 `state.xxx`）就是给它们用的；
+  `qa:tetris` 挂的句柄叫 `window.__arcade`（`ice` / `model` / `buttons` / `nodes`）；
 * `shotOverlay(name)`：把最上层浮层裁剪截图到 `/tmp/qa-<name>.png`。
 
 > **输入文本请用 ASCII**：canvas 文本框目前只处理单字符 `keydown`，IME 组字（中文输入）
@@ -95,6 +98,12 @@ PLAYWRIGHT_PATH=/path/to/playwright npm run qa:xp
 * **观感**：能用数值表达的尽量数值化（颜色 token、焦点环可见性、分栏尺寸），
   剩下的靠截图；
 * **零容忍**：`console.error` / `pageerror` 出现即失败 —— 这条抓到过不少“静默失效”。
+* **带随机性的场景先固定随机源**：`qa:tetris` 的消行用例一开始直接 `reset()` 碰运气，
+  可方块是 S/Z 时天生跨两行、单独补不满一行，于是偶发失败；改成
+  `reset({ random: () => 0 })`（洗牌确定 → 首块必是 O）再用 `getGhost()` 算缺口，才可复现。
+  同理，别把「软降一定落一行」写成 `+1`：重力可能在同一瞬间也走了一格，断言要写成 `>`。
+* **等页面就绪用 `waitForFunction`**，别写死 `waitForTimeout(900)`：UMD 包冷启动解析耗时浮动，
+  `qa:tetris` 等的是 `window.__arcade` 这个句柄出现。
 
 ## 示例页截图
 

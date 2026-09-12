@@ -92,7 +92,7 @@ Full docs live in [`docs/`](./docs/README.md):
 | [架构思路](./docs/architecture.md) | 分层、组件模型、渲染与重绘、事件与悬停、浮层/焦点/表单/主题，以及一张“踩坑表” |
 | [组件速查](./docs/components.md) | 90 个组件类按分组的一句话说明 + 跳转 API |
 | [API 参考](./docs/api/README.md) | 每个组件的构造参数与 public 方法（**从源码生成**，不会漂移） |
-| [示例与场景](./docs/guides/examples.md) | 四个示例页分别演示什么、各自用到哪些组件、照着做新场景的清单 |
+| [示例与场景](./docs/guides/examples.md) | 六个示例页分别演示什么、各自用到哪些组件、照着做新场景的清单 |
 | [主题与配色](./docs/guides/theming.md) | token 分组、状态色、`*TextEmphasis`、自定义主题 |
 | [表单与校验](./docs/guides/forms.md) | 三层结构、规则清单、异步校验、自定义控件接入 |
 | [浮层指南](./docs/guides/overlays.md) | 弹窗/抽屉/下拉/提示的三种用法、定位、关闭策略、内容工厂 |
@@ -191,6 +191,24 @@ title bar, drag, resize, maximise/restore, activate event) and `ICEIconTile`
 (selectable icon tile that opens on double click).
 
 ![Windows XP desktop](docs/images/xp-desktop.png)
+
+### `tetris.html` — ICE Arcade（掌机上的俄罗斯方块）
+
+第一个“小游戏合集”入口：做的不是网页而是**一台掌机**——机壳、屏幕框、HUD 卡片、
+按键、音效开关全是 ICE 组件，游戏规则则是纯逻辑的 `ICETetrisModel`。
+
+规则按现代标准俄罗斯方块：7-bag 公平随机、简易踢墙（0/±1/±2）、幽灵落点、
+软降 +1/格、硬降 +2/格、消 1/2/3/4 行 = 100/300/500/800 × 等级、每 10 行升一级
+（下落间隔 800ms 起按等级递减）。键盘：`←/→` 移动、`↓` 软降、`空格` 硬降、
+`↑`/`X` 顺时针、`Z` 逆时针、`P` 暂停、`R` 重开；切走标签页会自动暂停。
+
+模型和 UI 是彻底分开的：`ICETetrisModel`（81 个用例里的 16 条）不碰 canvas，
+页面只负责“读模型 → 画格子”，所以规则可以在 node 里跑测试、也能以后接别的皮肤。
+
+![ICE Arcade tetris](docs/images/tetris.png)
+
+> 这一页**不启动** `ICEFocusManager`：它会用 Enter/Space 激活「有焦点的按钮」，
+> 正好和「空格硬降」打架。游戏页把键盘完全留给自己，鼠标 hover 照常接管。
 
 ## Components
 
@@ -320,6 +338,10 @@ npm run qa:workbench
 # start menu, minesweeper, paint strokes, wallpaper switch, clock
 npm run qa:xp
 
+# browser QA for examples/tetris.html: keyboard-driven play (move / rotate / soft &
+# hard drop / pause / line clear / game over / restart) + real clicks on the HUD
+npm run qa:tetris
+
 # 文档：重新生成 API 参考并检查链接
 npm run docs
 ```
@@ -346,6 +368,13 @@ Minesweeper (first-click-safe, flag cycle, difficulty, timer, win), the Paint ca
 the wallpaper switch, the clock — and the IE window really fetching pages (plus its
 404 page, back button, `about:xp` table and bookmarks). `qa:xp` starts a small static
 server itself, because `fetch` does not work from `file://`.
+
+`npm run qa:tetris` plays the arcade page with **real key presses**: arrows move and
+rotate the piece, `Space` hard-drops, `P` pauses (and it asserts gravity really stops),
+then it builds a deterministic board to force a line clear, keeps dropping until
+game over (best score lands in `localStorage`), restarts with `R`, and clicks the
+HUD buttons / sound switch with the mouse. Layout assertions keep the board inside
+the screen bezel and the panels from overlapping.
 
 See [ROADMAP.md](./ROADMAP.md) for the component backlog and what is still missing
 per component.

@@ -1,6 +1,6 @@
 # 示例与场景
 
-仓库里有四个示例页，**都是纯 HTML + 一个 UMD 包**，不用打包工具就能打开看效果。
+仓库里有六个示例页，**都是纯 HTML + 一个 UMD 包**，不用打包工具就能打开看效果。
 它们同时也是这套组件库的“验收现场”：每页都配了浏览器 QA 脚本（见[测试](./testing.md)）。
 
 ```bash
@@ -16,6 +16,7 @@ npx serve .
 | [`workbench.html`](../../examples/workbench.html) | 客服工单工作台（三栏高频操作） | `ICESplitter`、`ICEList`、`ICEComment`、`ICETimeline`… |
 | [`custom-component.html`](../../examples/custom-component.html) | 自己写组件并接进体系 | `ICEWidget` + 表单/焦点/主题约定 |
 | [`windows-xp.html`](../../examples/windows-xp.html) | 全屏 Windows XP 桌面（好玩的那一个） | `ICEWindow`、`ICEIconTile` + 几乎全套组件 |
+| [`tetris.html`](../../examples/tetris.html) | ICE Arcade 掌机（小游戏合集第 1 弹） | `ICETetrisModel`（纯逻辑）+ 自绘棋盘/HUD，键盘全接管 |
 
 ![组件总览](../images/gallery.png)
 
@@ -192,6 +193,46 @@ setInterval(() => model.tick(), 1000);      // 计时（只有 playing 会累加
 
 地址栏里输入 **`about:xp`** 有一个不联网也能看的本地页（介绍这个浏览器、并带一张
 用 `ICETable` 渲染的能力表）；工具栏右侧的**收藏夹**下拉可以直接跳到几个本地示例页。
+
+---
+
+## `tetris.html`：ICE Arcade（小游戏合集）
+
+同样是「把组件当积木」，但换了个方向：做的不是业务页面，而是一台**掌机**。
+机壳、屏幕框、HUD 卡片（`ICEPanel`）/数值（`ICELabel`）/进度（`ICEProgressBar`）/按钮
+（`ICEButton`）/音效开关（`ICESwitch`）全是组件，画面里没有一个位图资源。
+
+游戏规则全部落在纯逻辑模型里（[模型 API](../api/models.md#icetetrismodel)，
+16 条单测覆盖 7-bag 随机、移动与踢墙旋转、软/硬降、消行计分与升级、暂停与重置）：
+
+```ts
+import { ICETetrisModel } from 'ice-web-components';
+
+const model = new ICETetrisModel({ rows: 20, cols: 10 });
+model.addChangeListener(() => render());   // 移动 / 旋转 / 落地 / 消行任意变化后重绘
+model.moveLeft();  model.moveRight();       // ← →
+model.rotateCW();  model.rotateCCW();       // ↑ / Z（带 0 / ±1 / ±2 踢墙）
+model.softDrop();  model.hardDrop();        // ↓（+1/格） / 空格（+2/格）
+model.tick();                               // 重力：由页面按 getDropInterval() 驱动
+model.pause();     model.resume();          // P
+```
+
+页面侧只做三件事：**读模型画格子**（含 `getGhost()` 幽灵落点）、**按等级间隔调 `tick()`**、
+**把键盘事件翻译成模型调用**。几个实现上的取舍写在这里，方便照抄：
+
+* **不启动 `ICEFocusManager`**：它用 Enter/Space 激活「有焦点的按钮」，会和空格硬降打架。
+  游戏页把键盘完全留给自己，鼠标 hover 仍然由 `ICEHoverManager` 接管；
+* **换方块时把重力计时归零**：否则新方块可能「一出生就掉一格」（这条是 QA 抓出来的，
+  见[测试](./testing.md)）；
+* **只对变化的格子 `setState`**：200 个格子上缓存一个「填充/描边」签名，签名没变就跳过，
+  移动方块时每帧只碰几个节点；
+* **消行闪屏**用棋盘上方一层半透明遮罩 + 帧循环里的衰减值驱动，`ICE_TETRIS_LINE_SCORES`
+  给连消提示用（四行消除弹 TETRIS 提示）。
+
+![ICE Arcade](../images/tetris.png)
+
+> 「合集」是认真的：页面顶部留了卡带位，第一弹是俄罗斯方块，后面同款模型 + 换渲染的方式
+> 可以继续塞贪吃蛇、棋类这类规则独立的游戏 —— 只要逻辑继续写成可单测的纯模型。
 
 ---
 
