@@ -1,6 +1,7 @@
 import { ICELabel } from './ICELabel';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
+import { truncateTextLines } from './ICETypography';
 
 /**
  * 描述列表（业界组件库 Descriptions）：成对的「标签 / 值」，支持单列与多列。
@@ -82,6 +83,8 @@ export class ICEDescriptions extends ICEWidget {
 
   private __render(): void {
     const theme = iceUIManager.getTheme();
+    // 重排前先清空：不然每次重排都会把新格子叠在旧格子上（表现为文字重影/重复）
+    this.removeChildren([...this.childNodes]);
     const width = Number(this.state.width) || 320;
     const columnWidth = width / this.column;
     this.rowNodes = [];
@@ -90,14 +93,30 @@ export class ICEDescriptions extends ICEWidget {
       const line = Math.floor(index / this.column);
       const left = row * columnWidth + 12;
       const top = 4 + line * this.itemHeight;
+      const cellWidth = columnWidth - 24;
+      const labelWidth = Math.max(0, this.labelWidth - 6);
+      // 值列再留 4px，避免文字紧贴下一列的标签
+      const valueWidth = Math.max(0, cellWidth - this.labelWidth - 4);
       const cell = new ICEWidget({
         left,
         top,
-        width: columnWidth - 24,
+        width: cellWidth,
         height: this.itemHeight,
         fill: false,
         stroke: false,
       });
+      // 超宽就截断加省略号：画布文本不会自动裁剪，长值会直接压到相邻列上
+      // （CPU 型号、操作系统版本这类值在窄列里很常见）
+      const labelText = truncateTextLines(item.label, {
+        maxWidth: labelWidth,
+        fontSize: 12,
+        maxLines: 1,
+      })[0];
+      const valueText = truncateTextLines(String(item.value ?? ''), {
+        maxWidth: valueWidth,
+        fontSize: 13,
+        maxLines: 1,
+      })[0];
       cell.addChild(
         new ICELabel({
           interactive: false,
@@ -106,7 +125,7 @@ export class ICEDescriptions extends ICEWidget {
           width: this.labelWidth,
           height: this.itemHeight,
           verticalAlign: 'middle',
-          text: item.label,
+          text: labelText,
           style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
         }),
         false,
@@ -116,10 +135,10 @@ export class ICEDescriptions extends ICEWidget {
           interactive: false,
           left: this.labelWidth,
           top: 0,
-          width: Math.max(0, columnWidth - 24 - this.labelWidth),
+          width: valueWidth,
           height: this.itemHeight,
           verticalAlign: 'middle',
-          text: item.value,
+          text: valueText,
           style: { fontSize: 13, fillStyle: theme.colors.text },
         }),
         false,

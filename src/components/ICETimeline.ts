@@ -73,6 +73,8 @@ export class ICETimeline extends ICEWidget {
 
   private __render(): void {
     const theme = iceUIManager.getTheme();
+    // 重排前先清空（否则 setItems / 宽度变化会把新行叠在旧行上）
+    this.removeChildren([...this.childNodes]);
     const width = Number(this.state.width) || 320;
     const lineX = 6;
     this.items.forEach((item, index) => {

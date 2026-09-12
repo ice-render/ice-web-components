@@ -124,6 +124,9 @@ npx serve .
 > 同一类问题这一轮又修了三处：`ICESplitter` 构造时把调用方要的 `size` 夹取后丢掉（容器
 > 后拿到真实尺寸无法恢复）、`ICEDescriptions` / `ICETimeline` / `ICEList` / `ICECollapse`
 > 宽度变化不重排（值列宽度算成 0，文字直接消失）、引擎多行文本行距用了字形墨迹高（中文叠字）。
+> 收尾时又抓到一条更隐蔽的：`ICEDescriptions` / `ICETimeline` 的 `__render()` **只 addChild
+> 不清理**，每次重排都会把新内容叠在旧内容上（文字重影/重复）；另外描述列表的标签/值超宽
+> 现在会自动截断成省略号，不再压到相邻列上。
 
 ### 扫雷：一个「游戏级」的例子
 

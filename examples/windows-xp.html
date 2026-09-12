@@ -594,8 +594,9 @@
           left: 0,
           top: 0,
           width: 100,
-          // 单列：面板只有 ~450px，两列时「Intel Pentium 4 2.4GHz」这类长值会溢出到隔壁
-          column: 1,
+          // 两列（XP 风格）：长值现在会被自动截断成省略号（ICEDescriptions 的超宽省略）
+          column: 2,
+          labelWidth: 66,
           items: [
             { label: '处理器', value: 'Intel Pentium 4 2.4GHz' },
             { label: '内存', value: '512 MB' },
