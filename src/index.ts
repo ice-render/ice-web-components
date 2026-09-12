@@ -43,6 +43,7 @@ export * from './components/UIAutoComplete';
 export * from './components/UITreeSelect';
 export * from './components/UICascader';
 export * from './components/UITransfer';
+export * from './components/UIUpload';
 export * from './components/UICarousel';
 export * from './components/UIDatePicker';
 export * from './components/UITimePicker';

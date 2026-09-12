@@ -100,7 +100,7 @@
 | 数据录入 | Slider | ✅ `UISlider`（区间双滑块 + `step` 步进 + 方向键；无刻度 / tooltip） |
 | 数据录入 | Switch | ✅ `UISwitch` |
 | 数据录入 | Transfer | ✅ `UITransfer`（双栏勾选搬运 + disabled 行；无搜索/分页） |
-| 数据录入 | Upload | ⬜ 阶段 D（画布内需与 DOM input 桥接） |
+| 数据录入 | Upload | ✅ `UIUpload`（虚线拖拽区 + 隐藏 input 桥接 + accept/maxSize/maxCount/beforeUpload 校验） |
 | 数据展示 | Avatar | ✅ `UIAvatar` + `UIAvatarGroup`（重叠 + `+N` 折叠；无图片头像） |
 | 数据展示 | Badge | ✅ `UIBadge`（红点 `dot` + 计数封顶 `count`/`overflowCount`） |
 | 数据展示 | Calendar | ⬜ 阶段 D |
