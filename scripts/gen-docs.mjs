@@ -226,6 +226,8 @@ const GROUPS = [
       'ICESnakeModel',
       'ICE_SNAKE_DIRECTIONS',
       'ICEHighScoreModel',
+      'ICEChip8Model',
+      'ICE_CHIP8_KEYS',
       'ICE2048Model',
       'ICE_2048_DIRECTIONS',
     ],

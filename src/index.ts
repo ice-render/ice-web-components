@@ -110,4 +110,5 @@ export * from './model/ICEMinesweeperModel';
 export * from './model/ICETetrisModel';
 export * from './model/ICESnakeModel';
 export * from './model/ICEHighScoreModel';
+export * from './model/ICEChip8Model';
 export * from './model/ICE2048Model';

@@ -269,6 +269,40 @@ XP 扫雷的三档标准难度。
 | `clear()` | `void` |  |
 | `reload()` | `ICEHighScoreEntry[]` | 从存储重新读一遍（多标签页/多窗口场景）。 |
 
+## `ICEChip8Model`
+
+源码：[`src/model/ICEChip8Model.ts`](../../src/model/ICEChip8Model.ts)
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getPC()` | `number` |  |
+| `getI()` | `number` |  |
+| `getV(index: number)` | `number` |  |
+| `getDisplay()` | `Uint8Array` |  |
+| `getPixel(row: number, col: number)` | `number` |  |
+| `getDelayTimer()` | `number` |  |
+| `getSoundTimer()` | `number` |  |
+| `getCycles()` | `number` |  |
+| `isWaitingForKey()` | `boolean` |  |
+| `memoryRead(address: number)` | `number` |  |
+| `isKeyDown(index: number)` | `boolean` |  |
+| `loadProgram(bytes: ArrayLike<number>, address: number)` | `void` |  |
+| `memoryWrite(address: number, value: number)` | `void` |  |
+| `setKey(index: number, down: boolean)` | `void` |  |
+| `clearKeys()` | `void` | 清掉所有按键（切卡带/失焦时用）。 |
+| `setVForTest(index: number, value: number)` | `void` |  |
+| `reset()` | `void` |  |
+| `tickTimers()` | `void` | 60Hz：递减延时/声音定时器。 |
+| `step()` | `void` | 执行一条指令（FX0A 等按键时 PC 不动，直接返回）。 |
+
+### `ICE_CHIP8_KEYS` — 常量
+
+CHIP-8 虚拟机（纯逻辑，不碰 canvas）。  掌机的第四块卡带用它：前三个模型是"某款游戏的规则"，这是一个**真的微处理器模拟器**—— 4KB 内存、16 个 8 位寄存器、16 位地址寄存器 I、64×32 单色显存、两个 60Hz 定时器、16 键键盘。 画面交给 `ICETileMap`（2048 格仍然只有 1 个节点）画，音效走掌机那套 WebAudio。  支持指令（跑 demo / 小 ROM 足够）：00E0 / 00EE / 1NNN / 2NNN / 3XNN / 4XNN / 5XY0 / 9XY0 / 6XNN / 7XNN / 8XY0-8XYE / 9XY0 / ANNN / BNNN / CXNN / DXYN / EX9E / EXA1 / FX07 / FX0A / FX15 / FX18 / FX1E / FX29 / FX33 / FX55 / FX65。
+
+源码：`src/model/ICEChip8Model.ts`
+
 ## `ICE2048Model`
 
 四个方向。
