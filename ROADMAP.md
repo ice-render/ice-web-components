@@ -41,7 +41,7 @@
 | Swing | 本库计划 | 依赖 |
 |---|---|---|
 | `JScrollPane` | ✅ `UIScrollPane` | A2 |
-| `JList` | `UIList` + `UISelectionModel` | A2 + A3 |
+| `JList` | ✅ `UIList` + `UISelectionModel` | A2 + A3 |
 | `JComboBox` | 阶段 B 的 `UIComboBox` | A1/A2/A3 |
 | `JSpinner` | `UISpinner`（数值/步进） | A3 |
 | `JTextArea` / `JPasswordField` | `UITextArea` / `UIPasswordField` | A2 |
@@ -108,7 +108,7 @@
 | 数据展示 | Descriptions | ⬜ 阶段 D |
 | 数据展示 | Empty | ⬜ 阶段 D |
 | 数据展示 | Image | ⬜ 引擎有 `ICEImage`，缺预览/加载态封装 |
-| 数据展示 | List | ⬜ 阶段 C |
+| 数据展示 | List | ✅ `UIList` |
 | 数据展示 | Popover | ⬜ 阶段 B |
 | 数据展示 | QRCode | ⊘ 需要编码器，收益低 |
 | 数据展示 | Segmented | ⬜ 阶段 D |
@@ -119,7 +119,7 @@
 | 数据展示 | Timeline | ⬜ 阶段 D |
 | 数据展示 | Tooltip | ⬜ 阶段 B |
 | 数据展示 | Tour | ⊘ 低优先 |
-| 数据展示 | Tree | ⬜ 阶段 C |
+| 数据展示 | Tree | ⬜ 阶段 C（下一个） |
 | 反馈 | Alert | ✅ `UIAlert`（部分：无关闭 / 图标 / banner） |
 | 反馈 | Drawer | ⬜ 阶段 B |
 | 反馈 | Message | ⬜ 阶段 B |
