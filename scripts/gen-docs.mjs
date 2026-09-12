@@ -208,6 +208,8 @@ const GROUPS = [
       'ICESnakeModel',
       'ICE_SNAKE_DIRECTIONS',
       'ICEHighScoreModel',
+      'ICE2048Model',
+      'ICE_2048_DIRECTIONS',
     ],
   },
 ];

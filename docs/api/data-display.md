@@ -654,6 +654,8 @@
 | `palette?` | `ICETileMapPalette` |  |
 | `pulseColor?` | `string` | 脉冲默认颜色 |
 | `highlightColor?` | `string` | 高亮默认描边色 |
+| `labelFontSize?` | `number` | 标签默认字号 / 颜色（格子样式里可以逐项覆盖） |
+| `labelColor?` | `string` |  |
 
 **方法**
 
@@ -665,8 +667,10 @@
 | `getGap()` | `number` |  |
 | `getCellRect(row: number, col: number)` | `{ left: number; top: number; width: number; height: number }` | 格子在组件内的矩形（gap 均分在两边）。 |
 | `getCellAt(x: number, y: number)` | `{ row: number; col: number } \| null` | 组件内坐标 → 格子（边界外返回 null；落在间隙里算最近的格子）。 |
-| `setTiles(tiles: Array<string \| null> \| Array<Array<string \| null>>)` | `this` | 设置格子数据：一维（长度 = rows*cols）或二维（rows 行）。 |
+| `setTiles(tiles: Array<string \| number \| null> \| Array<Array<string \| number \| null>>)` | `this` | 设置格子数据：一维（长度 = rows*cols）或二维（rows 行）；数字会被当成字符串 key。 |
 | `getTiles()` | `Array<string \| null>` |  |
+| `setLabels(labels: Array<string \| number \| null> \| Array<Array<string \| number \| null>>)` | `this` | 设置标签层（和 tiles 一样长度，值可以是任意字符串）。 |
+| `getLabels()` | `Array<string \| null>` |  |
 | `setPalette(palette: ICETileMapPalette)` | `this` |  |
 | `getPalette()` | `ICETileMapPalette` | 调色板拷贝（改返回值不会影响组件内部）。 |
 | `resolveCellStyle(key: string \| null)` | `ICETileMapCellStyle \| null` | 某个 key 对应的样式（未知 key 返回 null = 不绘制）。 |

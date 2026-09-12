@@ -180,3 +180,92 @@ describe('高亮与脉冲', () => {
     expect(map.getPulses()).toHaveLength(0);
   });
 });
+
+describe('标签层（2048 这类要显示数字的棋盘）', () => {
+  /** 记录 fillText 的假 ctx。 */
+  const makeTextCtx = () => {
+    const calls: any[] = [];
+    const ctx = {
+      beginPath() {},
+      rect() {},
+      moveTo() {},
+      lineTo() {},
+      arcTo() {},
+      closePath() {},
+      fill() {},
+      stroke() {},
+      save() {},
+      restore() {},
+      fillText(text: string, x: number, y: number) {
+        calls.push({ text, x, y, font: ctx.font, fillStyle: ctx.fillStyle, align: ctx.textAlign, baseline: ctx.textBaseline });
+      },
+      fillStyle: '',
+      strokeStyle: '',
+      lineWidth: 1,
+      globalAlpha: 1,
+      font: '',
+      textAlign: 'start',
+      textBaseline: 'alphabetic',
+    } as any;
+    return { ctx, calls };
+  };
+
+  const PALETTE = {
+    '2': { fillStyle: '#eee4da', fontSize: 28, fontWeight: '700', textColor: '#776e65' },
+    '4': { fillStyle: '#ede0c8', fontSize: 28, fontWeight: '700', textColor: '#776e65' },
+  };
+
+  it('setLabels 支持一维 / 二维，长度不对会抛；返回的是拷贝', () => {
+    const map = makeMap({ rows: 2, cols: 2 });
+    map.setLabels([
+      ['2', null],
+      [null, '4'],
+    ]);
+    expect(map.getLabels()).toEqual(['2', null, null, '4']);
+    const copy = map.getLabels();
+    copy[0] = 'x';
+    expect(map.getLabels()[0]).toBe('2');
+    expect(() => map.setLabels(['2'])).toThrow();
+  });
+
+  it('标签没变不置 dirty，变了才置', () => {
+    const map = makeMap({ rows: 1, cols: 2 });
+    map.setLabels(['2', null]);
+    map.dirty = false;
+    map.setLabels(['2', null]);
+    expect(map.dirty).toBe(false);
+    map.setLabels(['4', null]);
+    expect(map.dirty).toBe(true);
+  });
+
+  it('自绘时把标签居中画在格子里（字体 / 颜色取调色板），空格不画', () => {
+    const map = makeMap({ rows: 1, cols: 2, cellSize: 20, gap: 2, cellRadius: 0, palette: PALETTE });
+    const { ctx, calls } = makeTextCtx();
+    map.ctx = ctx;
+    map.state.localOrigin = [20, 10];
+    map.setTiles(['2', '4']);
+    map.setLabels(['2', null]);
+    map.paintBoard();
+    expect(calls).toHaveLength(1);
+    expect(calls[0].text).toBe('2');
+    // 格子内缩后是 (1,1,18,18)，中心 (10,10)，减掉 localOrigin(20,10) → (-10, 0)
+    expect([calls[0].x, calls[0].y]).toEqual([-10, 0]);
+    expect(calls[0].align).toBe('center');
+    expect(calls[0].baseline).toBe('middle');
+    expect(calls[0].font).toContain('28px');
+    expect(calls[0].font).toContain('700');
+    expect(calls[0].fillStyle).toBe('#776e65');
+  });
+
+  it('没有调色板项的空格（null）照常不画，标签也不会画', () => {
+    const map = makeMap({ rows: 1, cols: 2, cellSize: 20, gap: 2, palette: PALETTE });
+    const { ctx, calls } = makeTextCtx();
+    map.ctx = ctx;
+    map.state.localOrigin = [20, 10];
+    map.setTiles([null, '4']);
+    map.setLabels(['9', '4']);
+    map.paintBoard();
+    expect(calls).toHaveLength(1);
+    expect(calls[0].text).toBe('4');
+  });
+});

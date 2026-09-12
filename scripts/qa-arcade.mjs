@@ -143,7 +143,7 @@ const boot = await page.evaluate(() => {
 });
 check(
   '开局：默认插着俄罗斯方块卡带，HUD 与模型一致',
-  boot.game === 'tetris' && boot.cells === 0 && boot.pieceCells === 4 && boot.scoreText === '0' && boot.cartridges === 2,
+  boot.game === 'tetris' && boot.cells === 0 && boot.pieceCells === 4 && boot.scoreText === '0' && boot.cartridges === 3,
   JSON.stringify(boot),
 );
 check('零 console error', errors.length === 0, errors.join(' | '));
@@ -594,24 +594,137 @@ check(
 );
 
 /* ---------- 5. 切回第一块卡带 ---------- */
+/* ---------- 4.5 第三块卡带：2048 ---------- */
+const switched2048 = await clickExpr('window.__arcade.cartridges["2048"]');
+await page.waitForTimeout(400);
+const boot2048 = await page.evaluate(() => {
+  const r = window.__arcade;
+  const board = (r.nodes.screen.childNodes || []).find((n) => n.state && n.state.id === 'game2048-board');
+  return {
+    game: r.game,
+    childNodes: board ? board.childNodes.length : -1,
+    paintCount: board && board.getPaintCount ? board.getPaintCount() : -1,
+    tiles: r.model.getCells().filter(Boolean).length,
+    labels: board ? board.getLabels().filter(Boolean).length : -1,
+    midCaption: r.midCard.getText(),
+  };
+});
+check(
+  '2048：点卡带切换（4×4 单节点自绘棋盘 + 数字标签层）',
+  switched2048 && boot2048.game === '2048' && boot2048.childNodes === 0 && boot2048.paintCount > 0 &&
+    boot2048.tiles === 2 && boot2048.labels === 2,
+  JSON.stringify(boot2048),
+);
+
+// 真实按键：摆一个 2,2 / 4,4 的盘面，按 ← 应该合并成 4,8 并加 12 分
+const merged = await page.evaluate(() => {
+  const model = window.__arcade.model;
+  model.setCellsForTest([2, 2, null, null, 4, 4, null, null, null, null, null, null, null, null, null, null]);
+  return { score: model.getScore(), moves: model.getMoves() };
+});
+await page.keyboard.press('ArrowLeft');
+await page.waitForTimeout(200);
+const afterMerge = await page.evaluate(() => {
+  const model = window.__arcade.model;
+  const board = (window.__arcade.nodes.screen.childNodes || []).find((n) => n.state && n.state.id === 'game2048-board');
+  return {
+    cells: model.getCells(),
+    score: model.getScore(),
+    moves: model.getMoves(),
+    labels: board.getLabels(),
+    hudScore: Number(window.__arcade.scoreCard.getText()),
+  };
+});
+check(
+  '2048：← 合并同值块（2,2→4 与 4,4→8，得分 +12、步数 +1、标签同步）',
+  afterMerge.score === merged.score + 12 && afterMerge.moves === merged.moves + 1 &&
+    afterMerge.cells[0] === 4 && afterMerge.cells[4] === 8 &&
+    afterMerge.labels[0] === '4' && afterMerge.labels[4] === '8' && afterMerge.hudScore === afterMerge.score,
+  JSON.stringify(afterMerge),
+);
+
+const noMove = await page.evaluate(() => {
+  const model = window.__arcade.model;
+  // 填满且相邻都不相同 → 推不动，也不该计步
+  model.setCellsForTest([2, 4, 2, 4, 4, 2, 4, 2, 2, 4, 2, 4, 4, 2, 4, 2]);
+  const before = { score: model.getScore(), moves: model.getMoves() };
+  const moved = model.move('left');
+  return { before, moved, after: { score: model.getScore(), moves: model.getMoves() }, over: model.isGameOver() };
+});
+check(
+  '2048：推不动时不计步、不得分，判定 game over',
+  noMove.moved === false && noMove.after.moves === noMove.before.moves && noMove.after.score === noMove.before.score && noMove.over === true,
+  JSON.stringify(noMove),
+);
+
+const winState = await page.evaluate(() => {
+  const model = window.__arcade.model;
+  model.reset();
+  model.setCellsForTest([1024, 1024, null, null, null, null, null, null, null, null, null, null, null, null, null, null]);
+  model.move('left');
+  return { won: model.isWon(), over: model.isGameOver(), best: model.getBestTile(), score: model.getScore() };
+});
+check(
+  '2048：合并出 2048 即获胜，但还能继续玩',
+  winState.won === true && winState.over === false && winState.best === 2048 && winState.score > 0,
+  JSON.stringify(winState),
+);
+
+await page.keyboard.press('r');
+await page.waitForTimeout(240);
+const restart2048 = await page.evaluate(() => {
+  const model = window.__arcade.model;
+  const board = (window.__arcade.nodes.screen.childNodes || []).find((n) => n.state && n.state.id === 'game2048-board');
+  return {
+    score: model.getScore(),
+    moves: model.getMoves(),
+    tiles: model.getCells().filter(Boolean).length,
+    labels: board.getLabels().filter(Boolean).length,
+    over: model.isGameOver(),
+  };
+});
+check(
+  '2048：R 重开（回到两个块、分数与步数归零、标签跟着清）',
+  restart2048.score === 0 && restart2048.moves === 0 && restart2048.tiles === 2 && restart2048.labels === 2 && restart2048.over === false,
+  JSON.stringify(restart2048),
+);
+
+/* ---------- 5. 切回第一块卡带 ---------- */
+// 点击前先看一眼命中：卡带行是「切换时重建」的，这里顺便验证重建后的按钮真的可点
+const cartHit = await page.evaluate(() => {
+  const r = window.__arcade;
+  const button = r.cartridges.tetris;
+  let l = 0;
+  let t = 0;
+  let cursor = button;
+  while (cursor && cursor.state) {
+    l += Number(cursor.state.left) || 0;
+    t += Number(cursor.state.top) || 0;
+    cursor = cursor.parentNode;
+  }
+  const hit = r.ice.hitTest(l + button.state.width / 2, t + button.state.height / 2);
+  return { l, t, keys: Object.keys(r.cartridges), hitId: hit && hit.state ? hit.state.id : null };
+});
 const backToTetris = await clickExpr('window.__arcade.cartridges.tetris');
 await page.waitForTimeout(240);
+const backGame = await page.evaluate(() => window.__arcade.game);
 const backState = await page.evaluate(() => {
   const r = window.__arcade;
   const screenIds = (r.nodes.screen.childNodes || []).map((n) => (n.state && n.state.id) || '');
   return {
     game: r.game,
     score: r.model.getScore(),
-    cells: r.model.getBoard().reduce((all, row) => all.concat(row), []).filter(Boolean).length,
+    cells: typeof r.model.getBoard === 'function' ? r.model.getBoard().reduce((all, row) => all.concat(row), []).filter(Boolean).length : -1,
     board: screenIds.indexOf('tetris-board') !== -1,
     snakeGone: screenIds.indexOf('snake-board') === -1,
+    game2048Gone: screenIds.indexOf('game2048-board') === -1,
     midCaption: r.midCard.getText(),
   };
 });
 check(
-  '切回俄罗斯方块：拿到一个全新的模型，贪吃蛇棋盘被拆掉',
-  backToTetris && backState.game === 'tetris' && backState.board && backState.snakeGone && backState.cells === 0 && backState.score === 0,
-  JSON.stringify(backState),
+  '切回俄罗斯方块：拿到一个全新的模型，另外两块棋盘都被拆掉',
+  backToTetris && backGame === 'tetris' && backState.game === 'tetris' && backState.board && backState.snakeGone && backState.game2048Gone && backState.cells === 0 && backState.score === 0,
+  JSON.stringify({ cartHit, backGame, backState }),
 );
 
 /* ---------- 6. 布局 ---------- */
@@ -657,6 +770,11 @@ await page.waitForTimeout(240);
 const snakeLayout = await layoutOf('snake-board');
 check('布局：贪吃蛇棋盘也在屏幕框内', inside(snakeLayout.board, snakeLayout.bezel), JSON.stringify({ board: snakeLayout.board, bezel: snakeLayout.bezel }));
 
+await page.evaluate(() => window.__arcade.selectGame('2048'));
+await page.waitForTimeout(240);
+const layout2048 = await layoutOf('game2048-board');
+check('布局：2048 棋盘也在屏幕框内', inside(layout2048.board, layout2048.bezel), JSON.stringify({ board: layout2048.board, bezel: layout2048.bezel }));
+
 /* ---------- 收尾 ---------- */
 await page.evaluate(() => window.__arcade.selectGame('tetris'));
 await page.waitForTimeout(300);
@@ -664,6 +782,9 @@ await page.screenshot({ path: '/tmp/qa-arcade.png' });
 await page.evaluate(() => window.__arcade.selectGame('snake'));
 await page.waitForTimeout(300);
 await page.screenshot({ path: '/tmp/qa-arcade-snake.png' });
+await page.evaluate(() => window.__arcade.selectGame('2048'));
+await page.waitForTimeout(300);
+await page.screenshot({ path: '/tmp/qa-arcade-2048.png' });
 check('全程零 console error', errors.length === 0, errors.join(' | '));
 
 await browser.close();

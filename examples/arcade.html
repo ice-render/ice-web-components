@@ -440,7 +440,7 @@
           top: 700,
           width: COLUMN_W,
           height: 20,
-          text: '纯逻辑模型（ICETetrisModel / ICESnakeModel）+ ICE 组件绘制 · 规则与渲染完全解耦',
+          text: '三个纯逻辑模型（ICETetrisModel / ICESnakeModel / ICE2048Model）+ ICE 组件绘制 · 规则与渲染完全解耦',
           style: { fontSize: 12, fillStyle: theme.colors.textTertiary },
         });
         soundSwitch.on('change', () => {
@@ -1018,6 +1018,224 @@
               };
             },
           },
+          '2048': {
+            key: '2048',
+            name: '2048',
+            subtitle: '第 3 弹 · 2048 · 合并出 2048',
+            hud: { mid: '最大块 BEST', right: '步数 MOVES' },
+            side: '盘面 BOARD',
+            help: [
+              ['↑ ↓ ← →', '滑动（也可用 WASD）'],
+              ['同值相撞', '合并成两倍'],
+              ['一次移动', '每块只合并一次'],
+              ['目标', '合并出 2048'],
+              ['P / R', '暂停 / 重开'],
+            ],
+            mount(ctx) {
+              const COLS = 4;
+              const ROWS = 4;
+              const CELL = 84;
+              const boardW = COLS * CELL;
+              const boardH = ROWS * CELL;
+              const originX = Math.round((ctx.screen.state.width - boardW) / 2);
+              const originY = 110;
+              const board = new W.ICETileMap({
+                id: 'game2048-board',
+                left: originX,
+                top: originY,
+                rows: ROWS,
+                cols: COLS,
+                cellSize: CELL,
+                gap: 8,
+                cellRadius: 6,
+                palette: PALETTE,
+                labelFontSize: 30,
+                fill: true,
+                stroke: true,
+                style: { fillStyle: '#1b2130', strokeStyle: '#2b3340', lineWidth: 2 },
+              });
+              ctx.screen.addChild(board, false);
+              const pauseBox = ctx.messageBox(
+                'game2048-paused',
+                { left: originX, top: originY + boardH / 2 - 46, width: boardW, height: 92 },
+                '已暂停',
+                '按 P 继续',
+                theme.colors.warning,
+              );
+              const overBox = ctx.messageBox(
+                'game2048-over',
+                { left: originX, top: originY + boardH / 2 - 46, width: boardW, height: 92 },
+                'GAME OVER',
+                '按 R 再开一局',
+                theme.colors.error,
+              );
+
+              /** 侧栏：目标 / 最大块 / 提示。 */
+              const info = [
+                ['目标', '合并出 2048'],
+                ['当前最大', '2'],
+                ['状态', '进行中'],
+              ].map(([label, value], index) => {
+                const key = new W.ICELabel({
+                  interactive: false,
+                  left: 0,
+                  top: index * 26,
+                  width: 60,
+                  height: 22,
+                  text: label,
+                  verticalAlign: 'middle',
+                  style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+                });
+                const val = new W.ICELabel({
+                  interactive: false,
+                  left: 62,
+                  top: index * 26,
+                  width: 206,
+                  height: 22,
+                  text: value,
+                  verticalAlign: 'middle',
+                  style: { fontSize: 12, fontFamily: '"Courier New", monospace', fillStyle: theme.colors.text },
+                });
+                ctx.sideBody.addChild(key, false);
+                ctx.sideBody.addChild(val, false);
+                return val;
+              });
+              const legend = new W.ICEWidget({
+                left: 0,
+                top: 92,
+                width: 268,
+                height: 44,
+                radius: 8,
+                fill: true,
+                stroke: true,
+                interactive: false,
+                style: { fillStyle: '#12161d', strokeStyle: '#232b36', lineWidth: 1 },
+              });
+              ['2', '8', '64', '512'].forEach((value, index) => {
+                const style = PALETTE[value] || { fillStyle: '#adb5bd' };
+                legend.addChild(
+                  new W.ICEWidget({
+                    left: 14 + index * 62,
+                    top: 13,
+                    width: 18,
+                    height: 18,
+                    radius: 4,
+                    fill: true,
+                    stroke: false,
+                    interactive: false,
+                    style: { fillStyle: style.fillStyle },
+                  }),
+                  false,
+                );
+                legend.addChild(
+                  new W.ICELabel({
+                    interactive: false,
+                    left: 36 + index * 62,
+                    top: 0,
+                    width: 34,
+                    height: 44,
+                    text: value,
+                    verticalAlign: 'middle',
+                    style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+                  }),
+                  false,
+                );
+              });
+              ctx.sideBody.addChild(legend, false);
+
+              const model = new W.ICE2048Model({ rows: ROWS, cols: COLS });
+              const state = { pausedShown: false, overShown: false, won: false, over: false };
+              const paint = () => {
+                const cells = model.getCells();
+                const tiles = cells.map((value) => (value === null ? 'empty' : String(value)));
+                const labels = cells.map((value) => (value === null ? null : String(value)));
+                board.setTiles(tiles);
+                board.setLabels(labels);
+                info[1].setText(String(model.getBestTile()));
+                info[2].setText(model.isGameOver() ? '结束' : model.isWon() ? '达成 2048（可继续）' : '进行中');
+              };
+              const hud = () => ({
+                score: String(model.getScore()),
+                mid: String(model.getBestTile()),
+                right: String(model.getMoves()),
+                progress: { value: Math.min(10, Math.round((Math.log2(Math.max(2, model.getBestTile())) / 11) * 10)), text: `目标 2048` },
+              });
+              model.addChangeListener(() => {
+                if (model.isWon() && !state.won) {
+                  state.won = true;
+                  playCue('levelup');
+                  ctx.toast('达成 2048！可以继续冲高分', 'success');
+                }
+                if (model.isGameOver() && !state.over) {
+                  state.over = true;
+                  playCue('over');
+                }
+              });
+              const DIRECTIONS = {
+                ArrowUp: 'up',
+                w: 'up',
+                W: 'up',
+                ArrowDown: 'down',
+                s: 'down',
+                S: 'down',
+                ArrowLeft: 'left',
+                a: 'left',
+                A: 'left',
+                ArrowRight: 'right',
+                d: 'right',
+                D: 'right',
+              };
+              return {
+                model,
+                board,
+                paint,
+                hud,
+                keydown(key) {
+                  const direction = DIRECTIONS[key];
+                  if (!direction) return;
+                  const before = model.getCells();
+                  if (!model.move(direction)) {
+                    playCue('turn');
+                    return;
+                  }
+                  // 动过的格子闪一下（合并 / 位移都看得见）
+                  const changed = [];
+                  model.getCells().forEach((value, index) => {
+                    if (value !== null && value !== before[index]) {
+                      changed.push({ row: Math.floor(index / COLS), col: index % COLS });
+                    }
+                  });
+                  board.pulse(changed, { duration: 200, color: 'rgba(255,255,255,0.35)' });
+                  playCue('eat');
+                },
+                frame() {
+                  // 2048 是回合制，不需要每帧推进
+                },
+                setOverlay(paused, over) {
+                  if (paused !== state.pausedShown) {
+                    state.pausedShown = paused;
+                    pauseBox.setState({ display: paused });
+                    if (paused) W.fadeIn(pauseBox, { duration: 160 });
+                  }
+                  if (over !== state.overShown) {
+                    state.overShown = over;
+                    overBox.setState({ display: over });
+                    if (over) W.scaleIn(overBox, { duration: 220 });
+                  }
+                },
+                restart() {
+                  model.reset();
+                  state.won = false;
+                  state.over = false;
+                  state.pausedShown = false;
+                  state.overShown = false;
+                },
+                destroy() {
+                  board.removeChildren([...board.childNodes]);
+                },
+              };
+            },
+          },
         };
 
         /* --------------------------------- 卡带切换与 HUD --------------------------------- */
@@ -1025,6 +1243,7 @@
         const CART_RIDGE = [
           { key: 'tetris', label: '俄罗斯方块' },
           { key: 'snake', label: '贪吃蛇' },
+          { key: '2048', label: '2048' },
         ];
         /**
          * 卡带位。ICEButton 的 variant 是构造期决定的（没有 setVariant），所以选中态不靠
@@ -1061,9 +1280,9 @@
           });
           const soonButton = new W.ICEButton({
             id: 'arcade-cart-soon',
-            left: 300,
+            left: 450,
             top: 0,
-            width: 140,
+            width: 120,
             height: 32,
             text: '中国象棋',
             variant: 'default',
@@ -1077,6 +1296,7 @@
         const scores = {
           tetris: new W.ICEHighScoreModel({ key: 'tetris', maxEntries: 5 }),
           snake: new W.ICEHighScoreModel({ key: 'snake', maxEntries: 5 }),
+          '2048': new W.ICEHighScoreModel({ key: '2048', maxEntries: 5 }),
         };
         const pad2 = (value) => String(value).padStart(2, '0');
         const formatAt = (at) => {
@@ -1138,7 +1358,16 @@
           return modal;
         };
 
-        const toast = (text, type = 'success') => W.ICEMessage.show(ice, text, { type });
+        /**
+         * 游戏里同时堆三四条气泡会盖住下面的卡带行（QA 抓到过：点卡带被气泡吃掉）。
+         * 掌机只需要一条状态线：新提示先关掉上一条，气泡永远不会叠起来。
+         */
+        let statusToast = null;
+        const toast = (text, type = 'success') => {
+          if (statusToast && typeof statusToast.close === 'function') statusToast.close();
+          statusToast = W.ICEMessage.show(ice, text, { type });
+          return statusToast;
+        };
         let currentKey = null;
         let runtime = null;
         let pauseText = '';

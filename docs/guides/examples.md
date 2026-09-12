@@ -16,7 +16,7 @@ npx serve .
 | [`workbench.html`](../../examples/workbench.html) | 客服工单工作台（三栏高频操作） | `ICESplitter`、`ICEList`、`ICEComment`、`ICETimeline`… |
 | [`custom-component.html`](../../examples/custom-component.html) | 自己写组件并接进体系 | `ICEWidget` + 表单/焦点/主题约定 |
 | [`windows-xp.html`](../../examples/windows-xp.html) | 全屏 Windows XP 桌面（好玩的那一个） | `ICEWindow`、`ICEIconTile` + 几乎全套组件 |
-| [`arcade.html`](../../examples/arcade.html) | ICE Arcade 掌机（小游戏合集：俄罗斯方块 + 贪吃蛇） | `ICETetrisModel` / `ICESnakeModel`（纯逻辑）+ 自绘棋盘/HUD，键盘全接管 |
+| [`arcade.html`](../../examples/arcade.html) | ICE Arcade 掌机（小游戏合集：俄罗斯方块 + 贪吃蛇 + 2048） | `ICETetrisModel` / `ICESnakeModel`（纯逻辑）+ 自绘棋盘/HUD，键盘全接管 |
 
 ![组件总览](../images/gallery.png)
 
@@ -261,7 +261,7 @@ setInterval(() => model.tick(), 1000);      // 计时（只有 playing 会累加
 同样是「把组件当积木」，但换了个方向：做的不是业务页面，而是一台**掌机**。
 机壳、屏幕框、HUD 卡片（`ICEPanel`）/数值（`ICELabel`）/进度（`ICEProgressBar`）/按钮
 （`ICEButton`）/音效开关（`ICESwitch`）全是组件，画面里没有一个位图资源。顶部是卡带位：
-**俄罗斯方块**（第 1 弹）与**贪吃蛇**（第 2 弹）都能玩，第三格「中国象棋」先占位禁用。
+**俄罗斯方块**（第 1 弹）、**贪吃蛇**（第 2 弹）、**2048**（第 3 弹）都能玩，第四格「中国象棋」先占位禁用。
 
 | 俄罗斯方块 | 贪吃蛇 |
 |---|---|
@@ -291,7 +291,7 @@ setInterval(() => model.tick(), 1000);      // 计时（只有 playing 会累加
 
 | 能力 | 用在哪 | 为什么值得看 |
 |---|---|---|
-| `ICETileMap`（自绘格子图） | 两块棋盘各是**一个**节点 | 以前「一格一个 ICEWidget」= 400 个节点；现在格子在自己的 `doRender()` 里用引擎 ctx 画，数据没变就不置 dirty。QA 直接断言 `childNodes.length === 0` 且有自绘计数 |
+| `ICETileMap`（自绘格子图） | 三块棋盘各是**一个**节点（2048 的数字走标签层） | 以前「一格一个 ICEWidget」= 400 个节点；现在格子在自己的 `doRender()` 里用引擎 ctx 画，数据没变就不置 dirty。QA 直接断言 `childNodes.length === 0` 且有自绘计数 |
 | `registerTheme('arcade', ICE_ARCADE_THEME)` | HUD + 棋盘配色 | 方块 / 蛇 / 食物的颜色以 `ICE_ARCADE_PALETTE` 形式进 token，不再是页面里的硬编码 hex；换主题整套跟着走 |
 | `tween` / `fadeIn` / `scaleIn` | 消行与吃食物脉冲、换卡带淡入、GAME OVER 弹出 | 动画走库里的 `ICEAnimation`，不再手搓衰减；`ICETileMap.pulse()` 内部就是 tween |
 | `ICEHighScoreModel` | 每块卡带各一份 Top 5 | 纯逻辑（排序 / 截断 / 并列 / 存档容错 / 注入 storage），有单测；页面只负责展示 |
@@ -356,6 +356,37 @@ model.getBody();              // [[row, col], …]，头在最前；getFood() �
 * **撞到「正在移开的尾巴」不算死** —— 不吃食物时尾巴这一步就腾出来了；
 * **食物永远不落在蛇身上**：从所有空格里挑，挑不到（棋盘填满）算通关；
 * 想换玩法的话，`wrap: true` 就是穿墙模式（测试里也覆盖了）。
+
+### 卡带 3：2048
+
+第三个模型 `ICE2048Model`（[模型 API](../api/models.md#ice2048model)，19 条单测）：
+
+```ts
+import { ICE2048Model } from 'ice-web-components';
+
+const model = new ICE2048Model({ rows: 4, cols: 4 });
+model.move('left');            // 推得动才返回 true：计一步 + 生成新块，推不动什么都不变
+model.getCells();              // 一维盘面（行优先），空格是 null；getBestTile() 给最大块
+model.getScore();              // 合并得分 = 合并出来的值
+model.pause(); model.resume(); // 和其它卡带共用同一套暂停契约
+```
+
+2048 的规则坑都写进用例了：
+
+* **同一次移动里每个块最多合并一次**：`2,2,2,2` 往左是 `4,4`（不是 `8`），`2,2,4` 往左是 `4,4`；
+* **推不动的那一下不算一步、不生成新块**：四个方向都试，全是 `false` 才算结束；
+* 合并出目标（默认 2048）即 `isWon()`，但**不结束**，可以继续冲高分；
+* 生成新块的 4 的概率、位置都由注入的 `random` 决定，测试可复现。
+
+数字怎么画？`ICETileMap` 的**标签层**：`setLabels()` 和 `setTiles()` 一一对应，
+调色板里的格子样式带 `fontSize` / `fontWeight` / `textColor` —— 所以「4×4 的棋盘 + 16 个数字」
+依旧只有 **1 个节点**。这一层是这轮为 2048 加的（单测用假 ctx 记 `fillText` 的坐标与字体）。
+
+![ICE Arcade 2048](../images/arcade-2048.png)
+
+> 顺手修的一个真实 UX 问题：`ICEMessage` 默认是**堆叠**的，掌机连着弹三四个提示就会盖住
+> 下面的卡带行 —— QA 里「点卡带」真的被气泡吃掉了。现在掌机只保留**一条状态线**
+> （新提示先关掉上一条），既能看清又不挡操作。
 
 ---
 

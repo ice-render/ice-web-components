@@ -268,3 +268,38 @@ XP 扫雷的三档标准难度。
 | `add(score: number, options: { label?: string; at?: number })` | `ICEHighScoreEntry[]` | 记一笔成绩，返回更新后的榜单。非法分数直接忽略。 |
 | `clear()` | `void` |  |
 | `reload()` | `ICEHighScoreEntry[]` | 从存储重新读一遍（多标签页/多窗口场景）。 |
+
+## `ICE2048Model`
+
+四个方向。
+
+源码：[`src/model/ICE2048Model.ts`](../../src/model/ICE2048Model.ts)
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getRows()` | `number` |  |
+| `getCols()` | `number` |  |
+| `getCells()` | `ICE2048Cell[]` | 一维盘面（行优先），空格是 null。 |
+| `getCell(row: number, col: number)` | `ICE2048Cell` |  |
+| `getScore()` | `number` |  |
+| `getMoves()` | `number` |  |
+| `getTarget()` | `number` |  |
+| `getBestTile()` | `number` | 盘面上最大的块（空盘为 0）。 |
+| `isWon()` | `boolean` |  |
+| `isGameOver()` | `boolean` |  |
+| `isPaused()` | `boolean` |  |
+| `pause()` | `void` | 暂停：棋盘类页面（掌机）共用同一套 pause/resume 契约，这里暂停只挡输入。 |
+| `resume()` | `void` |  |
+| `canMove()` | `boolean` | 还有没有任何一个方向推得动。 |
+| `addChangeListener(listener: ICE2048Listener)` | `() => void` |  |
+| `move(direction: ICE2048Direction)` | `boolean` | 往一个方向推；推得动才返回 true（并计一步、生成新块）。 |
+| `reset(options: ICE2048Options)` | `void` | 重置：可只覆盖部分选项。 |
+| `setCellsForTest(cells: ICE2048Cell[])` | `void` | 直接摆盘（长度必须等于 rows*cols，否则抛）。 |
+
+### `ICE_2048_DIRECTIONS` — 常量
+
+按上、右、下、左顺序排列（UI 画方向提示可以直接用）。
+
+源码：`src/model/ICE2048Model.ts`

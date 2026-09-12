@@ -27,10 +27,10 @@ rings and shadows) is drawn by the engine.
 - **Bootstrap 5 token theme** (plus a dark theme) — swap with one call.
 - **No name collisions with the engine** — the package’s runtime exports are
   disjoint from `ice-render`’s (there is a regression test for it).
-- **Actually tested** — 582 unit tests (85 suites: form validation, overlay
+- **Actually tested** — 606 unit tests (86 suites: form validation, overlay
   positioning, keyboard navigation, sort/hover/focus edge cases, the Minesweeper,
   Tetris and Snake rule models) plus five browser QA suites (`qa:admin`, `qa:gallery`,
-  `qa:workbench`, `qa:xp`, `qa:arcade` — 170 assertions) that drive the demo pages with
+  `qa:workbench`, `qa:xp`, `qa:arcade` — 176 assertions) that drive the demo pages with
   real mouse and keyboard events and fail on any console error.
 
 ## Quick start
@@ -224,8 +224,8 @@ that window is active; closing the window stops its step timer.
 
 Not a web page but a **handheld console**: the shell, the screen bezel, the HUD cards,
 the buttons and the sound switch are all ICE components, and there is not a single
-bitmap asset in the picture. Two cartridges are plugged in, and the cartridge row at
-the top switches between them (a third slot, Chinese chess, is disabled for now).
+bitmap asset in the picture. Three cartridges are plugged in, and the cartridge row at
+the top switches between them (a fourth slot, Chinese chess, is disabled for now).
 
 | | |
 |---|---|
@@ -245,6 +245,16 @@ lets you survive moving into the tail cell that is about to vacate), and walls t
 kill. Keyboard: arrows or `W` / `A` / `S` / `D` to steer, `P` pause, `R` restart.
 Clicking a cell on the board steers towards it — that is the tile map’s `cellclick`,
 i.e. a real hit test inside a single component.
+
+**Cartridge 3 — 2048** (`ICE2048Model`, 19 unit tests). The classic rules: two starting
+tiles, merges score their own value, each tile merges at most once per move (so `2 2 2 2`
+becomes `4 4`, not `8`), a move that changes nothing spawns nothing, and filling the board
+without any merge left is game over. Reaching 2048 wins but lets you keep playing.
+Arrows or `W` / `A` / `S` / `D` slide, `P` pauses, `R` restarts. The numbers are drawn by
+the tile map’s **label layer** — the palette entry for each value carries its font size,
+weight and text colour, so a 4×4 board with 16 numbers is still one node.
+
+![ICE Arcade · 2048](docs/images/arcade-2048.png)
 
 Both games are pure models that never touch the canvas; the page only reads the model
 and paints cells. Switching a cartridge tears the old board down, builds the new one
@@ -266,6 +276,9 @@ Under the hood this page is where the engine work happens:
   containing an `ICETable` inside an `ICEScrollPane`.
 - `fadeIn` on cartridge switch, `scaleIn` on game over, `pulse` on line clears — all
   from `ICEAnimation`, so the “juice” is library code rather than hand-rolled decay.
+- Toasts are **replaced, not stacked**: a console only needs one status line, and the QA
+  caught a stack of three toasts covering the cartridge row (the click never reached the
+  button). `ICEMessage` still supports stacking for pages that want it.
 
 | Leaderboard (`ICEModal` + `ICETable` + `ICEScrollPane`) |
 |---|

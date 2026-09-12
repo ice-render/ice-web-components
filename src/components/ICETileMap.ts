@@ -22,6 +22,11 @@ export interface ICETileMapCellStyle {
   strokeStyle?: string;
   lineWidth?: number;
   radius?: number;
+  /** 有标签时用来画格子里的数字 / 文字（不填就用组件默认值） */
+  fontSize?: number;
+  fontWeight?: string;
+  fontFamily?: string;
+  textColor?: string;
 }
 
 /** 调色板：key → 样式。 */
@@ -65,6 +70,9 @@ export interface ICETileMapOptions {
   pulseColor?: string;
   /** 高亮默认描边色 */
   highlightColor?: string;
+  /** 标签默认字号 / 颜色（格子样式里可以逐项覆盖） */
+  labelFontSize?: number;
+  labelColor?: string;
   [key: string]: any;
 }
 
@@ -96,14 +104,19 @@ export class ICETileMap extends ICEWidget {
   private cellRadius: number;
   private palette: ICETileMapPalette = {};
   private tiles: Array<string | null> = [];
+  /** 标签层：和 tiles 一一对应的文字（2048 的数字、扫雷的雷数都靠它） */
+  private labels: Array<string | null> = [];
   /** 数据签名：用来跳过「值没变」的重复设置 */
   private tileKey = '';
+  private labelKey = '';
   private highlights: ICETileMapHighlight[] = [];
   private pulses: ICETileMapPulse[] = [];
   private pulseAlpha = 0;
   private pulseHandle: ICETweenHandle | null = null;
   private pulseColor: string;
   private highlightColor: string;
+  private labelFontSize: number;
+  private labelColor: string;
   /** 自绘流程执行次数（浏览器里由 render() 驱动；单测可直接调 paintBoard()） */
   private paintCount = 0;
 
@@ -126,7 +139,10 @@ export class ICETileMap extends ICEWidget {
     this.cellRadius = Math.max(0, Number(props.cellRadius === undefined ? 4 : props.cellRadius));
     this.pulseColor = props.pulseColor || 'rgba(255, 255, 255, 0.42)';
     this.highlightColor = props.highlightColor || 'rgba(255, 255, 255, 0.45)';
+    this.labelFontSize = Math.max(6, Number(props.labelFontSize === undefined ? 12 : props.labelFontSize));
+    this.labelColor = props.labelColor || '#ffffff';
     this.tiles = new Array(rows * cols).fill(null);
+    this.labels = new Array(rows * cols).fill(null);
     this.setPalette(props.palette || {});
   }
 
@@ -170,9 +186,9 @@ export class ICETileMap extends ICEWidget {
 
   // ---------------------------------------------------------------- 数据
 
-  /** 设置格子数据：一维（长度 = rows*cols）或二维（rows 行）。 */
-  public setTiles(tiles: Array<string | null> | Array<Array<string | null>>): this {
-    const flat = this.__normalize(tiles);
+  /** 设置格子数据：一维（长度 = rows*cols）或二维（rows 行）；数字会被当成字符串 key。 */
+  public setTiles(tiles: Array<string | number | null> | Array<Array<string | number | null>>): this {
+    const flat = this.__normalize(tiles).map((item) => (item === null || item === undefined ? null : String(item)));
     const key = flat.map((item) => (item === null || item === undefined ? '\u0000' : String(item))).join('\u0001');
     if (key === this.tileKey) return this;
     this.tileKey = key;
@@ -183,6 +199,21 @@ export class ICETileMap extends ICEWidget {
 
   public getTiles(): Array<string | null> {
     return this.tiles.slice();
+  }
+
+  /** 设置标签层（和 tiles 一样长度，值可以是任意字符串）。 */
+  public setLabels(labels: Array<string | number | null> | Array<Array<string | number | null>>): this {
+    const flat = this.__normalize(labels).map((item) => (item === null || item === undefined ? null : String(item)));
+    const key = flat.map((item) => (item === null ? '\u0000' : item)).join('\u0001');
+    if (key === this.labelKey) return this;
+    this.labelKey = key;
+    this.labels = flat;
+    this.dirty = true;
+    return this;
+  }
+
+  public getLabels(): Array<string | null> {
+    return this.labels.slice();
   }
 
   public setPalette(palette: ICETileMapPalette): this {
@@ -276,9 +307,14 @@ export class ICETileMap extends ICEWidget {
     if (!ctx) return;
     for (let row = 0; row < this.rows; row += 1) {
       for (let col = 0; col < this.cols; col += 1) {
-        const style = this.resolveCellStyle(this.tiles[row * this.cols + col] || null);
+        const index = row * this.cols + col;
+        const style = this.resolveCellStyle(this.tiles[index] || null);
         if (!style) continue;
         this.__drawRect(row, col, style, 1);
+        const label = this.labels[index];
+        if (label !== null && label !== undefined && label !== '') {
+          this.__drawLabel(row, col, label, style);
+        }
       }
     }
     const alpha = this.getPulseAlpha();
@@ -322,8 +358,8 @@ export class ICETileMap extends ICEWidget {
 
   // ---------------------------------------------------------------- 内部
 
-  private __normalize(tiles: Array<string | null> | Array<Array<string | null>>): Array<string | null> {
-    const flat: Array<string | null> = [];
+  private __normalize(tiles: Array<string | number | null> | Array<Array<string | number | null>>): Array<string | number | null> {
+    const flat: Array<string | number | null> = [];
     if (!tiles) return flat;
     const is2D = Array.isArray(tiles[0]);
     if (is2D) {
@@ -338,6 +374,27 @@ export class ICETileMap extends ICEWidget {
       throw new Error(`ICETileMap: setTiles 需要 ${expected} 个格子（${this.rows}×${this.cols}），实际 ${flat.length} 个`);
     }
     return flat;
+  }
+
+  /** 把标签居中画在格子里（字体 / 颜色优先取格子样式，其次取组件默认）。 */
+  private __drawLabel(row: number, col: number, text: string, style: ICETileMapCellStyle): void {
+    const ctx = this.ctx;
+    if (!ctx || typeof ctx.fillText !== 'function') return;
+    const rect = this.getCellRect(row, col);
+    const originX = Number(this.state.localOrigin && this.state.localOrigin[0]) || 0;
+    const originY = Number(this.state.localOrigin && this.state.localOrigin[1]) || 0;
+    const size = style.fontSize === undefined ? this.labelFontSize : Number(style.fontSize);
+    const weight = style.fontWeight || '700';
+    const family = style.fontFamily || 'Tahoma, "Microsoft YaHei", sans-serif';
+    const color = style.textColor || this.labelColor;
+    const canSave = typeof ctx.save === 'function' && typeof ctx.restore === 'function';
+    if (canSave) ctx.save();
+    ctx.font = `${weight} ${size}px ${family}`;
+    ctx.fillStyle = color;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, rect.left - originX + rect.width / 2, rect.top - originY + rect.height / 2);
+    if (canSave) ctx.restore();
   }
 
   private __drawRect(

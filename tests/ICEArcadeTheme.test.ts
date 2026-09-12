@@ -44,6 +44,15 @@ describe('ICE_ARCADE_PALETTE', () => {
     });
   });
 
+  it('覆盖 2048 的块值（2 到 8192），每个都带数字样式', () => {
+    ['2', '4', '8', '16', '32', '64', '128', '256', '512', '1024', '2048', '4096', '8192'].forEach((key) => {
+      const style = ICE_ARCADE_PALETTE[key];
+      expect(style).toBeTruthy();
+      expect(style.fontSize).toBeGreaterThan(0);
+      expect(style.textColor).toBeTruthy();
+    });
+  });
+
   it('每一项都是合法的绘图样式（有填充色，描边色可选但必须是字符串）', () => {
     Object.keys(ICE_ARCADE_PALETTE).forEach((key) => {
       const style = ICE_ARCADE_PALETTE[key];

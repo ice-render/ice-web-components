@@ -11,7 +11,7 @@
 > `focusRing` 聚焦色）；③ `ICETag`/`ICEBadge` 默认改成 Bootstrap 实底 `.text-bg-*`（`variant:'soft'` 保留浅底风格）。
 > 细节见 README 的 Naming / Theme / Colour variants 三节。
 
-## 现状（77 个组件源文件 / 94 个导出类 / 582 条单测 / 170 项浏览器断言）
+## 现状（77 个组件源文件 / 96 个导出类 / 606 条单测 / 176 项浏览器断言）
 
 按分组清点（完整清单与参数见 [`docs/components.md`](./docs/components.md)）：
 
@@ -68,7 +68,7 @@
 > `windows-xp.html`（全屏 XP 桌面）、`arcade.html`（ICE Arcade 掌机：两块卡带）、
 > `custom-component.html`（自定义组件）——见[示例与场景](./docs/guides/examples.md)。
 > 浏览器回归：`qa:admin` 44 项 + `qa:gallery` 32 项 + `qa:workbench` 15 项 + `qa:xp` 40 项
-> + `qa:arcade` 39 项，全部走真实鼠标/键盘事件。
+> + `qa:arcade` 45 项，全部走真实鼠标/键盘事件。
 >
 > 第九批（小游戏合集第 1 弹）：`ICETetrisModel`（俄罗斯方块纯逻辑模型：7-bag 随机、踢墙旋转、
 > 软/硬降、消行计分与升级、暂停/重置、变化监听；另导出 `ICE_TETROMINOES` /
@@ -96,6 +96,14 @@
 > GAME OVER `scaleIn`、「排行榜 (L)」弹 `ICEModal`（内嵌 `ICETable` + `ICEScrollPane`）。
 > `qa:arcade` 33 → 39 项（新增单节点自绘、tween 淡入、排行榜弹窗与降序、点格子转向）。
 > 踩坑入档：`super.doRender()` 之后自绘要 `applyActiveTransform()`，否则坐标跑到画布左上角。
+>
+> 第十四批（第三块卡带）：`ICE2048Model`（2048 纯逻辑：同值合并 / 每次移动每块只合并一次 /
+> 推不动不计步不生成 / 目标达成可继续 / 注入 random 复现，19 条单测）；
+> `ICETileMap` 增加**标签层**（`setLabels` + 格子样式的 fontSize/fontWeight/textColor，
+> 数字居中绘制，单测用假 ctx 记 `fillText` 坐标与字体）——「4×4 棋盘 + 16 个数字」依旧 1 个节点；
+> 掌机插上第 3 块卡带（2048：HUD 换成 得分/最大块/步数、侧栏盘面信息 + 图例、滑动动过的格子 pulse）；
+> 顺手修掉一个真实 UX 问题：卡片式提示**堆叠**时盖住卡带行（QA 里点卡带被气泡吃掉），
+> 掌机改成只保留一条状态线。`qa:arcade` 39 → 45 项。
 >
 > 第十三批（组合）：把掌机塞进 XP 桌面 —— 新增「ICE Arcade」应用（桌面图标 + 开始菜单都能开），
 > 窗口里复用同一套纯模型与 `ICETileMap`（棋盘仍是 1 个节点），键盘只在窗口激活时归游戏、

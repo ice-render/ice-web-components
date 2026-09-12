@@ -48,4 +48,18 @@ export const ICE_ARCADE_PALETTE: ICETileMapPalette = {
   snakeBody: { fillStyle: '#198754', strokeStyle: '#0f5634' },
   snakeBodyAlt: { fillStyle: '#157347', strokeStyle: '#0d4a2e' },
   food: { fillStyle: '#dc3545', strokeStyle: '#8f222d', radius: 9 },
+  /* 2048：块值 → 颜色（数字大的暖色化，和原版观感一致） */
+  '2': { fillStyle: '#eee4da', strokeStyle: '#d8cdc4', radius: 6, fontSize: 34, fontWeight: '700', textColor: '#776e65' },
+  '4': { fillStyle: '#ede0c8', strokeStyle: '#d8c9ad', radius: 6, fontSize: 34, fontWeight: '700', textColor: '#776e65' },
+  '8': { fillStyle: '#f2b179', strokeStyle: '#d69a63', radius: 6, fontSize: 34, fontWeight: '700', textColor: '#f9f6f2' },
+  '16': { fillStyle: '#f59563', strokeStyle: '#d67f4f', radius: 6, fontSize: 32, fontWeight: '700', textColor: '#f9f6f2' },
+  '32': { fillStyle: '#f67c5f', strokeStyle: '#d5674c', radius: 6, fontSize: 32, fontWeight: '700', textColor: '#f9f6f2' },
+  '64': { fillStyle: '#f65e3b', strokeStyle: '#d64c2d', radius: 6, fontSize: 32, fontWeight: '700', textColor: '#f9f6f2' },
+  '128': { fillStyle: '#edcf72', strokeStyle: '#cfb35c', radius: 6, fontSize: 28, fontWeight: '700', textColor: '#f9f6f2' },
+  '256': { fillStyle: '#edcc61', strokeStyle: '#cfb04f', radius: 6, fontSize: 28, fontWeight: '700', textColor: '#f9f6f2' },
+  '512': { fillStyle: '#edc850', strokeStyle: '#cfad3f', radius: 6, fontSize: 28, fontWeight: '700', textColor: '#f9f6f2' },
+  '1024': { fillStyle: '#edc53f', strokeStyle: '#cfaa31', radius: 6, fontSize: 24, fontWeight: '700', textColor: '#f9f6f2' },
+  '2048': { fillStyle: '#edc22e', strokeStyle: '#cfa71f', radius: 6, fontSize: 24, fontWeight: '700', textColor: '#f9f6f2' },
+  '4096': { fillStyle: '#3c3a32', strokeStyle: '#2b2923', radius: 6, fontSize: 22, fontWeight: '700', textColor: '#f9f6f2' },
+  '8192': { fillStyle: '#2f2d26', strokeStyle: '#211f1a', radius: 6, fontSize: 22, fontWeight: '700', textColor: '#f9f6f2' },
 };
