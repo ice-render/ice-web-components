@@ -73,3 +73,171 @@ export function moveItem<T>(items: T[], from: number, target: ICEDropTarget): IC
   next.splice(insertIndex, 0, moved);
   return { items: next, to: insertIndex, moved: insertIndex !== fromIndex };
 }
+
+/** 树拖拽的落点：`inside` = 放进节点里当子节点。 */
+export interface ICETreeDropTarget {
+  index: number;
+  position: 'before' | 'inside' | 'after';
+}
+
+export interface ICETreeDropTargetOptions {
+  /** 指针相对**内容顶部**的纵坐标（已减去滚动偏移） */
+  pointerY: number;
+  itemHeight: number;
+  itemCount: number;
+}
+
+/**
+ * 树的行内三分法：上 1/3 插到前面、中 1/3 放进去当子节点、下 1/3 插到后面。
+ *
+ * 为什么是三分而不是列表的两分：树拖拽必须能表达「成为它的子节点」这件事，
+ * 只用上下两半就只能同级移动了。三分法也是各家树控件的通行做法（手感最好）。
+ */
+export function computeTreeDropTarget(options: ICETreeDropTargetOptions): ICETreeDropTarget | null {
+  const itemHeight = Math.floor(Number(options.itemHeight) || 0);
+  const itemCount = Math.max(0, Math.floor(Number(options.itemCount) || 0));
+  if (itemHeight <= 0 || itemCount <= 0) return null;
+  const rawY = Number(options.pointerY);
+  const pointerY = Number.isFinite(rawY) ? rawY : 0;
+  if (pointerY < 0) return { index: 0, position: 'before' };
+  if (pointerY >= itemCount * itemHeight) return { index: itemCount - 1, position: 'after' };
+  const index = Math.min(itemCount - 1, Math.floor(pointerY / itemHeight));
+  const ratio = (pointerY - index * itemHeight) / itemHeight;
+  const position: ICETreeDropTarget['position'] = ratio < 1 / 3 ? 'before' : ratio < 2 / 3 ? 'inside' : 'after';
+  return { index, position };
+}
+
+export interface ICETreeNodeLike {
+  key: string;
+  children?: ICETreeNodeLike[];
+  [key: string]: any;
+}
+
+export interface ICETreeMoveResult<T> {
+  nodes: T[];
+  moved: boolean;
+  /** 移动后的父节点 key（根级为 null） */
+  parentKey: string | null;
+}
+
+/** 深拷贝一棵树（结构小，直接递归复制，避免外部改动互相影响）。 */
+function cloneTree<T extends ICETreeNodeLike>(nodes: T[], childrenKey: string): T[] {
+  return (nodes || []).map((node) => {
+    const copy: any = { ...node };
+    if (Array.isArray(node[childrenKey])) {
+      copy[childrenKey] = cloneTree(node[childrenKey] as any, childrenKey);
+    }
+    return copy;
+  });
+}
+
+/** 从树里摘掉一个节点，返回 [新树, 被摘下的节点]。 */
+function detachNode(nodes: any[], key: string, childrenKey: string): { nodes: any[]; detached: any | null } {
+  const next: any[] = [];
+  let detached: any | null = null;
+  (nodes || []).forEach((node) => {
+    if (node.key === key) {
+      detached = node;
+      return;
+    }
+    const copy: any = { ...node };
+    if (Array.isArray(node[childrenKey])) {
+      const result = detachNode(node[childrenKey], key, childrenKey);
+      copy[childrenKey] = result.nodes;
+      if (result.detached) detached = result.detached;
+    }
+    next.push(copy);
+  });
+  return { nodes: next, detached };
+}
+
+/** key 是否在（子）树里。 */
+function containsKey(nodes: any[], key: string, childrenKey: string): boolean {
+  return (nodes || []).some((node) => node.key === key || (Array.isArray(node[childrenKey]) && containsKey(node[childrenKey], key, childrenKey)));
+}
+
+/** 在树里按 key 找到节点。 */
+function findNode(nodes: any[], key: string, childrenKey: string): any {
+  for (const node of nodes || []) {
+    if (node.key === key) return node;
+    if (Array.isArray(node[childrenKey])) {
+      const found = findNode(node[childrenKey], key, childrenKey);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+/**
+ * 把 `dragKey` 节点移到 `targetKey` 的 before / inside / after。
+ *
+ * - 返回**新树**（不改原数组/原节点）；
+ * - **不能拖进自己的后代**（那样整棵子树会凭空消失）—— 直接 `moved: false`；
+ * - 位置没变（例如同级 before 到紧邻的下一项）也算没动；
+ * - `before/after` 是插到目标的**同级**，`inside` 则成为目标的最后一个子节点。
+ */
+export function moveTreeNode<T extends ICETreeNodeLike>(
+  nodes: T[],
+  dragKey: string,
+  targetKey: string,
+  position: ICETreeDropTarget['position'],
+  childrenKey: string = 'children',
+): ICETreeMoveResult<T> {
+  const source = Array.isArray(nodes) ? nodes : [];
+  const unchanged = { nodes: source.slice(), moved: false, parentKey: null };
+  if (!dragKey || !targetKey || dragKey === targetKey) return unchanged;
+  const dragged = findNode(source, dragKey, childrenKey);
+  const target = findNode(source, targetKey, childrenKey);
+  if (!dragged || !target) return unchanged;
+  if (Array.isArray(dragged[childrenKey]) && containsKey(dragged[childrenKey], targetKey, childrenKey)) {
+    return unchanged; // 拖进自己的后代：拒绝
+  }
+  const work = cloneTree(source, childrenKey);
+  const detached = detachNode(work, dragKey, childrenKey);
+  if (!detached.detached) return unchanged;
+  const moving = detached.detached;
+  let inserted = false;
+  let parentKey: string | null = null;
+  const insertInto = (list: any[], parent: string | null): void => {
+    const index = list.findIndex((node) => node.key === targetKey);
+    if (index >= 0) {
+      const at = position === 'after' ? index + 1 : index;
+      if (position === 'inside') {
+        const host = list[index];
+        host[childrenKey] = Array.isArray(host[childrenKey]) ? host[childrenKey].concat([moving]) : [moving];
+        parentKey = host.key;
+      } else {
+        list.splice(at, 0, moving);
+        parentKey = parent;
+      }
+      inserted = true;
+      return;
+    }
+    list.forEach((node) => {
+      if (inserted || !Array.isArray(node[childrenKey])) return;
+      insertInto(node[childrenKey], node.key);
+    });
+  };
+  insertInto(detached.nodes as any[], null);
+  if (!inserted) return unchanged;
+  // 位置没变：同级 before/after 落到原位（前后紧邻）时视作没动
+  const beforeOrder = structureSignature(source, childrenKey);
+  const afterOrder = structureSignature(detached.nodes, childrenKey);
+  if (beforeOrder === afterOrder) return unchanged;
+  return { nodes: detached.nodes as T[], moved: true, parentKey };
+}
+
+/**
+ * 结构签名（含层级），用于判断「位置有没有变」。
+ *
+ * 为什么不是「拉平后的 key 顺序」：把 b 拖进 a 当最后一个子节点，拉平顺序可能一模一样，
+ * 但结构已经变了 —— 只看顺序会把这次移动误判成「没动」。
+ */
+function structureSignature(nodes: ICETreeNodeLike[], childrenKey: string): string {
+  return (nodes || [])
+    .map((node) => {
+      const children = Array.isArray(node[childrenKey]) ? `(${structureSignature(node[childrenKey] as any, childrenKey)})` : '';
+      return `${node.key}${children}`;
+    })
+    .join(',');
+}

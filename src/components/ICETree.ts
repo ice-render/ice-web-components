@@ -1,6 +1,7 @@
 import { ICELabel } from './ICELabel';
 import { ICEWidget } from '../core/ICEWidget';
 import { ICEScrollPane } from './ICEScrollPane';
+import { computeTreeDropTarget, moveTreeNode } from '../util/ICEDragReorder';
 import { iceUIManager } from '../core/ICEManager';
 import { ICESelectionModel, ICESelectionMode } from '../model/ICESelectionModel';
 import { readHovered } from '../util/ICEStyle';
@@ -39,6 +40,10 @@ export interface ICETreeOptions {
   indent?: number;
   onSelect?: (keys: string[], node?: ICETreeNode) => void;
   onExpand?: (expandedKeys: string[]) => void;
+  /** 开启节点拖拽（按住行拖：上 1/3 插前面、中 1/3 放进去、下 1/3 插后面） */
+  draggable?: boolean;
+  /** 拖拽落下后的回调（与 `nodedrop` 事件同义） */
+  onDrop?: (info: { key: string; targetKey: string; position: string; nodes: ICETreeNode[] }) => void;
 }
 
 interface FlatRow {
@@ -57,6 +62,10 @@ export class ICETree extends ICEWidget {
   private onSelect: ((keys: string[], node?: ICETreeNode) => void) | null;
   private onExpand: ((expandedKeys: string[]) => void) | null;
   private pane: ICEScrollPane | null = null;
+  /** 节点拖拽：按行拖，三分法决定 before / inside / after */
+  private draggable = false;
+  private dragState: { key: string; target: { index: number; position: 'before' | 'inside' | 'after' } | null; indicator: any; highlight: any } | null = null;
+  private onDrop: ((info: { key: string; targetKey: string; position: string; nodes: ICETreeNode[] }) => void) | null = null;
   private content: ICEWidget;
   private rows: FlatRow[] = [];
   private rowNodes = new Map<string, ICEWidget>();
@@ -87,6 +96,8 @@ export class ICETree extends ICEWidget {
     this.indent = props.indent ?? 16;
     this.onSelect = typeof props.onSelect === 'function' ? props.onSelect : null;
     this.onExpand = typeof props.onExpand === 'function' ? props.onExpand : null;
+    this.draggable = props.draggable === true;
+    this.onDrop = typeof props.onDrop === 'function' ? props.onDrop : null;
     this.model = new ICESelectionModel({ mode: props.mode || 'single', selected: props.value || [] });
     this.model.addChangeListener(() => this.__syncRows());
     this.expanded = props.defaultExpandAll
@@ -101,6 +112,9 @@ export class ICETree extends ICEWidget {
     super.afterAddHandler();
     if (!this.running && this.ice && this.ice.evtBus && typeof this.ice.evtBus.on === 'function') {
       this.ice.evtBus.on('keydown', this.__onKeyDown, this);
+      this.ice.evtBus.on('mousedown', this.__onGlobalMouseDown, this);
+      this.ice.evtBus.on('mousemove', this.__onGlobalMouseMove, this);
+      this.ice.evtBus.on('mouseup', this.__onGlobalMouseUp, this);
       this.running = true;
     }
   }
@@ -159,6 +173,94 @@ export class ICETree extends ICEWidget {
   }
 
   /** 键盘：只有焦点在树上时生效。 */
+  // ---------------------------------------------------------------- 节点拖拽
+  public isDraggable(): boolean {
+    return this.draggable;
+  }
+  public isDragging(): boolean {
+    return !!this.dragState;
+  }
+  public getDropTarget(): { index: number; position: 'before' | 'inside' | 'after' } | null {
+    return this.dragState ? this.dragState.target : null;
+  }
+  /**
+   * 把 `dragKey` 移到 `targetKey` 的 before / inside / after。
+   *
+   * 生效后重排整棵树并抛 `nodedrop`（带新树）。返回是否真的动了 ——
+   * 拖进自己的后代、未知 key、位置没变都返回 false（判定逻辑在纯函数 `moveTreeNode` 里）。
+   */
+  public moveNode(dragKey: string, targetKey: string, position: 'before' | 'inside' | 'after'): boolean {
+    const result = moveTreeNode(this.nodes as any, dragKey, targetKey, position);
+    if (!result.moved) return false;
+    this.nodes = result.nodes as any;
+    if (position === 'inside' && this.expanded.indexOf(targetKey) === -1) {
+      this.expanded = this.expanded.concat([targetKey]); // 放进去就展开，能立刻看见
+    }
+    this.__render();
+    this.trigger('nodedrop', null, { key: dragKey, targetKey, position, nodes: this.nodes });
+    if (this.onDrop) this.onDrop({ key: dragKey, targetKey, position, nodes: this.nodes });
+    return true;
+  }
+  /** 指针落在第几行（把滚动偏移加回来）。 */
+  private __rowIndexAt(localY: number): number {
+    const scrollY = this.pane ? this.pane.getScroll()[1] : 0;
+    const y = localY - 1 + scrollY;
+    return Math.min(Math.max(Math.floor(y / this.itemHeight), 0), Math.max(0, this.rows.length - 1));
+  }
+  private __onGlobalMouseDown(evt: any): void {
+    if (!this.draggable || !evt || typeof evt.offsetX !== 'number' || !this.ice || typeof this.ice.screenToWorld !== 'function') return;
+    const [wx, wy] = this.ice.screenToWorld(evt.offsetX, evt.offsetY);
+    const box = this.getMinBoundingBox(true);
+    if (wx < box.tl[0] || wx > box.br[0] || wy < box.tl[1] || wy > box.br[1]) return;
+    const row = this.rows[this.__rowIndexAt(wy - box.tl[1])];
+    if (!row || row.node.disabled) return;
+    const theme = iceUIManager.getTheme();
+    const indicator = new ICEWidget({ left: 0, top: 0, width: Number(this.content.state.width) || 0, height: 2, fill: true, stroke: false, display: false, interactive: false, style: { fillStyle: theme.colors.primary } });
+    const highlight = new ICEWidget({ left: 0, top: 0, width: Number(this.content.state.width) || 0, height: this.itemHeight, radius: 3, fill: true, stroke: false, display: false, interactive: false, style: { fillStyle: 'rgba(13,110,253,0.14)' } });
+    this.content.addChild(highlight, false);
+    this.content.addChild(indicator, false);
+    this.dragState = { key: row.node.key, target: null, indicator, highlight };
+    this.__updateDrag(wy - box.tl[1]);
+  }
+  private __onGlobalMouseMove(evt: any): void {
+    if (!this.dragState || !this.ice || typeof this.ice.screenToWorld !== 'function') return;
+    const [, wy] = this.ice.screenToWorld(evt.offsetX, evt.offsetY);
+    const box = this.getMinBoundingBox(true);
+    this.__updateDrag(wy - box.tl[1]);
+  }
+  private __onGlobalMouseUp(): void {
+    if (!this.dragState) return;
+    const state = this.dragState;
+    this.dragState = null;
+    state.indicator.setState({ display: false });
+    state.highlight.setState({ display: false });
+    const target = state.target;
+    if (target && this.rows[target.index]) {
+      this.moveNode(state.key, this.rows[target.index].node.key, target.position);
+    }
+  }
+  private __updateDrag(localY: number): void {
+    if (!this.dragState) return;
+    const scrollY = this.pane ? this.pane.getScroll()[1] : 0;
+    const index = this.__rowIndexAt(localY);
+    const target = computeTreeDropTarget({ pointerY: localY - 1 + scrollY, itemHeight: this.itemHeight, itemCount: this.rows.length });
+    this.dragState.target = target && this.rows[index] ? { index: target.index, position: target.position } : null;
+    if (!target) {
+      this.dragState.indicator.setState({ display: false });
+      this.dragState.highlight.setState({ display: false });
+      return;
+    }
+    const width = Number(this.content.state.width) || 0;
+    if (target.position === 'inside') {
+      this.dragState.highlight.setState({ display: true, left: 0, top: target.index * this.itemHeight, width });
+      this.dragState.indicator.setState({ display: false });
+    } else {
+      const top = target.index * this.itemHeight + (target.position === 'after' ? this.itemHeight - 2 : 0);
+      this.dragState.indicator.setState({ display: true, left: 0, top, width });
+      this.dragState.highlight.setState({ display: false });
+    }
+  }
+
   private __onKeyDown(evt: any): void {
     if (!this.isFocused() || !this.rows.length) {
       return;

@@ -734,6 +734,48 @@ const a11yFocus = await page.evaluate(() => {
 });
 check('无障碍镜像：DOM 焦点映射回画布组件（Tab 进得去）', a11yFocus === 'tip-btn', String(a11yFocus));
 
+/* ---------- 树：拖节点跨层级排序 ---------- */
+await page.evaluate(() => window.scrollTo(0, 0));
+await page.waitForTimeout(200);
+const treeDrag = await page.evaluate(() => {
+  const tree = window.__result.tree;
+  window.__treeDrops = [];
+  tree.on('nodedrop', (evt) => window.__treeDrops.push([evt.param.key, evt.param.targetKey, evt.param.position]));
+  const rows = tree.getVisibleNodes().map((node) => node.key);
+  const boxOf = (key) => {
+    const node = tree.getRowNode(key);
+    let l = 0;
+    let t = 0;
+    let cursor = node;
+    while (cursor && cursor.state) {
+      l += Number(cursor.state.left) || 0;
+      t += Number(cursor.state.top) || 0;
+      cursor = cursor.parentNode;
+    }
+    return { l, t, h: Number(node.state.height) || 24 };
+  };
+  // 拖「同级」的两行（root 的子节点）：把第 3 行拖到第 2 行上方 = 换位
+  return { rows: rows.slice(0, 3), source: boxOf(rows[2]), target: boxOf(rows[1]) };
+});
+const treeRect = await canvasRect();
+await page.mouse.move(treeRect.left + treeDrag.source.l + 60, treeRect.top + treeDrag.source.t + treeDrag.source.h / 2);
+await page.mouse.down();
+await page.mouse.move(treeRect.left + treeDrag.target.l + 60, treeRect.top + treeDrag.target.t + 2, { steps: 8 });
+const treeMidDrag = await page.evaluate(() => ({ dragging: window.__result.tree.isDragging(), target: window.__result.tree.getDropTarget() }));
+await page.mouse.up();
+await page.waitForTimeout(320);
+const treeAfter = await page.evaluate(() => ({
+  rows: window.__result.tree.getVisibleNodes().map((node) => node.key).slice(0, 3),
+  drops: window.__treeDrops,
+}));
+check(
+  '树：拖节点到目标行上方 = 插到它前面（拖拽态 / 落点 / 新顺序都对）',
+  treeMidDrag.dragging === true && !!treeMidDrag.target && treeMidDrag.target.position === 'before' &&
+    treeAfter.drops.length === 1 && treeAfter.drops[0][2] === 'before' &&
+    treeAfter.rows[0] === treeDrag.rows[0] && treeAfter.rows[1] === treeDrag.rows[2] && treeAfter.rows[2] === treeDrag.rows[1],
+  JSON.stringify({ before: treeDrag.rows, mid: treeMidDrag, after: treeAfter }),
+);
+
 /* ---------- i18n：内置文案跟着语言走 ---------- */
 const i18nState = await page.evaluate(() => {
   const W = window.ICEWEB;

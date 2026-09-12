@@ -11,7 +11,7 @@
 > `focusRing` 聚焦色）；③ `ICETag`/`ICEBadge` 默认改成 Bootstrap 实底 `.text-bg-*`（`variant:'soft'` 保留浅底风格）。
 > 细节见 README 的 Naming / Theme / Colour variants 三节。
 
-## 现状（78 个组件源文件 / 97 个导出类 / 691 条单测 / 196 项浏览器断言）
+## 现状（78 个组件源文件 / 97 个导出类 / 699 条单测 / 197 项浏览器断言）
 
 按分组清点（完整清单与参数见 [`docs/components.md`](./docs/components.md)）：
 
@@ -223,7 +223,11 @@
       `ICETable` 接上 `rowDraggable`：按住行拖动出现指示线，松手 `rowreorder` 事件 +
       `onRowReorder` 回调，`moveRow(from, target)` 也可直接调（做「上移/下移」按钮）；
       **分页表按「当前页内下标」换算成绝对下标**（QA 抓到过事件抛了但当前页没变）。
-      还剩：树节点拖拽（含跨层级落点）与看板卡拖拽。
+      树节点拖拽也做了：`computeTreeDropTarget` 的行内**三分法**（上 1/3 before / 中 1/3 inside /
+      下 1/3 after）+ `moveTreeNode`（新树、跨层级、**拖进自己的后代直接拒绝**、位置没变算没动），
+      `ICETree.draggable` 接上拖拽与落点指示（inside 高亮整行、before/after 画细线），落下抛
+      `nodedrop` + `onDrop`，另有 `moveNode()` 可直接调。8 + 1 条单测 + `qa:gallery` 1 条真鼠标断言。
+      **只剩看板卡拖拽**（要新写一个 `ICEKanban` 组件）。
 - [x] **P1 a11y 与 i18n**：a11y 这一半 —— 组件侧 `ariaLabel`（按钮用文字、
       输入框用占位符、勾选用标签，`setAriaLabel` 可显式覆盖）+ 可插拔的 DOM 镜像层
       `mountICEAccessibilityMirror(ice)`（把引擎快照渲染成定位好的 `role`/`aria-label`/`tabindex`

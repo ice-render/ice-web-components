@@ -127,6 +127,8 @@
 | `indent?` | `number` |  |
 | `onSelect?` | `(keys: string[], node?: ICETreeNode) => void` | 选中回调 |
 | `onExpand?` | `(expandedKeys: string[]) => void` |  |
+| `draggable?` | `boolean` | 开启节点拖拽（按住行拖：上 1/3 插前面、中 1/3 放进去、下 1/3 插后面） |
+| `onDrop?` | `(info: { key: string; targetKey: string; position: string; nodes: ICETreeNode[] }) => void` | 拖拽落下后的回调（与 `nodedrop` 事件同义） |
 
 **方法**
 
@@ -143,6 +145,10 @@
 | `getVisibleNodes()` | `ICETreeNode[]` |  |
 | `getRowDepth(key: string)` | `number` | 行所在层级（0 = 根层；缩进 = depth × indent）。 |
 | `getScrollPane()` | `ICEScrollPane \| null` |  |
+| `isDraggable()` | `boolean` | 键盘：只有焦点在树上时生效。 |
+| `isDragging()` | `boolean` |  |
+| `getDropTarget()` | `{ index: number; position: 'before' \| 'inside' \| 'after' } \| null` |  |
+| `moveNode(dragKey: string, targetKey: string, position: 'before' \| 'inside' \| 'after')` | `boolean` | 把 `dragKey` 移到 `targetKey` 的 before / inside / after。 |
 
 ## `ICECard`
 
