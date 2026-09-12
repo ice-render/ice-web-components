@@ -28,7 +28,7 @@
 |---|---|---|
 | ~~`UITooltip`~~ ✅ | 悬停延时、跟随锚点、多行 | A1 |
 | ~~`UIPopover`~~ ✅ | 任意内容浮层 + 点击/悬停触发 | A1 |
-| `UIDropdown` | 触发按钮 + 菜单浮层 + 键盘选中 | A1 + A3 |
+| ~~`UIDropdown`~~ ✅ | 触发按钮 + 菜单浮层 + disabled/选中态 + 键盘 ↑↓/Enter | A1 + A3 |
 | `UISelect` / `UIComboBox` | 输入框 + 下拉选项列表 + 搜索过滤 + 多选标签 | A1 + A2 + A3 |
 | ~~`UIModal`~~ ✅ | 遮罩层 + 居中 + 焦点陷阱 + 缩放进入 | A1 + A3 + A5 |
 | `UIDrawer` | 从边缘滑入的面板 | A1 + A5 |

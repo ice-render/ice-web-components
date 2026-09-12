@@ -171,6 +171,32 @@ describe('UIFocusManager', () => {
     expect(ice.getFocusedComponent()).toBeNull();
   });
 
+  it('浮层接管键盘时不把 Enter/Space 当作激活（下拉菜单打开时的冲突）', () => {
+    const { ice, button } = makeScene();
+    const clicks: string[] = [];
+    button.on('click', () => clicks.push('button'));
+    const fm = new UIFocusManager(ice).start();
+    fm.focus(button);
+
+    // 用缓存的浮层管理器（与焦点管理器共享同一个实例）
+    const { getUIOverlayManager } = require('../src/core/UIOverlayManager');
+    const { UIComponent } = require('../src/core/UIComponent');
+    const overlays = getUIOverlayManager(ice);
+    const handle = overlays.open({
+      anchor: button,
+      content: new UIComponent({ width: 60, height: 30 }),
+      keyboardCaptured: true,
+    });
+
+    ice.evtBus.trigger('keydown', { key: 'Enter' });
+    expect(clicks).toEqual([]); // 让给浮层
+    expect(fm.getFocused() === button).toBe(true);
+
+    handle.close();
+    ice.evtBus.trigger('keydown', { key: 'Enter' });
+    expect(clicks).toEqual(['button']); // 恢复后仍然激活
+  });
+
   it('焦点范围（模态焦点陷阱）：Tab 只在范围内轮转，范围外的焦点被清掉', () => {
     const { ice, panel, button, checkbox } = makeScene();
     const dialog = new UIPanel({ left: 20, top: 40, width: 200, height: 120 });

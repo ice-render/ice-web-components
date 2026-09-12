@@ -37,6 +37,11 @@ export interface UIOverlayOptions {
   /** 打开时先关闭其它浮层（默认 true） */
   exclusive?: boolean;
   /**
+   * 键盘接管：该浮层打开期间，方向键/Enter/Space 归它处理，
+   * UIFocusManager 不再把 Enter/Space 当作「激活当前焦点控件」（否则会先点掉触发按钮）。
+   */
+  keyboardCaptured?: boolean;
+  /**
    * 阻断型浮层（Modal 的遮罩）：z 序在最上，且**不会被后来打开的非阻断浮层关掉**
    * （否则鼠标扫过页面触发 Tooltip 就会把模态一起关掉）。
    */
@@ -218,6 +223,11 @@ export class UIOverlayManager {
 
   public isOpen(): boolean {
     return this.entries.length > 0;
+  }
+
+  /** 是否有浮层正在接管键盘（见 UIOverlayOptions.keyboardCaptured）。 */
+  public isKeyboardCaptured(): boolean {
+    return this.entries.some((entry) => entry.options.keyboardCaptured === true);
   }
 
   public getLayer(): any {

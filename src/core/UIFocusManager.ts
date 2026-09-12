@@ -1,6 +1,7 @@
 import { UIComponent } from './UIComponent';
 import { uiManager } from './UIManager';
 import { getUIWorldBox } from '../util/UIWorldBox';
+import { getUIOverlayManager } from './UIOverlayManager';
 
 /** node 是否在 ancestor 子树内（含自身）。 */
 function isDescendantOf(node: any, ancestor: any): boolean {
@@ -207,6 +208,10 @@ export class UIFocusManager {
   private __onKeyDown(evt: any): void {
     const raw = evt && (evt.originalEvent || evt);
     const key = raw && (raw.key || raw.code);
+    // 有浮层接管键盘（如打开的下拉菜单）时让路：方向键/Enter 由它处理
+    if (this.ice && getUIOverlayManager(this.ice).isKeyboardCaptured()) {
+      return;
+    }
     if (key === 'Tab') {
       if (raw.shiftKey) {
         this.focusPrev();

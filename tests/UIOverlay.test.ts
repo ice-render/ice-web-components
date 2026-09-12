@@ -228,6 +228,17 @@ describe('UIOverlayManager', () => {
     expect(manager.getLayer().childNodes).toHaveLength(1);
   });
 
+  it('keyboardCaptured：声明接管键盘的浮层会被 isKeyboardCaptured 反映', () => {
+    const ice = makeICE();
+    const manager = new UIOverlayManager(ice);
+    const anchor = new UIComponent({ left: 0, top: 0, width: 20, height: 20 });
+    expect(manager.isKeyboardCaptured()).toBe(false);
+    const handle = manager.open({ anchor, content: panel(80, 40), keyboardCaptured: true });
+    expect(manager.isKeyboardCaptured()).toBe(true);
+    handle.close();
+    expect(manager.isKeyboardCaptured()).toBe(false);
+  });
+
   it('阻断型浮层（模态遮罩）不会被后来打开的非阻断浮层关掉', () => {
     const ice = makeICE();
     const manager = new UIOverlayManager(ice);

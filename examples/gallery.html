@@ -248,6 +248,20 @@
         }),
       ]);
 
+      // 下拉菜单演示：点 Default 弹菜单，选中后触发按钮文字更新
+      const defaultButton = panel.childNodes.find((node) => node.state && node.state.id === 'btn-default');
+      const dropdown = W.attachDropdown(ice, defaultButton, {
+        items: [
+          { key: 'day', label: '按天' },
+          { key: 'week', label: '按周' },
+          { key: 'month', label: '按月' },
+          { key: 'year', label: '按年', disabled: true },
+        ],
+        selectedKey: 'week',
+        onSelect: (item) => defaultButton.setText(item.label),
+      });
+
+
       // 浮层演示：点 Primary 弹出 popover（弹层底座 + 入场缩放/出场淡出）
       const primaryButton = panel.childNodes.find((node) => node.state && node.state.id === 'btn-primary');
       const makePopover = () => {
@@ -289,7 +303,7 @@
       });
 
       ice.addChild(panel);
-      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint };
+      window.__result = { ice, panel, form, nameInput, agreeBox, submitButton, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown };
     </script>
   </body>
 </html>
