@@ -16,6 +16,8 @@ import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../co
  */
 
 export interface ICETreeSelectOptions {
+  /** 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） */
+  id?: string;
   nodes: ICETreeNode[];
   value?: string;
   placeholder?: string;
@@ -50,6 +52,7 @@ export class ICETreeSelect extends ICEWidget {
     const width = props.width ?? 220;
     const height = props.height ?? theme.control.height;
     super({
+      id: props.id,
       fill: true,
       stroke: true,
       left: props.left,

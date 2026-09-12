@@ -28,6 +28,8 @@ npm install
 npm run types:check
 npm test
 npm run build
+# 浏览器端 QA：逐页布局一致性 + 弹出层开关（需要 playwright，可用 PLAYWRIGHT_PATH 指定）
+npm run qa:admin
 ```
 
 ## Example

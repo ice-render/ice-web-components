@@ -11,6 +11,8 @@ export interface ICEStepsItem {
 }
 
 export interface ICEStepsOptions {
+  /** 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） */
+  id?: string;
   items: ICEStepsItem[];
   current?: number;
   left?: number;
@@ -31,6 +33,7 @@ export class ICESteps extends ICEWidget {
     const width = props.width ?? 420;
     const circleSize = props.circleSize ?? 28;
     super({
+      id: props.id,
       fill: false,
       stroke: false,
       left: props.left,

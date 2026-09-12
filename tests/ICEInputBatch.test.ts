@@ -97,6 +97,20 @@ describe('ICEAutoComplete', () => {
     expect(autocomplete.isOpen()).toBe(false);
   });
 
+  it('候选超过一屏时套滚动视口（否则多出的候选会画到面板外面）', () => {
+    const many = Array.from({ length: 10 }, (_, i) => `候选 ${i + 1}`);
+    const wide = new ICEAutoComplete({ left: 0, top: 0, width: 200, options: many });
+    (wide as any).ice = setup().ice;
+    wide.setValue('');
+    const panel = wide.getPanel()!;
+    const pane = panel.childNodes.find((node: any) => typeof node.getScrollRange === 'function') as any;
+    expect(pane).toBeTruthy();
+    // 视口只显示 6 行，内容 10 行 → 可滚动
+    expect(pane.getViewportSize()[1]).toBe(6 * 32);
+    expect(pane.getScrollRange()[1]).toBe(10 * 32 - 6 * 32);
+    expect(panel.state.height).toBe(6 * 32 + 8);
+  });
+
   it('键盘 ↑/↓ 移动高亮、Enter 选中、Esc 关闭', () => {
     const { autocomplete, ice, selected } = setup();
     autocomplete.setValue(''); // 全部候选

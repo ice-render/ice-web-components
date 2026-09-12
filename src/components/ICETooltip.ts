@@ -4,6 +4,16 @@ import { ICEPanel } from './ICEPanel';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../core/ICEOverlayManager';
 import type { ICEOverlayPlacement } from '../util/ICEOverlayPosition';
+import { estimateTextWidth, readHovered } from '../util/ICEStyle';
+
+/** tooltip 文本字号与左右内边距（面板宽度按它估算） */
+export const ICE_TOOLTIP_FONT_SIZE = 12;
+export const ICE_TOOLTIP_PADDING_X = 8;
+
+/** 气泡面板宽度：按文字估算（中文 1em、拉丁 0.6em），避免长中文被压出色块外面。 */
+export function tooltipPanelWidth(title: string): number {
+  return Math.max(32, estimateTextWidth(title, ICE_TOOLTIP_FONT_SIZE) + ICE_TOOLTIP_PADDING_X * 2);
+}
 
 /**
  * 工具提示：鼠标悬停在目标组件上、延时后弹出的小浮层。
@@ -107,7 +117,7 @@ export class ICETooltip {
   }
 
   private __onHoverChange(evt: any): void {
-    const hovered = !!(evt && evt.param ? evt.param.hovered : evt && evt.hovered);
+    const hovered = readHovered(evt);
     if (hovered) {
       this.__clearTimers();
       const delay = Number(this.options.mouseEnterDelay ?? 100);
@@ -146,9 +156,9 @@ export class ICETooltip {
     }
     const theme = iceUIManager.getTheme();
     const title = String(this.options.title ?? '');
-    const fontSize = 12;
-    const paddingX = 8;
-    const width = Math.max(32, Math.round(title.length * fontSize * 0.62) + paddingX * 2);
+    const fontSize = ICE_TOOLTIP_FONT_SIZE;
+    const paddingX = ICE_TOOLTIP_PADDING_X;
+    const width = tooltipPanelWidth(title);
     const height = 26;
     const panel = new ICEPanel({
       width,

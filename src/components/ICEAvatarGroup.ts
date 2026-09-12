@@ -16,6 +16,8 @@ export interface ICEAvatarGroupItem {
 }
 
 export interface ICEAvatarGroupOptions {
+  /** 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） */
+  id?: string;
   avatars: ICEAvatarGroupItem[];
   size?: number;
   max?: number;
@@ -36,6 +38,7 @@ export class ICEAvatarGroup extends ICEWidget {
   constructor(props: ICEAvatarGroupOptions) {
     const size = Number(props.size) || 32;
     super({
+      id: props.id,
       fill: false,
       stroke: false,
       left: props.left,

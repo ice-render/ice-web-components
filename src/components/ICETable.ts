@@ -1,6 +1,6 @@
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
-import { createTextNode } from '../util/ICEStyle';
+import { createTextNode, readHovered } from '../util/ICEStyle';
 import { ICERect } from 'ice-render';
 
 export type ICETableColumn = {
@@ -309,7 +309,7 @@ export class ICETable extends ICEWidget {
       panel.on(
         'hoverchange',
         (evt: any) => {
-          const hovered = !!(evt && evt.hovered);
+          const hovered = readHovered(evt);
           if (hovered) {
             this.hoveredIndex = rowIndex;
           } else if (this.hoveredIndex === rowIndex) {

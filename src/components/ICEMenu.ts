@@ -1,7 +1,7 @@
 import { ICEWidget } from '../core/ICEWidget';
 import { ICEContainer } from '../core/ICEContainer';
 import { iceUIManager } from '../core/ICEManager';
-import { createTextNode } from '../util/ICEStyle';
+import { createTextNode, readHovered } from '../util/ICEStyle';
 import { ICESvgIcon } from './ICESvgIcon';
 
 export type ICEMenuItem = {
@@ -193,7 +193,7 @@ export class ICEMenu extends ICEContainer {
       panel.on(
         'hoverchange',
         (evt: any) => {
-          const hovered = !!(evt && evt.hovered);
+          const hovered = readHovered(evt);
           const next = hovered ? item.key : this.hoverKey === item.key ? null : this.hoverKey;
           if (next === this.hoverKey) {
             return;

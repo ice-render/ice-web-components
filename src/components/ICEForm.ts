@@ -11,6 +11,8 @@ import { ICEFormModel, ICEFormRule } from '../model/ICEFormModel';
  */
 
 export interface ICEFormOptions {
+  /** 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） */
+  id?: string;
   width?: number;
   gap?: number;
   /** 复用外部模型（表单与业务共享状态） */
@@ -32,7 +34,10 @@ export class ICEForm extends ICEContainer {
 
   constructor(props: ICEFormOptions = {}) {
     const width = props.width ?? 320;
-    super({ fill: false, stroke: false, left: props.left, top: props.top, width, height: 0 });
+    super({
+      id: props.id,
+      fill: false, stroke: false, left: props.left, top: props.top, width, height: 0 ,
+    });
     this.itemGap = props.gap ?? 16;
     this.model = props.model || new ICEFormModel();
     this.model.addChangeListener(() => this.__syncErrors());

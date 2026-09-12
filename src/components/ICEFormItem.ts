@@ -15,6 +15,8 @@ import type { ICEFormRule } from '../model/ICEFormModel';
  */
 
 export interface ICEFormItemOptions {
+  /** 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） */
+  id?: string;
   name: string;
   label?: string;
   control: any;
@@ -62,6 +64,7 @@ export class ICEFormItem extends ICEWidget {
 
     // 只把几何信息交给基类：control / rules 这些不是可序列化状态，不要进 state
     super({
+      id: props.id,
       fill: false,
       stroke: false,
       left: (props as any).left,

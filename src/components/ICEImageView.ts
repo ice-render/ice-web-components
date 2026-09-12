@@ -16,6 +16,8 @@ import { iceUIManager } from '../core/ICEManager';
 export type ICEImageFit = 'fill' | 'contain' | 'cover';
 
 export interface ICEImageOptions {
+  /** 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） */
+  id?: string;
   src?: string;
   width?: number;
   height?: number;
@@ -47,6 +49,7 @@ export class ICEImageView extends ICEWidget {
     const width = props.width ?? 120;
     const height = props.height ?? 80;
     super({
+      id: props.id,
       fill: true,
       stroke: false,
       left: props.left,

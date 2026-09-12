@@ -1454,7 +1454,8 @@
           toast('已读：' + item.label, 'info');
         },
       });
-      W.attachTooltip(ice, bellIcon, { title: '通知中心', placement: 'bottom' });
+      // 注意：铃铛只挂 dropdown。之前同时挂了 tooltip，悬停先把 tooltip 弹出来，
+      // 再点开 dropdown 时会被浮层互斥（exclusive）立刻关掉，表现为「点了没反应」。
 
       W.attachDropdown(ice, headerAvatar, {
         items: [

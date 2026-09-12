@@ -3,6 +3,7 @@ import { ICEPanel } from './ICEPanel';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../core/ICEOverlayManager';
 import type { ICEOverlayPlacement } from '../util/ICEOverlayPosition';
+import { readHovered } from '../util/ICEStyle';
 
 /**
  * 卡片式浮层：点击（默认）或悬停触发，内容可以是文本或自定义组件工厂。
@@ -167,7 +168,7 @@ export class ICEPopover {
   }
 
   private __onHoverChange(evt: any): void {
-    const hovered = !!(evt && evt.param ? evt.param.hovered : evt && evt.hovered);
+    const hovered = readHovered(evt);
     if (hovered) {
       this.__clearTimers();
       const delay = Number(this.options.mouseEnterDelay ?? 100);

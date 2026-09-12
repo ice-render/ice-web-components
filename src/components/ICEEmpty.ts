@@ -8,6 +8,8 @@ import { iceUIManager } from '../core/ICEManager';
  * 常用于列表/表格无数据、搜索无结果。
  */
 export interface ICEEmptyOptions {
+  /** 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） */
+  id?: string;
   description?: string;
   /** 图标字形（默认 ◌） */
   icon?: string;
@@ -26,7 +28,10 @@ export class ICEEmpty extends ICEWidget {
     const theme = iceUIManager.getTheme();
     const width = props.width ?? 240;
     const height = props.height ?? 140;
-    super({ fill: false, stroke: false, left: props.left, top: props.top, width, height });
+    super({
+      id: props.id,
+      fill: false, stroke: false, left: props.left, top: props.top, width, height ,
+    });
     const icon = props.icon ?? '◌';
     const hasAction = !!props.actionText;
 

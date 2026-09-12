@@ -1,7 +1,7 @@
 import { ICELabel } from './ICELabel';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
-import { createTextNode } from '../util/ICEStyle';
+import { createTextNode, readHovered } from '../util/ICEStyle';
 
 /**
  * 折叠面板（业界组件库 Collapse / Swing 无直接对应物）。
@@ -18,6 +18,8 @@ export interface ICECollapseItem {
 }
 
 export interface ICECollapseOptions {
+  /** 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） */
+  id?: string;
   items: ICECollapseItem[];
   activeKeys?: string[];
   accordion?: boolean;
@@ -45,6 +47,7 @@ export class ICECollapse extends ICEWidget {
     const theme = iceUIManager.getTheme();
     const width = props.width ?? 280;
     super({
+      id: props.id,
       fill: false,
       stroke: false,
       left: props.left,
@@ -141,7 +144,7 @@ export class ICECollapse extends ICEWidget {
       header.on(
         'hoverchange',
         (evt: any) => {
-          const hovered = !!(evt && evt.hovered);
+          const hovered = readHovered(evt);
           header.setState({
             style: { ...header.state.style, fillStyle: hovered ? theme.colors.disabled : theme.colors.background },
           });

@@ -12,6 +12,8 @@ import { ICEContainer } from '../core/ICEContainer';
  */
 
 export interface ICEPaginationOptions {
+  /** 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） */
+  id?: string;
   total?: number;
   pageSize?: number;
   current?: number;
@@ -46,6 +48,7 @@ export class ICEPagination extends ICEContainer {
 
   constructor(props: ICEPaginationOptions = {}) {
     super({
+      id: props.id,
       fill: false,
       stroke: false,
       left: props.left,

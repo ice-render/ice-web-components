@@ -2,6 +2,7 @@ import { ICEPanel } from './ICEPanel';
 import { ICELabel } from './ICELabel';
 import { ICEWidget } from '../core/ICEWidget';
 import { ICETextField } from './ICETextField';
+import { ICEScrollPane } from './ICEScrollPane';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../core/ICEOverlayManager';
 
@@ -13,6 +14,8 @@ import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../co
  * - 点击候选写入输入框并回调 onSelect；键盘 ↑/↓ 移动高亮、Enter 选中、Esc 关闭。
  */
 export interface ICEAutoCompleteOptions {
+  /** 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） */
+  id?: string;
   options: string[];
   value?: string;
   placeholder?: string;
@@ -46,7 +49,10 @@ export class ICEAutoComplete extends ICEWidget {
     const theme = iceUIManager.getTheme();
     const width = props.width ?? 200;
     const height = props.height ?? theme.control.height;
-    super({ fill: false, stroke: false, left: props.left, top: props.top, width, height });
+    super({
+      id: props.id,
+      fill: false, stroke: false, left: props.left, top: props.top, width, height ,
+    });
     this.allOptions = (props.options || []).slice();
     this.optionHeight = props.optionHeight ?? 32;
     this.manager = props.manager || null;
@@ -134,6 +140,11 @@ export class ICEAutoComplete extends ICEWidget {
 
   public getOptionNode(value: string): ICEWidget | null {
     return this.optionNodes.get(value) || null;
+  }
+
+  /** 当前候选浮层（未打开时为 null）。 */
+  public getPanel(): ICEPanel | null {
+    return this.panel;
   }
 
   public activate(): void {
@@ -299,11 +310,30 @@ export class ICEAutoComplete extends ICEWidget {
     panel.removeChildren([...panel.childNodes]);
     this.optionNodes.clear();
     const width = Number(panel.state.width) || Number(this.state.width) || 200;
+    // 候选超过一屏时套滚动视口：否则多出来的候选会画到面板外面（无裁剪、看着像穿帮）
+    const viewportHeight = Math.min(6, this.visibleOptions.length) * this.optionHeight;
+    const pane = new ICEScrollPane({
+      left: 4,
+      top: 4,
+      width: width - 8,
+      height: viewportHeight,
+      fill: false,
+      stroke: false,
+      style: { fillStyle: 'rgba(0,0,0,0)', strokeStyle: 'rgba(0,0,0,0)' },
+    });
+    const content = new ICEWidget({
+      left: 0,
+      top: 0,
+      width: width - 8,
+      height: Math.max(viewportHeight, this.visibleOptions.length * this.optionHeight),
+      fill: false,
+      stroke: false,
+    });
     this.visibleOptions.forEach((option, index) => {
       const active = index === this.activeIndex;
       const row = new ICEWidget({
-        left: 4,
-        top: 4 + index * this.optionHeight,
+        left: 0,
+        top: index * this.optionHeight,
         width: width - 8,
         height: this.optionHeight,
         radius: theme.radius.sm,
@@ -325,10 +355,19 @@ export class ICEAutoComplete extends ICEWidget {
         }),
         false,
       );
-      panel.addChild(row, false);
+      content.addChild(row, false);
       this.optionNodes.set(option, row);
     });
-    panel.setState({ height: 4 + Math.min(6, this.visibleOptions.length) * this.optionHeight + 4 });
+    pane.setContent(content);
+    panel.addChild(pane, false);
+    // 键盘上下键移动高亮时，把当前项滚进视野
+    if (this.activeIndex >= 0) {
+      const top = this.activeIndex * this.optionHeight;
+      if (top < pane.getScroll()[1] || top + this.optionHeight > pane.getScroll()[1] + viewportHeight) {
+        pane.setScroll(0, Math.max(0, top - (viewportHeight - this.optionHeight) / 2));
+      }
+    }
+    panel.setState({ height: viewportHeight + 8 });
     // 点击由面板统一处理：候选行在过滤时会重建，逐行监听会丢点击
     panel.setState({ interactive: true });
     if (!this.__panelBound) {

@@ -21,6 +21,8 @@ export interface ICESelectOption {
 }
 
 export interface ICESelectOptions {
+  /** 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） */
+  id?: string;
   options: ICESelectOption[];
   value?: string | string[];
   mode?: 'single' | 'multiple';
@@ -62,6 +64,7 @@ export class ICESelect extends ICEWidget {
     const width = props.width ?? 200;
     const height = props.height ?? theme.control.height;
     super({
+      id: props.id,
       fill: true,
       stroke: true,
       left: props.left,

@@ -10,6 +10,8 @@ import { iceUIManager } from '../core/ICEManager';
  * - 表单集成：`getFormValue` / `setFormValue`，错误态边框标红。
  */
 export interface ICEColorPickerOptions {
+  /** 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） */
+  id?: string;
   colors?: string[];
   columns?: number;
   value?: string;
@@ -46,6 +48,7 @@ export class ICEColorPicker extends ICEWidget {
     const width = props.width ?? columns * size + (columns - 1) * gap + padding * 2;
     const height = props.height ?? padding * 2 + rows * size + Math.max(0, rows - 1) * gap;
     super({
+      id: props.id,
       fill: true,
       stroke: true,
       left: props.left,

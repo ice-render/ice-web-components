@@ -21,6 +21,8 @@ export interface ICEListItem {
 }
 
 export interface ICEListOptions {
+  /** 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） */
+  id?: string;
   items: ICEListItem[];
   mode?: ICESelectionMode;
   value?: string[];
@@ -48,6 +50,7 @@ export class ICEList extends ICEWidget {
     const width = props.width ?? 200;
     const height = props.height ?? 160;
     super({
+      id: props.id,
       fill: true,
       stroke: true,
       left: props.left,

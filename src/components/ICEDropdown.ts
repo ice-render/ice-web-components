@@ -4,6 +4,7 @@ import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../core/ICEOverlayManager';
 import type { ICEOverlayPlacement } from '../util/ICEOverlayPosition';
+import { estimateTextWidth } from '../util/ICEStyle';
 
 /**
  * 下拉菜单：点击触发组件弹出选项列表。
@@ -197,7 +198,13 @@ export class ICEDropdown {
 
   private __createPanel(): ICEPanel {
     const theme = iceUIManager.getTheme();
-    const width = this.options.width ?? 180;
+    // 面板宽度：调用方没指定时按最长标签估一下。画布文本没有裁剪，
+    // 面板太窄会让长标签（尤其中文）直接溢出到色块外面。
+    const natural = this.items.reduce(
+      (max, item) => Math.max(max, estimateTextWidth(String(item.label ?? ''), 14) + 56),
+      0,
+    );
+    const width = this.options.width ?? Math.min(360, Math.max(180, Math.round(natural)));
     const itemHeight = this.options.itemHeight ?? 34;
     const panel = new ICEPanel({
       width,

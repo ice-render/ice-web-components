@@ -16,6 +16,8 @@ export interface ICEResultAction {
 }
 
 export interface ICEResultOptions {
+  /** 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） */
+  id?: string;
   status?: ICEResultStatus;
   title?: string;
   subtitle?: string;
@@ -34,7 +36,10 @@ export class ICEResult extends ICEWidget {
     const theme = iceUIManager.getTheme();
     const width = props.width ?? 320;
     const height = props.height ?? 200;
-    super({ fill: false, stroke: false, left: props.left, top: props.top, width, height });
+    super({
+      id: props.id,
+      fill: false, stroke: false, left: props.left, top: props.top, width, height ,
+    });
     const status = props.status || 'info';
     const statusColor =
       status === 'success'

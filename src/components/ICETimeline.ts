@@ -13,6 +13,8 @@ export interface ICETimelineItem {
 }
 
 export interface ICETimelineOptions {
+  /** 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） */
+  id?: string;
   items: ICETimelineItem[];
   left?: number;
   top?: number;
@@ -31,6 +33,7 @@ export class ICETimeline extends ICEWidget {
     const itemHeight = props.itemHeight ?? 44;
     const height = (props.items || []).length * itemHeight;
     super({
+      id: props.id,
       fill: false,
       stroke: false,
       left: props.left,

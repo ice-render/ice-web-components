@@ -22,6 +22,8 @@ export interface ICEUploadFile {
 }
 
 export interface ICEUploadOptions {
+  /** 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） */
+  id?: string;
   accept?: string;
   multiple?: boolean;
   maxCount?: number;
@@ -63,6 +65,7 @@ export class ICEUpload extends ICEWidget {
     const theme = iceUIManager.getTheme();
     const width = props.width ?? 320;
     super({
+      id: props.id,
       fill: false,
       stroke: false,
       left: props.left,

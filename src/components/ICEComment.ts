@@ -16,6 +16,8 @@ export interface ICECommentAction {
 }
 
 export interface ICECommentOptions {
+  /** 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） */
+  id?: string;
   author: string;
   content: string;
   time?: string;
@@ -53,6 +55,7 @@ export class ICEComment extends ICEWidget {
     const replyHeight = replies.reduce((sum, reply) => sum + estimateReplyHeight(reply), 0);
     height += replyHeight;
     super({
+      id: props.id,
       fill: true,
       stroke: false,
       left: props.left,

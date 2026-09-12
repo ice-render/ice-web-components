@@ -12,6 +12,8 @@ export interface ICEDescriptionsItem {
 }
 
 export interface ICEDescriptionsOptions {
+  /** 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） */
+  id?: string;
   items: ICEDescriptionsItem[];
   column?: number;
   left?: number;
@@ -34,6 +36,7 @@ export class ICEDescriptions extends ICEWidget {
     const itemHeight = props.itemHeight ?? 32;
     const rows = Math.ceil((props.items || []).length / column);
     super({
+      id: props.id,
       fill: true,
       stroke: true,
       left: props.left,

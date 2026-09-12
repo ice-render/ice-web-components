@@ -3,6 +3,7 @@ import { ICEWidget } from '../core/ICEWidget';
 import { ICEScrollPane } from './ICEScrollPane';
 import { iceUIManager } from '../core/ICEManager';
 import { ICESelectionModel, ICESelectionMode } from '../model/ICESelectionModel';
+import { readHovered } from '../util/ICEStyle';
 
 /**
  * 树（Swing JTree / 业界组件库 Tree 的最小可用版）。
@@ -23,6 +24,8 @@ export interface ICETreeNode {
 }
 
 export interface ICETreeOptions {
+  /** 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） */
+  id?: string;
   nodes: ICETreeNode[];
   mode?: ICESelectionMode;
   value?: string[];
@@ -65,6 +68,7 @@ export class ICETree extends ICEWidget {
     const width = props.width ?? 240;
     const height = props.height ?? 200;
     super({
+      id: props.id,
       fill: true,
       stroke: true,
       left: props.left,
@@ -378,7 +382,7 @@ export class ICETree extends ICEWidget {
       node.on(
         'hoverchange',
         (evt: any) => {
-          const hovered = !!(evt && evt.hovered);
+          const hovered = readHovered(evt);
           node.setState({
             style: {
               ...node.state.style,

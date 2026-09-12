@@ -20,6 +20,8 @@ export interface ICECarouselScheduler {
 }
 
 export interface ICECarouselOptions {
+  /** 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） */
+  id?: string;
   slides?: ICEWidget[];
   left?: number;
   top?: number;
@@ -75,6 +77,7 @@ export class ICECarousel extends ICEWidget {
   constructor(props: ICECarouselOptions = {}) {
     const theme = iceUIManager.getTheme();
     super({
+      id: props.id,
       fill: true,
       stroke: true,
       left: props.left,

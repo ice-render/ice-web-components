@@ -8,6 +8,8 @@ import { tween, ICETweenHandle } from '../util/ICEAnimation';
  * `active` 打开时整体做呼吸（opacity 0.55 ⇄ 1 循环），加载完成后 setActive(false) 并移除。
  */
 export interface ICESkeletonOptions {
+  /** 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） */
+  id?: string;
   rows?: number;
   avatar?: boolean;
   title?: boolean;
@@ -36,7 +38,10 @@ export class ICESkeleton extends ICEWidget {
     const contentLeft = avatar ? avatarSize + 12 : 0;
     const contentHeight = titleHeight + (title && rows ? gap : 0) + rows * rowHeight + Math.max(0, rows - 1) * gap;
     const height = props.height ?? Math.max(avatar ? avatarSize : 0, contentHeight);
-    super({ fill: false, stroke: false, left: props.left, top: props.top, width, height });
+    super({
+      id: props.id,
+      fill: false, stroke: false, left: props.left, top: props.top, width, height ,
+    });
     this.active = props.active === true;
 
     const bar = (left: number, top: number, w: number, h: number) => {
