@@ -54,6 +54,15 @@ export class ICEDescriptions extends ICEWidget {
     return this.rowNodes.slice();
   }
 
+  /** 替换数据并重排（列表内容随选中项变化时用）。 */
+  public setItems(items: ICEDescriptionsItem[]): this {
+    this.items = (items || []).slice();
+    const rows = Math.ceil(this.items.length / this.column);
+    this.setState({ height: rows * this.itemHeight + 8 });
+    this.__render();
+    return this;
+  }
+
   private __render(): void {
     const theme = iceUIManager.getTheme();
     const width = Number(this.state.width) || 320;

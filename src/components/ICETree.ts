@@ -374,6 +374,24 @@ export class ICETree extends ICEWidget {
         node.on('click', () => this.__pick(row.node));
         node.on('expand-click', () => this.__toggleExpand(row.node.key));
       }
+      // 悬停反馈：树行常被当成导航入口，缺 hover 会显得没反应
+      node.on(
+        'hoverchange',
+        (evt: any) => {
+          const hovered = !!(evt && evt.hovered);
+          node.setState({
+            style: {
+              ...node.state.style,
+              fillStyle: selected
+                ? theme.colors.primaryBg
+                : hovered || active
+                  ? theme.colors.background
+                  : 'rgba(0,0,0,0)',
+            },
+          });
+        },
+        this,
+      );
       // 点击缩进区域（箭头附近）也算展开
       const arrowHit = new ICEWidget({
         left: indent - 2,

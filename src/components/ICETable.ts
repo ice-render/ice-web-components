@@ -41,6 +41,8 @@ export class ICETable extends ICEWidget {
     align: 'left' | 'center' | 'right';
   }> = [];
   private selectedIndex = -1;
+  /** 鼠标悬停行（-1 = 无）；只影响底色，不影响选中 */
+  private hoveredIndex = -1;
   private rowHeight: number;
   private headerHeight: number;
   private onSelect: ((row: ICETableRow | null, index: number) => void) | null;
@@ -203,6 +205,19 @@ export class ICETable extends ICEWidget {
     }
     const index = Math.floor((localY - this.headerHeight) / this.rowHeight);
     if (index >= 0 && index < this.data.length) {
+      // 点在行内的交互控件上（例如「详情 / 删除」按钮）：交给控件自己处理，不做整行选中。
+      // 否则点按钮会同时触发选中回调（弹窗/抽屉会莫名其妙弹两层）。
+      const hit = evt.target;
+      const panel = this.rowPanels[index];
+      if (hit && hit !== panel) {
+        let node = hit.parentNode;
+        while (node && node !== panel) {
+          node = node.parentNode;
+        }
+        if (node === panel) {
+          return;
+        }
+      }
       this.selectedIndex = index;
       this.__syncSelection();
       if (this.onSelect) {
@@ -290,6 +305,20 @@ export class ICETable extends ICEWidget {
       });
       this.addChild(panel, false);
       this.rowPanels.push(panel);
+      // 行悬停反馈：hover 由 ICEHoverManager 打在行面板上，这里只负责换底色
+      panel.on(
+        'hoverchange',
+        (evt: any) => {
+          const hovered = !!(evt && evt.hovered);
+          if (hovered) {
+            this.hoveredIndex = rowIndex;
+          } else if (this.hoveredIndex === rowIndex) {
+            this.hoveredIndex = -1;
+          }
+          this.__syncSelection();
+        },
+        this,
+      );
       const values = this.columns.map((column) => this.__format(row[column.key]));
       this.__placeCells(panel, widths, values, false, this.columns, row);
     });
@@ -403,9 +432,17 @@ export class ICETable extends ICEWidget {
   private __syncSelection(): void {
     const theme = iceUIManager.getTheme();
     this.rowPanels.forEach((panel, index) => {
+      const selected = index === this.selectedIndex;
+      const hovered = index === this.hoveredIndex;
       panel.setState({
         style: {
-          fillStyle: index === this.selectedIndex ? theme.colors.primaryBg : index % 2 === 0 ? theme.colors.surface : theme.colors.background,
+          fillStyle: selected
+            ? theme.colors.primaryBg
+            : hovered
+              ? theme.colors.disabled
+              : index % 2 === 0
+                ? theme.colors.surface
+                : theme.colors.background,
         },
       });
     });

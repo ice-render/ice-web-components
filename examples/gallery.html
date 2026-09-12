@@ -112,7 +112,8 @@
           section.items.forEach((entry) => {
             const cluster = Array.isArray(entry) ? entry : [entry];
             const m = measure(cluster);
-            let shelf = shelves.find((s) => s.used + m.w <= avail);
+            // +0.5 容差：宽度刚好铺满时（浮点误差）不该换行
+            let shelf = shelves.find((s) => s.used + m.w <= avail + 0.5);
             if (!shelf) {
               shelf = { used: 0, h: 0, items: [] };
               shelves.push(shelf);

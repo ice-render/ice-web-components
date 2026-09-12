@@ -130,11 +130,23 @@ export class ICECollapse extends ICEWidget {
           top: 0,
           width: 16,
           height: this.headerHeight,
+          align: 'center',
           verticalAlign: 'middle',
           text: expanded ? '▾' : '▸',
-          style: { fontSize: 11, fillStyle: theme.colors.textSecondary },
+          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
         }),
         false,
+      );
+      // 悬停反馈：折叠面板的标题行是主要点击目标
+      header.on(
+        'hoverchange',
+        (evt: any) => {
+          const hovered = !!(evt && evt.hovered);
+          header.setState({
+            style: { ...header.state.style, fillStyle: hovered ? theme.colors.disabled : theme.colors.background },
+          });
+        },
+        this,
       );
       header.addChild(
         new ICELabel({

@@ -35,6 +35,36 @@
       const note = (text) => new W.ICELabel({ text, style: { fontSize: 12, fillStyle: theme.colors.textSecondary } });
       const box = (width, height) => new W.ICEWidget({ width, height, fill: false, stroke: false, interactive: false });
       /**
+       * 把一组组件装进一张带标题的卡片（卡片内用同一套流式布局）。
+       *
+       * 先建卡片再建内容 —— 引擎按创建顺序定 zIndex，反了内容会被卡片底色盖住。
+       */
+      const card = (title, width, ...clusters) => {
+        const node = new W.ICECard({ left: 0, top: 0, width, height: 10, title });
+        const inner = new W.ICEWidget({ width: width - 32, height: 10, fill: false, stroke: false });
+        node.addChild(inner, false);
+        const height = flow(inner, [{ items: clusters }], {
+          padX: 0,
+          padTop: 0,
+          padBottom: 0,
+          gapX: 16,
+          gapY: 12,
+          sectionGap: 0,
+          align: 'top',
+        });
+        inner.setState({ left: 16, top: 44 });
+        node.setState({ height: Math.round(height) + 58 });
+        // 内容组件往往是**先于卡片创建**的（作为参数传进来），创建序更早 → zIndex 更低，
+        // 会被卡片的白底整块盖住。这里把整棵子树抬到卡片之上（同值不破坏内部父子顺序）。
+        raise(inner, (Number(node.state.zIndex) || 0) + 1);
+        return node;
+      };
+      const raise = (node, z) => {
+        if (!node || !node.state) return;
+        node.state.zIndex = z;
+        (node.childNodes || []).forEach((child) => raise(child, z));
+      };
+      /**
        * 把一组组件在簇内排成一行 / 一列（返回同一个数组，方便直接当 cluster 用）。
        *
        * cluster 的语义是「内部保持相对位置、整体平移」，所以簇内成员必须各自有明确的
@@ -70,6 +100,8 @@
         const headingHeight = options.headingHeight ?? 18;
         const headingGap = options.headingGap ?? 10;
         const sectionGap = options.sectionGap ?? 20;
+        /** 行内对齐：'center' 让高矮不一的控件（按钮/标签）居中对齐；卡片场景用 'top' 顶对齐 */
+        const alignItems = options.align || 'center';
         const avail = (Number(container.state.width) || 0) - padX * 2;
 
         const attach = (node) => {
@@ -107,9 +139,12 @@
           if (section.title) lines.push({ kind: 'heading', section, title: section.title, first: index === 0 });
           const shelves = [];
           section.items.forEach((entry) => {
-            const cluster = (Array.isArray(entry) ? entry : [entry]).filter(Boolean);
+            // 过滤掉空位（例如条件创建的组件没生成），避免测量时拿到 undefined
+            const cluster = (Array.isArray(entry) ? entry : [entry]).filter((node) => node && node.state);
             const m = measure(cluster);
-            let shelf = shelves.find((s) => s.used + m.w <= avail);
+            // +3 容差：簇的实测宽度常比标称宽零点几像素（文字测量），
+            // 「刚好铺满」的算式会因为这点误差整行换掉
+            let shelf = shelves.find((s) => s.used + m.w <= avail + 3);
             if (!shelf) {
               shelf = { used: 0, h: 0, items: [] };
               shelves.push(shelf);
@@ -136,7 +171,7 @@
           }
           let x = padX;
           line.row.forEach((entry) => {
-            const dy = y + Math.max(0, (line.h - entry.m.h) / 2);
+            const dy = alignItems === 'top' ? y : y + Math.max(0, (line.h - entry.m.h) / 2);
             shift(entry.cluster, x - entry.m.l, dy - entry.m.t);
             entry.cluster.forEach(attach);
             x += entry.m.w + gapX;
@@ -353,7 +388,7 @@
           }),
         });
 
-        const dashboardTable = buildOrderTable({ width: 900, compact: true });
+        const dashboardTable = buildOrderTable({ width: 1160, compact: true });
         const tableCaption = note('按订单号 / 日期 / 金额排序试试，点表头即可');
 
         const statusCard = new W.ICECard({ left: 0, top: 0, width: 280, height: 232, title: 'System Status' });
@@ -379,7 +414,7 @@
           emailSwitch,
           new W.ICELabel({ left: 16, top: 184, height: 22, verticalAlign: 'middle', text: 'Push 通知', style: { fontSize: 12, fillStyle: theme.colors.textSecondary } }),
           pushSwitch,
-        ]);
+        ], { align: 'top' });
         emailSwitch.on('change', () => toast(emailSwitch.isSelected() ? '已开启 Email 通知' : '已关闭 Email 通知', 'info'));
         pushSwitch.on('change', () => toast(pushSwitch.isSelected() ? '已开启 Push 通知' : '已关闭 Push 通知', 'info'));
 
@@ -414,7 +449,7 @@
           teamViewAll,
           new W.ICESeparator({ left: 16, top: 148, width: 248, height: 1 }),
           new W.ICELabel({ left: 16, top: 158, text: '近 7 天处理 1,204 单', style: { fontSize: 12, fillStyle: theme.colors.textSecondary } }),
-        ]);
+        ], { align: 'top' });
 
         const quickCard = new W.ICECard({ left: 0, top: 0, width: 280, height: 150, title: 'Quick Actions' });
         const newOrderButton = new W.ICEButton({ left: 16, top: 46, width: 248, height: 36, text: '新建订单' });
@@ -429,20 +464,40 @@
 
         flow(node, [
           { title: '经营概览', items: stats },
-          { title: '运营动态', items: [campaign, carousel, statusCard, quickCard, teamCard] },
-          { title: '最近订单', items: [column(10, dashboardTable, tableCaption)] },
-        ]);
+          { title: '运营动态', items: [card('活动与投放', 792, campaign, carousel), statusCard, quickCard, teamCard] },
+          // 这里不再另起小节标题：卡片自带「最近订单」标题，避免重复
+          { items: [card('最近订单', 1192, dashboardTable, tableCaption)] },
+        ], { align: 'top' });
         return node;
       };
 
       /* ---------------------------------- 订单列表 ---------------------------------- */
       const buildOrderTable = (options = {}) => {
-        const width = options.width || 1180;
+        // 卡片内宽 = 1192 - 32，表格铺满
+        const width = options.width || 1160;
         const columns = [
           { key: 'order', title: '订单号', width: 130, sorter: true },
           { key: 'customer', title: '客户', width: 220 },
           { key: 'date', title: '日期', width: 140, sorter: true },
-          { key: 'amount', title: '金额', width: 140, align: 'right', sorter: true },
+          {
+            key: 'amount',
+            title: '金额',
+            width: 140,
+            align: 'right',
+            sorter: true,
+            // 行里保留数值（排序/回调都用数值），只在单元格里格式化
+            renderCell: (value, row, column, meta) =>
+              new W.ICELabel({
+                left: 0,
+                top: 0,
+                width: meta.cellWidth - 12,
+                height: meta.cellHeight,
+                align: 'right',
+                verticalAlign: 'middle',
+                text: money(Number(value)),
+                style: { fontSize: 14, fillStyle: theme.colors.text },
+              }),
+          },
           {
             key: 'status',
             title: '状态',
@@ -498,7 +553,7 @@
           width,
           rowHeight: 40,
           columns,
-          data: ORDERS.slice(0, options.compact ? 6 : 6),
+          data: ORDERS.slice(0, 6),
           onSelect: (row) => row && openOrderDrawer(row),
         });
         return table;
@@ -520,7 +575,7 @@
         const segmented = new W.ICESegmented({
           left: 0,
           top: 0,
-          width: 300,
+          width: 240,
           value: 'all',
           options: [
             { value: 'all', label: '全部' },
@@ -535,11 +590,11 @@
             applyFilter();
           },
         });
-        const keywordField = new W.ICETextField({ left: 0, top: 0, width: 220, placeholder: '订单号 / 客户…' });
+        const keywordField = new W.ICETextField({ left: 0, top: 0, width: 200, placeholder: '订单号 / 客户…' });
         const regionSelect = new W.ICECascader({
           left: 0,
           top: 0,
-          width: 200,
+          width: 180,
           placeholder: '配送区域',
           options: [
             { value: '华东', label: '华东' },
@@ -555,14 +610,14 @@
         const dateRange = new W.ICEDatePicker({
           left: 0,
           top: 0,
-          width: 180,
+          width: 160,
           placeholder: '下单日期',
           value: '2026-09-07',
           onChange: (value) => toast('按日期筛选：' + value, 'info'),
         });
-        const searchButton = new W.ICEButton({ left: 0, top: 0, width: 88, height: 32, text: '查询' });
-        const resetButton = new W.ICEButton({ left: 0, top: 0, width: 88, height: 32, text: '重置', variant: 'default' });
-        const createButton = new W.ICEButton({ left: 0, top: 0, width: 120, height: 32, text: '新建订单' });
+        const searchButton = new W.ICEButton({ left: 0, top: 0, width: 76, height: 32, text: '查询' });
+        const resetButton = new W.ICEButton({ left: 0, top: 0, width: 76, height: 32, text: '重置', variant: 'default' });
+        const createButton = new W.ICEButton({ left: 0, top: 0, width: 104, height: 32, text: '新建订单' });
 
         const table = buildOrderTable({ id: 'orders-full' });
         const total = new W.ICELabel({ left: 0, top: 0, text: '', style: { fontSize: 12, fillStyle: theme.colors.textSecondary } });
@@ -627,13 +682,49 @@
 
         // 空态与表格互斥显示，所以叠在同一块区域（表格隐藏时不会留一大片空白）
         total.setState({ left: 0, top: Number(table.state.height) + 10 });
-        emptyState.setState({ left: Math.round((PAGE_W - 320) / 2), top: 60 });
+        emptyState.setState({ left: Math.round((1160 - 320) / 2), top: 60 });
 
         flow(node, [
-          { title: '筛选', items: [segmented, keywordField, regionSelect, dateRange, searchButton, resetButton, createButton] },
-          { title: '订单列表', items: [[table, total, emptyState], pagination] },
-          { title: '加载状态', items: [loadingSpin, loadingPane, new W.ICEAlert({ left: 0, top: 0, width: 460, height: 56, type: 'warning', title: '接口降级提醒', message: '当实时接口不可用时，可以退化成骨架屏 + 重试按钮的组合。' })] },
-        ]);
+          {
+            items: [
+              card(
+                '筛选',
+                1192,
+                segmented,
+                keywordField,
+                regionSelect,
+                dateRange,
+                searchButton,
+                resetButton,
+                createButton,
+              ),
+            ],
+          },
+          {
+            items: [
+              card('订单列表', 1192, [table, total, emptyState], [pagination]),
+            ],
+          },
+          {
+            items: [
+              card(
+                '加载与空态',
+                1192,
+                loadingSpin,
+                loadingPane,
+                new W.ICEAlert({
+                  left: 0,
+                  top: 0,
+                  width: 460,
+                  height: 56,
+                  type: 'warning',
+                  title: '接口降级提醒',
+                  message: '实时接口不可用时，退化成骨架屏 + 重试按钮的组合。',
+                }),
+              ),
+            ],
+          },
+        ], { align: 'top' });
         applyFilter();
         return node;
       };
@@ -919,7 +1010,7 @@
           new W.ICETag({ left: 222, top: 96, width: 64, height: 22, text: '新品', status: 'primary', variant: 'soft' }),
           new W.ICEBadge({ left: 152, top: 132, dot: true, dotSize: 10 }),
           new W.ICELabel({ left: 170, top: 128, text: '库存充足', style: { fontSize: 12, fillStyle: theme.colors.textSecondary } }),
-        ]);
+        ], { align: 'top' });
 
         const offlineButton = new W.ICEButton({ left: 0, top: 0, width: 120, height: 32, text: '下架商品', danger: true });
         W.attachPopconfirm(ice, offlineButton, {
@@ -933,55 +1024,74 @@
         W.attachTooltip(ice, stockButton, { title: '设置库存阈值', placement: 'top' });
 
         flow(node, [
-          { title: '商品资料', items: [category, stock, sellingRate, column(8, colorPicker, colorLabel)] },
-          { title: '主图上传', items: [upload, previewCard] },
-          { title: '营销标签', items: [transfer] },
-          { title: '操作', items: [offlineButton, stockButton] },
-        ]);
+          {
+            items: [
+              card('商品资料', 612, category, stock, sellingRate, column(8, colorPicker, colorLabel)),
+              card('主图', 548, uploader, previewCard),
+            ],
+          },
+          { items: [card('营销标签', 612, transfer), card('发布操作', 548, offlineButton, stockButton)] },
+        ], { align: 'top' });
         return node;
       };
 
       /* ---------------------------------- 客户页 ---------------------------------- */
       const buildCustomers = () => {
         const node = new W.ICEWidget({ width: PAGE_W, height: 10, fill: false, stroke: false });
-        const profile = new W.ICEDescriptions({
-          left: 0,
-          top: 0,
-          width: 340,
-          column: 1,
-          items: [
-            { label: '客户', value: 'Ava Thompson' },
-            { label: '等级', value: 'VIP 3' },
-            { label: '累计消费', value: '$12,480.00' },
-            { label: '最近下单', value: '2026-09-10' },
-          ],
-        });
-        const listHint = note('点击左侧客户查看档案（可多选）');
+        const CUSTOMERS = [
+          { key: 'ava', name: 'Ava Thompson', level: 'VIP 3', spend: '$12,480.00', last: '2026-09-10', region: '华东' },
+          { key: 'liam', name: 'Liam Chen', level: 'VIP 1', spend: '$3,920.00', last: '2026-09-10', region: '华南' },
+          { key: 'mia', name: 'Mia Rodriguez', level: 'VIP 2', spend: '$7,640.00', last: '2026-09-09', region: '华北' },
+          { key: 'noah', name: 'Noah Wilson', level: '普通', spend: '$1,180.00', last: '2026-09-09', region: '西南' },
+          { key: 'emma', name: 'Emma Brown', level: 'VIP 1', spend: '$4,360.00', last: '2026-09-08', region: '华东' },
+          { key: 'kenji', name: 'Kenji Sato', level: 'VIP 2', spend: '$6,020.00', last: '2026-09-07', region: '华南' },
+        ];
+        const activitiesOf = (customer) => [
+          { title: '下单完成', time: customer.last + ' 09:12', description: customer.spend + ' · ' + customer.region },
+          { title: '咨询售后', time: '09-09 20:41', description: '询问换货流程' },
+          { title: '升级会员', time: '08-28 11:05', color: theme.colors.success, description: customer.level },
+        ];
+        const nameOf = (key) => (CUSTOMERS.find((item) => item.key === key) || CUSTOMERS[0]).name;
+
+        // 右侧档案内容随左侧选中项实时更新
+        const profile = new W.ICEDescriptions({ left: 0, top: 0, width: 764, column: 2, items: [] });
+        const activity = new W.ICETimeline({ left: 0, top: 0, width: 764, items: [] });
+        const selectCustomer = (key) => {
+          const customer = CUSTOMERS.find((item) => item.key === key) || CUSTOMERS[0];
+          profile.setItems([
+            { label: '客户', value: customer.name },
+            { label: '等级', value: customer.level },
+            { label: '累计消费', value: customer.spend },
+            { label: '所在地区', value: customer.region },
+            { label: '最近下单', value: customer.last },
+            { label: '负责人', value: '小林' },
+          ]);
+          activity.setItems(activitiesOf(customer));
+        };
+
+        const listHint = note('选择客户查看右侧档案');
         const customerList = new W.ICEList({
           left: 0,
           top: 0,
-          width: 340,
-          height: 220,
+          width: 348,
+          height: 232,
           mode: 'multiple',
           itemHeight: 36,
-          items: [
-            { key: 'ava', label: 'Ava Thompson' },
-            { key: 'liam', label: 'Liam Chen' },
-            { key: 'mia', label: 'Mia Rodriguez' },
-            { key: 'noah', label: 'Noah Wilson' },
-            { key: 'emma', label: 'Emma Brown' },
-            { key: 'kenji', label: 'Kenji Sato' },
-          ],
+          items: CUSTOMERS.map((customer) => ({ key: customer.key, label: customer.name })),
           onChange: (keys) => {
-            listHint.setText(keys.length ? `已选 ${keys.length} 位客户` : '点击左侧客户查看档案（可多选）');
-            if (keys.length) toast(`已选中 ${keys.length} 位客户`, 'info');
+            if (!keys.length) {
+              listHint.setText('选择客户查看右侧档案');
+              return;
+            }
+            listHint.setText(`已选 ${keys.length} 位：${keys.map(nameOf).join('、')}`);
+            selectCustomer(keys[keys.length - 1]);
           },
         });
         const groupTree = new W.ICETree({
           left: 0,
           top: 0,
-          width: 300,
-          height: 220,
+          width: 268,
+          height: 210,
           defaultExpandAll: true,
           nodes: [
             {
@@ -994,13 +1104,14 @@
               ],
             },
           ],
-          onSelect: (keys, node2) => node2 && toast('分组：' + node2.label, 'info'),
+          onSelect: (keys, treeNode) => treeNode && toast('分组：' + treeNode.label, 'info'),
         });
         const teamTreeSelect = new W.ICETreeSelect({
           left: 0,
           top: 0,
-          width: 300,
-          placeholder: '所属团队',
+          width: 264,
+          placeholder: '归属团队',
+          value: 's1',
           defaultExpandAll: true,
           nodes: [
             {
@@ -1013,17 +1124,7 @@
             },
             { key: 'support', label: '客服部' },
           ],
-          onChange: (key, n) => toast('归属：' + n.label, 'info'),
-        });
-        const activity = new W.ICETimeline({
-          left: 0,
-          top: 0,
-          width: 360,
-          items: [
-            { title: '下单 #10321', time: '09-10 09:12', description: '$1,240.00' },
-            { title: '咨询尺码', time: '09-09 20:41' },
-            { title: '加入 VIP', time: '08-28 11:05', color: theme.colors.success },
-          ],
+          onChange: (key, treeNode) => toast('归属：' + treeNode.label, 'info'),
         });
         const followers = new W.ICEAvatarGroup({
           left: 0,
@@ -1032,10 +1133,11 @@
           max: 4,
           avatars: [{ text: '林' }, { text: '李' }, { text: '王' }, { text: '赵' }, { text: '周' }],
         });
+        const followerNote = note('共同跟进：小林、李工、王倩 等 5 人');
         const comment = new W.ICEComment({
           left: 0,
           top: 0,
-          width: 420,
+          width: 556,
           author: '销售 · 小林',
           avatarText: '林',
           time: '昨天 18:20',
@@ -1044,14 +1146,24 @@
             { key: 'reply', text: '回复' },
             { key: 'pin', text: '置顶' },
           ],
+          onAction: (key) => toast(key === 'pin' ? '已置顶这条跟进' : '回复功能演示', 'info'),
         });
+
+        selectCustomer('ava');
         flow(node, [
-          { title: '客户档案', items: [column(12, profile, customerList, listHint)] },
-          { title: '分组与团队', items: [groupTree, teamTreeSelect] },
-          { title: '最近活动', items: [activity] },
-          { title: '共同联系人', items: [followers] },
-          { title: '跟进记录', items: [comment] },
-        ]);
+          {
+            items: [
+              card('客户列表', 376, column(12, customerList, listHint)),
+              card('客户档案', 792, profile, activity),
+            ],
+          },
+          {
+            items: [
+              card('分组与团队', 584, groupTree, teamTreeSelect),
+              card('跟进记录', 584, comment, followers, followerNote),
+            ],
+          },
+        ], { align: 'top' });
         return node;
       };
 
@@ -1059,8 +1171,9 @@
       const buildSettings = () => {
         const node = new W.ICEWidget({ width: PAGE_W, height: 10, fill: false, stroke: false });
         const panels = {};
+        const paneKeys = ['profile', 'security', 'notify'];
 
-        /* 基本资料 */
+        /* ---------- 基本资料 ---------- */
         const profilePane = new W.ICEWidget({ width: PAGE_W, height: 10, fill: false, stroke: false });
         const profileForm = new W.ICEForm({ width: 420, gap: 12 });
         const nameField = new W.ICETextField({ width: 280, value: 'Felix Morgan' });
@@ -1081,28 +1194,61 @@
           new W.ICEFormItem({ name: 'password', label: '登录密码', control: passwordField, rules: [{ required: true, minLength: 6 }] }),
           new W.ICEFormItem({ name: 'home', label: '所在地区', control: homeCascader, rules: [{ required: true }] }),
         ]);
+        // 异步校验：用户名 admin 视为被占用（保存时才会发这次「请求」）
+        profileForm.getModel().getField('name').rules.push({
+          asyncValidator: (value) =>
+            new Promise((resolve) => setTimeout(() => resolve(String(value).toLowerCase() === 'admin' ? '该用户名被占用' : null), 400)),
+        });
+        profileForm.onSubmit((values) => toast('资料已保存：' + values.name));
         const saveProfile = new W.ICEButton({ left: 0, top: 0, width: 120, height: 32, text: '保存资料' });
         saveProfile.on('click', () => {
           profileForm.submitAsync().then((ok) => {
             if (!ok) toast('请检查表单填写', 'error');
           });
         });
-        profileForm.onSubmit((values) => toast('资料已保存：' + values.name));
-        profileForm.getModel().getField('name').rules.push({
-          asyncValidator: (value) =>
-            new Promise((resolve) => setTimeout(() => resolve(String(value).toLowerCase() === 'admin' ? '该用户名被占用' : null), 400)),
-        });
-        // 保存按钮要压在表单下面，所以放进同一个 cluster（同簇 = 保持相对位置）
-        flow(profilePane, [{ title: '基本资料（保存时会做异步唯一性校验）', items: [column(14, profileForm, saveProfile)] }]);
+
+        // 右侧「账号预览」：头像 + 标签 + 关键信息，作为一张纯展示卡片
+        const previewBlock = new W.ICEWidget({ width: 516, height: 190, fill: false, stroke: false, interactive: false });
+        // 注意 addChildren 收的是数组（不是变参）
+        previewBlock.addChildren([
+          new W.ICEAvatar({ left: 0, top: 0, text: 'FM', size: 56 }),
+          new W.ICELabel({ left: 72, top: 6, width: 220, height: 22, text: 'Felix Morgan', style: { fontSize: 16, fontWeight: '600', fillStyle: theme.colors.text } }),
+          new W.ICELabel({ left: 72, top: 32, text: 'Administrator · 华东组', style: { fontSize: 12, fillStyle: theme.colors.textSecondary } }),
+          new W.ICETag({ left: 72, top: 56, width: 72, height: 22, text: '管理员', status: 'primary' }),
+          new W.ICETag({ left: 152, top: 56, width: 88, height: 22, text: '两步验证', status: 'success', variant: 'soft' }),
+          new W.ICESeparator({ left: 0, top: 96, width: 516, height: 1 }),
+        ]);
+        previewBlock.addChild(
+          new W.ICEDescriptions({
+            left: 0,
+            top: 108,
+            width: 516,
+            column: 1,
+            items: [
+              { label: '账号', value: 'felix@ice.dev' },
+              { label: '最近登录', value: '2026-09-12 09:20 · 上海' },
+            ],
+          }),
+          false,
+        );
+
+        flow(
+          profilePane,
+          [{ items: [card('基本信息', 612, column(14, profileForm, saveProfile)), card('账号预览', 548, previewBlock)] }],
+          { align: 'top' },
+        );
         panels.profile = profilePane;
 
-        /* 安全设置 */
+        /* ---------- 安全设置 ---------- */
         const securityPane = new W.ICEWidget({ width: PAGE_W, height: 10, fill: false, stroke: false });
         const twoFactor = new W.ICESwitch({ left: 0, top: 0, width: 44, height: 22, selected: true });
+        const twoFactorNote = note('两步验证（登录时需要短信验证码）');
+        const securityRate = new W.ICERate({ left: 0, top: 0, value: 4, count: 5, onChange: (value) => toast('安全评分：' + value, 'info') });
+        const rateNote = note('安全等级自评');
         const loginAlert = new W.ICEAlert({
           left: 0,
           top: 0,
-          width: 460,
+          width: 516,
           height: 56,
           type: 'warning',
           title: '检测到异地登录',
@@ -1112,35 +1258,38 @@
         const sessionCollapse = new W.ICECollapse({
           left: 0,
           top: 0,
-          width: 460,
+          width: 1128,
           items: [
-            { key: 'devices', title: '已登录设备', content: 'MacBook Pro · 上海 · 当前设备' },
+            { key: 'devices', title: '已登录设备（2）', content: 'MacBook Pro · 上海 · 当前设备' },
             { key: 'history', title: '最近登录记录', content: '09-11 02:14 广州 / 09-10 21:03 上海' },
           ],
         });
         const logoutAll = new W.ICEButton({ left: 0, top: 0, width: 140, height: 32, text: '退出全部设备', danger: true });
-        logoutAll.on('click', () => W.openModal(ice, {
-          title: '退出全部设备？',
-          content: '所有已登录设备都需要重新登录。',
-          confirmText: '全部退出',
-          onConfirm: () => toast('已退出全部设备'),
-        }));
-        const securityRate = new W.ICERate({ left: 0, top: 0, value: 4, count: 5, onChange: (v) => toast('安全评分：' + v, 'info') });
-        const securityRateLabel = note('安全等级自评');
         twoFactor.on('change', () => toast(twoFactor.isSelected() ? '已开启两步验证' : '已关闭两步验证', 'info'));
-        flow(securityPane, [
-          { title: '登录保护', items: [twoFactor, note('两步验证'), securityRate, securityRateLabel] },
-          { title: '风险提醒', items: [loginAlert] },
-          { title: '设备与记录', items: [sessionCollapse, logoutAll] },
-        ]);
+        logoutAll.on('click', () =>
+          W.openModal(ice, {
+            title: '退出全部设备？',
+            content: '所有已登录设备都需要重新登录。',
+            confirmText: '全部退出',
+            onConfirm: () => toast('已退出全部设备'),
+          }),
+        );
+        flow(
+          securityPane,
+          [
+            { items: [card('登录保护', 612, row(12, twoFactor, twoFactorNote), row(12, securityRate, rateNote)), card('风险提醒', 548, loginAlert)] },
+            { items: [card('设备与记录', 1192, sessionCollapse, logoutAll)] },
+          ],
+          { align: 'top' },
+        );
         panels.security = securityPane;
 
-        /* 通知偏好 */
+        /* ---------- 通知偏好 ---------- */
         const notifyPane = new W.ICEWidget({ width: PAGE_W, height: 10, fill: false, stroke: false });
         const channelTransfer = new W.ICETransfer({
           left: 0,
           top: 0,
-          width: 520,
+          width: 548,
           height: 220,
           dataSource: [
             { key: 'email', title: '邮件' },
@@ -1152,9 +1301,10 @@
           titles: ['可用渠道', '已开启'],
           onChange: (keys) => toast('通知渠道：' + (keys.join('、') || '（全部关闭）'), 'info'),
         });
-        const quietSlider = new W.ICESlider({ left: 0, top: 0, width: 300, height: 18, range: true, min: 0, max: 24, step: 1, value: [22, 8] });
-        const quietLabel = note('免打扰时段（22:00 - 08:00）');
         const quietSwitch = new W.ICESwitch({ left: 0, top: 0, width: 44, height: 22, selected: true });
+        const quietSwitchNote = note('开启免打扰');
+        const quietSlider = new W.ICESlider({ left: 0, top: 0, width: 320, height: 18, range: true, min: 0, max: 24, step: 1, value: [22, 8] });
+        const quietLabel = note('免打扰时段（22:00 - 08:00）');
         quietSwitch.on('change', () => {
           const on = quietSwitch.isSelected();
           quietSlider.setState({ opacity: on ? 1 : 0.4 });
@@ -1187,12 +1337,14 @@
             toast('请检查邮箱格式', 'error');
           }
         });
-        flow(notifyPane, [
-          { title: '通知渠道', items: [channelTransfer] },
-          { title: '免打扰', items: [row(12, quietSwitch, note('开启免打扰')), column(8, quietSlider, quietLabel)] },
-          { title: '摘要频率', items: [digestSegmented, saveNotify] },
-          { title: '接收设置', items: [notifyForm] },
-        ]);
+        flow(
+          notifyPane,
+          [
+            { items: [card('通知渠道', 612, channelTransfer), card('免打扰', 548, row(12, quietSwitch, quietSwitchNote), column(10, quietSlider, quietLabel))] },
+            { items: [card('摘要与接收', 1192, digestSegmented, column(14, notifyForm, saveNotify))] },
+          ],
+          { align: 'top' },
+        );
         panels.notify = notifyPane;
 
         const tabs = new W.ICETabs({
@@ -1204,7 +1356,6 @@
           tabs: ['基本资料', '安全设置', '通知偏好'],
           onChange: (index) => showSettingsPane(index),
         });
-        const paneKeys = ['profile', 'security', 'notify'];
         const showSettingsPane = (index) => {
           const clamped = Math.max(0, Math.min(paneKeys.length - 1, Number(index) || 0));
           paneKeys.forEach((key, i) => panels[key].setState({ display: i === clamped }));
@@ -1218,7 +1369,6 @@
         };
         state.showSettingsPane = showSettingsPane;
 
-        // tabs 固定在顶部，三个面板叠在同一位置，靠 display 切换（省得整页重排）
         tabs.setState({ left: 24, top: 20 });
         node.addChild(tabs, false);
         paneKeys.forEach((key) => {

@@ -17,6 +17,8 @@ export class ICEMenu extends ICEContainer {
   private items: ICEMenuItem[];
   /** 扁平化后的可见行（展开的父节点后紧跟其子项） */
   private rows: Array<{ item: ICEMenuItem; depth: number }> = [];
+  /** 鼠标悬停的项（仅视觉反馈，不影响选中） */
+  private hoverKey: string | null = null;
   private expanded = new Set<string>();
   private itemPanels: any[] = [];
   private itemNodes = new Map<string, any>();
@@ -187,6 +189,20 @@ export class ICEMenu extends ICEContainer {
       this.addChild(panel, false);
       this.itemPanels.push(panel);
       this.itemNodes.set(item.key, panel);
+      // 悬停反馈：菜单项常被当作主操作入口，没有 hover 会很"死"
+      panel.on(
+        'hoverchange',
+        (evt: any) => {
+          const hovered = !!(evt && evt.hovered);
+          const next = hovered ? item.key : this.hoverKey === item.key ? null : this.hoverKey;
+          if (next === this.hoverKey) {
+            return;
+          }
+          this.hoverKey = next;
+          this.__syncSelection();
+        },
+        this,
+      );
 
       if (item.iconPath) {
         const icon = new ICESvgIcon({
@@ -264,9 +280,10 @@ export class ICEMenu extends ICEContainer {
     const theme = iceUIManager.getTheme();
     this.itemPanels.forEach((panel, index) => {
       const active = this.rows[index] && this.rows[index].item.key === this.selectedKey;
+      const hovered = this.rows[index] && this.rows[index].item.key === this.hoverKey;
       panel.setState({
         style: {
-          fillStyle: active ? theme.colors.primaryBg : 'rgba(0,0,0,0)',
+          fillStyle: active ? theme.colors.primaryBg : hovered ? theme.colors.background : 'rgba(0,0,0,0)',
         },
       });
       (panel.childNodes || []).forEach((label: any) => {

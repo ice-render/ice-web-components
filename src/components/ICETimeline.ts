@@ -52,6 +52,14 @@ export class ICETimeline extends ICEWidget {
     return dot ? String(dot.state.style.fillStyle) : '';
   }
 
+  /** 替换数据并重排（内容随选中项变化时用）。 */
+  public setItems(items: ICETimelineItem[]): this {
+    this.items = (items || []).slice();
+    this.setState({ height: this.items.length * this.itemHeight });
+    this.__render();
+    return this;
+  }
+
   private __render(): void {
     const theme = iceUIManager.getTheme();
     const width = Number(this.state.width) || 320;
