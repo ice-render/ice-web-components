@@ -10,6 +10,8 @@ export type ICETableColumn = {
   key: string;
   title: string;
   width?: number;
+  /** 拖拽缩列时的最小宽度（不传用表格的 `minColumnWidth`，默认 60） */
+  minWidth?: number;
   align?: 'left' | 'center' | 'right';
   /** 表头可排序：`true` 用默认比较（数值按数值、其余按字典序），或传自定义比较函数 */
   sorter?: boolean | ((a: ICETableRow, b: ICETableRow) => number);
@@ -22,6 +24,39 @@ export type ICETableColumn = {
 };
 
 export type ICETableRow = Record<string, any>;
+
+/**
+ * 列宽求解（纯函数，方便单测）。
+ *
+ * 规则：
+ * - 显式 `width` 优先，且不低于 `minWidth`；
+ * - 剩下的宽度在所有「自动列」（没给 width 的）之间均分；
+ * - 均分后仍小于最小宽度的，抬到最小宽度 —— 此时**总和可能超过 totalWidth**，
+ *   这是有意的（宽表就该横向溢出，由调用方决定要不要横向滚动），不在函数里悄悄压扁。
+ */
+export function resolveColumnWidths(
+  columns: Array<{ width?: number; minWidth?: number }>,
+  totalWidth: number,
+  defaultMinWidth: number = 60,
+): number[] {
+  const count = (columns || []).length;
+  if (!count) return [];
+  const mins = columns.map((column) => Math.max(1, Math.floor(Number(column.minWidth) || defaultMinWidth)));
+  const widths = columns.map((column, index) => {
+    const explicit = Math.floor(Number(column.width) || 0);
+    return explicit > 0 ? Math.max(mins[index], explicit) : 0;
+  });
+  const autoIndexes = widths.map((width, index) => (width === 0 ? index : -1)).filter((index) => index >= 0);
+  if (autoIndexes.length) {
+    const fixedSum = widths.reduce((sum, width) => sum + width, 0);
+    const remaining = Math.max(0, Math.floor(Number(totalWidth) || 0) - fixedSum);
+    const each = Math.max(1, Math.floor(remaining / autoIndexes.length));
+    autoIndexes.forEach((index) => {
+      widths[index] = Math.max(mins[index], each);
+    });
+  }
+  return widths;
+}
 
 export interface ICETableSortState {
   key: string;
@@ -87,6 +122,14 @@ export class ICETable extends ICEWidget {
   private rowHeight: number;
   private headerHeight: number;
   private onSelect: ((row: ICETableRow | null, index: number) => void) | null;
+  /** 拖拽缩列后的宽度覆盖（列 key → 宽度）；不动原始 columns 定义 */
+  private columnWidthOverrides: Record<string, number> = {};
+  /** 是否允许拖表头边界缩列 */
+  private resizable = false;
+  private minColumnWidth: number;
+  private onColumnResize: ((key: string, width: number, widths: Record<string, number>) => void) | null = null;
+  /** 拖拽状态：{ key, index, startX, startWidth } */
+  private resizeState: { key: string; index: number; startX: number; startWidth: number } | null = null;
   private __bound = false;
 
   constructor(props: any = {}) {
@@ -118,6 +161,9 @@ export class ICETable extends ICEWidget {
     this.rowHeight = rowHeight;
     this.headerHeight = headerHeight;
     this.onSelect = typeof props.onSelect === 'function' ? props.onSelect : null;
+    this.resizable = props.resizable === true;
+    this.minColumnWidth = Math.max(20, Math.floor(Number(props.minColumnWidth) || 60));
+    this.onColumnResize = typeof props.onColumnResize === 'function' ? props.onColumnResize : null;
     this.selectionMode =
       props.rowSelection === 'multiple' ? 'multiple' : props.rowSelection === 'none' ? 'none' : 'single';
     this.onSelectionChange = typeof props.onSelectionChange === 'function' ? props.onSelectionChange : null;
@@ -360,6 +406,8 @@ export class ICETable extends ICEWidget {
     }
     this.__bound = true;
     this.ice.evtBus.on('mousedown', this.__onGlobalMouseDown, this);
+    this.ice.evtBus.on('mousemove', this.__onGlobalMouseMove, this);
+    this.ice.evtBus.on('mouseup', this.__onGlobalMouseUp, this);
   }
 
   private __onGlobalMouseDown(evt: any): void {
@@ -509,6 +557,10 @@ export class ICETable extends ICEWidget {
       undefined,
       offset,
     );
+    // 拖拽缩列：表头每列右边界放一条透明拖拽条
+    if (this.resizable) {
+      this.__createResizeHandles(header, widths, offset);
+    }
     const divider = new ICERect({
       left: 0,
       top: this.headerHeight - 1,
@@ -717,11 +769,110 @@ export class ICETable extends ICEWidget {
   }
 
   private __columnWidths(totalWidth: number): number[] {
-    const fixed = this.columns.reduce((sum, column) => sum + (Number(column.width) || 0), 0);
-    const rest = totalWidth - fixed;
-    const autoCount = this.columns.filter((column) => !(Number(column.width) > 0)).length;
-    const auto = autoCount > 0 ? rest / autoCount : 0;
-    return this.columns.map((column) => Number(column.width) || auto);
+    return resolveColumnWidths(
+      this.columns.map((column) => ({
+        width: this.columnWidthOverrides[column.key] || column.width,
+        minWidth: column.minWidth,
+      })),
+      totalWidth,
+      this.minColumnWidth,
+    );
+  }
+
+  // ---------------------------------------------------------------- 列宽 API
+
+  /** 当前各列实际宽度（按列 key 给，方便断言与持久化）。 */
+  public getColumnWidths(): Record<string, number> {
+    const totalWidth = this.renderedWidth || Number(this.state.width) || 720;
+    const offset = this.selectionMode === 'multiple' ? ICETable.SELECTION_WIDTH : 0;
+    const widths = this.__columnWidths(totalWidth - offset);
+    const result: Record<string, number> = {};
+    this.columns.forEach((column, index) => {
+      result[column.key] = widths[index];
+    });
+    return result;
+  }
+
+  /**
+   * 手动设置某列宽度（拖拽缩列走的就是它）：宽度按 `minWidth` 夹取，改完重排整张表。
+   * 返回是否真的变了（相同宽度不会白重排）。
+   */
+  public setColumnWidth(key: string, width: number): boolean {
+    const column = this.columns.find((item) => item.key === key);
+    if (!column) return false;
+    const min = Math.max(20, Math.floor(Number(column.minWidth) || this.minColumnWidth));
+    const next = Math.max(min, Math.floor(Number(width) || 0));
+    const current = this.getColumnWidths()[key];
+    if (current === next) return false;
+    this.columnWidthOverrides[key] = next;
+    // 列宽变了，其它自动列要重新分配 —— 只有「显式给了 width」的列才不会受影响
+    this.columns.forEach((item) => {
+      if (item.key !== key && !(Number(item.width) > 0) && this.columnWidthOverrides[item.key]) {
+        delete this.columnWidthOverrides[item.key];
+      }
+    });
+    this.__render();
+    const widths = this.getColumnWidths();
+    this.trigger('columnresize', null, { key, width: next, widths });
+    if (this.onColumnResize) this.onColumnResize(key, next, widths);
+    return true;
+  }
+
+  public isResizable(): boolean {
+    return this.resizable;
+  }
+
+  public isResizing(): boolean {
+    return !!this.resizeState;
+  }
+
+  /** 表头边界拖拽句柄：透明条，命中区 ±4px。 */
+  private __createResizeHandles(parent: any, widths: number[], offset: number): void {
+    let left = offset;
+    widths.forEach((width, index) => {
+      left += width;
+      if (index >= widths.length - 1) return;
+      const handle = new ICEWidget({
+        left: left - 4,
+        top: 0,
+        width: 8,
+        height: this.headerHeight,
+        fill: false,
+        stroke: false,
+        style: { fillStyle: 'rgba(0,0,0,0)' },
+      });
+      handle.on('mousedown', (evt: any) => this.__startResize(index, evt));
+      handle.on('hoverchange', (evt: any) => {
+        const hovered = readHovered(evt);
+        handle.setState({
+          fill: hovered,
+          style: { ...handle.state.style, fillStyle: hovered ? 'rgba(13,110,253,0.12)' : 'rgba(0,0,0,0)' },
+        });
+      });
+      parent.addChild(handle, false);
+    });
+  }
+
+  private __startResize(index: number, evt: any): void {
+    const column = this.columns[index];
+    if (!column || !this.ice || typeof this.ice.screenToWorld !== 'function') return;
+    const [wx] = this.ice.screenToWorld(evt.offsetX, evt.offsetY);
+    this.resizeState = { key: column.key, index, startX: wx, startWidth: this.getColumnWidths()[column.key] };
+    this.trigger('columnresizestart', null, { key: column.key });
+  }
+
+  private __onGlobalMouseMove(evt: any): void {
+    if (!this.resizeState || !this.ice || typeof this.ice.screenToWorld !== 'function') return;
+    const [wx] = this.ice.screenToWorld(evt.offsetX, evt.offsetY);
+    const next = this.resizeState.startWidth + (wx - this.resizeState.startX);
+    this.setColumnWidth(this.resizeState.key, next);
+  }
+
+  private __onGlobalMouseUp(): void {
+    if (!this.resizeState) return;
+    const key = this.resizeState.key;
+    this.resizeState = null;
+    this.trigger('columnresizeend', null, { key, widths: this.getColumnWidths() });
   }
 
   private __format(value: any): string {

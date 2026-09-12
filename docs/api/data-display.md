@@ -40,6 +40,10 @@
 | `clearSelection()` | `this` |  |
 | `getSelectionNode(index: number)` | `ICECheckBox \| null` |  |
 | `getHeaderCheckbox()` | `ICECheckBox \| null` |  |
+| `getColumnWidths()` | `Record<string, number>` | 当前各列实际宽度（按列 key 给，方便断言与持久化）。 |
+| `setColumnWidth(key: string, width: number)` | `boolean` | 手动设置某列宽度（拖拽缩列走的就是它）：宽度按 `minWidth` 夹取，改完重排整张表。 |
+| `isResizable()` | `boolean` |  |
+| `isResizing()` | `boolean` |  |
 
 ## `ICEList`
 

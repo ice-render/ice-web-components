@@ -537,6 +537,34 @@ check(
   JSON.stringify(jumped),
 );
 
+/* ---------- 表格：拖表头边界缩列 ---------- */
+const tableBox = await nodeBox('window.__result.pagedTable');
+const tableBefore = await page.evaluate(() => window.__result.pagedTable.getColumnWidths());
+// 第一列与第二列的交界处（表头右边界），从那里往右拖 60px
+const boundaryX = tableBox.l + tableBefore.name;
+const headerY = tableBox.t + 18;
+const galRect2 = await canvasRect();
+await page.mouse.move(galRect2.left + boundaryX, galRect2.top + headerY);
+await page.mouse.down();
+await page.mouse.move(galRect2.left + boundaryX + 60, galRect2.top + headerY, { steps: 8 });
+await page.mouse.up();
+await page.waitForTimeout(320);
+const tableAfter = await page.evaluate(() => window.__result.pagedTable.getColumnWidths());
+check(
+  '表格：拖表头边界缩列（第一列 +60，其余自动列重新分配）',
+  Math.abs(tableAfter.name - tableBefore.name - 60) <= 2 && tableAfter.city < tableBefore.city && tableAfter.amount < tableBefore.amount,
+  JSON.stringify({ before: tableBefore, after: tableAfter }),
+);
+
+// 往左拖到负数：被最小宽度夹住，不能把列拖没
+await page.mouse.move(galRect2.left + tableBox.l + tableAfter.name, galRect2.top + headerY);
+await page.mouse.down();
+await page.mouse.move(galRect2.left + tableBox.l + tableAfter.name - 400, galRect2.top + headerY, { steps: 8 });
+await page.mouse.up();
+await page.waitForTimeout(320);
+const tableClamped = await page.evaluate(() => window.__result.pagedTable.getColumnWidths());
+check('表格：列宽被最小宽度夹住（拖不没）', tableClamped.name === 70, JSON.stringify(tableClamped));
+
 const sectionBox = await nodeBox('window.__result.splitter');
 const shotRect = await canvasRect();
 if (sectionBox) {

@@ -37,6 +37,10 @@ npx serve .
 > 窗口计算是纯函数 `computeVirtualRange`（缓冲、贴底、空列表、越界都在单测里守着），
 > 组件 `ICEVirtualList` 只负责把窗口映射成节点。`qa:gallery` 里三条断言分别验证
 > 「一万行只渲染可视区」「真实滚轮滚动后窗口跟着换」「`scrollToIndex` 跳到最后一万条」。
+>
+> 同一页的「表格」那格开了 `resizable`：**拖表头边界就能缩列**（最小 70px 夹住，
+> 拖过头也不会把列拖没），拖完其余自动列会重新分配。列宽求解同样是纯函数
+> `resolveColumnWidths`，交互那条链路由 QA 用真实鼠标拖出来。
 
 ## `admin.html`：后台管理（6 页）
 

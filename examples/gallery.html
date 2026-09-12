@@ -1093,6 +1093,9 @@
           { key: 'city', title: '城市' },
           { key: 'amount', title: '金额', align: 'right', sorter: true },
         ],
+        // 表头边界可拖拽缩列（最小 70px，拖过头会夹住）
+        resizable: true,
+        minColumnWidth: 70,
         data: [
           { name: 'Ava', city: '杭州', amount: 1240 },
           { name: 'Bob', city: '上海', amount: 860 },

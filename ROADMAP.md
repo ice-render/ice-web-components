@@ -11,7 +11,7 @@
 > `focusRing` 聚焦色）；③ `ICETag`/`ICEBadge` 默认改成 Bootstrap 实底 `.text-bg-*`（`variant:'soft'` 保留浅底风格）。
 > 细节见 README 的 Naming / Theme / Colour variants 三节。
 
-## 现状（78 个组件源文件 / 97 个导出类 / 640 条单测 / 184 项浏览器断言）
+## 现状（78 个组件源文件 / 97 个导出类 / 651 条单测 / 186 项浏览器断言）
 
 按分组清点（完整清单与参数见 [`docs/components.md`](./docs/components.md)）：
 
@@ -204,7 +204,12 @@
       gallery 里放了 10000 行做真实场景：**只渲染 12~15 个节点**，滚轮 / `scrollToIndex`
       都验过（`qa:gallery` 3 条断言）。11 条单测覆盖缓冲、贴底、空列表、越界、滚动不涨节点、
       `scrollToIndex` 夹取、视口变化重算。
-- [ ] P1 大数据量 · 第二半：`ICETable` 的 `virtual` 模式 + 列宽拖动 + 固定列
+- [x] **P1 大数据量 · 第二半（列宽部分）**：`resolveColumnWidths` 纯求解（显式列宽优先 /
+      自动列均分 / 最小宽度夹取，**允许总和超出**给宽表横向溢出留口子）+ `ICETable` 的
+      `resizable` 拖拽缩列（表头边界透明拖拽条，±4px 命中）、`getColumnWidths()` /
+      `setColumnWidth(key, width)` / `columnresize` 事件与 `onColumnResize` 回调。
+      11 条单测 + `qa:gallery` 2 条真鼠标拖拽断言（拖 +60 后其余自动列重分、拖到负数被最小宽度夹住）。
+- [ ] P1 大数据量 · 剩余：`ICETable` 的 `virtual` 模式（万行表格）与固定列（宽表横向滚动时左侧列冻结）
 - [ ] P1 拖拽编辑
 - [ ] P1 a11y 与 i18n
 
