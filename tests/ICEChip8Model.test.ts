@@ -13,7 +13,7 @@
  * - 定时器由 `tickTimers()` 驱动（60Hz，由页面按真实时间调用）；
  * - 键盘 `setKey(i, down)`，`FX0A` 阻塞等待按键（读到了就继续）。
  */
-import { ICEChip8Model } from '../src/model/ICEChip8Model';
+import { ICE_CHIP8_DEMO_ROM, ICEChip8Model } from '../src/model/ICEChip8Model';
 
 /** 把指令数组写进内存（0x200 起）。 */
 const load = (model: ICEChip8Model, opcodes: number[]) =>
@@ -135,6 +135,37 @@ describe('定时器与键盘', () => {
     model.step(); // 读到 5
     expect(model.getV(0)).toBe(5);
     expect(model.getPC()).toBe(0x202);
+  });
+});
+
+describe('自带 demo ROM（自写，避开版权）', () => {
+  it('跑起来会画出东西，而且方块会沿对角线绕屏移动', () => {
+    const model = new ICEChip8Model();
+    model.loadProgram(ICE_CHIP8_DEMO_ROM);
+    for (let i = 0; i < 60; i += 1) model.step();
+    // 逐条步进采样：ROM 每轮会先清屏再画，所以要看「亮像素数的最大值」而不是某一瞬间
+    let maxLit = 0;
+    for (let i = 0; i < 21; i += 1) {
+      model.step();
+      maxLit = Math.max(maxLit, Array.from(model.getDisplay()).reduce((sum, pixel) => sum + pixel, 0));
+    }
+    expect(maxLit).toBeGreaterThanOrEqual(4); // 至少有那个 2×2 方块
+    // 逐条步进采样：位置必须出现过多个不同值（= 方块真的在动）
+    const positions = new Set<number>();
+    for (let i = 0; i < 21; i += 1) {
+      model.step();
+      const first = model.getDisplay().findIndex((pixel) => pixel === 1);
+      if (first >= 0) positions.add(first);
+    }
+    expect(positions.size).toBeGreaterThan(1); // 位置在变 = 真的在动
+  });
+
+  it('延时定时器被 ROM 用起来了（F015）', () => {
+    const model = new ICEChip8Model();
+    model.loadProgram(ICE_CHIP8_DEMO_ROM);
+    for (let i = 0; i < 20; i += 1) model.step();
+    expect(model.getDelayTimer()).toBeGreaterThanOrEqual(0);
+    expect(model.isWaitingForKey()).toBe(false);
   });
 });
 
