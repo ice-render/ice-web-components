@@ -1,17 +1,17 @@
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { ICELabel } from './ICELabel';
 import { iceUIManager } from '../core/ICEManager';
 import { createTextNode, getStatusColors } from '../util/ICEStyle';
 
 export type ICEAlertType = 'info' | 'success' | 'warning' | 'error';
 
-export class ICEAlert extends ICEComponent {
+export class ICEAlert extends ICEWidget {
   private titleNode: any;
   private messageNode: any;
   private type: ICEAlertType;
   private closable: boolean;
   private closed = false;
-  private closeButton: ICEComponent | null = null;
+  private closeButton: ICEWidget | null = null;
   private iconNode: ICELabel | null = null;
   private onCloseCallback: (() => void) | null;
 
@@ -91,7 +91,7 @@ export class ICEAlert extends ICEComponent {
     this.addChild(this.messageNode, false);
 
     if (closable) {
-      const button = new ICEComponent({
+      const button = new ICEWidget({
         left: width - 30,
         top: 10,
         width: 20,
@@ -179,7 +179,7 @@ export class ICEAlert extends ICEComponent {
     return this.closable;
   }
 
-  public getCloseButton(): ICEComponent | null {
+  public getCloseButton(): ICEWidget | null {
     return this.closeButton;
   }
 }

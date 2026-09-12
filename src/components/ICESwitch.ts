@@ -1,9 +1,9 @@
 import { ICECircle, ICERect } from 'ice-render';
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEToggleModel } from '../model/ICEToggleModel';
 
-export class ICESwitch extends ICEComponent {
+export class ICESwitch extends ICEWidget {
   private model: ICEToggleModel;
   private track: any;
   private knob: any;

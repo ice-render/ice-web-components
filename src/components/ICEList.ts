@@ -1,6 +1,6 @@
 import { ICELabel } from './ICELabel';
 import { ICEPanel } from './ICEPanel';
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { ICEScrollPane } from './ICEScrollPane';
 import { iceUIManager } from '../core/ICEManager';
 import { ICESelectionModel, ICESelectionMode } from '../model/ICESelectionModel';
@@ -32,14 +32,14 @@ export interface ICEListOptions {
   onChange?: (keys: string[], item?: ICEListItem) => void;
 }
 
-export class ICEList extends ICEComponent {
+export class ICEList extends ICEWidget {
   private items: ICEListItem[];
   private model: ICESelectionModel;
   private itemHeight: number;
   private onChange: ((keys: string[], item?: ICEListItem) => void) | null;
   private pane: ICEScrollPane | null = null;
-  private content: ICEComponent;
-  private rowNodes = new Map<string, ICEComponent>();
+  private content: ICEWidget;
+  private rowNodes = new Map<string, ICEWidget>();
   private activeIndex = -1;
   private running = false;
 
@@ -66,7 +66,7 @@ export class ICEList extends ICEComponent {
     this.onChange = typeof props.onChange === 'function' ? props.onChange : null;
     this.model = new ICESelectionModel({ mode: props.mode || 'single', selected: props.value || [] });
     this.model.addChangeListener(() => this.__syncRows());
-    this.content = new ICEComponent({ left: 0, top: 0, width: width - 8, height: this.items.length * this.itemHeight });
+    this.content = new ICEWidget({ left: 0, top: 0, width: width - 8, height: this.items.length * this.itemHeight });
     this.focusable = true;
     this.__render();
   }
@@ -96,7 +96,7 @@ export class ICEList extends ICEComponent {
     return this.activeIndex;
   }
 
-  public getRowNode(key: string): ICEComponent | null {
+  public getRowNode(key: string): ICEWidget | null {
     return this.rowNodes.get(key) || null;
   }
 
@@ -206,7 +206,7 @@ export class ICEList extends ICEComponent {
     this.items.forEach((item, index) => {
       const selected = this.model.isSelected(item.key);
       const active = index === this.activeIndex;
-      const row = new ICEComponent({
+      const row = new ICEWidget({
         left: 4,
         top: index * this.itemHeight,
         width: width - 8,

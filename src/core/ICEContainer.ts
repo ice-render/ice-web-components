@@ -1,7 +1,7 @@
 import type { ICELayoutManager } from 'ice-render';
-import { ICEComponent } from './ICEComponent';
+import { ICEWidget } from './ICEWidget';
 
-export class ICEContainer extends ICEComponent {
+export class ICEContainer extends ICEWidget {
   constructor(props: any = {}) {
     super(props);
   }

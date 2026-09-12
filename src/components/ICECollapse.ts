@@ -1,5 +1,5 @@
 import { ICELabel } from './ICELabel';
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { createTextNode } from '../util/ICEStyle';
 
@@ -30,15 +30,15 @@ export interface ICECollapseOptions {
   onExpand?: (keys: string[]) => void;
 }
 
-export class ICECollapse extends ICEComponent {
+export class ICECollapse extends ICEWidget {
   private items: ICECollapseItem[];
   private active: string[];
   private accordion: boolean;
   private headerHeight: number;
   private contentHeight: number;
   private expandCallback: ((keys: string[]) => void) | null;
-  private headerNodes = new Map<string, ICEComponent>();
-  private contentNodes = new Map<string, ICEComponent>();
+  private headerNodes = new Map<string, ICEWidget>();
+  private contentNodes = new Map<string, ICEWidget>();
   private offsetMap = new Map<string, number>();
 
   constructor(props: ICECollapseOptions) {
@@ -73,11 +73,11 @@ export class ICECollapse extends ICEComponent {
     return this;
   }
 
-  public getHeaderNode(key: string): ICEComponent | null {
+  public getHeaderNode(key: string): ICEWidget | null {
     return this.headerNodes.get(key) || null;
   }
 
-  public getContentNode(key: string): ICEComponent | null {
+  public getContentNode(key: string): ICEWidget | null {
     return this.contentNodes.get(key) || null;
   }
 
@@ -112,7 +112,7 @@ export class ICECollapse extends ICEComponent {
     this.items.forEach((item) => {
       const expanded = this.active.indexOf(item.key) !== -1;
       this.offsetMap.set(item.key, top);
-      const header = new ICEComponent({
+      const header = new ICEWidget({
         left: 0,
         top,
         width,
@@ -161,7 +161,7 @@ export class ICECollapse extends ICEComponent {
       top += this.headerHeight;
 
       if (expanded) {
-        const content = new ICEComponent({
+        const content = new ICEWidget({
           left: 0,
           top,
           width,

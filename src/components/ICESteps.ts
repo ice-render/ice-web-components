@@ -1,5 +1,5 @@
 import { ICELabel } from './ICELabel';
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 
 /**
@@ -20,11 +20,11 @@ export interface ICEStepsOptions {
   onChange?: (current: number) => void;
 }
 
-export class ICESteps extends ICEComponent {
+export class ICESteps extends ICEWidget {
   private items: ICEStepsItem[];
   private current: number;
   private circleSize: number;
-  private stepNodes: ICEComponent[] = [];
+  private stepNodes: ICEWidget[] = [];
   private onChange: ((current: number) => void) | null;
 
   constructor(props: ICEStepsOptions) {
@@ -62,7 +62,7 @@ export class ICESteps extends ICEComponent {
     return this;
   }
 
-  public getStepNode(index: number): ICEComponent | null {
+  public getStepNode(index: number): ICEWidget | null {
     return this.stepNodes[index] || null;
   }
 
@@ -78,7 +78,7 @@ export class ICESteps extends ICEComponent {
       const finished = index < this.current;
       const active = index === this.current;
       const left = index * slot;
-      const step = new ICEComponent({
+      const step = new ICEWidget({
         left,
         top: 0,
         width: slot - 8,
@@ -90,7 +90,7 @@ export class ICESteps extends ICEComponent {
           fillStyle: active ? theme.colors.primaryBg : 'rgba(0,0,0,0)',
         },
       });
-      const circle = new ICEComponent({
+      const circle = new ICEWidget({
         left: 0,
         top: 6,
         width: this.circleSize,
@@ -157,7 +157,7 @@ export class ICESteps extends ICEComponent {
       // 连接线（连到下一个步骤）
       if (index < count - 1) {
         step.addChild(
-          new ICEComponent({
+          new ICEWidget({
             left: this.circleSize + 4,
             top: 6 + this.circleSize / 2,
             width: Math.max(0, slot - this.circleSize - 12),

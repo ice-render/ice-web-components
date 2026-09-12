@@ -1,4 +1,4 @@
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { ICELabel } from './ICELabel';
 import { ICEPanel } from './ICEPanel';
 import { iceUIManager } from '../core/ICEManager';
@@ -8,7 +8,7 @@ import type { ICEOverlayPlacement } from '../util/ICEOverlayPosition';
 /**
  * 工具提示：鼠标悬停在目标组件上、延时后弹出的小浮层。
  *
- * - 悬停检测复用 `ICEComponent` 的 hover 状态（ICEHoverManager 命中后调 `setHovered`，
+ * - 悬停检测复用 `ICEWidget` 的 hover 状态（ICEHoverManager 命中后调 `setHovered`，
  *   本组件监听目标的 `hoverchange` 事件）；
  * - 弹出/关闭都有延时（业界组件库 的 mouseEnterDelay / mouseLeaveDelay 语义），进入延时期内离开则不弹；
  * - 浮层定位、点外关闭、z 序全部交给 `ICEOverlayManager`（工具层，恒在组件之上）；

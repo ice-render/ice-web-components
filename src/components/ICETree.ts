@@ -1,5 +1,5 @@
 import { ICELabel } from './ICELabel';
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { ICEScrollPane } from './ICEScrollPane';
 import { iceUIManager } from '../core/ICEManager';
 import { ICESelectionModel, ICESelectionMode } from '../model/ICESelectionModel';
@@ -45,7 +45,7 @@ interface FlatRow {
   hasChildren: boolean;
 }
 
-export class ICETree extends ICEComponent {
+export class ICETree extends ICEWidget {
   private nodes: ICETreeNode[];
   private model: ICESelectionModel;
   private expanded: string[];
@@ -54,9 +54,9 @@ export class ICETree extends ICEComponent {
   private onSelect: ((keys: string[], node?: ICETreeNode) => void) | null;
   private onExpand: ((expandedKeys: string[]) => void) | null;
   private pane: ICEScrollPane | null = null;
-  private content: ICEComponent;
+  private content: ICEWidget;
   private rows: FlatRow[] = [];
-  private rowNodes = new Map<string, ICEComponent>();
+  private rowNodes = new Map<string, ICEWidget>();
   private activeKey: string | null = null;
   private running = false;
 
@@ -88,7 +88,7 @@ export class ICETree extends ICEComponent {
     this.expanded = props.defaultExpandAll
       ? this.__collectExpandableKeys(this.nodes)
       : (props.expandedKeys || []).slice();
-    this.content = new ICEComponent({ left: 0, top: 0, width: width - 8, height });
+    this.content = new ICEWidget({ left: 0, top: 0, width: width - 8, height });
     this.focusable = true;
     this.__render();
   }
@@ -136,7 +136,7 @@ export class ICETree extends ICEComponent {
     return this.activeKey;
   }
 
-  public getRowNode(key: string): ICEComponent | null {
+  public getRowNode(key: string): ICEWidget | null {
     return this.rowNodes.get(key) || null;
   }
 
@@ -324,7 +324,7 @@ export class ICETree extends ICEComponent {
     this.rows.forEach((row, index) => {
       const selected = this.model.isSelected(row.node.key);
       const active = row.node.key === this.activeKey;
-      const node = new ICEComponent({
+      const node = new ICEWidget({
         left: 4,
         top: index * this.itemHeight,
         width: width - 8,
@@ -375,7 +375,7 @@ export class ICETree extends ICEComponent {
         node.on('expand-click', () => this.__toggleExpand(row.node.key));
       }
       // 点击缩进区域（箭头附近）也算展开
-      const arrowHit = new ICEComponent({
+      const arrowHit = new ICEWidget({
         left: indent - 2,
         top: 0,
         width: row.hasChildren ? 18 : 0,

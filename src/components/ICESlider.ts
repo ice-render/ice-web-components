@@ -1,9 +1,9 @@
 import { ICECircle, ICERect } from 'ice-render';
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEBoundedRangeModel } from '../model/ICEBoundedRangeModel';
 
-export class ICESlider extends ICEComponent {
+export class ICESlider extends ICEWidget {
   private model: ICEBoundedRangeModel;
   private track: any;
   private fill: any;

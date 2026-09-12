@@ -2,15 +2,16 @@ export * from './theme/ICETheme';
 export * from './core/ICEManager';
 export * from './core/ICEHoverManager';
 export * from './core/ICEPainter';
-/** 布局协议直接用引擎的（同一个 ICELayoutManager，不另造一份）。 */
-export type { ICELayoutManager } from 'ice-render';
 export * from './core/ICEOverlayManager';
 export * from './core/ICEFocusManager';
 export * from './core/ICEMessageManager';
-export * from './core/ICEComponent';
+export * from './core/ICEWidget';
 export * from './core/ICEContainer';
-export * from './layouts/ICEBoxLayout';
-export * from './layouts/ICEFlowLayout';
+/**
+ * 布局类（`ICEFlowLayout` / `ICEBoxLayout` / `ICELayoutManager`）**不在这里再导出**：
+ * 它们本来就是 `ice-render` 的东西，用户直接从 `ice-render` 取。
+ * 这样本包的导出集合与引擎完全不重叠，「同时 import 两个包」永远不会撞名。
+ */
 export * from './util/ICEOverlayPosition';
 export * from './util/ICEWorldBox';
 export * from './util/ICEAnimation';
@@ -50,7 +51,7 @@ export * from './components/ICEDatePicker';
 export * from './components/ICETimePicker';
 export * from './components/ICEComment';
 export * from './components/ICEColorPicker';
-export * from './components/ICEImage';
+export * from './components/ICEImageView';
 export * from './components/ICEAvatar';
 export * from './components/ICEAvatarGroup';
 export * from './components/ICEIcon';

@@ -1,4 +1,4 @@
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { ICELabel } from './ICELabel';
 import { iceUIManager } from '../core/ICEManager';
 import { tween, ICETweenHandle, ICEFrameDriver } from '../util/ICEAnimation';
@@ -20,7 +20,7 @@ export interface ICECarouselScheduler {
 }
 
 export interface ICECarouselOptions {
-  slides?: ICEComponent[];
+  slides?: ICEWidget[];
   left?: number;
   top?: number;
   width?: number;
@@ -52,8 +52,8 @@ const defaultScheduler: ICECarouselScheduler = {
   },
 };
 
-export class ICECarousel extends ICEComponent {
-  private slides: ICEComponent[];
+export class ICECarousel extends ICEWidget {
+  private slides: ICEWidget[];
   private index = 0;
   private loop: boolean;
   private duration: number;
@@ -63,11 +63,11 @@ export class ICECarousel extends ICEComponent {
   private driver?: ICECarouselFrameDriver;
   private scheduler: ICECarouselScheduler;
   private onChangeCallback: ((index: number) => void) | null;
-  private viewport: ICEComponent | null = null;
-  private track: ICEComponent | null = null;
-  private prevButton: ICEComponent | null = null;
-  private nextButton: ICEComponent | null = null;
-  private dots: ICEComponent[] = [];
+  private viewport: ICEWidget | null = null;
+  private track: ICEWidget | null = null;
+  private prevButton: ICEWidget | null = null;
+  private nextButton: ICEWidget | null = null;
+  private dots: ICEWidget[] = [];
   private tweenHandle: ICETweenHandle | null = null;
   private timer: any = null;
   private running = false;
@@ -117,30 +117,30 @@ export class ICECarousel extends ICEComponent {
     return this.index;
   }
 
-  public setSlides(slides: ICEComponent[]): this {
+  public setSlides(slides: ICEWidget[]): this {
     this.slides = (slides || []).slice();
     this.index = this.__clampIndex(this.index);
     this.__render();
     return this;
   }
 
-  public getSlideNode(index: number): ICEComponent | null {
+  public getSlideNode(index: number): ICEWidget | null {
     return this.slides[index] || null;
   }
 
-  public getTrackNode(): ICEComponent | null {
+  public getTrackNode(): ICEWidget | null {
     return this.track;
   }
 
-  public getPrevButton(): ICEComponent | null {
+  public getPrevButton(): ICEWidget | null {
     return this.prevButton;
   }
 
-  public getNextButton(): ICEComponent | null {
+  public getNextButton(): ICEWidget | null {
     return this.nextButton;
   }
 
-  public getDotNode(index: number): ICEComponent | null {
+  public getDotNode(index: number): ICEWidget | null {
     return this.dots[index] || null;
   }
 
@@ -290,7 +290,7 @@ export class ICECarousel extends ICEComponent {
     // 现造现传），创建顺序靠前 → 不抬高就会被根节点的底色盖住。整棵子树统一抬到根之上。
     const base = (Number(this.state.zIndex) || 0) + 1;
 
-    const viewport = new ICEComponent({
+    const viewport = new ICEWidget({
       left: 0,
       top: 0,
       width,
@@ -300,7 +300,7 @@ export class ICECarousel extends ICEComponent {
       interactive: false,
       clipChildren: true,
     });
-    const track = new ICEComponent({
+    const track = new ICEWidget({
       left: this.index === 0 ? 0 : -this.index * width,
       top: 0,
       width: Math.max(width, this.slides.length * width),
@@ -339,7 +339,7 @@ export class ICECarousel extends ICEComponent {
       const total = this.slides.length * DOT_SIZE + (this.slides.length - 1) * DOT_GAP;
       const startX = (width - total) / 2;
       this.slides.forEach((_, index) => {
-        const dot = new ICEComponent({
+        const dot = new ICEWidget({
           left: startX + index * (DOT_SIZE + DOT_GAP),
           top: height - DOT_SIZE - 10,
           width: DOT_SIZE,
@@ -357,7 +357,7 @@ export class ICECarousel extends ICEComponent {
     }
 
     // 边框最后画：幻灯片会把根节点的描边盖住，这里补一圈浮在内容之上的圆角框
-    const frame = new ICEComponent({
+    const frame = new ICEWidget({
       left: 0,
       top: 0,
       width,
@@ -377,9 +377,9 @@ export class ICECarousel extends ICEComponent {
     }
   }
 
-  private __makeArrow(text: string, left: number): ICEComponent {
+  private __makeArrow(text: string, left: number): ICEWidget {
     const theme = iceUIManager.getTheme();
-    const button = new ICEComponent({
+    const button = new ICEWidget({
       left,
       top: (Number(this.state.height) || 180) / 2 - ARROW_HEIGHT / 2,
       width: ARROW_WIDTH,

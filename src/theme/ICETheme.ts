@@ -50,6 +50,8 @@ export type ICEThemeTokens = {
     warningTextEmphasis: ICEColor;
     errorTextEmphasis: ICEColor;
     infoTextEmphasis: ICEColor;
+    /** 聚焦态描边色（Bootstrap 的 `$input-btn-focus-color` / 聚焦输入框边框 `#86b7fe`）。 */
+    focusRing: ICEColor;
   };
   spacing: {
     xxs: number;
@@ -155,6 +157,7 @@ export const ICE_LIGHT_THEME: ICEThemeTokens = {
     warningTextEmphasis: '#664d03',
     errorTextEmphasis: '#58151c',
     infoTextEmphasis: '#055160',
+    focusRing: '#86b7fe',
   },
   spacing: {
     xxs: 4,
@@ -256,5 +259,6 @@ export const ICE_DARK_THEME: ICEThemeTokens = {
     warningTextEmphasis: '#fff3cd',
     errorTextEmphasis: '#f8d7da',
     infoTextEmphasis: '#cff4fc',
+    focusRing: '#6ea8fe',
   },
 };

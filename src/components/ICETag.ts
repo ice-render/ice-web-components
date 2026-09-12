@@ -1,15 +1,18 @@
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
-import { createTextNode, getStatusColors } from '../util/ICEStyle';
+import { ICEStatusColors, createTextNode, getStatusColors } from '../util/ICEStyle';
 
-export class ICETag extends ICEComponent {
+export class ICETag extends ICEWidget {
   private textNode: any;
-  private statusColors: { background: string; border: string; text: string };
+  private statusColors: ICEStatusColors;
+  /** `solid` = Bootstrap `.text-bg-*` 实底（默认）；`soft` = subtle 浅底 + 强调文字 */
+  private variant: 'solid' | 'soft';
 
   constructor(props: any = {}) {
     const theme = iceUIManager.getTheme();
     const status = props.status || props.color || 'default';
     const colors = getStatusColors(theme, status);
+    const variant: 'solid' | 'soft' = props.variant === 'soft' ? 'soft' : 'solid';
     const height = props.height || 24;
     const width = props.width || 56;
     super({
@@ -20,13 +23,14 @@ export class ICETag extends ICEComponent {
       height,
       radius: theme.radius.sm,
       style: {
-        fillStyle: colors.background,
-        strokeStyle: colors.border,
+        fillStyle: variant === 'solid' ? colors.solid : colors.background,
+        strokeStyle: variant === 'solid' ? colors.solid : colors.border,
         lineWidth: theme.control.lineWidth,
         ...(props.style || {}),
       },
     });
     this.statusColors = colors;
+    this.variant = variant;
     const padX = theme.spacing.sm;
     this.textNode = createTextNode({
       left: padX,
@@ -34,7 +38,7 @@ export class ICETag extends ICEComponent {
       width: Math.max(0, width - padX * 2),
       height,
       text: props.text ?? 'Tag',
-      fillStyle: colors.strong,
+      fillStyle: variant === 'solid' ? colors.onSolid : colors.strong,
       fontFamily: theme.font.family,
       fontSize: theme.font.sizeSmall,
       fontWeight: theme.font.weightMedium,
@@ -53,11 +57,18 @@ export class ICETag extends ICEComponent {
 
   protected __applyHoverState(): void {
     const theme = iceUIManager.getTheme();
+    const base = this.variant === 'solid' ? this.statusColors.solid : this.statusColors.background;
+    // solid：稍微提亮；soft：往面色上靠一点
+    const hoverFill =
+      this.variant === 'solid'
+        ? this.__mix('#ffffff', this.statusColors.solid, 0.85)
+        : this.__mix(theme.colors.surface, this.statusColors.background, 0.55);
     this.setState({
       style: {
         ...this.state.style,
-        fillStyle: this.hovered ? this.__mix(theme.colors.surface, this.statusColors.background, 0.55) : this.statusColors.background,
-        strokeStyle: this.hovered ? this.statusColors.border : this.statusColors.border,
+        fillStyle: this.hovered ? hoverFill : base,
+        strokeStyle:
+          this.variant === 'solid' ? (this.hovered ? hoverFill : this.statusColors.solid) : this.statusColors.border,
         lineWidth: theme.control.lineWidth,
       },
     });

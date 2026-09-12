@@ -9,10 +9,10 @@
  * - 自动播放走可注入的调度器，play/pause 可控。
  */
 import { ICECarousel, ICECarouselScheduler, ICECarouselFrameDriver } from '../src/components/ICECarousel';
-import { ICEComponent } from '../src/core/ICEComponent';
+import { ICEWidget } from '../src/core/ICEWidget';
 
-function makeSlides(count: number): ICEComponent[] {
-  return Array.from({ length: count }, (_, i) => new ICEComponent({ width: 200, height: 100, id: `slide-${i}` }));
+function makeSlides(count: number): ICEWidget[] {
+  return Array.from({ length: count }, (_, i) => new ICEWidget({ width: 200, height: 100, id: `slide-${i}` }));
 }
 
 function makeScheduler() {

@@ -1,5 +1,5 @@
 import { ICEAvatar } from './ICEAvatar';
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 
 /**
@@ -25,7 +25,7 @@ export interface ICEAvatarGroupOptions {
   top?: number;
 }
 
-export class ICEAvatarGroup extends ICEComponent {
+export class ICEAvatarGroup extends ICEWidget {
   private avatars: ICEAvatarGroupItem[];
   private size: number;
   private max: number;

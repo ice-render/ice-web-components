@@ -1,4 +1,4 @@
-import { ICEComponent } from './ICEComponent';
+import { ICEWidget } from './ICEWidget';
 import { iceUIManager } from './ICEManager';
 import { getICEWorldBox } from '../util/ICEWorldBox';
 import { getICEOverlayManager } from './ICEOverlayManager';
@@ -20,7 +20,7 @@ function isDescendantOf(node: any, ancestor: any): boolean {
  *
  * 引擎只负责「键盘事件派发给谁」（`ice.setFocusedComponent` + DOMEventDispatcher），
  * 上层的策略在这里：
- * - **可聚焦集合**：`ICEComponent.isFocusable()`（控件显式声明 + 启用 + 可见），按文档序；
+ * - **可聚焦集合**：`ICEWidget.isFocusable()`（控件显式声明 + 启用 + 可见），按文档序；
  * - **Tab / Shift+Tab** 循环轮转，**Escape** 取消焦点，**Enter / Space** 激活
  *   （调用控件的 `activate()`，勾选/开关/单选会覆盖成对应的切换动作）；
  * - **鼠标点击**同样会聚焦：命中后沿父链上溯到最近的可聚焦控件（点标签也能聚焦按钮），
@@ -31,8 +31,8 @@ function isDescendantOf(node: any, ancestor: any): boolean {
  */
 export class ICEFocusManager {
   private ice: any;
-  private toolNode: ICEComponent | null = null;
-  private ring: ICEComponent | null = null;
+  private toolNode: ICEWidget | null = null;
+  private ring: ICEWidget | null = null;
   private focused: any = null;
   private bound = false;
   private ringPadding = 2;
@@ -49,7 +49,7 @@ export class ICEFocusManager {
       return this;
     }
     const theme = iceUIManager.getTheme();
-    this.toolNode = new ICEComponent({
+    this.toolNode = new ICEWidget({
       id: 'ice-ui-focus-layer',
       fill: false,
       stroke: false,
@@ -61,7 +61,7 @@ export class ICEFocusManager {
       width: Number(this.ice.canvasWidth) || 0,
       height: Number(this.ice.canvasHeight) || 0,
     });
-    this.ring = new ICEComponent({
+    this.ring = new ICEWidget({
       left: 0,
       top: 0,
       width: 0,
@@ -73,7 +73,8 @@ export class ICEFocusManager {
       draggable: false,
       transformable: false,
       display: false,
-      style: { strokeStyle: theme.colors.primary, lineWidth: 2 },
+      // Bootstrap 的聚焦色（#86b7fe），而不是主色本身
+      style: { strokeStyle: theme.colors.focusRing, lineWidth: 2 },
     });
     this.toolNode.addChild(this.ring, false);
     if (typeof this.ice.addTool === 'function') {

@@ -1,8 +1,8 @@
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { centerTextNode } from '../util/ICEStyle';
 
-export class ICEIcon extends ICEComponent {
+export class ICEIcon extends ICEWidget {
   private textNode: any;
 
   constructor(props: any = {}) {

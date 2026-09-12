@@ -7,7 +7,8 @@
  *
  * 测试环境是 node（没有真实文本度量），所以直接给内部 ICEText 塞一个尺寸来驱动这套机制。
  */
-import { ICEButton, ICELabel, ICEPanel, ICEFlowLayout } from '../src';
+import { ICEFlowLayout } from 'ice-render';
+import { ICEButton, ICELabel, ICEPanel } from '../src';
 
 function stubTextSize(label: ICELabel, width: number, height: number): void {
   const text = label.childNodes[0] as any;

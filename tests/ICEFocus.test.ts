@@ -180,11 +180,11 @@ describe('ICEFocusManager', () => {
 
     // 用缓存的浮层管理器（与焦点管理器共享同一个实例）
     const { getICEOverlayManager } = require('../src/core/ICEOverlayManager');
-    const { ICEComponent } = require('../src/core/ICEComponent');
+    const { ICEWidget } = require('../src/core/ICEWidget');
     const overlays = getICEOverlayManager(ice);
     const handle = overlays.open({
       anchor: button,
-      content: new ICEComponent({ width: 60, height: 30 }),
+      content: new ICEWidget({ width: 60, height: 30 }),
       keyboardCaptured: true,
     });
 

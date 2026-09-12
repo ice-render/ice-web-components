@@ -1,4 +1,4 @@
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 
 /**
@@ -23,7 +23,7 @@ export interface ICEColorPickerOptions {
   onChange?: (color: string) => void;
 }
 
-export class ICEColorPicker extends ICEComponent {
+export class ICEColorPicker extends ICEWidget {
   private colors: string[];
   private columns: number;
   private value?: string;
@@ -32,7 +32,7 @@ export class ICEColorPicker extends ICEComponent {
   private padding: number;
   private disabled: boolean;
   private onChange: ((color: string) => void) | null;
-  private cells: ICEComponent[] = [];
+  private cells: ICEWidget[] = [];
   private running = false;
 
   constructor(props: ICEColorPickerOptions = {}) {
@@ -100,11 +100,11 @@ export class ICEColorPicker extends ICEComponent {
     return this.value === hex;
   }
 
-  public getSwatchNodes(): ICEComponent[] {
+  public getSwatchNodes(): ICEWidget[] {
     return this.cells.slice();
   }
 
-  public getSwatchNode(color: string): ICEComponent | null {
+  public getSwatchNode(color: string): ICEWidget | null {
     const index = this.colors.indexOf(color);
     return index >= 0 ? this.cells[index] || null : null;
   }
@@ -179,7 +179,7 @@ export class ICEColorPicker extends ICEComponent {
       const left = this.padding + col * (this.swatchSize + this.gap);
       const top = this.padding + row * (this.swatchSize + this.gap);
       // 外层色块即命中区：选中时用主色描边成环，未选中保留细边框。
-      const cell = new ICEComponent({
+      const cell = new ICEWidget({
         left,
         top,
         width: this.swatchSize,
@@ -196,7 +196,7 @@ export class ICEColorPicker extends ICEComponent {
       });
       // 内层色块只负责显示颜色，interactive:false 避免抢走外层点击。
       cell.addChild(
-        new ICEComponent({
+        new ICEWidget({
           left: 3,
           top: 3,
           width: Math.max(0, this.swatchSize - 6),

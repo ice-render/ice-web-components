@@ -1,5 +1,5 @@
 import { ICELabel } from './ICELabel';
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { ICEScrollPane } from './ICEScrollPane';
 import { iceUIManager } from '../core/ICEManager';
 
@@ -37,7 +37,7 @@ const PANEL_GAP = 12;
 const BUTTON_COLUMN = 36;
 const HEADER_HEIGHT = 28;
 
-export class ICETransfer extends ICEComponent {
+export class ICETransfer extends ICEWidget {
   private dataSource: ICETransferItem[];
   private targetKeys: string[];
   private titles: [string, string];
@@ -46,10 +46,10 @@ export class ICETransfer extends ICEComponent {
     | ((targetKeys: string[], direction: ICETransferDirection, moveKeys: string[]) => void)
     | null;
   private checked = new Set<string>();
-  private sourceRows = new Map<string, ICEComponent>();
-  private targetRows = new Map<string, ICEComponent>();
-  private moveRightButton: ICEComponent | null = null;
-  private moveLeftButton: ICEComponent | null = null;
+  private sourceRows = new Map<string, ICEWidget>();
+  private targetRows = new Map<string, ICEWidget>();
+  private moveRightButton: ICEWidget | null = null;
+  private moveLeftButton: ICEWidget | null = null;
 
   constructor(props: ICETransferOptions) {
     const theme = iceUIManager.getTheme();
@@ -106,19 +106,19 @@ export class ICETransfer extends ICEComponent {
     return this.checked.has(key);
   }
 
-  public getSourceNode(key: string): ICEComponent | null {
+  public getSourceNode(key: string): ICEWidget | null {
     return this.sourceRows.get(key) || null;
   }
 
-  public getTargetNode(key: string): ICEComponent | null {
+  public getTargetNode(key: string): ICEWidget | null {
     return this.targetRows.get(key) || null;
   }
 
-  public getMoveRightButton(): ICEComponent | null {
+  public getMoveRightButton(): ICEWidget | null {
     return this.moveRightButton;
   }
 
-  public getMoveLeftButton(): ICEComponent | null {
+  public getMoveLeftButton(): ICEWidget | null {
     return this.moveLeftButton;
   }
 
@@ -263,9 +263,9 @@ export class ICETransfer extends ICEComponent {
     height: number,
     keys: string[],
     side: 'source' | 'target',
-  ): ICEComponent {
+  ): ICEWidget {
     const theme = iceUIManager.getTheme();
-    const panel = new ICEComponent({
+    const panel = new ICEWidget({
       left,
       top: 0,
       width,
@@ -298,7 +298,7 @@ export class ICETransfer extends ICEComponent {
       stroke: false,
       style: { fillStyle: 'transparent', strokeStyle: 'transparent' },
     });
-    const content = new ICEComponent({
+    const content = new ICEWidget({
       width: width - 2,
       height: Math.max(height - HEADER_HEIGHT - 1, keys.length * this.rowHeight),
       fill: false,
@@ -324,10 +324,10 @@ export class ICETransfer extends ICEComponent {
     return panel;
   }
 
-  private __renderRow(item: ICETransferItem, top: number, width: number): ICEComponent {
+  private __renderRow(item: ICETransferItem, top: number, width: number): ICEWidget {
     const theme = iceUIManager.getTheme();
     const checked = this.checked.has(item.key);
-    const row = new ICEComponent({
+    const row = new ICEWidget({
       left: 0,
       top,
       width,
@@ -337,7 +337,7 @@ export class ICETransfer extends ICEComponent {
       style: { fillStyle: checked ? theme.colors.primaryBg : 'transparent' },
     });
     // 勾选框：纯展示，命中留给整行（interactive:false 避免抢走点击）
-    const box = new ICEComponent({
+    const box = new ICEWidget({
       left: 8,
       top: (this.rowHeight - 16) / 2,
       width: 16,
@@ -391,9 +391,9 @@ export class ICETransfer extends ICEComponent {
     return row;
   }
 
-  private __renderMoveButton(text: string, left: number, top: number, enabled: boolean): ICEComponent {
+  private __renderMoveButton(text: string, left: number, top: number, enabled: boolean): ICEWidget {
     const theme = iceUIManager.getTheme();
-    const button = new ICEComponent({
+    const button = new ICEWidget({
       left,
       top,
       width: BUTTON_COLUMN,

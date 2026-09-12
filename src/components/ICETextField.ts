@@ -1,8 +1,8 @@
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { createTextNode } from '../util/ICEStyle';
 
-export class ICETextField extends ICEComponent {
+export class ICETextField extends ICEWidget {
   private textNode: any;
   private value: string;
   private placeholder: string;
@@ -194,7 +194,7 @@ export class ICETextField extends ICEComponent {
       this.validateStatus === 'error'
         ? theme.colors.error
         : this.focused
-        ? theme.colors.primary
+        ? theme.colors.focusRing
         : theme.colors.border;
     this.setState({
       style: {

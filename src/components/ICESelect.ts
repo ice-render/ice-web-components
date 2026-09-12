@@ -1,4 +1,4 @@
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { ICELabel } from './ICELabel';
 import { ICEPanel } from './ICEPanel';
 import { iceUIManager } from '../core/ICEManager';
@@ -38,7 +38,7 @@ export interface ICESelectOptions {
   manager?: ICEOverlayManager;
 }
 
-export class ICESelect extends ICEComponent {
+export class ICESelect extends ICEWidget {
   private options: ICESelectOption[];
   private mode: 'single' | 'multiple';
   private showSearch: boolean;
@@ -51,7 +51,7 @@ export class ICESelect extends ICEComponent {
   private handle: ICEOverlayHandle | null = null;
   private fieldLabel: ICELabel | null = null;
   private panel: ICEPanel | null = null;
-  private optionNodes = new Map<string, ICEComponent>();
+  private optionNodes = new Map<string, ICEWidget>();
   private visible: ICESelectOption[] = [];
   private query = '';
   private activeIndex = 0;
@@ -157,7 +157,7 @@ export class ICESelect extends ICEComponent {
     return this.visible.slice();
   }
 
-  public getOptionNode(value: string): ICEComponent | null {
+  public getOptionNode(value: string): ICEWidget | null {
     return this.optionNodes.get(value) || null;
   }
 
@@ -406,7 +406,7 @@ export class ICESelect extends ICEComponent {
     this.visible.forEach((option, index) => {
       const selected = this.selected.indexOf(option.value) !== -1;
       const active = index === this.activeIndex;
-      const row = new ICEComponent({
+      const row = new ICEWidget({
         left: 4,
         top: 6 + searchHeight + index * this.optionHeight,
         width: width - 8,

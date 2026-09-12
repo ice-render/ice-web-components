@@ -1,6 +1,6 @@
 import { ICEPath } from 'ice-render';
 import { ICELabel } from './ICELabel';
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 
 /** 旋转弧线：用 Path2D 画一段 270° 圆弧，颜色走主色。 */
@@ -37,7 +37,7 @@ export interface ICESpinOptions {
   top?: number;
 }
 
-export class ICESpin extends ICEComponent {
+export class ICESpin extends ICEWidget {
   private arc: ICESpinArc;
   private spinning: boolean;
 

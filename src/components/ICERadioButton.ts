@@ -1,9 +1,9 @@
 import { ICECircle } from 'ice-render';
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEToggleModel } from '../model/ICEToggleModel';
 
-export class ICERadioButton extends ICEComponent {
+export class ICERadioButton extends ICEWidget {
   private model: ICEToggleModel;
   private outer: any;
   private inner: any;

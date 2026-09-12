@@ -1,6 +1,6 @@
 import { ICEButton } from './ICEButton';
 import { ICELabel } from './ICELabel';
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 
 /**
@@ -27,7 +27,7 @@ export interface ICEResultOptions {
   height?: number;
 }
 
-export class ICEResult extends ICEComponent {
+export class ICEResult extends ICEWidget {
   private buttons = new Map<string, ICEButton>();
 
   constructor(props: ICEResultOptions) {

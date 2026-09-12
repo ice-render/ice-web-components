@@ -1,6 +1,6 @@
 import { ICEButton } from './ICEButton';
 import { ICELabel } from './ICELabel';
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 
 /**
@@ -19,7 +19,7 @@ export interface ICEEmptyOptions {
   height?: number;
 }
 
-export class ICEEmpty extends ICEComponent {
+export class ICEEmpty extends ICEWidget {
   private actionButton: ICEButton | null = null;
 
   constructor(props: ICEEmptyOptions) {

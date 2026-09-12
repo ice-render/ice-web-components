@@ -1,9 +1,9 @@
 import { ICECircle } from 'ice-render';
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { centerTextNode } from '../util/ICEStyle';
 
-export class ICEAvatar extends ICEComponent {
+export class ICEAvatar extends ICEWidget {
   private circle: any;
   private textNode: any;
 

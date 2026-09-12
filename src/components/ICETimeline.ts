@@ -1,5 +1,5 @@
 import { ICELabel } from './ICELabel';
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 
 /**
@@ -20,11 +20,11 @@ export interface ICETimelineOptions {
   itemHeight?: number;
 }
 
-export class ICETimeline extends ICEComponent {
+export class ICETimeline extends ICEWidget {
   private items: ICETimelineItem[];
   private itemHeight: number;
-  private itemNodes: ICEComponent[] = [];
-  private dots: ICEComponent[] = [];
+  private itemNodes: ICEWidget[] = [];
+  private dots: ICEWidget[] = [];
 
   constructor(props: ICETimelineOptions) {
     const width = props.width ?? 320;
@@ -43,7 +43,7 @@ export class ICETimeline extends ICEComponent {
     this.__render();
   }
 
-  public getItemNodes(): ICEComponent[] {
+  public getItemNodes(): ICEWidget[] {
     return this.itemNodes.slice();
   }
 
@@ -61,7 +61,7 @@ export class ICETimeline extends ICEComponent {
       // 竖线（相邻节点之间）
       if (index < this.items.length - 1) {
         this.addChild(
-          new ICEComponent({
+          new ICEWidget({
             left: lineX,
             top: top + 16,
             width: 1,
@@ -74,7 +74,7 @@ export class ICETimeline extends ICEComponent {
           false,
         );
       }
-      const dot = new ICEComponent({
+      const dot = new ICEWidget({
         left: lineX - 3,
         top: top + 6,
         width: 7,
@@ -88,7 +88,7 @@ export class ICETimeline extends ICEComponent {
       this.addChild(dot, false);
       this.dots.push(dot);
 
-      const row = new ICEComponent({
+      const row = new ICEWidget({
         left: 0,
         top,
         width,

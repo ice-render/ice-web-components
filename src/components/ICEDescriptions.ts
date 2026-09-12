@@ -1,5 +1,5 @@
 import { ICELabel } from './ICELabel';
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 
 /**
@@ -21,12 +21,12 @@ export interface ICEDescriptionsOptions {
   labelWidth?: number;
 }
 
-export class ICEDescriptions extends ICEComponent {
+export class ICEDescriptions extends ICEWidget {
   private items: ICEDescriptionsItem[];
   private column: number;
   private itemHeight: number;
   private labelWidth: number;
-  private rowNodes: ICEComponent[] = [];
+  private rowNodes: ICEWidget[] = [];
 
   constructor(props: ICEDescriptionsOptions) {
     const width = props.width ?? 320;
@@ -50,7 +50,7 @@ export class ICEDescriptions extends ICEComponent {
     this.__render();
   }
 
-  public getRowNodes(): ICEComponent[] {
+  public getRowNodes(): ICEWidget[] {
     return this.rowNodes.slice();
   }
 
@@ -64,7 +64,7 @@ export class ICEDescriptions extends ICEComponent {
       const line = Math.floor(index / this.column);
       const left = row * columnWidth + 12;
       const top = 4 + line * this.itemHeight;
-      const cell = new ICEComponent({
+      const cell = new ICEWidget({
         left,
         top,
         width: columnWidth - 24,

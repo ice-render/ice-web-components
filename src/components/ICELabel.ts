@@ -1,8 +1,8 @@
 import { ICEText } from 'ice-render';
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 
-export class ICELabel extends ICEComponent {
+export class ICELabel extends ICEWidget {
   private textNode: any;
 
   constructor(props: any = {}) {
@@ -112,7 +112,7 @@ export class ICELabel extends ICEComponent {
     if (changed) {
       // 盒子尺寸变了：本地原点在中心，原点位置随之变化 → 自身矩阵必须重算
       this.dirty = true;
-      // 等价于 ICEComponent.__afterStateMerge 的行为：尺寸变化通知父容器重排
+      // 等价于 ICEWidget.__afterStateMerge 的行为：尺寸变化通知父容器重排
       if (this.parentNode && typeof this.parentNode.requestLayout === 'function') {
         this.parentNode.requestLayout();
       }

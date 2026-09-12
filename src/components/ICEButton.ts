@@ -1,4 +1,4 @@
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { centerTextNode } from '../util/ICEStyle';
 
@@ -74,7 +74,7 @@ function textColor(theme: any, variant: ICEButtonVariant, danger: boolean, enabl
   return hovered ? theme.colors.primary : theme.colors.text;
 }
 
-export class ICEButton extends ICEComponent {
+export class ICEButton extends ICEWidget {
   private label: any;
   private variant: ICEButtonVariant;
   private size: ICEButtonSize;

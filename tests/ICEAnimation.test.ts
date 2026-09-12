@@ -3,7 +3,7 @@
  *
  * 用注入的 frame driver 手动推进时间，断言与真实 rAF 无关 —— 只有确定性的数值。
  */
-import { ICEComponent } from '../src/core/ICEComponent';
+import { ICEWidget } from '../src/core/ICEWidget';
 import { easeInOutCubic, easeOutCubic, fadeIn, fadeOut, fadeTo, scaleIn, slideIn, tween } from '../src/util/ICEAnimation';
 
 function makeDriver() {
@@ -101,7 +101,7 @@ describe('ICEAnimation', () => {
 
   it('fadeIn / fadeOut：写组件 state.opacity 并在结束时回调', () => {
     const { driver, step } = makeDriver();
-    const node = new ICEComponent({ width: 10, height: 10 });
+    const node = new ICEWidget({ width: 10, height: 10 });
     let done = 0;
 
     fadeIn(node, { duration: 100, driver, onFinish: () => done++ });
@@ -121,7 +121,7 @@ describe('ICEAnimation', () => {
 
   it('fadeTo：从当前值出发（不强制归零）', () => {
     const { driver, step } = makeDriver();
-    const node = new ICEComponent({ width: 10, height: 10, opacity: 0.4 });
+    const node = new ICEWidget({ width: 10, height: 10, opacity: 0.4 });
     fadeTo(node, 1, { duration: 100, easing: 'linear', driver });
     step(0);
     step(50);
@@ -130,7 +130,7 @@ describe('ICEAnimation', () => {
 
   it('slideIn：从指定方向的偏移位置移到目标位置', () => {
     const { driver, step } = makeDriver();
-    const node = new ICEComponent({ left: 100, top: 50, width: 40, height: 20 });
+    const node = new ICEWidget({ left: 100, top: 50, width: 40, height: 20 });
     slideIn(node, { from: 'top', distance: 20, duration: 100, easing: 'linear', driver });
     expect(node.state.top).toBe(30); // 起始位置在目标上方 20
     expect(node.state.left).toBe(100);
@@ -144,7 +144,7 @@ describe('ICEAnimation', () => {
 
   it('scaleIn：transform.scale 从 from 回到 1，并复位不透明度', () => {
     const { driver, step } = makeDriver();
-    const node = new ICEComponent({ width: 40, height: 20 });
+    const node = new ICEWidget({ width: 40, height: 20 });
     scaleIn(node, { from: 0.8, duration: 100, easing: 'linear', driver });
     expect(node.state.transform.scale).toEqual([0.8, 0.8]);
     step(0);

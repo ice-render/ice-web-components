@@ -1,4 +1,4 @@
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { tween, ICETweenHandle } from '../util/ICEAnimation';
 
@@ -18,8 +18,8 @@ export interface ICESkeletonOptions {
   height?: number;
 }
 
-export class ICESkeleton extends ICEComponent {
-  private placeholders: ICEComponent[] = [];
+export class ICESkeleton extends ICEWidget {
+  private placeholders: ICEWidget[] = [];
   private active: boolean;
   private pulse: ICETweenHandle | null = null;
 
@@ -40,7 +40,7 @@ export class ICESkeleton extends ICEComponent {
     this.active = props.active === true;
 
     const bar = (left: number, top: number, w: number, h: number) => {
-      const node = new ICEComponent({
+      const node = new ICEWidget({
         left,
         top,
         width: w,
@@ -56,7 +56,7 @@ export class ICESkeleton extends ICEComponent {
     };
 
     if (avatar) {
-      const avatarNode = new ICEComponent({
+      const avatarNode = new ICEWidget({
         left: 0,
         top: 0,
         width: avatarSize,

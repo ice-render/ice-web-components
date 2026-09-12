@@ -1,6 +1,6 @@
 import { ICELabel } from './ICELabel';
 import { ICEPanel } from './ICEPanel';
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../core/ICEOverlayManager';
 
@@ -52,7 +52,7 @@ function toDateString(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
-export class ICEDatePicker extends ICEComponent {
+export class ICEDatePicker extends ICEWidget {
   private value: string | null;
   private placeholder: string;
   private disabled: boolean;
@@ -66,8 +66,8 @@ export class ICEDatePicker extends ICEComponent {
   private panel: ICEPanel | null = null;
   private fieldLabel: ICELabel | null = null;
   private monthLabel: ICELabel | null = null;
-  private grid: ICEComponent | null = null;
-  private dayNodes = new Map<string, ICEComponent>();
+  private grid: ICEWidget | null = null;
+  private dayNodes = new Map<string, ICEWidget>();
   private viewYear = 1970;
   private viewMonth = 1;
   private running = false;
@@ -176,7 +176,7 @@ export class ICEDatePicker extends ICEComponent {
     return month > 12 ? this.setViewMonth(this.viewYear + 1, 1) : this.setViewMonth(this.viewYear, month);
   }
 
-  public getDayNode(date: string): ICEComponent | null {
+  public getDayNode(date: string): ICEWidget | null {
     return this.dayNodes.get(date) || null;
   }
 
@@ -377,8 +377,8 @@ export class ICEDatePicker extends ICEComponent {
     const width = Number(panel.state.width) || this.cellSize * 7 + 16;
     const padding = 8;
 
-    // 月份标题 + 切月按钮（用可点的 ICEComponent 做，避免额外依赖按钮样式）
-    const prev = new ICEComponent({
+    // 月份标题 + 切月按钮（用可点的 ICEWidget 做，避免额外依赖按钮样式）
+    const prev = new ICEWidget({
       left: padding,
       top: 6,
       width: 24,
@@ -403,7 +403,7 @@ export class ICEDatePicker extends ICEComponent {
       false,
     );
     prev.on('click', () => this.prevMonth());
-    const next = new ICEComponent({
+    const next = new ICEWidget({
       left: width - padding - 24,
       top: 6,
       width: 24,
@@ -462,7 +462,7 @@ export class ICEDatePicker extends ICEComponent {
     });
 
     // 日期网格
-    const grid = new ICEComponent({
+    const grid = new ICEWidget({
       left: 0,
       top: 0,
       width: Number(panel.state.width) || width,
@@ -474,7 +474,7 @@ export class ICEDatePicker extends ICEComponent {
     this.getDayCells().forEach((cell, index) => {
       const row = Math.floor(index / 7);
       const col = index % 7;
-      const node = new ICEComponent({
+      const node = new ICEWidget({
         left: padding + col * this.cellSize,
         top: 60 + row * this.cellSize,
         width: this.cellSize,

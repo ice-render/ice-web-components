@@ -1,6 +1,6 @@
 import { ICELabel } from './ICELabel';
 import { ICEPanel } from './ICEPanel';
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../core/ICEOverlayManager';
 import type { ICEOverlayPlacement } from '../util/ICEOverlayPosition';
@@ -39,7 +39,7 @@ export class ICEDropdown {
   private manager: ICEOverlayManager;
   private handle: ICEOverlayHandle | null = null;
   private panel: ICEPanel | null = null;
-  private itemNodes: ICEComponent[] = [];
+  private itemNodes: ICEWidget[] = [];
   private items: ICEDropdownItem[];
   private selectedKey: string | null;
   private activeIndex = 0;
@@ -101,7 +101,7 @@ export class ICEDropdown {
     return this.activeIndex;
   }
 
-  public getItemNode(index: number): ICEComponent | null {
+  public getItemNode(index: number): ICEWidget | null {
     return this.itemNodes[index] || null;
   }
 
@@ -223,7 +223,7 @@ export class ICEDropdown {
     this.items.forEach((item, index) => {
       const selected = item.key === this.selectedKey;
       const active = index === this.activeIndex;
-      const row = new ICEComponent({
+      const row = new ICEWidget({
         left: 4,
         top: 4 + index * itemHeight,
         width: width - 8,

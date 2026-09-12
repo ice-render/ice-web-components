@@ -3,7 +3,7 @@
  * 因此 Canvas 组件没有内置 mouseenter/mouseleave 语义。
  *
  * ICEHoverManager 通过事件总线的 mousemove + ice.hitTest() 自己维护当前 hover 组件，
- * 并把状态同步到带 setHovered() 的 ICEComponent 上，实现接近 HTML 组件的 hover 效果。
+ * 并把状态同步到带 setHovered() 的 ICEWidget 上，实现接近 HTML 组件的 hover 效果。
  */
 export class ICEHoverManager {
   private ice: any;

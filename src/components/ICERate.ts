@@ -1,5 +1,5 @@
 import { ICELabel } from './ICELabel';
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 
 /**
@@ -16,14 +16,14 @@ export interface ICERateOptions {
   onChange?: (value: number) => void;
 }
 
-export class ICERate extends ICEComponent {
+export class ICERate extends ICEWidget {
   private count: number;
   private value: number;
   private preview = 0;
   private disabled: boolean;
   private size: number;
   private color: string;
-  private starNodes: ICEComponent[] = [];
+  private starNodes: ICEWidget[] = [];
   private onChange: ((value: number) => void) | null;
   private running = false;
 
@@ -80,7 +80,7 @@ export class ICERate extends ICEComponent {
     return this.preview;
   }
 
-  public getStarNodes(): ICEComponent[] {
+  public getStarNodes(): ICEWidget[] {
     return this.starNodes.slice();
   }
 
@@ -174,7 +174,7 @@ export class ICERate extends ICEComponent {
     const active = this.preview || this.value;
     for (let i = 0; i < this.count; i++) {
       const on = i < active;
-      const star = new ICEComponent({
+      const star = new ICEWidget({
         left: i * (this.size + 4),
         top: 0,
         width: this.size,

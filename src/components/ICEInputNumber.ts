@@ -1,5 +1,5 @@
 import { ICELabel } from './ICELabel';
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { ICEButton } from './ICEButton';
 import { iceUIManager } from '../core/ICEManager';
 
@@ -24,7 +24,7 @@ export interface ICEInputNumberOptions {
   onChange?: (value: number) => void;
 }
 
-export class ICEInputNumber extends ICEComponent {
+export class ICEInputNumber extends ICEWidget {
   private currentValue: number;
   private min: number;
   private max: number;

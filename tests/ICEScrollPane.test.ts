@@ -9,7 +9,7 @@
  */
 import { ICEScrollPane } from '../src/components/ICEScrollPane';
 import { ICELabel } from '../src/components/ICELabel';
-import { ICEComponent } from '../src/core/ICEComponent';
+import { ICEWidget } from '../src/core/ICEWidget';
 
 function makeICE() {
   const handlers: Record<string, Array<{ handler: any; ctx: any }>> = {};
@@ -35,7 +35,7 @@ function makeICE() {
 
 /** 造一个「5 行 × 20px = 100px 高」的内容，放进 60px 高的视口。 */
 function makeRows(height = 100) {
-  const content = new ICEComponent({ left: 0, top: 0, width: 200, height });
+  const content = new ICEWidget({ left: 0, top: 0, width: 200, height });
   for (let i = 0; i < height / 20; i++) {
     content.addChild(new ICELabel({ left: 0, top: i * 20, text: 'row ' + i }), false);
   }

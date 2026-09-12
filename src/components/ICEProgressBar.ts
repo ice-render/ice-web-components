@@ -1,6 +1,6 @@
 import { ICEPath, ICERect } from 'ice-render';
 import { ICELabel } from './ICELabel';
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEBoundedRangeModel } from '../model/ICEBoundedRangeModel';
 
@@ -43,7 +43,7 @@ class ICEProgressRing extends ICEPath {
   }
 }
 
-export class ICEProgressBar extends ICEComponent {
+export class ICEProgressBar extends ICEWidget {
   private model: ICEBoundedRangeModel;
   private type: ICEProgressType;
   private track: any = null;

@@ -1,4 +1,4 @@
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { ICEContainer } from '../core/ICEContainer';
 import { iceUIManager } from '../core/ICEManager';
 import { createTextNode } from '../util/ICEStyle';
@@ -169,7 +169,7 @@ export class ICEMenu extends ICEContainer {
     this.rows.forEach((row, index) => {
       const item = row.item;
       const indent = row.depth * theme.spacing.md;
-      const panel = new ICEComponent({
+      const panel = new ICEWidget({
         fill: true,
         stroke: false,
         width: Math.max(0, width - inset * 2 - indent),

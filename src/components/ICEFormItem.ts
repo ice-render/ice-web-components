@@ -1,4 +1,4 @@
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { ICELabel } from './ICELabel';
 import { iceUIManager } from '../core/ICEManager';
 import type { ICEFormRule } from '../model/ICEFormModel';
@@ -29,7 +29,7 @@ export interface ICEFormItemOptions {
   gap?: number;
 }
 
-export class ICEFormItem extends ICEComponent {
+export class ICEFormItem extends ICEWidget {
   private name: string;
   private labelText: string;
   private control: any;

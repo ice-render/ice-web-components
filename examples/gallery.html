@@ -50,7 +50,7 @@
       // 滚动视口演示：内容比视口高，靠引擎的 clipChildren 裁掉溢出部分
       // 注意：容器要先创建、再加子组件（引擎按全局 zIndex 排序渲染）
       const scrollPane = new W.ICEScrollPane({ id: 'scroll-pane', left: 32, top: 736, width: 300, height: 96 });
-      const scrollContent = new W.ICEComponent({ width: 268, height: 264 });
+      const scrollContent = new W.ICEWidget({ width: 268, height: 264 });
       for (let i = 0; i < 12; i++) {
         const row = new W.ICEPanel({
           left: 0,
@@ -529,7 +529,7 @@
 
       // 轮播：裁剪视口 + 横向轨道 + 箭头/圆点（切换带补间过渡）
       const makeSlide = (text, bg) => {
-        const slide = new W.ICEComponent({
+        const slide = new W.ICEWidget({
           width: 320,
           height: 180,
           radius: theme.radius.md,
@@ -677,7 +677,7 @@
             "<text x='132' y='68' font-size='18' fill='#ffffff'>240x120</text>" +
             '</svg>',
         );
-      const imageFill = new W.ICEImage({
+      const imageFill = new W.ICEImageView({
         id: 'image-fill',
         left: 900,
         top: 1740,
@@ -686,7 +686,7 @@
         fit: 'fill',
         src: demoImageSrc,
       });
-      const imageContain = new W.ICEImage({
+      const imageContain = new W.ICEImageView({
         id: 'image-contain',
         left: 1040,
         top: 1740,
@@ -695,7 +695,7 @@
         fit: 'contain',
         src: demoImageSrc,
       });
-      const imageCover = new W.ICEImage({
+      const imageCover = new W.ICEImageView({
         id: 'image-cover',
         left: 1180,
         top: 1740,

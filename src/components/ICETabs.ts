@@ -1,6 +1,6 @@
 import { ICEButton } from './ICEButton';
 import { ICEContainer } from '../core/ICEContainer';
-import { ICEFlowLayout } from '../layouts/ICEFlowLayout';
+import { ICEFlowLayout } from 'ice-render';
 import { iceUIManager } from '../core/ICEManager';
 
 export class ICETabs extends ICEContainer {

@@ -1,4 +1,4 @@
-import { ICEComponent } from './ICEComponent';
+import { ICEWidget } from './ICEWidget';
 import { resolveICEOverlayPosition, ICEOverlayPlacement } from '../util/ICEOverlayPosition';
 import { fadeIn, fadeOut, scaleIn, ICEEasing, ICEFrameDriver } from '../util/ICEAnimation';
 
@@ -110,7 +110,7 @@ export class ICEOverlayManager {
       return this;
     }
     if (!this.layer) {
-      this.layer = new ICEComponent({
+      this.layer = new ICEWidget({
         id: 'ice-ui-overlay-layer',
         fill: false,
         stroke: false,

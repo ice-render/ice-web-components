@@ -1,6 +1,6 @@
 import { ICEPanel } from './ICEPanel';
 import { ICELabel } from './ICELabel';
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { ICETextField } from './ICETextField';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../core/ICEOverlayManager';
@@ -27,14 +27,14 @@ export interface ICEAutoCompleteOptions {
   manager?: ICEOverlayManager;
 }
 
-export class ICEAutoComplete extends ICEComponent {
+export class ICEAutoComplete extends ICEWidget {
   private allOptions: string[];
   private field: ICETextField;
   private manager: ICEOverlayManager | null;
   private handle: ICEOverlayHandle | null = null;
   private panel: ICEPanel | null = null;
   private visibleOptions: string[] = [];
-  private optionNodes = new Map<string, ICEComponent>();
+  private optionNodes = new Map<string, ICEWidget>();
   private activeIndex = 0;
   private optionHeight: number;
   private onSelectCallback: ((value: string) => void) | null;
@@ -132,7 +132,7 @@ export class ICEAutoComplete extends ICEComponent {
     return this.activeIndex;
   }
 
-  public getOptionNode(value: string): ICEComponent | null {
+  public getOptionNode(value: string): ICEWidget | null {
     return this.optionNodes.get(value) || null;
   }
 
@@ -301,7 +301,7 @@ export class ICEAutoComplete extends ICEComponent {
     const width = Number(panel.state.width) || Number(this.state.width) || 200;
     this.visibleOptions.forEach((option, index) => {
       const active = index === this.activeIndex;
-      const row = new ICEComponent({
+      const row = new ICEWidget({
         left: 4,
         top: 4 + index * this.optionHeight,
         width: width - 8,

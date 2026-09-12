@@ -1,5 +1,5 @@
 import { ICEPath } from 'ice-render';
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 
 class ICESvgPath extends ICEPath {
@@ -40,7 +40,7 @@ class ICESvgPath extends ICEPath {
   }
 }
 
-export class ICESvgIcon extends ICEComponent {
+export class ICESvgIcon extends ICEWidget {
   private pathNode: any;
 
   constructor(props: any = {}) {

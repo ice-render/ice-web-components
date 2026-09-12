@@ -1,10 +1,10 @@
 import { ICERect } from 'ice-render';
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEToggleModel } from '../model/ICEToggleModel';
 import { centerTextNode } from '../util/ICEStyle';
 
-export class ICECheckBox extends ICEComponent {
+export class ICECheckBox extends ICEWidget {
   private model: ICEToggleModel;
   private box: any;
   private mark: any;

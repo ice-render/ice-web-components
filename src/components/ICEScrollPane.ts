@@ -1,5 +1,5 @@
 import { ICEContainer } from '../core/ICEContainer';
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 
 /**
@@ -35,10 +35,10 @@ const SCROLLBAR_INSET = 4;
 const SCROLLBAR_MIN_THUMB = 12;
 
 export class ICEScrollPane extends ICEContainer {
-  private contentBox: ICEComponent;
+  private contentBox: ICEWidget;
   private contentNode: any = null;
-  private scrollbarTrack: ICEComponent;
-  private scrollbarThumb: ICEComponent;
+  private scrollbarTrack: ICEWidget;
+  private scrollbarThumb: ICEWidget;
 
   private scrollX = 0;
   private scrollY = 0;
@@ -74,10 +74,10 @@ export class ICEScrollPane extends ICEContainer {
     this.scrollX = 0;
     this.scrollY = 0;
 
-    this.contentBox = new ICEComponent({ left: 0, top: 0, width: 0, height: 0, fill: false, stroke: false });
+    this.contentBox = new ICEWidget({ left: 0, top: 0, width: 0, height: 0, fill: false, stroke: false });
     this.addChild(this.contentBox, false);
 
-    this.scrollbarTrack = new ICEComponent({
+    this.scrollbarTrack = new ICEWidget({
       left: width - SCROLLBAR_WIDTH - SCROLLBAR_INSET,
       top: SCROLLBAR_INSET,
       width: SCROLLBAR_WIDTH,
@@ -88,7 +88,7 @@ export class ICEScrollPane extends ICEContainer {
       interactive: false,
       style: { fillStyle: theme.colors.disabled },
     });
-    this.scrollbarThumb = new ICEComponent({
+    this.scrollbarThumb = new ICEWidget({
       left: 0,
       top: 0,
       width: SCROLLBAR_WIDTH,

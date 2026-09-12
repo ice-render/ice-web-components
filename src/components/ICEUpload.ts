@@ -1,6 +1,6 @@
 import { ICERect } from 'ice-render';
 import { ICELabel } from './ICELabel';
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 
 /**
@@ -41,7 +41,7 @@ export interface ICEUploadOptions {
 
 const DROP_ZONE_HEIGHT = 96;
 
-export class ICEUpload extends ICEComponent {
+export class ICEUpload extends ICEWidget {
   private files: ICEUploadFile[] = [];
   private accept: string;
   private multiple: boolean;
@@ -54,8 +54,8 @@ export class ICEUpload extends ICEComponent {
   private beforeUpload: ((file: ICEUploadFile) => boolean | string | undefined) | null;
   private onChangeCallback: ((files: ICEUploadFile[]) => void) | null;
   private lastRejectReason: string | null = null;
-  private dropZone: ICEComponent | null = null;
-  private fileNodes = new Map<string, ICEComponent>();
+  private dropZone: ICEWidget | null = null;
+  private fileNodes = new Map<string, ICEWidget>();
   private inputEl: any = null;
   private seq = 0;
 
@@ -96,11 +96,11 @@ export class ICEUpload extends ICEComponent {
     return this.lastRejectReason;
   }
 
-  public getDropZoneNode(): ICEComponent | null {
+  public getDropZoneNode(): ICEWidget | null {
     return this.dropZone;
   }
 
-  public getFileNode(uid: string): ICEComponent | null {
+  public getFileNode(uid: string): ICEWidget | null {
     return this.fileNodes.get(uid) || null;
   }
 
@@ -262,7 +262,7 @@ export class ICEUpload extends ICEComponent {
     this.fileNodes = new Map();
     this.setState({ height: DROP_ZONE_HEIGHT + this.files.length * this.rowHeight });
 
-    const zone = new ICEComponent({
+    const zone = new ICEWidget({
       // 内缩 3px：点击后焦点环画在组件外框上，不缩进的话会盖住虚线边
       left: 3,
       top: 3,
@@ -337,7 +337,7 @@ export class ICEUpload extends ICEComponent {
 
     this.files.forEach((file, index) => {
       const top = DROP_ZONE_HEIGHT + index * this.rowHeight;
-      const row = new ICEComponent({
+      const row = new ICEWidget({
         left: 0,
         top,
         width,
@@ -359,7 +359,7 @@ export class ICEUpload extends ICEComponent {
         }),
         false,
       );
-      const remove = new ICEComponent({
+      const remove = new ICEWidget({
         left: width - 32,
         top: Math.round((this.rowHeight - 20) / 2),
         width: 20,

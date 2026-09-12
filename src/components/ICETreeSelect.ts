@@ -1,6 +1,6 @@
 import { ICELabel } from './ICELabel';
 import { ICEPanel } from './ICEPanel';
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { ICETree, ICETreeNode } from './ICETree';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../core/ICEOverlayManager';
@@ -30,7 +30,7 @@ export interface ICETreeSelectOptions {
   manager?: ICEOverlayManager;
 }
 
-export class ICETreeSelect extends ICEComponent {
+export class ICETreeSelect extends ICEWidget {
   private nodes: ICETreeNode[];
   private value: string | null;
   private placeholder: string;

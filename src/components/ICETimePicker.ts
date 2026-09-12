@@ -1,6 +1,6 @@
 import { ICELabel } from './ICELabel';
 import { ICEPanel } from './ICEPanel';
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { ICEScrollPane } from './ICEScrollPane';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../core/ICEOverlayManager';
@@ -58,7 +58,7 @@ function clampStep(step: number | undefined): number {
   return Number.isFinite(value) && value >= 1 ? value : 1;
 }
 
-export class ICETimePicker extends ICEComponent {
+export class ICETimePicker extends ICEWidget {
   private value?: string;
   private placeholder: string;
   private disabled: boolean;
@@ -71,7 +71,7 @@ export class ICETimePicker extends ICEComponent {
   private panel: ICEPanel | null = null;
   private fieldLabel: ICELabel | null = null;
   private columnNodes = new Map<ICETimeUnit, ICEScrollPane>();
-  private optionNodes = new Map<string, ICEComponent>();
+  private optionNodes = new Map<string, ICEWidget>();
   private running = false;
 
   constructor(props: ICETimePickerOptions = {}) {
@@ -175,7 +175,7 @@ export class ICETimePicker extends ICEComponent {
     return this.columnNodes.get(unit) || null;
   }
 
-  public getOptionNode(unit: ICETimeUnit, value: string): ICEComponent | null {
+  public getOptionNode(unit: ICETimeUnit, value: string): ICEWidget | null {
     return this.optionNodes.get(`${unit}:${value}`) || null;
   }
 
@@ -379,7 +379,7 @@ export class ICETimePicker extends ICEComponent {
         stroke: false,
         style: { fillStyle: 'transparent', strokeStyle: 'transparent' },
       });
-      const content = new ICEComponent({
+      const content = new ICEWidget({
         width: COLUMN_WIDTH,
         height: values.length * ROW_HEIGHT,
         fill: false,
@@ -387,7 +387,7 @@ export class ICETimePicker extends ICEComponent {
       });
       values.forEach((value, rowIndex) => {
         const selected = this.value !== undefined && value === current[unit];
-        const row = new ICEComponent({
+        const row = new ICEWidget({
           left: 0,
           top: rowIndex * ROW_HEIGHT,
           width: COLUMN_WIDTH,

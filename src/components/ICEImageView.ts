@@ -1,9 +1,12 @@
 import { ICEImage as EngineImage } from 'ice-render';
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 
 /**
- * 图片（业界组件库 Image 的最小版，基于引擎原语 `ICEImage`）。
+ * 图片视图（基于引擎原语 `ICEImage`）。
+ *
+ * 名字带 `View` 后缀是为了避开引擎自己的 `ICEImage`（图片原语）——两个包同名不同物，
+ * 同时 import 会撞名，所以本库的控件一律叫 `ICEImageView`。
  *
  * - 适配模式 `fill`（拉伸）/ `contain`（留白）/ `cover`（裁剪填满，居中）；
  * - 原始尺寸未知时先按容器盒铺满，图片载入后由引擎的 ImageCache 回调重排；
@@ -30,12 +33,12 @@ export interface ICEImageContentBox {
   height: number;
 }
 
-export class ICEImage extends ICEComponent {
+export class ICEImageView extends ICEWidget {
   private src: string;
   private fit: ICEImageFit;
   private natural: { width: number; height: number } | null = null;
   private errored = false;
-  private viewport: ICEComponent | null = null;
+  private viewport: ICEWidget | null = null;
   private imageNode: EngineImage | null = null;
   private hookedSrc: string | null = null;
 
@@ -152,7 +155,7 @@ export class ICEImage extends ICEComponent {
     return this.__computeContentBox();
   }
 
-  public getViewportNode(): ICEComponent | null {
+  public getViewportNode(): ICEWidget | null {
     return this.viewport;
   }
 
@@ -165,7 +168,7 @@ export class ICEImage extends ICEComponent {
     const width = Number(this.state.width) || 120;
     const height = Number(this.state.height) || 80;
     // 视口负责裁剪：cover 时内容比容器大，只在视口内可见
-    const viewport = new ICEComponent({
+    const viewport = new ICEWidget({
       left: 0,
       top: 0,
       width,
@@ -209,7 +212,7 @@ export class ICEImage extends ICEComponent {
     if (!natural) {
       return { left: 0, top: 0, width, height };
     }
-    return ICEImage.computeFit(natural.width, natural.height, width, height, this.fit);
+    return ICEImageView.computeFit(natural.width, natural.height, width, height, this.fit);
   }
 
   /** 图片就绪后按原始尺寸重排（引擎 ImageCache 负责真实加载）。 */

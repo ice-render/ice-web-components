@@ -1,6 +1,6 @@
 import { ICELabel } from './ICELabel';
 import { ICEPanel } from './ICEPanel';
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { ICEScrollPane } from './ICEScrollPane';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../core/ICEOverlayManager';
@@ -43,7 +43,7 @@ const ROW_HEIGHT = 30;
 const VISIBLE_ROWS = 6;
 const PANEL_PADDING = 6;
 
-export class ICECascader extends ICEComponent {
+export class ICECascader extends ICEWidget {
   private options: ICECascaderOption[];
   private value?: string;
   private placeholder: string;
@@ -56,7 +56,7 @@ export class ICECascader extends ICEComponent {
   private panel: ICEPanel | null = null;
   private fieldLabel: ICELabel | null = null;
   private columns: ICEScrollPane[] = [];
-  private optionNodes = new Map<string, ICEComponent>();
+  private optionNodes = new Map<string, ICEWidget>();
   private activePath: ICECascaderOption[] = [];
   private running = false;
 
@@ -153,7 +153,7 @@ export class ICECascader extends ICEComponent {
     return this.columns[level] || null;
   }
 
-  public getOptionNode(level: number, value: string): ICEComponent | null {
+  public getOptionNode(level: number, value: string): ICEWidget | null {
     return this.optionNodes.get(`${level}:${value}`) || null;
   }
 
@@ -406,7 +406,7 @@ export class ICECascader extends ICEComponent {
         stroke: false,
         style: { fillStyle: 'transparent', strokeStyle: 'transparent' },
       });
-      const content = new ICEComponent({
+      const content = new ICEWidget({
         width: COLUMN_WIDTH,
         height: Math.max(viewportHeight, nodes.length * ROW_HEIGHT),
         fill: false,
@@ -415,7 +415,7 @@ export class ICECascader extends ICEComponent {
       const selectedAtLevel = this.activePath[level];
       nodes.forEach((node, rowIndex) => {
         const selected = !!selectedAtLevel && selectedAtLevel.value === node.value;
-        const row = new ICEComponent({
+        const row = new ICEWidget({
           left: 0,
           top: rowIndex * ROW_HEIGHT,
           width: COLUMN_WIDTH,

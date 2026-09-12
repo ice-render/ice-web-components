@@ -1,8 +1,8 @@
 import { ICERect } from 'ice-render';
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 
-export class ICESeparator extends ICEComponent {
+export class ICESeparator extends ICEWidget {
   constructor(props: any = {}) {
     const theme = iceUIManager.getTheme();
     super({

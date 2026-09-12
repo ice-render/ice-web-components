@@ -10,7 +10,7 @@ Swing-style Canvas UI components built on `ice-render`.
 ## Goals
 
 - Keep the `ice-render` component/props/state model.
-- Reuse ICE layout managers for UI layout.
+- Reuse ICE layout managers for UI layout (imported from `ice-render`).
 - Provide Swing-like classes: `ICEComponent`, `ICEContainer`, `ICEManager`, and
   `ICEPainter`.
 - Build Canvas-native UI components such as `ICELabel`, `ICEButton`, and
@@ -67,24 +67,37 @@ light theme is `ICE_LIGHT_THEME` and the dark theme is `ICE_DARK_THEME`.
 ## Naming
 
 Everything exported by this package uses the **`ICE`** prefix (same convention as
-`ice-render`). Two names intentionally collide with engine exports, because both
-packages describe the same concept with the same word:
+`ice-render`), and **the package's runtime exports do not overlap with the engine's
+at all** (there is a regression test for it) — you can
+`import * as ICE from 'ice-render'` and `import * as W from 'ice-web-components'`
+side by side, or name-import from both, without ambiguity:
 
-| this package | `ice-render` |
-|---|---|
-| `ICEComponent` (UI component base, extends `ICEGroup`) | `ICEComponent` (graphic component base) |
-| `ICEImage` (image widget, wraps the engine primitive) | `ICEImage` (image primitive) |
+| concept | this package | `ice-render` |
+|---|---|---|
+| base class | `ICEWidget` (UI widget base, extends `ICEGroup`) | `ICEComponent` (graphic component base) |
+| image | `ICEImageView` (widget, wraps the primitive) | `ICEImage` (image primitive) |
 
-Import them from one package, or alias one side when you need both:
+Layout classes are **not** re-exported: `ICEFlowLayout`, `ICEBoxLayout` and the
+`ICELayoutManager` type belong to `ice-render`, so import them from there:
 
 ```ts
-import { ICEComponent as EngineComponent } from 'ice-render';
-import { ICEComponent } from 'ice-web-components';
+import { ICEFlowLayout } from 'ice-render';
+import { ICEPanel } from 'ice-web-components';
+
+panel.setLayout(new ICEFlowLayout({ gap: 8 }));
 ```
 
-`ICEFlowLayout`, `ICEBoxLayout` and the `ICELayoutManager` type are **re-exported
-from `ice-render`** (identical classes), so those three names never differ
-between packages.
+## Colour variants
+
+Status-coloured chips (`ICETag` / `ICEBadge`) default to Bootstrap's solid
+`.text-bg-*` look — solid status colour with white text (black text on the light
+`warning` / `info` colours). Pass `variant: 'soft'` for the subtle-background
+version with a `*-text-emphasis` label:
+
+```ts
+new ICETag({ text: 'Paid', status: 'success' }); // solid green, white text
+new ICETag({ text: 'Paid', status: 'success', variant: 'soft' }); // #d1e7dd bg, #0a3622 text
+```
 
 ## Hover
 

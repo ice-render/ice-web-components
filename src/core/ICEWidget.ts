@@ -2,7 +2,7 @@ import { ICEGroup } from 'ice-render';
 import type { ICEPainter } from './ICEPainter';
 import { iceUIManager } from './ICEManager';
 
-export class ICEComponent extends ICEGroup {
+export class ICEWidget extends ICEGroup {
   protected painter: ICEPainter | null = null;
   protected preferredWidth: number = 0;
   protected preferredHeight: number = 0;
@@ -168,10 +168,10 @@ export class ICEComponent extends ICEGroup {
 
   /**
    * UI 组件内部的图元只负责外观，不参与画布级拖拽、变换、连线。
-   * 只有真正的 UI 组件（ICEComponent）保留自己的交互配置。
+   * 只有真正的 UI 组件（ICEWidget）保留自己的交互配置。
    */
   public addChild(child: any, markDirty: boolean = true): void {
-    if (!(child instanceof ICEComponent) && child && child.state) {
+    if (!(child instanceof ICEWidget) && child && child.state) {
       child.state.interactive = false;
       child.state.draggable = false;
       child.state.transformable = false;

@@ -1,4 +1,6 @@
-import { ICEButton, ICELabel, ICEPanel, ICEBoxLayout, ICEFlowLayout, iceUIManager } from '../src';
+// 布局类属于引擎（ice-render），本包不再重复导出 —— 这样两个包的导出集合零重叠
+import { ICEBoxLayout, ICEFlowLayout } from 'ice-render';
+import { ICEButton, ICELabel, ICEPanel, iceUIManager } from '../src';
 import {
   ICEBadge,
   ICETag,

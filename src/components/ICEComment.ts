@@ -1,6 +1,6 @@
 import { ICEButton } from './ICEButton';
 import { ICELabel } from './ICELabel';
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 
 /**
@@ -36,7 +36,7 @@ const AVATAR_SIZE = 32;
 const LINE_HEIGHT = 20;
 const GAP = 6;
 
-export class ICEComment extends ICEComponent {
+export class ICEComment extends ICEWidget {
   private actionButtons = new Map<string, ICEButton>();
   private replyNodes: ICEComment[] = [];
 
@@ -64,7 +64,7 @@ export class ICEComment extends ICEComponent {
     });
 
     const avatarText = props.avatarText || props.author.slice(0, 1).toUpperCase();
-    const avatar = new ICEComponent({
+    const avatar = new ICEWidget({
       left: 0,
       top: 0,
       width: AVATAR_SIZE,

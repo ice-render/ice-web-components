@@ -1,5 +1,5 @@
 import {
-  ICEComponent,
+  ICEWidget,
   ICEButton,
   ICELabel,
   ICEPanel,
@@ -15,10 +15,9 @@ import {
   ICESlider,
   ICECard,
   ICETabs,
-  ICEBoxLayout,
-  ICEFlowLayout,
   iceUIManager,
 } from '../src';
+import { ICEBoxLayout, ICEFlowLayout } from 'ice-render';
 import { ICE_LIGHT_THEME } from '../src';
 
 describe('ice-web-components component behavior', () => {
@@ -26,16 +25,16 @@ describe('ice-web-components component behavior', () => {
     iceUIManager.setTheme('light');
   });
 
-  describe('ICEComponent defaults', () => {
+  describe('ICEWidget defaults', () => {
     it('disables drag and transform by default but stays interactive', () => {
-      const component = new ICEComponent({ width: 100, height: 40 });
+      const component = new ICEWidget({ width: 100, height: 40 });
       expect(component.state.draggable).toBe(false);
       expect(component.state.transformable).toBe(false);
       expect(component.state.interactive).toBe(true);
     });
 
     it('syncs enabled state with interactive state', () => {
-      const component = new ICEComponent();
+      const component = new ICEWidget();
       component.setEnabled(false);
       expect(component.isEnabled()).toBe(false);
       expect(component.state.interactive).toBe(false);
@@ -45,7 +44,7 @@ describe('ice-web-components component behavior', () => {
     });
 
     it('supports hover state and ignores hover when disabled', () => {
-      const component = new ICEComponent();
+      const component = new ICEWidget();
       component.setHovered(true);
       expect(component.isHovered()).toBe(true);
       component.setEnabled(false);
@@ -56,7 +55,7 @@ describe('ice-web-components component behavior', () => {
     it('marks primitive children as non-interactive', () => {
       const label = new ICELabel({ text: 'hello' });
       const button = new ICEButton({ text: 'button' });
-      const container = new ICEComponent({ width: 200, height: 80 });
+      const container = new ICEWidget({ width: 200, height: 80 });
       container.addChild(label);
       expect(label.state.interactive).toBe(true);
       expect(label.childNodes[0].state.interactive).toBe(false);
@@ -105,16 +104,32 @@ describe('ice-web-components component behavior', () => {
   describe('display components', () => {
     it('creates badges and tags with status colours', () => {
       const badge = new ICEBadge({ text: '5', status: 'error' });
-      expect(badge.state.style.fillStyle).toBe(ICE_LIGHT_THEME.colors.errorBg);
-      expect(badge.state.style.strokeStyle).toBe(ICE_LIGHT_THEME.colors.errorBorder);
+      // 默认实底（Bootstrap `.text-bg-*`），配白字
+      expect(badge.state.style.fillStyle).toBe(ICE_LIGHT_THEME.colors.error);
+      expect(badge.state.style.strokeStyle).toBe(ICE_LIGHT_THEME.colors.error);
+      expect(badge.childNodes[0].state.style.fillStyle).toBe('#ffffff');
       badge.setText('8');
       expect(badge.childNodes[0].state.text).toBe('8');
 
       const tag = new ICETag({ text: 'Draft', status: 'warning' });
-      expect(tag.state.style.fillStyle).toBe(ICE_LIGHT_THEME.colors.warningBg);
-      expect(tag.state.style.strokeStyle).toBe(ICE_LIGHT_THEME.colors.warningBorder);
+      // 亮黄实底配黑字（Bootstrap `.text-bg-warning`）
+      expect(tag.state.style.fillStyle).toBe(ICE_LIGHT_THEME.colors.warning);
+      expect(tag.state.style.strokeStyle).toBe(ICE_LIGHT_THEME.colors.warning);
+      expect(tag.childNodes[0].state.style.fillStyle).toBe('#000000');
       tag.setText('Ready');
       expect(tag.childNodes[0].state.text).toBe('Ready');
+    });
+
+    it('badge / tag 支持 soft 变体（subtle 浅底 + 强调文字）', () => {
+      const softBadge = new ICEBadge({ text: '5', status: 'error', variant: 'soft' });
+      expect(softBadge.state.style.fillStyle).toBe(ICE_LIGHT_THEME.colors.errorBg);
+      expect(softBadge.state.style.strokeStyle).toBe(ICE_LIGHT_THEME.colors.errorBorder);
+      expect(softBadge.childNodes[0].state.style.fillStyle).toBe(ICE_LIGHT_THEME.colors.errorTextEmphasis);
+
+      const softTag = new ICETag({ text: 'Draft', status: 'warning', variant: 'soft' });
+      expect(softTag.state.style.fillStyle).toBe(ICE_LIGHT_THEME.colors.warningBg);
+      expect(softTag.state.style.strokeStyle).toBe(ICE_LIGHT_THEME.colors.warningBorder);
+      expect(softTag.childNodes[0].state.style.fillStyle).toBe(ICE_LIGHT_THEME.colors.warningTextEmphasis);
     });
 
     it('creates avatar and icon text nodes', () => {

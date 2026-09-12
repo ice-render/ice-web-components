@@ -1,4 +1,4 @@
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { createTextNode } from '../util/ICEStyle';
 import { ICERect } from 'ice-render';
@@ -25,7 +25,7 @@ export interface ICETableSortState {
   order: 'asc' | 'desc';
 }
 
-export class ICETable extends ICEComponent {
+export class ICETable extends ICEWidget {
   private columns: ICETableColumn[];
   /** 原始数据（排序前的顺序，用于第三次点击恢复） */
   private sourceData: ICETableRow[];
@@ -248,7 +248,7 @@ export class ICETable extends ICEComponent {
     const widths = this.__columnWidths(totalWidth);
     this.cellNodes = [];
 
-    const header = new ICEComponent({
+    const header = new ICEWidget({
       fill: true,
       stroke: false,
       width: totalWidth,
@@ -273,7 +273,7 @@ export class ICETable extends ICEComponent {
 
     this.rowPanels = [];
     this.data.forEach((row, rowIndex) => {
-      const panel = new ICEComponent({
+      const panel = new ICEWidget({
         fill: true,
         stroke: false,
         left: 0,
@@ -281,7 +281,7 @@ export class ICETable extends ICEComponent {
         width: totalWidth,
         height: this.rowHeight,
         style: {
-          fillStyle: rowIndex % 2 === 0 ? theme.colors.surface : theme.colors.disabled,
+          fillStyle: rowIndex % 2 === 0 ? theme.colors.surface : theme.colors.background,
         },
       });
       this.addChild(panel, false);
@@ -401,7 +401,7 @@ export class ICETable extends ICEComponent {
     this.rowPanels.forEach((panel, index) => {
       panel.setState({
         style: {
-          fillStyle: index === this.selectedIndex ? theme.colors.primaryBg : index % 2 === 0 ? theme.colors.surface : theme.colors.disabled,
+          fillStyle: index === this.selectedIndex ? theme.colors.primaryBg : index % 2 === 0 ? theme.colors.surface : theme.colors.background,
         },
       });
     });

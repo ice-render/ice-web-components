@@ -1,10 +1,12 @@
-import { ICEComponent } from '../core/ICEComponent';
+import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { createTextNode, getStatusColors } from '../util/ICEStyle';
 
-export class ICEBadge extends ICEComponent {
+export class ICEBadge extends ICEWidget {
   private textNode: any;
   private dot: boolean;
+  /** `solid` = Bootstrap `.text-bg-*` 实底（默认）；`soft` = subtle 浅底 */
+  private variant: 'solid' | 'soft';
 
   constructor(props: any = {}) {
     const theme = iceUIManager.getTheme();
@@ -12,6 +14,7 @@ export class ICEBadge extends ICEComponent {
     // 红点语义（业界组件库：状态点默认告警色），普通徽标默认主色
     const status = props.status || props.color || (dot ? 'error' : 'primary');
     const colors = getStatusColors(theme, status);
+    const variant: 'solid' | 'soft' = props.variant === 'soft' ? 'soft' : 'solid';
     const dotSize = Number(props.dotSize) || 8;
     const text = props.text !== undefined ? String(props.text) : props.count !== undefined ? ICEBadge.__countText(props) : '0';
     const height = dot ? dotSize : props.height || 20;
@@ -24,14 +27,15 @@ export class ICEBadge extends ICEComponent {
       height,
       radius: dot ? dotSize / 2 : theme.radius.pill,
       style: {
-        // 红点是实心圆点（业界组件库 语义）：用状态实色，而不是徽标那种浅底 + 描边
-        fillStyle: dot ? colors.text : colors.background,
-        strokeStyle: dot ? colors.text : colors.border,
+        // 红点本身就是实心；普通徽标走 Bootstrap 的实底 + 白字（亮色底黑字）
+        fillStyle: dot || variant === 'solid' ? colors.solid : colors.background,
+        strokeStyle: dot || variant === 'solid' ? colors.solid : colors.border,
         lineWidth: theme.control.lineWidth,
         ...(props.style || {}),
       },
     });
     this.dot = dot;
+    this.variant = variant;
     if (dot) {
       // 红点只画一个小圆，没有文字
       return;
@@ -43,7 +47,7 @@ export class ICEBadge extends ICEComponent {
       width: Math.max(0, width - padX * 2),
       height,
       text,
-      fillStyle: colors.strong,
+      fillStyle: variant === 'solid' ? colors.onSolid : colors.strong,
       fontFamily: theme.font.family,
       fontSize: theme.font.sizeSmall,
       fontWeight: theme.font.weightSemibold,

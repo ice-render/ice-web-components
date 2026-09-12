@@ -4,7 +4,7 @@
  * 定位是纯函数，可直接断言；管理器用一个最小 ICE 桩验证：
  * 挂载到工具层、位置计算、点外关闭、Esc 关闭、exclusive、stop 清理。
  */
-import { ICEComponent } from '../src/core/ICEComponent';
+import { ICEWidget } from '../src/core/ICEWidget';
 import { ICEOverlayManager } from '../src/core/ICEOverlayManager';
 import { resolveICEOverlayPosition } from '../src/util/ICEOverlayPosition';
 
@@ -40,7 +40,7 @@ function makeICE() {
 }
 
 function panel(width: number, height: number) {
-  return new ICEComponent({ fill: true, stroke: true, width, height });
+  return new ICEWidget({ fill: true, stroke: true, width, height });
 }
 
 /** 手动推进帧的 driver（动效断言不依赖真实 rAF） */
@@ -159,7 +159,7 @@ describe('ICEOverlayManager', () => {
   it('open() 把内容挂到工具层的浮层根节点上，并按锚点定位', () => {
     const ice = makeICE();
     const manager = new ICEOverlayManager(ice);
-    const anchor = new ICEComponent({ left: 100, top: 100, width: 80, height: 30 });
+    const anchor = new ICEWidget({ left: 100, top: 100, width: 80, height: 30 });
     const content = panel(120, 40);
 
     const handle = manager.open({ anchor, content, placement: 'bottom' });
@@ -177,8 +177,8 @@ describe('ICEOverlayManager', () => {
   it('锚点在深层容器里时按世界坐标定位', () => {
     const ice = makeICE();
     const manager = new ICEOverlayManager(ice);
-    const panelParent = new ICEComponent({ left: 40, top: 60, width: 300, height: 200 });
-    const anchor = new ICEComponent({ left: 20, top: 10, width: 60, height: 20 });
+    const panelParent = new ICEWidget({ left: 40, top: 60, width: 300, height: 200 });
+    const anchor = new ICEWidget({ left: 20, top: 10, width: 60, height: 20 });
     panelParent.addChild(anchor, false);
     const content = panel(100, 30);
 
@@ -191,7 +191,7 @@ describe('ICEOverlayManager', () => {
   it('点击浮层或锚点之外关闭，点在两者之内不关闭', () => {
     const ice = makeICE();
     const manager = new ICEOverlayManager(ice);
-    const anchor = new ICEComponent({ left: 100, top: 100, width: 80, height: 30 });
+    const anchor = new ICEWidget({ left: 100, top: 100, width: 80, height: 30 });
     const content = panel(120, 40);
     const handle = manager.open({ anchor, content, placement: 'bottom' });
 
@@ -210,7 +210,7 @@ describe('ICEOverlayManager', () => {
     const ice = makeICE();
     const manager = new ICEOverlayManager(ice);
     const handle = manager.open({
-      anchor: new ICEComponent({ left: 0, top: 0, width: 10, height: 10 }),
+      anchor: new ICEWidget({ left: 0, top: 0, width: 10, height: 10 }),
       content: panel(50, 20),
     });
     ice.evtBus.trigger('keydown', { key: 'Escape' });
@@ -221,7 +221,7 @@ describe('ICEOverlayManager', () => {
     const ice = makeICE();
     const manager = new ICEOverlayManager(ice);
     const handle = manager.open({
-      anchor: new ICEComponent({ left: 0, top: 0, width: 10, height: 10 }),
+      anchor: new ICEWidget({ left: 0, top: 0, width: 10, height: 10 }),
       content: panel(50, 20),
       closeOnOutsideClick: false,
       closeOnEsc: false,
@@ -234,7 +234,7 @@ describe('ICEOverlayManager', () => {
   it('默认 exclusive：打开新浮层会关掉旧的', () => {
     const ice = makeICE();
     const manager = new ICEOverlayManager(ice);
-    const anchor = new ICEComponent({ left: 10, top: 10, width: 20, height: 20 });
+    const anchor = new ICEWidget({ left: 10, top: 10, width: 20, height: 20 });
     const first = manager.open({ anchor, content: panel(50, 20) });
     const second = manager.open({ anchor, content: panel(60, 24) });
     expect(first.isOpen()).toBe(false);
@@ -245,7 +245,7 @@ describe('ICEOverlayManager', () => {
   it('keyboardCaptured：声明接管键盘的浮层会被 isKeyboardCaptured 反映', () => {
     const ice = makeICE();
     const manager = new ICEOverlayManager(ice);
-    const anchor = new ICEComponent({ left: 0, top: 0, width: 20, height: 20 });
+    const anchor = new ICEWidget({ left: 0, top: 0, width: 20, height: 20 });
     expect(manager.isKeyboardCaptured()).toBe(false);
     const handle = manager.open({ anchor, content: panel(80, 40), keyboardCaptured: true });
     expect(manager.isKeyboardCaptured()).toBe(true);
@@ -256,7 +256,7 @@ describe('ICEOverlayManager', () => {
   it('阻断型浮层（模态遮罩）不会被后来打开的非阻断浮层关掉', () => {
     const ice = makeICE();
     const manager = new ICEOverlayManager(ice);
-    const anchor = new ICEComponent({ left: 10, top: 10, width: 20, height: 20 });
+    const anchor = new ICEWidget({ left: 10, top: 10, width: 20, height: 20 });
 
     const modal = manager.open({ centered: true, blocking: true, content: panel(200, 100) });
     const popup = manager.open({ anchor, content: panel(60, 24) });
@@ -277,7 +277,7 @@ describe('ICEOverlayManager', () => {
     const manager = new ICEOverlayManager(ice);
     const reasons: string[] = [];
     manager.open({
-      anchor: new ICEComponent({ left: 0, top: 0, width: 10, height: 10 }),
+      anchor: new ICEWidget({ left: 0, top: 0, width: 10, height: 10 }),
       content: panel(50, 20),
       onClose: (reason) => reasons.push(reason),
     });
@@ -285,7 +285,7 @@ describe('ICEOverlayManager', () => {
     expect(reasons).toEqual(['esc']);
 
     manager.open({
-      anchor: new ICEComponent({ left: 0, top: 0, width: 10, height: 10 }),
+      anchor: new ICEWidget({ left: 0, top: 0, width: 10, height: 10 }),
       content: panel(50, 20),
       onClose: (reason) => reasons.push(reason),
     });
@@ -299,7 +299,7 @@ describe('ICEOverlayManager', () => {
   it('入场动效：enterAnimation=scale 先透明缩小，默认不动效', () => {
     const ice = makeICE();
     const manager = new ICEOverlayManager(ice);
-    const anchor = new ICEComponent({ left: 0, top: 0, width: 10, height: 10 });
+    const anchor = new ICEWidget({ left: 0, top: 0, width: 10, height: 10 });
     const content = panel(50, 20);
     manager.open({ anchor, content, enterAnimation: 'scale' });
     expect(content.state.opacity).toBe(0);
@@ -314,7 +314,7 @@ describe('ICEOverlayManager', () => {
     const ice = makeICE();
     const manager = new ICEOverlayManager(ice);
     const { driver, step } = makeFrameDriver();
-    const anchor = new ICEComponent({ left: 0, top: 0, width: 10, height: 10 });
+    const anchor = new ICEWidget({ left: 0, top: 0, width: 10, height: 10 });
     const content = panel(50, 20);
     const handle = manager.open({ anchor, content, exitAnimation: 'fade', animation: { duration: 100, driver } });
 

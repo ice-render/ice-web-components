@@ -1,4 +1,4 @@
-import { ICEComponent } from './ICEComponent';
+import { ICEWidget } from './ICEWidget';
 import { ICELabel } from '../components/ICELabel';
 import { ICEPanel } from '../components/ICEPanel';
 import { ICEButton } from '../components/ICEButton';
@@ -56,7 +56,7 @@ const MAX_WIDTH = 320;
 
 export class ICEMessageManager {
   private ice: any;
-  private layer: ICEComponent | null = null;
+  private layer: ICEWidget | null = null;
   private entries: ICEMessageEntry[] = [];
   private bound = false;
 
@@ -69,7 +69,7 @@ export class ICEMessageManager {
     if (this.bound || !this.ice) {
       return this;
     }
-    this.layer = new ICEComponent({
+    this.layer = new ICEWidget({
       id: 'ice-ui-message-layer',
       fill: false,
       stroke: false,
@@ -98,7 +98,7 @@ export class ICEMessageManager {
     return this;
   }
 
-  public getLayer(): ICEComponent | null {
+  public getLayer(): ICEWidget | null {
     return this.layer;
   }
 
