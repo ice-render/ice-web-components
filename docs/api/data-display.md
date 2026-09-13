@@ -391,6 +391,7 @@
 
 | 参数 | 类型 | 说明 |
 |---|---|---|
+| `weekStart?` | `number` | 一周首日（0=周日 … 6=周六）；缺省按 locale 推导（en-US → 周日，zh-CN → 周一），兜底周一 |
 | `id?` | `string` | 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） |
 | `value?` | `string` | 选中日期 `YYYY-MM-DD` |
 | `month?` | `string` | 当前显示的月份 `YYYY-MM`，默认取 value 所在月 / 今天所在月 |

@@ -555,6 +555,9 @@ panel.setLayout(new ICEFlowLayout({ gap: 8 }));
   表单模型是 `new ICEFormModel({ locale: 'en-US' })`），因此同一页面里两个面板可以各用各的语言，
   库本身不持有全局状态；`tFor('en-US')` / `t('key', vars)` 可给应用层自己的 UI 复用同一套兜底链
   （该语言 → 默认语言 → key 本身）。
+  **优先级**：实例 `locale` > 全局 `setICELocale()`（后者只是"应用级默认"，不指定实例语言时生效）。
+  **日历/日期选择器的一周首日**按语言推导（`Intl.Locale(...).weekInfo.firstDay`：`en-US` 周日开头、
+  `zh-CN` 周一开头；运行时没有该 API 或语言未知时兜底周一），也可用 `weekStart: 0..6` 显式覆盖。
   **边界**：业务文案不走这套 —— 应用层用任意 i18n 库（`Intl` / ICU / i18next）把**最终字符串**
   交给组件；断行、文字方向（`direction` / `textAlign: 'start' | 'end'`）与输入法由引擎负责。
   完整契约见 ice-render 的 `docs/architecture/17-i18n-boundary.md`。
