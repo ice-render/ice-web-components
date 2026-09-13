@@ -87,9 +87,60 @@ page.on('console', (m) => {
   if (m.type() === 'error') errors.push('console: ' + m.text());
 });
 await page.goto(URL);
+// 开机先跑 BIOS 自检：等句柄挂上，断言自检界面，然后按键跳过（真机上也是「任意键跳过」）
+await page.waitForFunction(() => !!window.__arcade && !!window.__arcade.bios, null, { timeout: 20000 });
+await page.waitForTimeout(200);
+const biosBoot = await page.evaluate(() => {
+  const r = window.__arcade;
+  const layer = (r.nodes.screen.childNodes || []).find((n) => n.state && n.state.id === 'arcade-bios-layer');
+  return {
+    phase: r.bios.getPhase(),
+    game: r.game,
+    hasModel: !!r.model,
+    layer: !!layer,
+    steps: r.bios.getSteps().map((step) => `${step.label}:${step.state}`),
+    progress: r.bios.getPostProgress(),
+    scoreCaption: r.captions.score.getText(),
+    rightValue: r.rightCard.getText(),
+  };
+});
+check(
+  '开机：先跑 BIOS 开机自检（屏幕上只有 BIOS 层，卡带还没接上）',
+  biosBoot.phase === 'post' && biosBoot.layer && biosBoot.hasModel === false && biosBoot.game === null && biosBoot.steps.length === 5,
+  JSON.stringify(biosBoot),
+);
+check(
+  '开机：HUD 换成 BIOS 文案（自检进度 / 相位），进度条走在 0 和 100% 之间',
+  biosBoot.scoreCaption === '自检 POST' && biosBoot.rightValue === 'POST' && biosBoot.progress > 0 && biosBoot.progress < 1,
+  JSON.stringify({ steps: biosBoot.steps, progress: biosBoot.progress, caption: biosBoot.scoreCaption, phase: biosBoot.rightValue }),
+);
+// 自检按时序推进：过一会儿再看，通过的项目必须变多、进度往前走（别断言某一瞬间的项状态）
+await page.waitForTimeout(450);
+const postLater = await page.evaluate(() => ({
+  steps: window.__arcade.bios.getSteps().map((step) => `${step.label}:${step.state}`),
+  progress: window.__arcade.bios.getPostProgress(),
+}));
+const okCount = (list) => list.filter((line) => line.endsWith(':ok')).length;
+check(
+  '开机：自检真的在按时序跑（450ms 后通过的项目变多、进度往前走）',
+  postLater.progress > biosBoot.progress && okCount(postLater.steps) > okCount(biosBoot.steps) && postLater.steps.length === 5,
+  JSON.stringify({ first: biosBoot.steps, later: postLater.steps, from: biosBoot.progress, to: postLater.progress }),
+);
+// 任意键跳过自检 → 快速启动（出厂默认）直接进上次那块卡带
+await page.keyboard.press('Enter');
 // UMD 包冷启动要解析一会儿，等句柄真的挂上再开始（比写死 sleep 稳）
 await page.waitForFunction(() => !!window.__arcade && !!window.__arcade.model, null, { timeout: 20000 });
 await page.waitForTimeout(400);
+const afterPost = await page.evaluate(() => ({
+  phase: window.__arcade.bios.getPhase(),
+  game: window.__arcade.game,
+  quickBoot: window.__arcade.bios.isQuickBoot(),
+}));
+check(
+  '开机：跳过自检后「快速启动」直接交棒给卡带（BIOS 相位变 boot）',
+  afterPost.phase === 'boot' && afterPost.game === 'tetris' && afterPost.quickBoot === true,
+  JSON.stringify(afterPost),
+);
 
 /** 棋盘上已落方块数 + 当前方块行号：用来判断「有没有动」。 */
 const signature = () =>
@@ -1028,6 +1079,173 @@ check(
     ridge.buttons[4].l + ridge.buttons[4].w <= ridge.bar.l + ridge.bar.w,
   JSON.stringify(ridge),
 );
+
+/* ---------- 11. BIOS：启动菜单 / 设置 / 快速启动 ---------- */
+await page.keyboard.press('F2');
+await page.waitForTimeout(400);
+const biosMenu = await page.evaluate(() => {
+  const r = window.__arcade;
+  const layer = (r.nodes.screen.childNodes || []).find((n) => n.state && n.state.id === 'arcade-bios-layer');
+  const menuNodes = layer ? (r.nodes.biosNodes ? r.nodes.biosNodes.menuNodes : []) : [];
+  return {
+    phase: r.bios.getPhase(),
+    cursor: r.bios.getCursor(),
+    entries: r.bios.getMenuEntries().map((entry) => entry.key),
+    selected: r.bios.getSelectedEntry().key,
+    game: r.game,
+    hasModel: !!r.model,
+    layer: !!layer,
+    highlight: r.nodes.biosNodes ? r.nodes.biosNodes.cursorPlate.state.display : null,
+    firstLine: menuNodes.length ? menuNodes[0].getText() : '',
+    thirdLine: menuNodes.length > 2 ? menuNodes[2].getText() : '',
+  };
+});
+check(
+  'BIOS：游戏里按 F2 回到启动菜单（卡带先卸掉、默认卡带被打星、光标停在它上面）',
+  biosMenu.phase === 'menu' && biosMenu.layer && biosMenu.hasModel === false && biosMenu.game === null &&
+    biosMenu.entries.join(',') === 'tetris,snake,2048,chip8,settings,boot' && biosMenu.selected === 'tetris' &&
+    biosMenu.highlight === true && biosMenu.firstLine.indexOf('>') === 0,
+  JSON.stringify(biosMenu),
+);
+
+await page.keyboard.press('ArrowUp');
+await page.waitForTimeout(120);
+const wrapped = await page.evaluate(() => ({ cursor: window.__arcade.bios.getCursor(), selected: window.__arcade.bios.getSelectedEntry().key }));
+check(
+  'BIOS：菜单光标循环（在第一个上按 ↑ 绕到最后一项「退出并启动」）',
+  wrapped.selected === 'boot',
+  JSON.stringify(wrapped),
+);
+
+await page.keyboard.press('ArrowDown'); // 回到 tetris
+await page.keyboard.press('ArrowDown'); // snake
+await page.keyboard.press('ArrowDown'); // 2048
+await page.keyboard.press('ArrowDown'); // chip8
+await page.waitForTimeout(120);
+const beforeBoot = await page.evaluate(() => ({ cursor: window.__arcade.bios.getCursor(), selected: window.__arcade.bios.getSelectedEntry().key }));
+await page.keyboard.press('Enter');
+await page.waitForTimeout(400);
+const afterMenuBoot = await page.evaluate(() => {
+  const board = (window.__arcade.nodes.screen.childNodes || []).find((n) => n.state && n.state.id === 'chip8-board');
+  return { phase: window.__arcade.bios.getPhase(), game: window.__arcade.game, chip8: !!board, model: typeof window.__arcade.model.getDisplay };
+});
+check(
+  'BIOS：菜单里选 CHIP-8 → 真的启动那块卡带（BIOS 层消失、显存换上来）',
+  beforeBoot.selected === 'chip8' && afterMenuBoot.phase === 'boot' && afterMenuBoot.game === 'chip8' &&
+    afterMenuBoot.chip8 === true && afterMenuBoot.model === 'function',
+  JSON.stringify({ beforeBoot, afterMenuBoot }),
+);
+
+// 设置页：快速启动开关 + 默认卡带，都要落盘
+await page.keyboard.press('F2');
+await page.waitForTimeout(300);
+// 光标可能停在「刚启动的那块卡带」上（openMenu 会对齐默认卡带），所以按当前位置往前推
+const setupSteps = await page.evaluate(() => {
+  const bios = window.__arcade.bios;
+  const entries = bios.getMenuEntries();
+  const target = entries.findIndex((entry) => entry.type === 'settings');
+  return (target - bios.getCursor() + entries.length) % entries.length;
+});
+for (let i = 0; i < setupSteps; i += 1) {
+  // eslint-disable-next-line no-await-in-loop
+  await page.keyboard.press('ArrowDown');
+}
+await page.keyboard.press('Enter');
+await page.waitForTimeout(250);
+const settingsPage = await page.evaluate(() => {
+  const nodes = window.__arcade.nodes.biosNodes;
+  return {
+    phase: window.__arcade.bios.getPhase(),
+    rows: nodes ? nodes.settingNodes.map((node) => node.getText()) : [],
+    visible: nodes ? nodes.settingNodes[0].state.display : null,
+  };
+});
+check(
+  'BIOS：菜单里选「设置」进设置页（快速启动 / 默认卡带 / 返回 三行）',
+  settingsPage.phase === 'settings' && settingsPage.visible === true && settingsPage.rows.length === 3 &&
+    settingsPage.rows[0].indexOf('QUICK BOOT') !== -1 && settingsPage.rows[1].indexOf('DEFAULT') !== -1 && settingsPage.rows[2].indexOf('BACK') !== -1,
+  JSON.stringify(settingsPage),
+);
+
+await page.keyboard.press('Enter'); // 关掉快速启动
+await page.waitForTimeout(200);
+const quickOff = await page.evaluate(() => ({
+  quickBoot: window.__arcade.bios.isQuickBoot(),
+  stored: localStorage.getItem('ice-arcade-bios-settings'),
+  row: window.__arcade.nodes.biosNodes.settingNodes[0].getText(),
+}));
+check(
+  'BIOS：设置页把「快速启动」关掉，并且立刻写进 localStorage',
+  quickOff.quickBoot === false && quickOff.row.indexOf('[ 关 ]') !== -1 && /"quickBoot":false/.test(String(quickOff.stored)),
+  JSON.stringify(quickOff),
+);
+
+await page.keyboard.press('ArrowDown');
+const beforeDefault = await page.evaluate(() => window.__arcade.bios.getDefaultCartridge());
+await page.keyboard.press('Enter'); // 默认卡带循环切一块
+await page.waitForTimeout(200);
+const defaultChanged = await page.evaluate(() => ({
+  defaultCartridge: window.__arcade.bios.getDefaultCartridge(),
+  row: window.__arcade.nodes.biosNodes.settingNodes[1].getText(),
+  stored: localStorage.getItem('ice-arcade-bios-settings'),
+}));
+/** 切之前是哪块 → 期望切到列表里的下一块（最后一块绕回第一块）。 */
+const expectedDefault = (() => {
+  const keys = ['tetris', 'snake', '2048', 'chip8'];
+  return keys[(keys.indexOf(beforeDefault) + 1) % keys.length];
+})();
+const expectedLabel = { tetris: '俄罗斯方块', snake: '贪吃蛇', '2048': '2048', chip8: 'CHIP-8' }[expectedDefault];
+check(
+  'BIOS：默认卡带能循环切换，同样落盘',
+  defaultChanged.defaultCartridge === expectedDefault && defaultChanged.row.indexOf(expectedLabel) !== -1 &&
+    new RegExp(`"defaultCartridge":"${expectedDefault}"`).test(String(defaultChanged.stored)),
+  JSON.stringify({ defaultChanged, expectedDefault }),
+);
+
+await page.keyboard.press('Escape');
+await page.waitForTimeout(250);
+const backToMenu = await page.evaluate(() => ({ phase: window.__arcade.bios.getPhase(), selected: window.__arcade.bios.getSelectedEntry().key }));
+check(
+  'BIOS：Esc 从设置返回菜单（光标还停在「设置」上）',
+  backToMenu.phase === 'menu' && backToMenu.selected === 'settings',
+  JSON.stringify(backToMenu),
+);
+
+// 重新加载页面：设置已经从 localStorage 读回来了 —— 快速启动关着，自检完应该停在菜单
+await page.reload();
+await page.waitForFunction(() => !!window.__arcade && !!window.__arcade.bios, null, { timeout: 20000 });
+await page.keyboard.press('Enter'); // 跳过自检
+await page.waitForTimeout(400);
+const afterReload = await page.evaluate(() => ({
+  phase: window.__arcade.bios.getPhase(),
+  quickBoot: window.__arcade.bios.isQuickBoot(),
+  defaultCartridge: window.__arcade.bios.getDefaultCartridge(),
+  hasModel: !!window.__arcade.model,
+  selected: window.__arcade.bios.getSelectedEntry().key,
+}));
+check(
+  'BIOS：刷新页面后设置还在（快速启动=关 → 自检完停在菜单、默认卡带也跟着存回来）',
+  afterReload.phase === 'menu' && afterReload.quickBoot === false && afterReload.defaultCartridge === expectedDefault &&
+    afterReload.hasModel === false && afterReload.selected === expectedDefault,
+  JSON.stringify({ afterReload, expectedDefault }),
+);
+
+await page.keyboard.press('Enter');
+await page.waitForTimeout(400);
+const bootFromMenu = await page.evaluate(() => ({ game: window.__arcade.game, phase: window.__arcade.bios.getPhase(), model: !!window.__arcade.model }));
+check(
+  'BIOS：菜单里 Enter 启动默认卡带（设置里选的那块）',
+  bootFromMenu.game === expectedDefault && bootFromMenu.phase === 'boot' && bootFromMenu.model === true,
+  JSON.stringify({ bootFromMenu, expectedDefault }),
+);
+
+// 收尾：把快速启动打开（下一轮 QA / 人工打开页面还是「开箱即玩」）
+const restored = await page.evaluate(() => {
+  const bios = window.__arcade.bios;
+  if (!bios.isQuickBoot()) bios.toggleQuickBoot();
+  return { quickBoot: bios.isQuickBoot(), stored: localStorage.getItem('ice-arcade-bios-settings') };
+});
+check('BIOS：收尾把快速启动恢复成开（存储里也写回去了）', restored.quickBoot === true && /"quickBoot":true/.test(String(restored.stored)), JSON.stringify(restored));
 
 /* ---------- 收尾 ---------- */
 await page.evaluate(() => window.__arcade.selectGame('tetris'));

@@ -110,6 +110,50 @@
 | `reset()` | `this` | 回到初始值并清空错误。 |
 | `addChangeListener(listener: ICEFormModelListener)` | `() => void` |  |
 
+## `ICEBiosModel`
+
+掌机 BIOS 的纯逻辑（不碰 canvas、不碰 DOM）。  掌机开机先跑一段「自检 → 菜单」的引导，然后才把控制权交给卡带： 自检**按时序推进**（页面每帧调 `tick(dt)`），菜单是**光标 + 确认**的老式控制台交互。 页面只负责把 `getSteps()` / `getMenuEntries()` 画成文字，并执行 `confirm()` 返回的动作 —— 状态机与渲染分开，所以「自检要跑多久、菜单怎么绕、设置存到哪」都能在 node 里单测。  约定：
+
+- 自检项由 `steps` 注入（默认 5 项：CPU / RAM / VRAM / SOUND / CART），每项有自己的耗时；
+- 相位机：`post`（自检中）→ `menu`（启动菜单）或 `boot`（直接启动，快速启动开着时）； `settings`（设置页）从菜单进、`back()` 回菜单；
+- 菜单光标上下**循环**（到头绕回去，老式 BIOS 都这样），进设置前记下位置、回来还停在那儿；
+- 设置（快速启动 / 默认卡带）落到注入的存储里；坏数据、写盘失败一律降级，绝不抛。
+
+源码：[`src/model/ICEBiosModel.ts`](../../src/model/ICEBiosModel.ts)
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getPhase()` | `ICEBiosPhase` |  |
+| `getCartridges()` | `ICEBiosCartridge[]` |  |
+| `getPostElapsed()` | `number` |  |
+| `getPostDuration()` | `number` | 自检总时长（毫秒）。 |
+| `getPostProgress()` | `number` | 自检进度 0..1（按时间算，页面拿它画进度条）。 |
+| `getSteps()` | `ICEBiosStepState[]` | 自检项与它们此刻的状态（当前项 running、前面的 ok）。 |
+| `getMenuEntries()` | `ICEBiosMenuEntry[]` | 菜单项：卡带列表 + 设置 + 退出并启动。 |
+| `getCursor()` | `number` |  |
+| `getSelectedEntry()` | `ICEBiosMenuEntry \| null` |  |
+| `getSettings()` | `ICEBiosSettings` |  |
+| `isQuickBoot()` | `boolean` |  |
+| `getDefaultCartridge()` | `string` |  |
+| `tick(delta: number)` | `boolean` | 推进自检（页面每帧调用），返回是否发生了变化。 |
+| `moveCursor(delta: number)` | `void` |  |
+| `setCursor(index: number)` | `void` |  |
+| `confirm()` | `ICEBiosAction` | 确认当前项：只返回动作，执行动作是页面的事（好测）。 |
+| `back()` | `void` | 返回上一层（设置 → 菜单）。 |
+| `openMenu()` | `void` | 从游戏里回到 BIOS 菜单（掌机的「复位」）。 |
+| `restart()` | `void` | 重新跑一遍自检（再开一次机）。 |
+| `toggleQuickBoot()` | `boolean` |  |
+| `setDefaultCartridge(key: string)` | `void` |  |
+| `addChangeListener(listener: ICEBiosListener)` | `() => void` |  |
+
+### `ICE_BIOS_DEFAULT_STEPS` — 常量
+
+默认自检项：每一项都是一句「老式 BIOS 会印在屏幕上的话」。
+
+源码：`src/model/ICEBiosModel.ts`
+
 ## `ICEHistoryModel`
 
 撤销 / 重做栈（纯逻辑，泛型）。  不是给某个画板专用的：任何「编辑 → 提交 → 后悔」的界面都能用（像素画板、看板、 表格编辑、表单草稿…），所以它只认泛型快照，不认识 canvas、颜色和数据结构。  约定：

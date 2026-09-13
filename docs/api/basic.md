@@ -170,6 +170,7 @@
 |---|---|---|
 | `setText(text: string)` | `this` |  |
 | `getText()` | `string` |  |
+| `setTextColor(color: string)` | `this` | 改文字颜色（动态强调 / 置灰用，比如 BIOS 自检行的灰→黄→绿、菜单选中态）。 |
 | `getPreferredSize()` | `[number, number]` | @overwrite |
 
 ## `ICETypography`

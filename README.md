@@ -27,11 +27,11 @@ rings and shadows) is drawn by the engine.
 - **Bootstrap 5 token theme** (plus a dark theme) — swap with one call.
 - **No name collisions with the engine** — the package’s runtime exports are
   disjoint from `ice-render`’s (there is a regression test for it).
-- **Actually tested** — 749 unit tests (101 suites: form validation, overlay
+- **Actually tested** — 769 unit tests (103 suites: form validation, overlay
   positioning, keyboard navigation, sort/hover/focus edge cases, the Minesweeper,
   Tetris, Snake, 2048 and CHIP-8 rule/machine models, the pixel canvas and the undo
-  stack) plus six browser QA suites (`qa:admin`, `qa:gallery`, `qa:workbench`, `qa:xp`,
-  `qa:arcade`, `qa:pixel` — 232 assertions) that drive the demo pages with
+  stack, and the console BIOS) plus six browser QA suites (`qa:admin`, `qa:gallery`,
+  `qa:workbench`, `qa:xp`, `qa:arcade`, `qa:pixel` — 246 assertions) that drive the demo pages with
   real mouse and keyboard events and fail on any console error.
 
 ## Quick start
@@ -220,6 +220,26 @@ the buttons and the sound switch are all ICE components, and there is not a sing
 bitmap asset in the picture. Four cartridges are plugged in, and the cartridge row at
 the top switches between them (a fifth slot, Chinese chess, is disabled for now).
 
+Before any cartridge runs, the console boots through its own **BIOS**: a power-on
+self-test (CPU / RAM / VRAM / SOUND / CART, each line going grey → amber → green with a
+beep) followed by a classic boot menu, exactly like the real thing.
+
+| POST (power-on self-test) | BIOS boot menu |
+|---|---|
+| ![ICE Arcade BIOS self-test](docs/images/arcade-bios.png) | ![ICE Arcade BIOS menu](docs/images/arcade-bios-menu.png) |
+
+`ICEBiosModel` is the state machine behind it (pure logic, 17 unit tests): the self-test
+is a **timed sequence** the page advances with `tick(dt)` — each step owns its duration and
+reports `pending` / `running` / `ok`; the menu is a cursor + confirm console UI with a
+**wrapping** cursor; `confirm()` returns an *action* (`boot` / `settings` / `menu`) instead
+of executing it, so the whole flow is testable in node. Settings (quick boot + default
+cartridge) persist through an injected storage that degrades gracefully on corrupt JSON
+or a full quota.
+
+F2 (or the BIOS button) returns to the menu at any time — on a game page that *is* the
+reset button. Any key during POST skips the rest of the self-test, and with quick boot on
+(the factory default) the console goes straight back to the last cartridge after POST.
+
 | | |
 |---|---|
 | ![ICE Arcade · Tetris](docs/images/arcade-tetris.png) | ![ICE Arcade · Snake](docs/images/arcade-snake.png) |
@@ -365,7 +385,7 @@ The three decisions worth stealing:
 | Feedback & status | `ICEAlert` `ICEModal` `ICEDrawer` `ICEMessage` `ICENotification` `ICETooltip` `ICEPopover` `ICEPopconfirm` `ICETour` `ICEFloatButton` `ICEEmpty` `ICESkeleton` `ICESpin` `ICEResult` `ICESteps` `ICEOverlayManager` |
 | Navigation | `ICEMenu` `ICEBreadcrumb` `ICEAnchor` `ICEBackTop` `ICEDropdown` `ICEPagination` `ICETabs` |
 | Layout & core | `ICEWidget` `ICEContainer` `ICEHoverManager` `ICEFocusManager` `ICEMessageManager` `ICEManager` (`ICEPainter` / `ICELayoutManager` are types) |
-| Models | `ICEButtonModel` `ICEToggleModel` `ICEBoundedRangeModel` `ICESelectionModel` `ICEFormModel` `ICEHistoryModel` `ICEPixelModel` `ICETetrisModel` `ICESnakeModel` `ICE2048Model` `ICEChip8Model` `ICEMinesweeperModel` `ICEHighScoreModel` |
+| Models | `ICEButtonModel` `ICEToggleModel` `ICEBoundedRangeModel` `ICESelectionModel` `ICEFormModel` `ICEBiosModel` `ICEHistoryModel` `ICEPixelModel` `ICETetrisModel` `ICESnakeModel` `ICE2048Model` `ICEChip8Model` `ICEMinesweeperModel` `ICEHighScoreModel` |
 
 Helper functions: `attachTooltip` `attachPopover` `attachPopconfirm` `attachDropdown`
 `openModal` `openDrawer` `getICEOverlayManager` `getICEFocusManager` `getICEMessageManager`

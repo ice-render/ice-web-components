@@ -296,6 +296,13 @@ setInterval(() => model.tick(), 1000);      // 计时（只有 playing 会累加
 **俄罗斯方块**（第 1 弹）、**贪吃蛇**（第 2 弹）、**2048**（第 3 弹）、**CHIP-8**（第 4 弹）
 都能玩，第五格「中国象棋」先占位禁用。
 
+开机**先过 BIOS**：自检（CPU / RAM / VRAM / SOUND / CART，一行一行从灰变黄再变绿，每过一项「哔」一声）
+→ 启动菜单。F2（或右下角的 BIOS 按钮）随时回到菜单 —— 在游戏页上它就是复位键。
+
+| 开机自检 POST | BIOS 启动菜单 |
+|---|---|
+| ![ICE Arcade BIOS 自检](../images/arcade-bios.png) | ![ICE Arcade BIOS 菜单](../images/arcade-bios-menu.png) |
+
 | 俄罗斯方块 | 贪吃蛇 | 2048 |
 |---|---|---|
 | ![ICE Arcade 俄罗斯方块](../images/arcade-tetris.png) | ![ICE Arcade 贪吃蛇](../images/arcade-snake.png) | ![ICE Arcade 2048](../images/arcade-2048.png) |
@@ -347,6 +354,39 @@ setInterval(() => model.tick(), 1000);      // 计时（只有 playing 会累加
 
 > 卡带按钮的选中态不靠改属性实现：`ICEButton` 的 `variant` 是构造期定的（没有
 > `setVariant`），所以切换时**重建这一行按钮**最省心 —— 反正只有四五格。
+
+### 第 0 弹：BIOS（自检 + 启动菜单）
+
+掌机的引导层也是一个**纯逻辑模型**：`ICEBiosModel`
+（[模型 API](../api/models.md#icebiosmodel)，17 条单测）。页面只做三件事：
+把模型画成屏幕上的文字、把按键喂给模型、执行模型返回的动作。
+
+```ts
+import { ICEBiosModel } from 'ice-web-components';
+
+const bios = new ICEBiosModel({ cartridges: [{ key: 'tetris', label: '俄罗斯方块' }, /* … */] });
+bios.tick(16);                 // 每帧推进自检；跑完按「快速启动」决定是进菜单还是直接启动
+bios.getSteps();               // [{ label, detail, state: 'pending' | 'running' | 'ok' }, …]
+bios.getPostProgress();        // 0..1（页面拿它画进度条）
+bios.moveCursor(-1);           // 菜单光标循环：在第一个上按 ↑ 会绕到最后一项
+bios.getSelectedEntry();
+bios.confirm();                // 只返回动作 { type: 'boot' | 'settings' | 'menu' }，执行是页面的事
+```
+
+几个刻意的设计：
+
+* **自检是时序而不是「一次性算完」**：每项自带耗时（默认 300/340/280/260/320ms），
+  `tick(dt)` 让页面按真实时间推进 —— 因此自检行的「灰 → 黄 → 绿」是真的在动，
+  也能「按任意键跳过」。QA 断言的是**推进**（450ms 后通过的项目变多、进度往前走），
+  而不是某一瞬间的状态（那种断言在并行的机器上必然抖）。
+* **`confirm()` 只返回动作**：模型不认识 `selectGame()`，页面拿到 `{ type: 'boot', cartridge }`
+  再去启动。好处是整个「菜单 → 选卡带 → 启动」的分支可以在 node 里断言，不用开浏览器。
+* **设置要能坏**：快速启动 / 默认卡带存进注入的 storage；非法 JSON、字段类型不对、
+  key 不存在、写盘配额满 —— 四种情况都降级成默认值，单测全覆盖。
+  存储里的用户设置**优先于**代码里的出厂默认值（否则每次刷新都会被代码改回去）。
+* **`ICELabel.setTextColor()`**：自检行的灰/黄/绿与菜单选中态都要动态改色。
+  `ICELabel` 的 `style` 在构造期就下沉到内层 `ICEText`，事后 `setState({ style })`
+  只改到外壳容器、文字纹丝不动 —— 所以补了这个走内层节点的正规入口（3 条单测）。
 
 ### 卡带 1：俄罗斯方块
 

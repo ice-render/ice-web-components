@@ -218,6 +218,8 @@ const GROUPS = [
       'ICEBoundedRangeModel',
       'ICESelectionModel',
       'ICEFormModel',
+      'ICEBiosModel',
+      'ICE_BIOS_DEFAULT_STEPS',
       'ICEHistoryModel',
       'ICEMinesweeperModel',
       'ICE_MINESWEEPER_DIFFICULTIES',

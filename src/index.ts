@@ -114,3 +114,4 @@ export * from './model/ICEChip8Model';
 export * from './model/ICE2048Model';
 export * from './model/ICEHistoryModel';
 export * from './model/ICEPixelModel';
+export * from './model/ICEBiosModel';

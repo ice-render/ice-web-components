@@ -80,6 +80,21 @@ export class ICELabel extends ICEWidget {
   }
 
   /**
+   * 改文字颜色（动态强调 / 置灰用，比如 BIOS 自检行的灰→黄→绿、菜单选中态）。
+   *
+   * 必须走内层 `ICEText`：文字是它画的，构造期 `style` 已经下沉到那一层，
+   * 之后再 `setState({ style })` 只会改到外壳容器，屏幕上的字纹丝不动。
+   * 只覆盖 `fillStyle`，字号 / 字体 / 对齐这些原样保留。
+   */
+  public setTextColor(color: string): this {
+    if (this.textNode && this.textNode.state) {
+      this.textNode.setState({ style: { ...(this.textNode.state.style || {}), fillStyle: color } });
+    }
+    this.dirty = true;
+    return this;
+  }
+
+  /**
    * 让标签自身占据文字的实测尺寸。
    *
    * ICEText 会把自身宽高自动调成实测值，而 ICELabel 只是它的一层包装容器：调用方不显式给尺寸时，
