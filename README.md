@@ -577,6 +577,10 @@ npm run types:check      # tsc --noEmit
 npm test                 # jest (unit tests, node env)
 npm run build            # cjs + esm + umd + d.ts
 
+# examples smoke: every demo page must render (no console/pageerror, canvas painted)
+npm run test:e2e
+npm run verify:full      # verify + test:e2e (the pre-release one-shot)
+
 # browser QA for examples/admin.html: layout consistency + popup open/close
 # (needs playwright; point PLAYWRIGHT_PATH at an existing install if needed)
 npm run qa:admin
