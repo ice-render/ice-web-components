@@ -28,6 +28,40 @@ export interface ICELocalizedProps {
   locale?: string;
 }
 
+/** 一周首日的兜底：周一（与 `Date.getDay()` 对齐：0=周日 … 6=周六）。 */
+export const ICE_DEFAULT_WEEK_START = 1;
+
+/**
+ * 解析「一周从哪天开始」（0=周日 … 6=周六，与 `Date.getDay()` 对齐）。
+ *
+ * - `override` 合法（0..6）时优先用它 —— 调用方可以硬指定（例如固定周一开头的排班表）；
+ * - 否则按**语言**推导：`Intl.Locale(tag).weekInfo.firstDay`（1=周一 … 7=周日）→ 转换成 0..6；
+ * - 语言未注册 / 运行时没有 `Intl.Locale` 或 `weekInfo`（老引擎、部分小程序）→ 兜底周一。
+ *
+ * 这是「排版/日历语义」而不是词条：引擎不持 locale，组件层按自己的语言（`props.locale` 或
+ * 当前语言）推导即可，不引入全局状态。
+ */
+export function resolveWeekStart(locale?: string, override?: number): number {
+  if (typeof override === 'number' && Number.isFinite(override) && override >= 0 && override <= 6) {
+    return Math.floor(override);
+  }
+  const tag = locale || currentLocale;
+  const LocaleCtor: any = typeof Intl !== 'undefined' ? (Intl as any).Locale : undefined;
+  if (typeof LocaleCtor === 'function') {
+    try {
+      const info = new LocaleCtor(tag);
+      const weekInfo = info.weekInfo || (typeof info.getWeekInfo === 'function' ? info.getWeekInfo() : null);
+      const firstDay = weekInfo ? Number(weekInfo.firstDay) : NaN;
+      if (firstDay >= 1 && firstDay <= 7) {
+        return firstDay === 7 ? 0 : firstDay; // 规范：1=周一 … 7=周日；本库：0=周日
+      }
+    } catch (err) {
+      // 语言标签非法 / 运行时未实现 → 兜底
+    }
+  }
+  return ICE_DEFAULT_WEEK_START;
+}
+
 /** 默认语言。 */
 export const ICE_DEFAULT_LOCALE = 'zh-CN';
 

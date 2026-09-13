@@ -18,6 +18,8 @@ import { ICEPagination } from '../src/components/ICEPagination';
 import { ICEUpload } from '../src/components/ICEUpload';
 import { ICECalendar } from '../src/components/ICECalendar';
 import { ICEFormModel } from '../src/model/ICEFormModel';
+import { ICE_DEFAULT_WEEK_START, resolveWeekStart } from '../src/i18n/ICEI18n';
+import { rotatedWeekdayKeys } from '../src/components/ICECalendar';
 
 /** 收集一棵子树里所有 ICELabel 的文本（组件内置文案都渲染成 ICELabel）。 */
 function labelTexts(node: any, out: string[] = []): string[] {
@@ -53,6 +55,20 @@ describe('tFor：按语言取翻译函数（不依赖全局状态）', () => {
     setICELocale('en-US');
     expect(t('common.ok')).toBe(tFor()('common.ok'));
   });
+
+  it('resolveWeekStart：按语言推导一周首日（可用 weekStart 覆盖）', () => {
+    expect(resolveWeekStart('en-US')).toBe(0); // 周日
+    expect(resolveWeekStart('zh-CN')).toBe(1); // 周一
+    expect(resolveWeekStart('xx-XX')).toBe(ICE_DEFAULT_WEEK_START); // 未知语言 → 兜底周一
+    expect(resolveWeekStart('en-US', 6)).toBe(6); // 显式覆盖优先
+    expect(resolveWeekStart('zh-CN', 9)).toBe(1); // 非法覆盖 → 回到推导值
+  });
+
+  it('周标题按首日旋转（周一开头 vs 周日开头）', () => {
+    expect(rotatedWeekdayKeys(1)[0]).toBe('calendar.weekday.mon'); // zh-CN
+    expect(rotatedWeekdayKeys(0)[0]).toBe('calendar.weekday.sun'); // en-US
+    expect(rotatedWeekdayKeys(0).length).toBe(7);
+  });
 });
 
 describe('组件内置文案：按实例可配、互不影响', () => {
@@ -67,6 +83,14 @@ describe('组件内置文案：按实例可配、互不影响', () => {
     expect(labelTexts(zh)).toContain('共 42 条');
     expect(labelTexts(en)).toContain('42 in total');
     expect(getICELocale()).toBe('zh-CN'); // 没有因为构造英文实例而改全局
+  });
+
+  it('优先级：实例 locale > 全局 setICELocale（全局只是应用级默认）', () => {
+    setICELocale('en-US');
+    const pinnedZh = new ICEPagination({ width: 400, total: 7, showTotal: true, locale: 'zh-CN' });
+    const followsGlobal = new ICEPagination({ width: 400, total: 7, showTotal: true });
+    expect(labelTexts(pinnedZh)).toContain('共 7 条');
+    expect(labelTexts(followsGlobal)).toContain('7 in total');
   });
 
   it('上传组件：提示与拒绝原因都跟随 props.locale', () => {
@@ -88,6 +112,22 @@ describe('组件内置文案：按实例可配、互不影响', () => {
     expect(labelTexts(en)).toContain('9/2026');
     expect(labelTexts(zh)).toContain('一');
     expect(labelTexts(en)).toContain('Mon');
+  });
+
+  it('日历：一周首日按语言推导（en-US 周日开头 / zh-CN 周一开头），可用 weekStart 覆盖', () => {
+    const zh = new ICECalendar({ width: 280, height: 260, value: '2026-09-13', locale: 'zh-CN' });
+    const en = new ICECalendar({ width: 280, height: 260, value: '2026-09-13', locale: 'en-US' });
+    const pinned = new ICECalendar({ width: 280, height: 260, value: '2026-09-13', locale: 'en-US', weekStart: 1 });
+
+    expect((zh as any).weekStart).toBe(1);
+    expect((en as any).weekStart).toBe(0);
+    expect((pinned as any).weekStart).toBe(1); // 显式覆盖胜过语言推导
+
+    // 周标题顺序：zh 从「一」开始、en 从「Sun」开始
+    const zhWeekdayTexts = (zh as any).weekdayNodes.map((n: any) => n.getText());
+    const enWeekdayTexts = (en as any).weekdayNodes.map((n: any) => n.getText());
+    expect(zhWeekdayTexts[0]).toBe('一');
+    expect(enWeekdayTexts[0]).toBe('Sun');
   });
 
   it('表单模型的默认校验文案跟随 options.locale（字段级 message 仍可覆盖）', () => {

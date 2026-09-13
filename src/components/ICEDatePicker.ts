@@ -1,10 +1,11 @@
-import { ICE_CALENDAR_WEEKDAY_KEYS } from './ICECalendar';
+import { rotatedWeekdayKeys } from './ICECalendar';
 import { ICELabel } from './ICELabel';
 import { ICEPanel } from './ICEPanel';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../core/ICEOverlayManager';
 import type { ICELocalizedProps } from '../i18n/ICEI18n';
+import { ICE_DEFAULT_WEEK_START, resolveWeekStart } from '../i18n/ICEI18n';
 
 /**
  * 日期选择器（业界组件库 DatePicker 的最小版）。
@@ -19,6 +20,8 @@ import type { ICELocalizedProps } from '../i18n/ICEI18n';
 export type ICEDatePickerPlacement = 'bottomLeft' | 'bottomRight';
 
 export interface ICEDatePickerOptions extends ICELocalizedProps {
+  /** 一周首日（0=周日 … 6=周六）；缺省按 locale 推导（en-US → 周日，zh-CN → 周一），兜底周一 */
+  weekStart?: number;
   /** 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） */
   id?: string;
   value?: string;
@@ -62,6 +65,8 @@ export class ICEDatePicker extends ICEWidget {
   private formatFn: (value: string) => string;
   private today: string;
   private cellSize: number;
+  /** 一周首日（0=周日 … 6=周六）；见 resolveWeekStart() */
+  private weekStart: number = ICE_DEFAULT_WEEK_START;
   private placement: ICEDatePickerPlacement;
   private manager: ICEOverlayManager | null;
   private onChangeCallback: ((value: string) => void) | null;
@@ -95,6 +100,8 @@ export class ICEDatePicker extends ICEWidget {
       },
     });
     this.setLocale(props.locale); // 实例级语言（组件层文案可配、不持全局状态）
+    // 一周首日：props.weekStart 优先，否则按语言推导（与 ICECalendar 同口径）
+    this.weekStart = resolveWeekStart(props.locale, props.weekStart);
     this.value = props.value ?? null;
     this.placeholder = props.placeholder || '';
     this.disabled = props.disabled === true;
@@ -190,7 +197,7 @@ export class ICEDatePicker extends ICEWidget {
   /** 当前视图月的 6×7 网格（周一开头，含上下月补位）。 */
   public getDayCells(): ICEDateCell[] {
     const first = new Date(this.viewYear, this.viewMonth - 1, 1);
-    const weekday = (first.getDay() + 6) % 7; // 周一 = 0
+    const weekday = (first.getDay() - this.weekStart + 7) % 7;
     const start = new Date(this.viewYear, this.viewMonth - 1, 1 - weekday);
     const cells: ICEDateCell[] = [];
     for (let i = 0; i < 42; i++) {
@@ -451,7 +458,7 @@ export class ICEDatePicker extends ICEWidget {
     panel.addChild(next, false);
 
     // 周标题
-    ICE_CALENDAR_WEEKDAY_KEYS.forEach((key, index) => {
+    rotatedWeekdayKeys(this.weekStart).forEach((key, index) => {
       panel.addChild(
         new ICELabel({
           interactive: false,

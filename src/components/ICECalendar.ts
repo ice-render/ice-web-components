@@ -2,6 +2,7 @@ import { ICEWidget } from '../core/ICEWidget';
 import { ICELabel } from './ICELabel';
 import { iceUIManager } from '../core/ICEManager';
 import type { ICELocalizedProps } from '../i18n/ICEI18n';
+import { ICE_DEFAULT_WEEK_START, resolveWeekStart } from '../i18n/ICEI18n';
 
 /** 周标题的文案 key（顺序 = 周一开头的展示顺序）。 */
 export const ICE_CALENDAR_WEEKDAY_KEYS = [
@@ -91,6 +92,8 @@ function __parseDate(value: any): Date | null {
  * - 键盘：←/→ 按天、↑/↓ 按周移动选中，PageUp/PageDown 切月。
  */
 export interface ICECalendarOptions extends ICELocalizedProps {
+  /** 一周首日（0=周日 … 6=周六）；缺省按 locale 推导（en-US → 周日，zh-CN → 周一），兜底周一 */
+  weekStart?: number;
   /** 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） */
   id?: string;
   /** 选中日期 `YYYY-MM-DD` */
@@ -118,6 +121,8 @@ export class ICECalendar extends ICEWidget {
   private weekHeight = 24;
   private titleNode: ICELabel | null = null;
   private weekdayNodes: ICELabel[] = [];
+  /** 一周首日（0=周日 … 6=周六）；见 resolveWeekStart() */
+  private weekStart: number = ICE_DEFAULT_WEEK_START;
   private cellNodes: ICEWidget[] = [];
   private cellLabels = new Map<string, ICELabel>();
   private cellNodeMap = new Map<string, ICEWidget>();
@@ -143,6 +148,8 @@ export class ICECalendar extends ICEWidget {
       style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border, lineWidth: theme.control.lineWidth },
     });
     this.setLocale(props.locale); // 实例级语言（组件层文案可配、不持全局状态）
+    // 一周首日：props.weekStart 优先，否则按语言推导（en-US → 周日，zh-CN → 周一）
+    this.weekStart = resolveWeekStart(props.locale, props.weekStart);
     this.focusable = true;
     this.value = value ? formatCalendarDate(value) : null;
     this.visibleMonth = visibleMonth;
@@ -387,7 +394,7 @@ export class ICECalendar extends ICEWidget {
     this.addChild(next, false);
 
     // 星期表头
-    const weekdays = ICE_CALENDAR_WEEKDAY_KEYS.map((key) => this.t(key));
+    const weekdays = rotatedWeekdayKeys(this.weekStart).map((key) => this.t(key));
     weekdays.forEach((text, index) => {
       const node = new ICELabel({
         interactive: false,
@@ -405,7 +412,7 @@ export class ICECalendar extends ICEWidget {
     });
 
     // 日期格
-    const cells = buildMonthGrid(this.visibleMonth);
+    const cells = buildMonthGrid(this.visibleMonth, { weekStart: this.weekStart });
     cells.forEach((cell, index) => {
       const row = Math.floor(index / 7);
       const col = index % 7;
@@ -456,4 +463,17 @@ export class ICECalendar extends ICEWidget {
       this.ice.dirty = true;
     }
   }
+}
+
+
+/**
+ * 按「一周首日」旋转周标题 key（数组本身是周一开头）。
+ * @param weekStart 0=周日 … 6=周六（`Date.getDay()` 口径）
+ */
+export function rotatedWeekdayKeys(weekStart: number): string[] {
+  // 周一开头时下标 0 对应 getDay()=1 … 下标 6 对应 getDay()=0
+  const dayOfIndex = [1, 2, 3, 4, 5, 6, 0];
+  const startIndex = dayOfIndex.indexOf(weekStart);
+  const offset = startIndex === -1 ? 0 : startIndex;
+  return [...ICE_CALENDAR_WEEKDAY_KEYS.slice(offset), ...ICE_CALENDAR_WEEKDAY_KEYS.slice(0, offset)];
 }
