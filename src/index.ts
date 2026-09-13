@@ -115,3 +115,7 @@ export * from './model/ICE2048Model';
 export * from './model/ICEHistoryModel';
 export * from './model/ICEPixelModel';
 export * from './model/ICEBiosModel';
+export * from './model/ICETracePlayerModel';
+export * from './model/ICESortModel';
+export * from './model/ICEMazeModel';
+export * from './model/ICEDosModel';

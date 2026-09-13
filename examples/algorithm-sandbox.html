@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <meta charset="utf-8" />
+  <title>ICE Algorithm Sandbox</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f8f9fa;
+      color: #212529;
+    }
+    canvas {
+      display: block;
+      border-radius: 12px;
+      background: #ffffff;
+      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+  </style>
+  <body>
+    <h1 style="font-size: 20px; margin: 0 0 4px">ICE Algorithm Sandbox</h1>
+    <p style="margin: 0 0 16px; color: #6c757d">
+      算法可视化：排序（冒泡 / 插入 / 选择 / 归并 / 快速）+ 寻路（BFS / DFS / Dijkstra / A*），可播放、单步、倒带、变速
+    </p>
+    <canvas id="canvas" width="1280" height="820"></canvas>
+
+    <script src="../node_modules/ice-render/dist/index.umd.js"></script>
+    <script src="../dist/index.umd.js"></script>
+    <script>
+      (function () {
+        const ice = new ICE.ICE().init('canvas');
+        const W = ICEWEB;
+        const theme = W.iceUIManager.getTheme();
+        new W.ICEHoverManager(ice).start();
+        const focusManager = W.getICEFocusManager(ice);
+        focusManager.start();
+
+        let statusToast = null;
+        const toast = (text, type = 'info') => {
+          if (statusToast && typeof statusToast.close === 'function') statusToast.close();
+          statusToast = W.ICEMessage.show(ice, text, { type });
+          return statusToast;
+        };
+
+        /* --------------------------------- 布局 --------------------------------- */
+
+        const SHELL = { left: 24, top: 24, width: 1232, height: 772 };
+        const SIDE_LEFT = { left: 48, top: 168, width: 168, height: 552 };
+        const STAGE = { left: 240, top: 168, width: 576, height: 552 };
+        const SIDE_RIGHT = { left: 840, top: 168, width: 416, height: 552 };
+        const STATUS_BAR = { left: 48, top: 740, width: 1208, height: 32 };
+
+        /* --------------------------------- 模型 --------------------------------- */
+
+        const sortModel = new W.ICESortModel({ size: 24, max: 32 });
+        const mazeModel = new W.ICEMazeModel({ rows: 16, cols: 24 });
+        const player = new W.ICETracePlayerModel({ speed: 8 });
+        mazeModel.randomWalls(0.24);
+
+        const state = { mode: 'sort', algorithm: 'bubble', mazeAlgorithm: 'bfs', cellSize: 16, signature: '', painting: false };
+        const SORT_SPEEDS = [
+          { key: 'slow', label: '慢', speed: 2 },
+          { key: 'mid', label: '中', speed: 8 },
+          { key: 'fast', label: '快', speed: 30 },
+        ];
+        const state_speed = { key: 'mid' };
+
+        /* --------------------------------- 外壳 --------------------------------- */
+
+        const shell = new W.ICEPanel({ left: SHELL.left, top: SHELL.top, width: SHELL.width, height: SHELL.height, radius: 12, interactive: false });
+        ice.addChild(shell);
+        ice.addChild(
+          new W.ICELabel({
+            interactive: false,
+            left: 48,
+            top: 44,
+            width: 460,
+            height: 30,
+            text: 'ICE Algorithm Sandbox',
+            style: { fontSize: 22, fontWeight: '700', fillStyle: theme.colors.text },
+          }),
+        );
+        const subtitle = new W.ICELabel({
+          interactive: false,
+          left: 48,
+          top: 78,
+          width: 700,
+          height: 20,
+          text: '先把算法跑完录成轨迹，再按时间回放 —— 算法与渲染完全解耦',
+          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+        });
+        ice.addChild(subtitle);
+
+        /** 模式切换（排序 / 寻路）：variant 是构造期的，所以重建这两个按钮。 */
+        const modeBar = new W.ICEWidget({ id: 'algo-modes', left: 940, top: 104, width: 316, height: 36, fill: false, stroke: false, interactive: false });
+        const modeButtons = {};
+        const MODES = [
+          { key: 'sort', label: '排序 SORT' },
+          { key: 'maze', label: '寻路 PATH' },
+        ];
+        const renderModes = () => {
+          modeBar.removeChildren([...modeBar.childNodes]);
+          Object.keys(modeButtons).forEach((key) => delete modeButtons[key]);
+          MODES.forEach((mode, index) => {
+            const button = new W.ICEButton({
+              id: `algo-mode-${mode.key}`,
+              left: index * 160,
+              top: 0,
+              width: 156,
+              height: 36,
+              text: mode.label,
+              variant: mode.key === state.mode ? 'primary' : 'default',
+            });
+            button.on('click', () => switchMode(mode.key));
+            modeBar.addChild(button, false);
+            modeButtons[mode.key] = button;
+          });
+        };
+        ice.addChild(modeBar);
+
+        /* --------------------------------- 左侧：算法列表 + 数据按钮 --------------------------------- */
+
+        const sideLeft = new W.ICEPanel({ left: SIDE_LEFT.left, top: SIDE_LEFT.top, width: SIDE_LEFT.width, height: SIDE_LEFT.height, interactive: false });
+        const algoCaption = new W.ICELabel({
+          id: 'algo-caption',
+          interactive: false,
+          left: 16,
+          top: 14,
+          width: 136,
+          height: 18,
+          text: '算法 ALGORITHM',
+          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+        });
+        sideLeft.addChild(algoCaption, false);
+        ice.addChild(sideLeft);
+
+        const algoButtons = {};
+        const renderAlgorithms = () => {
+          [...sideLeft.childNodes].forEach((node) => {
+            if (node.state && /^algo-item-/.test(node.state.id || '')) sideLeft.removeChild(node);
+          });
+          Object.keys(algoButtons).forEach((key) => delete algoButtons[key]);
+          const list = state.mode === 'sort' ? sortModel.getAlgorithms() : mazeModel.getAlgorithms();
+          const current = state.mode === 'sort' ? state.algorithm : state.mazeAlgorithm;
+          list.forEach((item, index) => {
+            const button = new W.ICEButton({
+              id: `algo-item-${item.key}`,
+              left: 16,
+              top: 44 + index * 42,
+              width: 136,
+              height: 34,
+              text: item.label,
+              variant: item.key === current ? 'primary' : 'default',
+              size: 'small',
+            });
+            button.on('click', () => selectAlgorithm(item.key));
+            sideLeft.addChild(button, false);
+            algoButtons[item.key] = button;
+          });
+        };
+
+        const dataCaption = new W.ICELabel({
+          interactive: false,
+          left: 16,
+          top: 266,
+          width: 136,
+          height: 18,
+          text: '数据 DATA',
+          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+        });
+        sideLeft.addChild(dataCaption, false);
+        const dataButton = (key, label, top, handler) => {
+          const button = new W.ICEButton({ id: `algo-data-${key}`, left: 16, top, width: 136, height: 32, text: label, size: 'small' });
+          button.on('click', handler);
+          sideLeft.addChild(button, false);
+          return button;
+        };
+        const shuffleButton = dataButton('shuffle', '打乱顺序', 296, () => {
+          if (state.mode === 'sort') sortModel.shuffle();
+          else mazeModel.randomWalls(0.24);
+          resetTrace();
+        });
+        const randomButton = dataButton('random', '换一批数据', 336, () => {
+          if (state.mode === 'sort') sortModel.randomize();
+          else mazeModel.clearWalls();
+          resetTrace();
+        });
+        const sizeButton = dataButton('size', '数据量 24 → 12', 376, () => {
+          if (state.mode !== 'sort') return;
+          const sizes = [12, 24, 40];
+          const next = sizes[(sizes.indexOf(sortModel.getSize()) + 1) % sizes.length] || 12;
+          sortModel.setArray(Array.from({ length: next }, () => 1 + Math.floor(Math.random() * 32)));
+          sizeButton.setText(`数据量 ${next} → ${sizes[(sizes.indexOf(next) + 1) % sizes.length]}`);
+          resetTrace();
+        });
+
+        const hintLabel = new W.ICELabel({
+          interactive: false,
+          left: 16,
+          top: 476,
+          width: 136,
+          height: 66,
+          text: '空格 播放/暂停\n← → 单步\n1-5 切算法\n寻路模式：拖动画画墙',
+          style: { fontSize: 12, fillStyle: theme.colors.textTertiary },
+        });
+        sideLeft.addChild(hintLabel, false);
+
+        /* --------------------------------- 中间：舞台 --------------------------------- */
+
+        const stage = new W.ICEPanel({ left: STAGE.left, top: STAGE.top, width: STAGE.width, height: STAGE.height, interactive: false });
+        const stageCaption = new W.ICELabel({
+          id: 'algo-stage-caption',
+          interactive: false,
+          left: 24,
+          top: 14,
+          width: 300,
+          height: 20,
+          text: '画布 STAGE',
+          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+        });
+        stage.addChild(stageCaption, false);
+        ice.addChild(stage);
+
+        const BAR_PALETTE = {
+          bar: { fillStyle: '#0d6efd', strokeStyle: '#0a58ca', lineWidth: 1, radius: 2 },
+          barCompare: { fillStyle: '#ffc107', strokeStyle: '#cc9a06', lineWidth: 1, radius: 2 },
+          barSwap: { fillStyle: '#dc3545', strokeStyle: '#a52834', lineWidth: 1, radius: 2 },
+          barSorted: { fillStyle: '#198754', strokeStyle: '#146c43', lineWidth: 1, radius: 2 },
+        };
+        const MAZE_PALETTE = {
+          empty: { fillStyle: '#f1f3f5', strokeStyle: '#dee2e6', lineWidth: 1, radius: 2 },
+          wall: { fillStyle: '#343a40', strokeStyle: '#212529', lineWidth: 1, radius: 2 },
+          start: { fillStyle: '#198754', strokeStyle: '#146c43', lineWidth: 1, radius: 2 },
+          goal: { fillStyle: '#dc3545', strokeStyle: '#a52834', lineWidth: 1, radius: 2 },
+          visited: { fillStyle: '#a5d8ff', strokeStyle: '#74c0fc', lineWidth: 1, radius: 2 },
+          frontier: { fillStyle: '#ffd43b', strokeStyle: '#e0b000', lineWidth: 1, radius: 2 },
+          path: { fillStyle: '#0d6efd', strokeStyle: '#0a58ca', lineWidth: 1, radius: 2 },
+          current: { fillStyle: '#ff8fab', strokeStyle: '#e05070', lineWidth: 1, radius: 2 },
+        };
+
+        let bars = null;
+        let maze = null;
+        const buildStage = () => {
+          if (bars) {
+            stage.removeChild(bars);
+            bars = null;
+          }
+          if (maze) {
+            stage.removeChild(maze);
+            maze = null;
+          }
+          if (state.mode === 'sort') {
+            const cols = sortModel.getSize();
+            const rows = sortModel.getMax();
+            const cellSize = Math.max(6, Math.floor(480 / Math.max(cols, rows)));
+            state.cellSize = cellSize;
+            bars = new W.ICETileMap({
+              id: 'algo-bars',
+              left: Math.round((STAGE.width - cols * cellSize) / 2),
+              top: 56 + Math.round((440 - rows * cellSize) / 2),
+              rows,
+              cols,
+              cellSize,
+              gap: 1,
+              cellRadius: 2,
+              palette: BAR_PALETTE,
+              fill: false,
+              stroke: false,
+              interactive: false,
+            });
+            stage.addChild(bars, false);
+          } else {
+            const cols = mazeModel.getCols();
+            const rows = mazeModel.getRows();
+            const cellSize = Math.min(Math.floor(512 / cols), Math.floor(440 / rows));
+            state.cellSize = cellSize;
+            maze = new W.ICETileMap({
+              id: 'algo-maze',
+              left: Math.round((STAGE.width - cols * cellSize) / 2),
+              top: 56 + Math.round((440 - rows * cellSize) / 2),
+              rows,
+              cols,
+              cellSize,
+              gap: 2,
+              cellRadius: 3,
+              palette: MAZE_PALETTE,
+              fill: false,
+              stroke: false,
+            });
+            stage.addChild(maze, false);
+          }
+          state.signature = '';
+          renderStage();
+        };
+
+        /* --------------------------------- 右侧：统计 + 回放控制 --------------------------------- */
+
+        const sideRight = new W.ICEPanel({ left: SIDE_RIGHT.left, top: SIDE_RIGHT.top, width: SIDE_RIGHT.width, height: SIDE_RIGHT.height, interactive: false });
+        const statCaption = new W.ICELabel({
+          interactive: false,
+          left: 24,
+          top: 14,
+          width: 300,
+          height: 20,
+          text: '统计 STATS',
+          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+        });
+        sideRight.addChild(statCaption, false);
+        ice.addChild(sideRight);
+
+        const STAT_ROWS = [
+          ['algorithm', '算法'],
+          ['complexity', '复杂度'],
+          ['step', '进度'],
+          ['cost', '代价'],
+          ['extra', '附加'],
+          ['note', '当前'],
+        ];
+        const statLabels = {};
+        STAT_ROWS.forEach(([key, label], index) => {
+          const caption = new W.ICELabel({
+            interactive: false,
+            left: 24,
+            top: 50 + index * 32,
+            width: 76,
+            height: 22,
+            text: label,
+            verticalAlign: 'middle',
+            style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+          });
+          const value = new W.ICELabel({
+            id: `algo-stat-${key}`,
+            interactive: false,
+            left: 106,
+            top: 50 + index * 32,
+            width: 286,
+            height: 22,
+            text: '—',
+            verticalAlign: 'middle',
+            style: { fontSize: 12, fontFamily: '"Courier New", monospace', fillStyle: theme.colors.text },
+          });
+          sideRight.addChild(caption, false);
+          sideRight.addChild(value, false);
+          statLabels[key] = value;
+        });
+
+        const progressTrack = new W.ICEProgressBar({
+          id: 'algo-progress',
+          left: 24,
+          top: 254,
+          width: 368,
+          height: 12,
+          max: 100,
+          value: 0,
+        });
+        sideRight.addChild(progressTrack, false);
+
+        const replayButtons = {};
+        const REPLAY_ACTIONS = [
+          { key: 'play', label: '播放 (空格)', variant: 'primary', handler: () => togglePlay() },
+          { key: 'stepBack', label: '← 后退', variant: 'default', handler: () => stepTrace(-1) },
+          { key: 'step', label: '单步 →', variant: 'default', handler: () => stepTrace(1) },
+          { key: 'reset', label: '重置', variant: 'default', handler: () => resetTrace() },
+        ];
+        let replayX = 24;
+        REPLAY_ACTIONS.forEach((action) => {
+          const width = action.key === 'play' ? 120 : 76;
+          const button = new W.ICEButton({
+            id: `algo-replay-${action.key}`,
+            left: replayX,
+            top: 288,
+            width,
+            height: 36,
+            text: action.label,
+            variant: action.variant,
+            size: 'small',
+          });
+          button.on('click', action.handler);
+          sideRight.addChild(button, false);
+          replayButtons[action.key] = button;
+          replayX += width + 8;
+        });
+
+        const speedCaption = new W.ICELabel({
+          interactive: false,
+          left: 24,
+          top: 344,
+          width: 120,
+          height: 20,
+          text: '速度 SPEED',
+          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+        });
+        sideRight.addChild(speedCaption, false);
+        const speedButtons = {};
+        SORT_SPEEDS.forEach((preset, index) => {
+          const button = new W.ICEButton({
+            id: `algo-speed-${preset.key}`,
+            left: 24 + index * 84,
+            top: 370,
+            width: 76,
+            height: 32,
+            text: `${preset.label} ${preset.speed}/s`,
+            variant: preset.key === state_speed.key ? 'primary' : 'default',
+            size: 'small',
+          });
+          button.on('click', () => {
+            state_speed.key = preset.key;
+            player.setSpeed(preset.speed);
+            renderSpeeds();
+          });
+          sideRight.addChild(button, false);
+          speedButtons[preset.key] = button;
+        });
+        const renderSpeeds = () => {
+          SORT_SPEEDS.forEach((preset) => {
+            const button = speedButtons[preset.key];
+            if (button) button.setEnabled(true);
+          });
+        };
+
+        const mazeHint = new W.ICELabel({
+          id: 'algo-maze-hint',
+          interactive: false,
+          left: 24,
+          top: 430,
+          width: 368,
+          height: 100,
+          text: '',
+          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+        });
+        sideRight.addChild(mazeHint, false);
+
+        /* --------------------------------- 状态栏 --------------------------------- */
+
+        const statusBar = new W.ICEPanel({ left: STATUS_BAR.left, top: STATUS_BAR.top, width: STATUS_BAR.width, height: STATUS_BAR.height, radius: 6, interactive: false });
+        const statusText = new W.ICELabel({
+          id: 'algo-status',
+          interactive: false,
+          left: 16,
+          top: 4,
+          width: 1160,
+          height: 24,
+          text: '',
+          verticalAlign: 'middle',
+          style: { fontSize: 12, fontFamily: '"Courier New", monospace', fillStyle: theme.colors.textSecondary },
+        });
+        statusBar.addChild(statusText, false);
+        ice.addChild(statusBar);
+
+        /* --------------------------------- 渲染 --------------------------------- */
+
+        const frameOf = () => player.getFrame();
+
+        const renderStage = () => {
+          const frame = frameOf();
+          if (state.mode === 'sort') {
+            if (!bars) return;
+            const values = frame ? frame.values : sortModel.getArray();
+            const compare = frame ? frame.compare : [];
+            const swap = frame ? frame.swap : [];
+            const sortedFrom = frame ? frame.sortedFrom : values.length;
+            const rows = sortModel.getMax();
+            const tiles = new Array(rows * values.length);
+            for (let col = 0; col < values.length; col += 1) {
+              const height = values[col];
+              const key = swap.indexOf(col) !== -1 ? 'barSwap' : compare.indexOf(col) !== -1 ? 'barCompare' : col >= sortedFrom ? 'barSorted' : 'bar';
+              for (let row = 0; row < rows; row += 1) {
+                tiles[row * values.length + col] = row >= rows - height ? key : null;
+              }
+            }
+            const signature = `${values.join(',')}|${compare.join(',')}|${swap.join(',')}|${sortedFrom}`;
+            if (signature !== state.signature) {
+              state.signature = signature;
+              bars.setTiles(tiles);
+            }
+            return;
+          }
+          if (!maze) return;
+          // 换模式的那一瞬间，player 里可能还是上一种模式的帧 —— 没有 cells 就退回网格现状
+          const cells = frame && frame.cells ? frame.cells.slice() : mazeModel.getCells();
+          const keys = ['empty', 'wall', 'start', 'goal', 'visited', 'frontier', 'path'];
+          const tiles = cells.map((value) => keys[value] || 'empty');
+          if (frame && frame.cells && frame.current >= 0) tiles[frame.current] = 'current';
+          const signature = tiles.join(',');
+          if (signature !== state.signature) {
+            state.signature = signature;
+            maze.setTiles(tiles);
+          }
+        };
+
+        const renderStats = () => {
+          const frame = frameOf();
+          const index = player.getIndex();
+          const count = player.getFrameCount();
+          if (state.mode === 'sort') {
+            const algorithm = sortModel.getAlgorithms().find((item) => item.key === state.algorithm);
+            statLabels.algorithm.setText(algorithm ? algorithm.label : state.algorithm);
+            statLabels.complexity.setText(algorithm ? algorithm.complexity : '—');
+            statLabels.step.setText(`${index + 1} / ${Math.max(1, count)} 帧`);
+            statLabels.cost.setText(frame ? `比较 ${frame.comparisons} · 交换 ${frame.swaps}` : '—');
+            statLabels.extra.setText(`数据量 ${sortModel.getSize()} · 最大 ${sortModel.getMax()}`);
+          } else {
+            const algorithm = mazeModel.getAlgorithms().find((item) => item.key === state.mazeAlgorithm);
+            statLabels.algorithm.setText(algorithm ? algorithm.label : state.mazeAlgorithm);
+            statLabels.complexity.setText(algorithm ? algorithm.note : '—');
+            statLabels.step.setText(`${index + 1} / ${Math.max(1, count)} 帧`);
+            statLabels.cost.setText(frame ? `已访问 ${frame.visitedCount} · 边界 ${frame.frontier.length}` : '—');
+            statLabels.extra.setText(frame && frame.reached ? `路径 ${frame.path.length} 格` : frame ? '还没到终点' : '—');
+          }
+          statLabels.note.setText(frame ? frame.note : '（还没开始，点「播放」或按空格）');
+          progressTrack.setValue(Math.round(player.getProgress() * 100));
+          stageCaption.setText(state.mode === 'sort' ? '画布 STAGE · 柱子高度 = 数值' : '画布 STAGE · 拖动可以画墙');
+          statusText.setText(
+            state.mode === 'sort'
+              ? `排序 · ${statLabels.algorithm.getText()} · ${player.isPlaying() ? '播放中' : player.isFinished() ? '已结束' : '已暂停'} · ${SORT_SPEEDS.find((preset) => preset.key === state_speed.key).speed} 步/秒 · 空格播放 / ←→ 单步`
+              : `寻路 · ${statLabels.algorithm.getText()} · ${player.isPlaying() ? '播放中' : player.isFinished() ? '已结束' : '已暂停'} · 拖动画墙 / 打乱重来`,
+          );
+          replayButtons.play.setText(player.isPlaying() ? '暂停 (空格)' : '播放 (空格)');
+          ice.dirty = true;
+        };
+
+        const renderAll = () => {
+          renderStage();
+          renderStats();
+        };
+
+        /* --------------------------------- 交互 --------------------------------- */
+
+        const resetTrace = () => {
+          player.pause();
+          player.load([]);
+          state.signature = '';
+          renderAll();
+        };
+
+        const runTrace = () => {
+          const frames = state.mode === 'sort' ? sortModel.run(state.algorithm) : mazeModel.solve(state.mazeAlgorithm);
+          state.signature = '';
+          player.load(frames);
+          renderAll();
+        };
+
+        const togglePlay = () => {
+          if (!player.getFrameCount()) runTrace();
+          player.togglePlay();
+          renderAll();
+        };
+
+        const stepTrace = (delta) => {
+          if (!player.getFrameCount()) runTrace();
+          player.pause();
+          if (delta > 0) player.stepForward();
+          else player.stepBackward();
+          renderAll();
+        };
+
+        function selectAlgorithm(key) {
+          if (state.mode === 'sort') state.algorithm = key;
+          else state.mazeAlgorithm = key;
+          renderAlgorithms();
+          runTrace();
+        }
+
+        function switchMode(mode) {
+          if (mode === state.mode) return;
+          state.mode = mode;
+          // 先把上一种模式的轨迹清掉，免得 buildStage 里按错帧的形状去画
+          player.pause();
+          player.load([]);
+          // 「数据」那三个按钮两种模式干的事不一样（排序：洗牌 / 换数据 / 改数量；寻路：随机墙 / 清空墙）
+          const isSort = mode === 'sort';
+          shuffleButton.setText(isSort ? '打乱顺序' : '随机撒墙');
+          randomButton.setText(isSort ? '换一批数据' : '清空所有墙');
+          sizeButton.setState({ display: isSort });
+          renderModes();
+          renderAlgorithms();
+          buildStage();
+          runTrace();
+        }
+
+        /* --------- 参数变化 --------- */
+
+        player.addChangeListener(() => {
+          renderStage();
+          renderStats();
+        });
+
+        /** 回放循环：播放态按真实时间推进（暂停时 tick 自己会返回 false）。 */
+        let lastFrame = 0;
+        const replayLoop = (now) => {
+          const dt = lastFrame ? Math.min(200, now - lastFrame) : 0;
+          lastFrame = now;
+          player.tick(dt);
+          requestAnimationFrame(replayLoop);
+        };
+        requestAnimationFrame(replayLoop);
+
+        resetTrace();
+        renderModes();
+        renderAlgorithms();
+        buildStage();
+        renderSpeeds();
+        runTrace();
+
+        /* --------- 鼠标：寻路模式拖动画墙 --------- */
+
+        const cellFromEvent = (evt) => {
+          if (!maze || state.mode !== 'maze') return null;
+          if (!evt || typeof evt.offsetX !== 'number' || typeof evt.offsetY !== 'number') return null;
+          const [wx, wy] = ice.screenToWorld(evt.offsetX, evt.offsetY);
+          const box = maze.getMinBoundingBox(true);
+          if (!box) return null;
+          return maze.getCellAt(wx - box.tl[0], wy - box.tl[1]);
+        };
+        const paintWall = (evt, wall) => {
+          const cell = cellFromEvent(evt);
+          if (!cell) return;
+          if (!mazeModel.setWall(cell.row, cell.col, wall)) return;
+          state.signature = '';
+          player.pause();
+          player.load([]);
+          renderAll();
+        };
+        ice.evtBus.on('mousedown', (evt) => {
+          const cell = cellFromEvent(evt);
+          if (!cell) return;
+          state.painting = !mazeModel.isWall(cell.row, cell.col);
+          paintWall(evt, state.painting);
+        }, null);
+        ice.evtBus.on('mousemove', (evt) => {
+          if (!state.painting) return;
+          paintWall(evt, state.painting);
+        }, null);
+        ice.evtBus.on('mouseup', () => {
+          state.painting = false;
+        }, null);
+
+        /* --------- 键盘 --------- */
+
+        window.addEventListener('keydown', (event) => {
+          const key = event.key;
+          if (key === ' ' || key === 'Spacebar') {
+            /**
+             * 焦点停在按钮上时，空格归按钮（引擎会激活它）——
+             * 否则「点过播放按钮 → 再按空格」会一次按键触发两个动作（按钮 + 全局快捷键），
+             * 表现成「怎么按都停不下来」。
+             */
+            const focused = focusManager.getFocused();
+            if (focused && focused.state && /^algo-/.test(focused.state.id || '')) return;
+            event.preventDefault();
+            togglePlay();
+            return;
+          }
+          if (key === 'ArrowRight') {
+            event.preventDefault();
+            stepTrace(1);
+            return;
+          }
+          if (key === 'ArrowLeft') {
+            event.preventDefault();
+            stepTrace(-1);
+            return;
+          }
+          if (key >= '1' && key <= '5') {
+            const list = state.mode === 'sort' ? sortModel.getAlgorithms() : mazeModel.getAlgorithms();
+            const item = list[Number(key) - 1];
+            if (item) selectAlgorithm(item.key);
+          }
+        });
+
+        /** 浏览器 QA / 调试句柄。 */
+        window.__algo = {
+          ice,
+          W,
+          sortModel,
+          mazeModel,
+          player,
+          state,
+          switchMode,
+          selectAlgorithm,
+          togglePlay,
+          stepTrace,
+          resetTrace,
+          runTrace,
+          renderAll,
+          nodes: { shell, stage, sideLeft, sideRight, statusBar, modeBar, modeButtons, algoButtons, replayButtons, speedButtons, statLabels, progressTrack, statusText, get bars() { return bars; }, get maze() { return maze; } },
+        };
+      })();
+    </script>
+  </body>
+</html>

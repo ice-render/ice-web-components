@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <meta charset="utf-8" />
+  <title>ICE-DOS Terminal</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f8f9fa;
+      color: #212529;
+    }
+    canvas {
+      display: block;
+      border-radius: 12px;
+      background: #ffffff;
+      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+  </style>
+  <body>
+    <h1 style="font-size: 20px; margin: 0 0 4px">ICE-DOS Terminal</h1>
+    <p style="margin: 0 0 16px; color: #6c757d">
+      一个能敲的 DOS 终端：虚拟文件系统 + 16 条命令 + 历史 / TAB 补全 / 清屏，逻辑全在纯模型里
+    </p>
+    <canvas id="canvas" width="1280" height="820"></canvas>
+
+    <script src="../node_modules/ice-render/dist/index.umd.js"></script>
+    <script src="../dist/index.umd.js"></script>
+    <script>
+      (function () {
+        const ice = new ICE.ICE().init('canvas');
+        const W = ICEWEB;
+        const theme = W.iceUIManager.getTheme();
+        new W.ICEHoverManager(ice).start();
+        /**
+         * 这一页**不启动** ICEFocusManager：终端把键盘整个接管了 ——
+         * TAB 是补全、↑↓ 是历史，而焦点管理器会把 TAB 当成「轮转焦点」，
+         * 焦点落到窗口标题栏那个「重新开机」按钮上之后，敲回车执行命令就变成按那个按钮（终端会突然重启）。
+         * 鼠标悬停照旧（ICEHoverManager 还在）。
+         */
+
+        /* --------------------------------- 布局 --------------------------------- */
+
+        const SHELL = { left: 24, top: 24, width: 1232, height: 772 };
+        const WIN = { left: 140, top: 64, width: 1000, height: 660 };
+        const SCREEN_PAD = 16;
+        const LINE_HEIGHT = 20;
+        const HINT = { left: 140, top: 736, width: 1000, height: 44 };
+
+        const COLORS = {
+          output: '#d1d5db',
+          echo: '#9be7ff',
+          error: '#ff8787',
+          system: '#6ee7b7',
+          dim: '#6b7480',
+        };
+
+        /* --------------------------------- 模型与状态 --------------------------------- */
+
+        let dos = new W.ICEDosModel();
+        const state = { buffer: '', cursorOn: true, exited: false, lineCount: 0 };
+
+        /* --------------------------------- 外壳 --------------------------------- */
+
+        const shell = new W.ICEPanel({ left: SHELL.left, top: SHELL.top, width: SHELL.width, height: SHELL.height, radius: 12, interactive: false });
+        ice.addChild(shell);
+        ice.addChild(
+          new W.ICELabel({
+            id: 'dos-title',
+            interactive: false,
+            left: 140,
+            top: 26,
+            width: 500,
+            height: 26,
+            text: 'ICE-DOS Terminal',
+            style: { fontSize: 18, fontWeight: '700', fillStyle: theme.colors.text },
+          }),
+        );
+
+        const winPanel = new W.ICEPanel({
+          id: 'dos-window',
+          left: WIN.left,
+          top: WIN.top,
+          width: WIN.width,
+          height: WIN.height,
+          radius: 10,
+          interactive: false,
+          style: { fillStyle: '#1b2130', strokeStyle: '#39424f', lineWidth: 2 },
+        });
+        ice.addChild(winPanel);
+
+        const titleBar = new W.ICEPanel({
+          interactive: false,
+          left: 2,
+          top: 2,
+          width: WIN.width - 4,
+          height: 34,
+          radius: 8,
+          style: { fillStyle: '#232a36', strokeStyle: '#39424f' },
+        });
+        titleBar.addChild(
+          new W.ICELabel({
+            id: 'dos-window-title',
+            interactive: false,
+            left: 14,
+            top: 7,
+            width: 600,
+            height: 20,
+            text: 'C:\\WINDOWS\\SYSTEM32\\COMMAND.COM',
+            verticalAlign: 'middle',
+            style: { fontSize: 13, fontFamily: '"Courier New", monospace', fillStyle: '#adb5bd' },
+          }),
+          false,
+        );
+        const rebootButton = new W.ICEButton({
+          id: 'dos-reboot',
+          left: WIN.width - 100,
+          top: 5,
+          width: 84,
+          height: 26,
+          text: '重新开机',
+          size: 'small',
+        });
+        rebootButton.on('click', () => reboot());
+        titleBar.addChild(rebootButton, false);
+        winPanel.addChild(titleBar, false);
+
+        /* --------------------------------- 屏幕 --------------------------------- */
+
+        const screen = new W.ICEPanel({
+          id: 'dos-screen',
+          left: SCREEN_PAD,
+          top: 46,
+          width: WIN.width - SCREEN_PAD * 2,
+          height: WIN.height - 46 - SCREEN_PAD,
+          radius: 6,
+          interactive: false,
+          style: { fillStyle: '#080c12', strokeStyle: '#0f1520', lineWidth: 1 },
+        });
+        winPanel.addChild(screen, false);
+
+        const VIEW = { width: screen.state.width - 24, height: screen.state.height - 64 };
+        const scroll = new W.ICEScrollPane({
+          id: 'dos-scroll',
+          left: 12,
+          top: 10,
+          width: VIEW.width,
+          height: VIEW.height,
+          fill: false,
+          stroke: false,
+          style: { fillStyle: 'transparent', strokeStyle: 'transparent' },
+        });
+        const content = new W.ICEWidget({ id: 'dos-content', width: VIEW.width - 16, height: VIEW.height, fill: false, stroke: false, interactive: false });
+        scroll.setContent(content);
+        scroll.setContentSize(VIEW.width - 16, VIEW.height);
+        screen.addChild(scroll, false);
+
+        const promptLabel = new W.ICELabel({
+          id: 'dos-prompt',
+          interactive: false,
+          left: 16,
+          top: screen.state.height - 44,
+          width: 300,
+          height: 24,
+          text: 'C:\\>',
+          verticalAlign: 'middle',
+          style: { fontSize: 14, fontFamily: '"Courier New", monospace', fillStyle: COLORS.system },
+        });
+        const inputLabel = new W.ICELabel({
+          id: 'dos-input',
+          interactive: false,
+          left: 16,
+          top: screen.state.height - 44,
+          width: VIEW.width - 24,
+          height: 24,
+          text: '',
+          verticalAlign: 'middle',
+          style: { fontSize: 14, fontFamily: '"Courier New", monospace', fillStyle: '#f8f9fa' },
+        });
+        screen.addChild(promptLabel, false);
+        screen.addChild(inputLabel, false);
+
+        const exitBox = new W.ICEWidget({
+          id: 'dos-exit',
+          left: 0,
+          top: 0,
+          width: screen.state.width,
+          height: screen.state.height,
+          fill: true,
+          stroke: false,
+          display: false,
+          interactive: false,
+          style: { fillStyle: 'rgba(8, 12, 18, 0.86)' },
+        });
+        exitBox.addChild(
+          new W.ICELabel({
+            interactive: false,
+            left: 0,
+            top: screen.state.height / 2 - 30,
+            width: screen.state.width,
+            height: 30,
+            text: '已退出 ICE-DOS',
+            align: 'center',
+            style: { fontSize: 20, fontWeight: '700', fillStyle: COLORS.system },
+          }),
+          false,
+        );
+        exitBox.addChild(
+          new W.ICELabel({
+            interactive: false,
+            left: 0,
+            top: screen.state.height / 2 + 6,
+            width: screen.state.width,
+            height: 24,
+            text: '点屏幕（或按任意键）重新开机',
+            align: 'center',
+            style: { fontSize: 13, fillStyle: COLORS.dim },
+          }),
+          false,
+        );
+        screen.addChild(exitBox, false);
+
+        /* --------------------------------- 提示栏 --------------------------------- */
+
+        const hintPanel = new W.ICEPanel({ left: HINT.left, top: HINT.top, width: HINT.width, height: HINT.height, radius: 8, interactive: false });
+        const hintText = new W.ICELabel({
+          id: 'dos-hints',
+          interactive: false,
+          left: 16,
+          top: 12,
+          width: HINT.width - 32,
+          height: 20,
+          text: 'TAB 补全   ↑↓ 历史   Ctrl+L 清屏   EXIT 退出   ·   试试 DIR / CD GAMES / TYPE README.TXT / TREE / FORMAT C:',
+          verticalAlign: 'middle',
+          style: { fontSize: 12, fontFamily: '"Courier New", monospace', fillStyle: theme.colors.textSecondary },
+        });
+        hintPanel.addChild(hintText, false);
+        ice.addChild(hintPanel);
+
+        /* --------------------------------- 输出渲染 --------------------------------- */
+
+        let lineNodes = [];
+
+        const clearOutput = () => {
+          content.removeChildren([...content.childNodes]);
+          lineNodes = [];
+          state.lineCount = 0;
+          scroll.setContentSize(VIEW.width - 16, VIEW.height);
+          scroll.setScroll(0, 0);
+          ice.dirty = true;
+        };
+
+        const appendLine = (text, type = 'output') => {
+          const top = state.lineCount * LINE_HEIGHT;
+          const label = new W.ICELabel({
+            id: `dos-line-${state.lineCount}`,
+            interactive: false,
+            left: 0,
+            top,
+            width: VIEW.width - 24,
+            height: LINE_HEIGHT,
+            text: text === '' ? ' ' : text,
+            verticalAlign: 'middle',
+            style: { fontSize: 13, fontFamily: '"Courier New", monospace', fillStyle: COLORS[type] || COLORS.output },
+          });
+          content.addChild(label, false);
+          lineNodes.push({ label, type });
+          state.lineCount += 1;
+          const contentHeight = Math.max(VIEW.height, state.lineCount * LINE_HEIGHT + 8);
+          scroll.setContentSize(VIEW.width - 16, contentHeight);
+          // 新输出永远贴在底边（终端的老规矩）
+          const [, maxScroll] = scroll.getScrollRange();
+          scroll.setScroll(0, maxScroll);
+          ice.dirty = true;
+        };
+
+        const renderPrompt = () => {
+          promptLabel.setText(dos.getPrompt());
+          const cursor = state.cursorOn && !state.exited ? '▌' : ' ';
+          inputLabel.setText(`${state.buffer}${cursor}`);
+          inputLabel.setState({ left: 16 + promptLabel.getText().length * 8.4 });
+          ice.dirty = true;
+        };
+
+        /** 敲回车：回显命令行 → 执行 → 按 effect 处理副作用。 */
+        const submit = () => {
+          const command = state.buffer;
+          state.buffer = '';
+          appendLine(`${dos.getPrompt()}${command}`, 'echo');
+          const result = dos.run(command);
+          result.lines.forEach((line) => appendLine(line.text, line.type));
+          if (result.effect && result.effect.clear) {
+            clearOutput();
+          }
+          if (result.effect && result.effect.exit) {
+            state.exited = true;
+            exitBox.setState({ display: true });
+          }
+          renderPrompt();
+        };
+
+        const boot = () => {
+          clearOutput();
+          dos.getBanner().forEach((line) => appendLine(line, 'system'));
+          appendLine('', 'output');
+          renderPrompt();
+        };
+
+        const reboot = () => {
+          dos = new W.ICEDosModel();
+          state.buffer = '';
+          state.exited = false;
+          exitBox.setState({ display: false });
+          boot();
+        };
+
+        /* --------------------------------- 键盘 --------------------------------- */
+
+        window.addEventListener('keydown', (event) => {
+          const key = event.key;
+          const meta = event.ctrlKey || event.metaKey;
+
+          if (state.exited) {
+            // 退出之后按任意键 = 重新开机
+            reboot();
+            event.preventDefault();
+            return;
+          }
+          if (meta && (key === 'l' || key === 'L')) {
+            event.preventDefault();
+            clearOutput();
+            renderPrompt();
+            return;
+          }
+          if (meta && (key === 'c' || key === 'C')) {
+            event.preventDefault();
+            appendLine(`${dos.getPrompt()}${state.buffer}^C`, 'echo');
+            state.buffer = '';
+            renderPrompt();
+            return;
+          }
+          if (meta) return;
+          if (key === 'Enter') {
+            event.preventDefault();
+            submit();
+            return;
+          }
+          if (key === 'Backspace') {
+            event.preventDefault();
+            state.buffer = state.buffer.slice(0, -1);
+            renderPrompt();
+            return;
+          }
+          if (key === 'Tab') {
+            event.preventDefault();
+            state.buffer = dos.complete(state.buffer);
+            renderPrompt();
+            return;
+          }
+          if (key === 'ArrowUp' || key === 'ArrowDown') {
+            event.preventDefault();
+            state.buffer = key === 'ArrowUp' ? dos.historyPrev() : dos.historyNext();
+            renderPrompt();
+            return;
+          }
+          if (key.length === 1) {
+            event.preventDefault();
+            state.buffer += key;
+            renderPrompt();
+          }
+        });
+
+        // 点屏幕：退出状态下重新开机
+        screen.on('click', () => {
+          if (state.exited) reboot();
+        });
+
+        /* --------------------------------- 光标闪烁 + 启动 --------------------------------- */
+
+        setInterval(() => {
+          state.cursorOn = !state.cursorOn;
+          renderPrompt();
+        }, 520);
+
+        boot();
+
+        /** 浏览器 QA / 调试句柄。 */
+        window.__dos = {
+          ice,
+          W,
+          getModel: () => dos,
+          state,
+          submit,
+          reboot,
+          clearOutput,
+          appendLine,
+          renderPrompt,
+          boot,
+          nodes: { shell, winPanel, titleBar, screen, scroll, content, promptLabel, inputLabel, exitBox, hintPanel, hintText, rebootButton },
+          getLines: () => lineNodes.map((item) => ({ text: item.label.getText(), type: item.type })),
+        };
+      })();
+    </script>
+  </body>
+</html>
