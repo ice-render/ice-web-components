@@ -7,6 +7,21 @@
 
 > 暂无（下一个版本发布前在这里累积）。
 
+## [1.5.3] - 2026-09-13
+
+### 测试
+
+- **示例页冒烟回归**（2026-09-13）：新增 `e2e/examples-smoke.spec.ts`，用真实浏览器逐页走
+  9 个合成示例页（admin / gallery / workbench / windows-xp / arcade / pixel-editor /
+  algorithm-sandbox / dos-terminal / custom-component），逐张 canvas 断言
+  **内容像素占比 > 0.5%**（不是"有任意不透明像素"——只刷一层底色的空页会骗过旧判据），
+  同时断言 `window.ICE` / `window.ICEWEB` 已加载、无 pageerror / console error。
+  新增 `npm run test:e2e` 与 `npm run verify:full`（verify + test:e2e）。
+  反向验证过：移走 `node_modules/ice-render/dist/index.umd.js` 时 gallery 如期失败。
+
+> 本版本**没有运行时改动**：包内代码与 1.5.2 完全一致（`dist` 逐字节相同），
+> 只补上示例页的自动化回归与依赖（`@playwright/test`、`http-server`，均为 devDependencies）。
+
 ## [1.5.2] - 2026-09-13
 
 ### 修复
