@@ -317,13 +317,42 @@ check(
 );
 
 // 扫雷：右键插旗 → 再右键变问号 → 再右键清空；雷数计数器同步
+// 注意：不能盲目取「第一个未揭示格子」——它可能被窗口裁剪、被其它图层盖住，
+// 也可能被输入控件的原生输入替身盖住，真实鼠标事件会落到别的元素上。
+// 因此同时检查引擎命中检测与 DOM elementFromPoint，挑一个当前真正可达的格子。
 const flagCell = await page.evaluate(() => {
   const model = window.__result.handles.mines.model;
-  const hidden = model.getCells().find((cell) => !cell.revealed && !cell.mine);
-  return { row: hidden.row, col: hidden.col };
+  const ice = window.__result.ice;
+  const canvas = document.getElementById('canvas');
+  const inputRect = ice.getInputRect();
+  const cells = model.getCells().filter((cell) => !cell.revealed && !cell.mine);
+  for (const cell of cells) {
+    const node = window.__result.handles.mines.cellAt(cell.row, cell.col).node;
+    let left = 0;
+    let top = 0;
+    let cursor = node;
+    while (cursor && cursor.state) {
+      left += Number(cursor.state.left) || 0;
+      top += Number(cursor.state.top) || 0;
+      cursor = cursor.parentNode;
+    }
+    const [screenX, screenY] = ice.worldToScreen(
+      left + (Number(node.state.width) || 0) / 2,
+      top + (Number(node.state.height) || 0) / 2,
+    );
+    if (ice.hitTest(screenX, screenY) !== node) {
+      continue;
+    }
+    const clientX = inputRect.left + screenX;
+    const clientY = inputRect.top + screenY;
+    if (document.elementFromPoint(clientX, clientY) === canvas) {
+      return { row: cell.row, col: cell.col, clientX, clientY };
+    }
+  }
+  return null;
 });
-const flagBox = await boxOf(`window.__result.handles.mines.cellAt(${flagCell.row}, ${flagCell.col}).node`);
-await page.mouse.click(rect.left + flagBox.l + 10, rect.top + flagBox.t + 10, { button: 'right' });
+if (!flagCell) throw new Error('扫雷：找不到可命中的未揭示格子');
+await page.mouse.click(flagCell.clientX, flagCell.clientY, { button: 'right' });
 await page.waitForTimeout(220);
 const flagOnce = await page.evaluate(
   (pos) => {
@@ -332,7 +361,7 @@ const flagOnce = await page.evaluate(
   },
   flagCell,
 );
-await page.mouse.click(rect.left + flagBox.l + 10, rect.top + flagBox.t + 10, { button: 'right' });
+await page.mouse.click(flagCell.clientX, flagCell.clientY, { button: 'right' });
 await page.waitForTimeout(220);
 const flagTwice = await page.evaluate(
   (pos) => {
@@ -341,7 +370,7 @@ const flagTwice = await page.evaluate(
   },
   flagCell,
 );
-await page.mouse.click(rect.left + flagBox.l + 10, rect.top + flagBox.t + 10, { button: 'right' });
+await page.mouse.click(flagCell.clientX, flagCell.clientY, { button: 'right' });
 await page.waitForTimeout(220);
 const flagThrice = await page.evaluate(
   (pos) => {
