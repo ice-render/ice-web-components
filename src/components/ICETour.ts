@@ -7,6 +7,8 @@ import { iceUIManager } from '../core/ICEManager';
 import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../core/ICEOverlayManager';
 import { ICEFocusManager, getICEFocusManager } from '../core/ICEFocusManager';
 import { getICEWorldBox } from '../util/ICEWorldBox';
+import type { ICELocalizedProps } from '../i18n/ICEI18n';
+import { tFor } from '../i18n/ICEI18n';
 
 /**
  * 漫游式引导（业界组件库 Tour）：一步一步把用户带过关键界面。
@@ -24,7 +26,7 @@ export interface ICETourStep {
   placement?: 'top' | 'bottom' | 'left' | 'right';
 }
 
-export interface ICETourOptions {
+export interface ICETourOptions extends ICELocalizedProps {
   steps: ICETourStep[];
   /** 初始步骤，默认 0 */
   current?: number;
@@ -69,6 +71,14 @@ export class ICETour {
     this.focus = options.focusManager || getICEFocusManager(ice);
     this.steps = (options.steps || []).slice();
     this.current = Math.max(0, Math.min(this.steps.length - 1, Math.floor(Number(options.current) || 0)));
+  }
+
+  /**
+   * 内置文案：按 `options.locale` 解析（实例级；未注册 / 未传则回退当前语言）。
+   * ICETour 是应用层对象而非组件（不继承 ICEWidget），所以自己持有翻译函数。
+   */
+  private t(key: string, vars?: Record<string, string | number>): string {
+    return tFor(this.options.locale)(key, vars);
   }
 
   public isOpen(): boolean {
@@ -370,7 +380,7 @@ export class ICETour {
       top: footerTop,
       width: 56,
       height: 32,
-      text: t('tour.skip'),
+      text: this.t('tour.skip'),
       variant: 'text',
       size: 'small',
     });
@@ -379,7 +389,7 @@ export class ICETour {
       top: footerTop,
       width: 56,
       height: 32,
-      text: t('tour.prev'),
+      text: this.t('tour.prev'),
       variant: 'default',
       size: 'small',
     });
@@ -388,7 +398,7 @@ export class ICETour {
       top: footerTop,
       width: 78,
       height: 32,
-      text: this.current === this.steps.length - 1 ? t('tour.done') : t('tour.next'),
+      text: this.current === this.steps.length - 1 ? this.t('tour.done') : this.t('tour.next'),
       variant: 'primary',
       size: 'small',
     });

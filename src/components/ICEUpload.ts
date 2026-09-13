@@ -3,6 +3,7 @@ import { ICELabel } from './ICELabel';
 import { ICEWidget } from '../core/ICEWidget';
 import { t } from '../i18n/ICEI18n';
 import { iceUIManager } from '../core/ICEManager';
+import type { ICELocalizedProps } from '../i18n/ICEI18n';
 
 /**
  * 上传选择器（业界组件库 Upload 的最小版）。
@@ -22,7 +23,7 @@ export interface ICEUploadFile {
   url?: string;
 }
 
-export interface ICEUploadOptions {
+export interface ICEUploadOptions extends ICELocalizedProps {
   /** 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） */
   id?: string;
   accept?: string;
@@ -74,12 +75,13 @@ export class ICEUpload extends ICEWidget {
       width,
       height: props.height ?? DROP_ZONE_HEIGHT,
     });
+    this.setLocale(props.locale); // 实例级语言（组件层文案可配、不持全局状态）
     this.accept = props.accept || '';
     this.multiple = props.multiple !== false;
     this.maxCount = Math.max(0, Number(props.maxCount) || Number.MAX_SAFE_INTEGER);
     this.maxSize = Math.max(0, Number(props.maxSize) || Number.MAX_SAFE_INTEGER);
     this.disabled = props.disabled === true;
-    this.text = props.text || t('upload.hint');
+    this.text = props.text || this.t('upload.hint');
     this.hint = props.hint || this.__defaultHint();
     this.rowHeight = Math.max(20, Number(props.rowHeight) || 28);
     this.beforeUpload = typeof props.beforeUpload === 'function' ? props.beforeUpload : null;
@@ -207,23 +209,23 @@ export class ICEUpload extends ICEWidget {
       parts.push(this.accept);
     }
     if (this.maxSize < Number.MAX_SAFE_INTEGER) {
-      parts.push(`不超过 ${Math.round(this.maxSize / 1024)} KB`);
+      parts.push(this.t('upload.sizeLimit', { size: Math.round(this.maxSize / 1024) }));
     }
     return parts.join(' · ');
   }
 
   private __rejectReason(file: ICEUploadFile): string | null {
     if (this.disabled) {
-      return '已禁用';
+      return this.t('upload.disabled');
     }
     if (!this.__accepts(file)) {
-      return `文件类型不支持：${file.name}`;
+      return this.t('upload.typeUnsupported', { name: file.name });
     }
     if (Number(file.size) > this.maxSize) {
-      return `文件大小超出限制：${file.name}`;
+      return this.t('upload.sizeExceeded', { name: file.name });
     }
     if (this.files.length >= this.maxCount) {
-      return `超过最大数量限制（${this.maxCount}）`;
+      return this.t('upload.maxCount', { max: this.maxCount });
     }
     if (this.beforeUpload) {
       const result = this.beforeUpload(file);

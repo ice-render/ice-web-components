@@ -183,6 +183,7 @@ export class ICETable extends ICEWidget {
         ...(props.style || {}),
       },
     });
+    this.setLocale(props.locale); // 实例级语言（组件层文案可配、不持全局状态）
 
     this.columns = props.columns || [];
     this.sourceData = props.data || [];
@@ -631,7 +632,7 @@ export class ICETable extends ICEWidget {
           top: this.headerHeight,
           width: totalWidth,
           height: 120,
-          description: t('table.empty'),
+          description: this.t('table.empty'),
         }),
         false,
       );

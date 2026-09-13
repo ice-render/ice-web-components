@@ -1,8 +1,10 @@
+import { ICE_CALENDAR_WEEKDAY_KEYS } from './ICECalendar';
 import { ICELabel } from './ICELabel';
 import { ICEPanel } from './ICEPanel';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../core/ICEOverlayManager';
+import type { ICELocalizedProps } from '../i18n/ICEI18n';
 
 /**
  * 日期选择器（业界组件库 DatePicker 的最小版）。
@@ -16,7 +18,7 @@ import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../co
 
 export type ICEDatePickerPlacement = 'bottomLeft' | 'bottomRight';
 
-export interface ICEDatePickerOptions {
+export interface ICEDatePickerOptions extends ICELocalizedProps {
   /** 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） */
   id?: string;
   value?: string;
@@ -44,7 +46,6 @@ export interface ICEDateCell {
   isSelected: boolean;
 }
 
-const WEEK_LABELS = ['一', '二', '三', '四', '五', '六', '日'];
 
 function pad(value: number): string {
   return value < 10 ? `0${value}` : String(value);
@@ -93,6 +94,7 @@ export class ICEDatePicker extends ICEWidget {
         lineWidth: theme.control.lineWidth,
       },
     });
+    this.setLocale(props.locale); // 实例级语言（组件层文案可配、不持全局状态）
     this.value = props.value ?? null;
     this.placeholder = props.placeholder || '';
     this.disabled = props.disabled === true;
@@ -441,7 +443,7 @@ export class ICEDatePicker extends ICEWidget {
       height: 24,
       align: 'center',
       verticalAlign: 'middle',
-      text: `${this.viewYear} 年 ${this.viewMonth} 月`,
+      text: this.t('calendar.yearMonth', { year: this.viewYear, month: this.viewMonth }),
       style: { fontSize: 13, fontWeight: '600', fillStyle: theme.colors.text },
     });
     panel.addChild(prev, false);
@@ -449,7 +451,7 @@ export class ICEDatePicker extends ICEWidget {
     panel.addChild(next, false);
 
     // 周标题
-    WEEK_LABELS.forEach((label, index) => {
+    ICE_CALENDAR_WEEKDAY_KEYS.forEach((key, index) => {
       panel.addChild(
         new ICELabel({
           interactive: false,
@@ -459,7 +461,7 @@ export class ICEDatePicker extends ICEWidget {
           height: 20,
           align: 'center',
           verticalAlign: 'middle',
-          text: label,
+          text: this.t(key),
           style: { fontSize: 11, fillStyle: theme.colors.textTertiary },
         }),
         false,

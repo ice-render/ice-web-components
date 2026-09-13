@@ -2,6 +2,7 @@ import { ICEButton } from './ICEButton';
 import { ICELabel } from './ICELabel';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEContainer } from '../core/ICEContainer';
+import type { ICELocalizedProps } from '../i18n/ICEI18n';
 
 /**
  * 分页器：页码 + 上一页/下一页 + 可选「共 N 条」与每页条数切换。
@@ -11,7 +12,7 @@ import { ICEContainer } from '../core/ICEContainer';
  * - `setCurrent` / `setPageSize` 会夹取并重排，变更后回调 `onChange(page, pageSize)`。
  */
 
-export interface ICEPaginationOptions {
+export interface ICEPaginationOptions extends ICELocalizedProps {
   /** 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） */
   id?: string;
   total?: number;
@@ -56,6 +57,7 @@ export class ICEPagination extends ICEContainer {
       width: props.width ?? 420,
       height: (props.size === 'small' ? 28 : 32) + 8,
     });
+    this.setLocale(props.locale); // 实例级语言（组件层文案可配、不持全局状态）
     this.total = Math.max(0, Number(props.total) || 0);
     this.pageSize = Math.max(1, Number(props.pageSize) || 10);
     this.current = Math.min(Math.max(1, Number(props.current) || 1), this.getPageCount() || 1);
@@ -151,7 +153,7 @@ export class ICEPagination extends ICEContainer {
         top: 0,
         height,
         verticalAlign: 'middle',
-        text: `共 ${this.total} 条`,
+        text: this.t('pagination.total', { total: this.total }),
         style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
       });
       this.addChild(totalLabel, false);
@@ -214,7 +216,7 @@ export class ICEPagination extends ICEContainer {
     });
 
     if (this.showSizeChanger) {
-      this.sizeChanger = makeButton(`${this.pageSize} 条/页`, {
+      this.sizeChanger = makeButton(this.t('pagination.pageSize', { size: this.pageSize }), {
         width: 88,
         onClick: () => {
           const index = this.pageSizeOptions.indexOf(this.pageSize);

@@ -3,6 +3,7 @@ import { t } from '../i18n/ICEI18n';
 import { ICELabel } from './ICELabel';
 import { iceUIManager } from '../core/ICEManager';
 import type { ICEFormRule } from '../model/ICEFormModel';
+import type { ICELocalizedProps } from '../i18n/ICEI18n';
 
 /**
  * 表单项：标签 + 控件 + 错误文案。
@@ -15,7 +16,7 @@ import type { ICEFormRule } from '../model/ICEFormModel';
  * - `horizontal`：标签占左侧 labelWidth，控件与错误文案在右侧。
  */
 
-export interface ICEFormItemOptions {
+export interface ICEFormItemOptions extends ICELocalizedProps {
   /** 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） */
   id?: string;
   name: string;
@@ -81,6 +82,7 @@ export class ICEFormItem extends ICEWidget {
       width,
       height,
     });
+    this.setLocale(props.locale); // 实例级语言（组件层文案可配、不持全局状态）
 
     this.name = props.name;
     this.labelText = props.label || props.name;
@@ -162,12 +164,12 @@ export class ICEFormItem extends ICEWidget {
     }
     this.validating = next;
     if (next) {
-      this.errorNode.setText(t('form.validating'));
+      this.errorNode.setText(this.t('form.validating'));
       this.errorNode.setState({ display: true });
       if (this.control && typeof this.control.setValidateStatus === 'function') {
         this.control.setValidateStatus('default');
       }
-    } else if (this.errorNode.getText() === t('form.validating')) {
+    } else if (this.errorNode.getText() === this.t('form.validating')) {
       this.errorNode.setText('');
       this.errorNode.setState({ display: false });
     }

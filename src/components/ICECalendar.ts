@@ -1,6 +1,18 @@
 import { ICEWidget } from '../core/ICEWidget';
 import { ICELabel } from './ICELabel';
 import { iceUIManager } from '../core/ICEManager';
+import type { ICELocalizedProps } from '../i18n/ICEI18n';
+
+/** 周标题的文案 key（顺序 = 周一开头的展示顺序）。 */
+export const ICE_CALENDAR_WEEKDAY_KEYS = [
+  'calendar.weekday.mon',
+  'calendar.weekday.tue',
+  'calendar.weekday.wed',
+  'calendar.weekday.thu',
+  'calendar.weekday.fri',
+  'calendar.weekday.sat',
+  'calendar.weekday.sun',
+];
 
 /** `YYYY-MM-DD`（本地时区，日期选择器统一用这个字符串形态）。 */
 export function formatCalendarDate(date: Date): string {
@@ -78,7 +90,7 @@ function __parseDate(value: any): Date | null {
  * - 选中日期实底高亮，今天带主色描边（`today` 可注入，便于测试与「业务今天」）；
  * - 键盘：←/→ 按天、↑/↓ 按周移动选中，PageUp/PageDown 切月。
  */
-export interface ICECalendarOptions {
+export interface ICECalendarOptions extends ICELocalizedProps {
   /** 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） */
   id?: string;
   /** 选中日期 `YYYY-MM-DD` */
@@ -130,6 +142,7 @@ export class ICECalendar extends ICEWidget {
       radius: theme.radius.md,
       style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border, lineWidth: theme.control.lineWidth },
     });
+    this.setLocale(props.locale); // 实例级语言（组件层文案可配、不持全局状态）
     this.focusable = true;
     this.value = value ? formatCalendarDate(value) : null;
     this.visibleMonth = visibleMonth;
@@ -364,7 +377,7 @@ export class ICECalendar extends ICEWidget {
       top: 8,
       width: innerWidth - 64,
       height: 28,
-      text: `${year} 年 ${monthIndex + 1} 月`,
+      text: this.t('calendar.yearMonth', { year, month: monthIndex + 1 }),
       align: 'center',
       verticalAlign: 'middle',
       style: { fontSize: 14, fontWeight: theme.font.weightSemibold, fillStyle: theme.colors.text },
@@ -374,7 +387,7 @@ export class ICECalendar extends ICEWidget {
     this.addChild(next, false);
 
     // 星期表头
-    const weekdays = ['一', '二', '三', '四', '五', '六', '日'];
+    const weekdays = ICE_CALENDAR_WEEKDAY_KEYS.map((key) => this.t(key));
     weekdays.forEach((text, index) => {
       const node = new ICELabel({
         interactive: false,
