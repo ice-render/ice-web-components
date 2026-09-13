@@ -209,7 +209,7 @@ check(
 
 /* ---------- 4. 寻路模式 ---------- */
 await clickExpr('window.__algo.nodes.modeButtons.maze');
-await page.waitForTimeout(300);
+await page.waitForFunction(() => window.__algo && window.__algo.player.getFrameCount() > 10, null, { timeout: 5000 });
 const mazeBoot = await page.evaluate(() => {
   const algo = window.__algo;
   const maze = algo.nodes.maze;
