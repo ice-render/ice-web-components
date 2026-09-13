@@ -132,7 +132,7 @@ getICELocaleMessages(locale: string): ICELocaleMessages
 
 ### `t` — 函数
 
-取文案：当前语言 → 默认语言 → key 本身；`{name}` 会被 `vars` 里的值替换。
+取文案（用**当前语言**）：当前语言 → 默认语言 → key 本身；`{name}` 会被 `vars` 里的值替换。
 
 ```ts
 t(key: string, vars?: Record<string, string | number>): string

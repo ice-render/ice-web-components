@@ -1,11 +1,11 @@
+import { tFor } from '../i18n/ICEI18n';
+
 /**
  * 表单校验模型：字段值 + 规则 + 错误 + 变更通知。
  *
  * 纯逻辑、不碰 canvas —— UI 层（ICEFormItem / ICEForm）只负责把值与错误**画出来**。
  * 规则语义：一条规则失败即停止（取第一条错误信息）。
  */
-
-import { tFor } from '../i18n/ICEI18n';
 
 export interface ICEFormRule {
   /** 必填：null/undefined/空串/空数组/false 都算缺失（开关与多选同样适用） */

@@ -12,6 +12,8 @@
 
 | 方法 | 返回 | 说明 |
 |---|---|---|
+| `t(key: string, vars?: Record<string, string \| number>)` | `string` | 取组件内置文案（i18n 边界见 `docs/architecture/17-i18n-boundary.md`）。 |
+| `setLocale(locale?: string)` | `void` | 设置本实例的语言（语言未注册时 `tFor` 会回退到当前语言）。 |
 | `getFocusRingMode()` | `'keyboard' \| 'always' \| 'never'` |  |
 | `setFocusRingMode(mode: 'keyboard' \| 'always' \| 'never')` | `this` |  |
 | `shouldShowFocusRing(origin: 'mouse' \| 'keyboard' \| 'api')` | `boolean` | 按聚焦来源判断要不要画焦点环（ICEFocusManager 调用）。 |
