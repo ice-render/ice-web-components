@@ -192,15 +192,25 @@ export * from './components/ICEMetric';
 
 ## 九、要能被反序列化，还得注册类型
 
-引擎序列化时写的是**类型名**。自定义组件必须注册，否则存出去的数据读不回来：
+引擎序列化时写的是**类型名（canonical typeId）**，格式必须是 `namespace:Type`。自定义组件必须注册，
+否则存出去的数据读不回来：
 
 ```ts
 import { ICE } from 'ice-render';
 
-ice.registerType('ICEMetric', ICEMetric);   // 反序列化之前调用
+// namespace 用你自己的小写包名；Type 用字母/下划线开头
+ice.registerType('my-app:ICEMetric', ICEMetric);
 ```
 
-（内置组件已经注册好，不用管。）
+要点：
+
+- 注册要在**反序列化之前**调用；不注册的话引擎会回退写 `constructor.name`，而类名一旦被打包器
+  mangle 就读不回来（此时 `Serializer.unregisteredTypes` 会记录并告警）。
+- 类型名**只有 canonical 一种形式**：引擎不兼容无 namespace 的旧类名（ICE 家族仍在发布初期，
+  引用者少、没有历史包袱）。
+- 同一个 typeId 注册**不同**构造函数、或同一个构造函数注册**第二个** typeId 都会**明确抛错**，
+  不会静默覆盖；同名重复注册（typeId 与构造函数都相同）是幂等的。
+- 内置组件的 typeId 是 `ice-render:*`（如 `ice-render:Rect`），已经注册好，不用管。
 
 ## 十、常见坑
 
