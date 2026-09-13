@@ -8,6 +8,9 @@ import { iceUIManager } from '../core/ICEManager';
  */
 export class ICELabel extends ICEWidget {
   private textNode: any;
+  /** 调用方是否显式给了宽/高：只有「没给」时才让标签盒跟随文字的实测尺寸。 */
+  private __autoBoxWidth = true;
+  private __autoBoxHeight = true;
 
   constructor(props: any = {}) {
     const theme = iceUIManager.getTheme();
@@ -22,6 +25,11 @@ export class ICELabel extends ICEWidget {
       stroke: false,
       ...props,
     });
+    // 不能拿「默认值 10」当「未设置」的哨兵：引擎侧的文本自动尺寸已改为按「调用方是否显式给尺寸」
+    // 判定（见 ice-render AGENTS.md「文本渲染自包含与自动尺寸铁律」），组件库这一层必须同口径，
+    // 否则 `new ICELabel({ width: 10 })` 这类调用在引擎里是「显式 10 宽」，在这里却被当成未设置。
+    this.__autoBoxWidth = props.width === undefined;
+    this.__autoBoxHeight = props.height === undefined;
     const vAlign = props.verticalAlign;
     // 水平对齐：ICELabel 只是 ICEText 的包装，`align` 必须显式映射进 style.textAlign。
     // 曾经漏了这层映射 —— 所有 `new ICELabel({ align: 'center' })` 都静默地按左对齐渲染，
@@ -102,7 +110,7 @@ export class ICELabel extends ICEWidget {
    * 子项的 `state.width/height`）于是不为文字留空间，表现为「标题和后面的按钮叠在一起」
    * （流式布局里「标题压住后面的按钮」就是这么来的）。
    *
-   * 调用方显式传了 width/height 时不覆盖，沿用引擎里「默认值 10 视为未设置」的约定。
+   * 调用方显式传了 width/height 时不覆盖（按构造参数判定，不用 10 当哨兵）。
    */
   private __adoptTextSize(remeasure: boolean): void {
     if (!this.textNode) {
@@ -116,13 +124,13 @@ export class ICELabel extends ICEWidget {
     // 直接写 state：与 ICEText 自己的测量逻辑保持一致（派生尺寸不适合走 setState 的递归置脏，
     // 否则会扰动渲染/离屏缓存的决策）。重排由调用方的 revalidate() 负责。
     let changed = false;
-    if (this.props.width === 10 && width > 0) {
+    if (this.__autoBoxWidth && width > 0) {
       if (this.state.width !== width) {
         this.state.width = width;
         changed = true;
       }
     }
-    if (this.props.height === 10 && height > 0) {
+    if (this.__autoBoxHeight && height > 0) {
       if (this.state.height !== height) {
         this.state.height = height;
         changed = true;
