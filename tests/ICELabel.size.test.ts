@@ -33,6 +33,13 @@ describe('ICELabel 尺寸', () => {
     expect(label.state.height).toBe(20);
   });
 
+  it('显式写 width: 10 / height: 10 也算「给了尺寸」（不再拿默认值 10 当未设置哨兵）', () => {
+    const label = new ICELabel({ text: 'hello', width: 10, height: 10 });
+    stubTextSize(label, 200, 99);
+    expect(label.state.width).toBe(10);
+    expect(label.state.height).toBe(10);
+  });
+
   it('流式布局按标签宽度留位，后续组件不与其重叠', () => {
     const panel = new ICEPanel({ width: 400, height: 60 });
     panel.setLayout(new ICEFlowLayout({ gap: 10 }));

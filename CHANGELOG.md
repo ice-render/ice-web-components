@@ -5,7 +5,14 @@
 
 ## [Unreleased]
 
-> 暂无（下一个版本发布前在这里累积）。
+### 修复
+
+- **`ICELabel` 不再拿默认值 `10` 当「未设置」哨兵**（2026-09-13）：`__adoptTextSize()` 原先用
+  `props.width === 10` 判断「调用方没给尺寸」，于是显式写 `width: 10` 的标签被当成未设置。
+  现在按**构造时是否显式传了 width/height** 判定（与引擎 2.2 起 `ICEText` 的自动尺寸口径一致，
+  见 ice-render AGENTS.md）。回归用例 `tests/ICELabel.size.test.ts`。
+- **锁文件对齐**（2026-09-13）：`package-lock.json` 里 `ice-render` 仍钉在 `1.4.11`（与
+  `package.json` 的 `^2.0.0` 冲突，`npm ls` 报 invalid），已重新安装对齐到**已发布的 `2.1.1`**。
 
 ## [1.5.1] - 2026-09-13
 
