@@ -4,6 +4,9 @@ import { ICELabel } from './ICELabel';
 import { ICEPanel } from './ICEPanel';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEPopover, ICEPopoverOptions } from './ICEPopover';
+import type { ICELocalizedProps } from '../i18n/ICEI18n';
+import { tFor } from '../i18n/ICEI18n';
+import type { ICETranslate } from '../i18n/ICEI18n';
 
 /**
  * 气泡确认框：点击目标弹出「标题 + 说明 + 取消/确定」的小卡片。
@@ -11,7 +14,7 @@ import { ICEPopover, ICEPopoverOptions } from './ICEPopover';
  * 复用 ICEPopover 的触发与定位；确认/取消后自动关闭并回调。
  */
 
-export interface ICEPopconfirmOptions extends ICEPopoverOptions {
+export interface ICEPopconfirmOptions extends ICEPopoverOptions , ICELocalizedProps {
   description?: string;
   confirmText?: string;
   cancelText?: string;
@@ -23,17 +26,21 @@ export interface ICEPopconfirmOptions extends ICEPopoverOptions {
 
 export class ICEPopconfirm extends ICEPopover {
   private confirmOptions: ICEPopconfirmOptions;
+  /** 内置文案：按 options.locale 解析（实例级） */
+  private __t: ICETranslate;
 
   constructor(ice: any, target: any, options: ICEPopconfirmOptions = {}) {
     super(ice, target, { placement: 'topRight', trigger: 'click', ...options });
     this.confirmOptions = options;
+    // ICEPopconfirm 继承的 ICEPopover 不是组件，自己持有翻译函数（按 options.locale 解析）
+    this.__t = tFor(options.locale);
   }
 
   protected __createContent(): any {
     const theme = iceUIManager.getTheme();
     const width = 220;
     const paddingX = 12;
-    const title = this.confirmOptions.title || t('common.confirm');
+    const title = this.confirmOptions.title || this.__t('common.confirm');
     const description = this.confirmOptions.description;
     const titleHeight = 20;
     const descHeight = description ? 18 : 0;
@@ -77,7 +84,7 @@ export class ICEPopconfirm extends ICEPopover {
       top: buttonsTop,
       width: 72,
       height: 32,
-      text: this.confirmOptions.cancelText || t('common.cancel'),
+      text: this.confirmOptions.cancelText || this.__t('common.cancel'),
       variant: 'default',
       size: 'small',
     });
@@ -86,7 +93,7 @@ export class ICEPopconfirm extends ICEPopover {
       top: buttonsTop,
       width: 72,
       height: 32,
-      text: this.confirmOptions.confirmText || t('common.ok'),
+      text: this.confirmOptions.confirmText || this.__t('common.ok'),
       variant: 'primary',
       size: 'small',
       danger: this.confirmOptions.danger === true,

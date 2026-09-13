@@ -5,6 +5,8 @@
  * 规则语义：一条规则失败即停止（取第一条错误信息）。
  */
 
+import { tFor } from '../i18n/ICEI18n';
+
 export interface ICEFormRule {
   /** 必填：null/undefined/空串/空数组/false 都算缺失（开关与多选同样适用） */
   required?: boolean;
@@ -42,6 +44,8 @@ export interface ICEFormFieldOptions {
 export interface ICEFormModelOptions {
   /** 改值时是否自动重算该字段（默认 change；'none' 表示只在手动校验时算） */
   validateTrigger?: 'change' | 'none';
+  /** 内置校验文案的语言（未传则跟随当前语言）；字段规则里的 `message` 仍可逐条覆盖 */
+  locale?: string;
 }
 
 export type ICEFormModelListener = (model: ICEFormModel) => void;
@@ -84,9 +88,17 @@ export class ICEFormModel {
   private fields: ICEFormField[] = [];
   private listeners = new Set<ICEFormModelListener>();
   private validateTrigger: 'change' | 'none';
+  /** 本实例的语言（`options.locale`）：内置校验文案按它取，未传则跟随当前语言 */
+  private locale?: string;
 
   constructor(options: ICEFormModelOptions = {}) {
     this.validateTrigger = options.validateTrigger || 'change';
+    this.locale = options.locale;
+  }
+
+  /** 取内置校验文案（可在字段规则里用 `message` 覆盖）。 */
+  private __t(key: string, vars?: Record<string, string | number>): string {
+    return tFor(this.locale)(key, vars);
   }
 
   public addField(options: ICEFormFieldOptions): this {
@@ -304,7 +316,7 @@ export class ICEFormModel {
     const values = this.getValues();
     for (const rule of field.rules) {
       if (rule.required && isMissing(value)) {
-        return rule.message || `${label}不能为空`;
+        return rule.message || this.__t('form.required', { label });
       }
       if (isMissing(value)) {
         // 非必填且为空：跳过内置约束（min/max/长度/pattern），但**自定义 validator 仍然执行**
@@ -315,20 +327,20 @@ export class ICEFormModel {
       }
       const numeric = Number(value);
       if (rule.min !== undefined && Number.isFinite(numeric) && numeric < rule.min) {
-        return rule.message || `${label}不能小于 ${rule.min}`;
+        return rule.message || this.__t('form.min', { label, min: rule.min });
       }
       if (rule.max !== undefined && Number.isFinite(numeric) && numeric > rule.max) {
-        return rule.message || `${label}不能大于 ${rule.max}`;
+        return rule.message || this.__t('form.max', { label, max: rule.max });
       }
       const length = lengthOf(value);
       if (rule.minLength !== undefined && length < rule.minLength) {
-        return rule.message || `${label}长度不能少于 ${rule.minLength}`;
+        return rule.message || this.__t('form.minLength', { label, minLength: rule.minLength });
       }
       if (rule.maxLength !== undefined && length > rule.maxLength) {
-        return rule.message || `${label}长度不能超过 ${rule.maxLength}`;
+        return rule.message || this.__t('form.maxLength', { label, maxLength: rule.maxLength });
       }
       if (rule.pattern && !rule.pattern.test(String(value))) {
-        return rule.message || `${label}格式不正确`;
+        return rule.message || this.__t('form.pattern', { label });
       }
       if (rule.validator) {
         const message = rule.validator(value, values);

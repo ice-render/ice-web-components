@@ -3,6 +3,7 @@ import { ICEWidget } from '../core/ICEWidget';
 import { t } from '../i18n/ICEI18n';
 import { ICEScrollPane } from './ICEScrollPane';
 import { iceUIManager } from '../core/ICEManager';
+import type { ICELocalizedProps } from '../i18n/ICEI18n';
 
 /**
  * 穿梭框（业界组件库 Transfer 的最小版）。
@@ -22,7 +23,7 @@ export interface ICETransferItem {
 
 export type ICETransferDirection = 'left' | 'right';
 
-export interface ICETransferOptions {
+export interface ICETransferOptions extends ICELocalizedProps {
   /** 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） */
   id?: string;
   dataSource: ICETransferItem[];
@@ -71,8 +72,9 @@ export class ICETransfer extends ICEWidget {
         lineWidth: theme.control.lineWidth,
       },
     });
+    this.setLocale(props.locale); // 实例级语言（组件层文案可配、不持全局状态）
     this.dataSource = (props.dataSource || []).slice();
-    this.titles = props.titles || [t('transfer.pending'), t('transfer.selected')];
+    this.titles = props.titles || [this.t('transfer.pending'), this.t('transfer.selected')];
     this.rowHeight = props.rowHeight ?? 28;
     this.onChangeCallback = typeof props.onChange === 'function' ? props.onChange : null;
     this.targetKeys = this.__sanitize(props.targetKeys || []);

@@ -547,11 +547,17 @@ panel.setLayout(new ICEFlowLayout({ gap: 8 }));
   (`role` / `aria-label` / `tabindex`, positioned over the canvas). Clicking or focusing a
   mirror element focuses and activates the canvas component, so screen readers and keyboard
   users can drive a canvas UI.
-- **i18n** — built-in strings (table empty state, modal/popconfirm buttons, upload hint,
-  transfer panes, tour buttons, form "validating...") come from a locale pack:
-  `setICELocale('en-US')` (built-in `zh-CN` + `en-US`), `registerICELocale()` for your own,
-  `t('pagination.total', { total: 42 })` for app strings. Components read the text when they
-  are built, so switching the locale then rebuilding/relayouting is what shows the change.
+- **i18n（组件内置文案）** — 组件自己会渲染的那几条文案（表格空态、确定/取消、上传提示、分页
+  「共 N 条」、日历月份与周标题、表单默认校验文案……）来自语言包：内置 `zh-CN` + `en-US`，
+  `registerICELocale()` 可加自己的包，`setICELocale('en-US')` 改**全局默认**。
+  组件在构造 / 重排时读文案，所以切语言之后需要重建或触发一次重排。
+  **实例级覆盖**：任何带内置文案的组件都接受 `locale`（`new ICEUpload({ locale: 'en-US' })`，
+  表单模型是 `new ICEFormModel({ locale: 'en-US' })`），因此同一页面里两个面板可以各用各的语言，
+  库本身不持有全局状态；`tFor('en-US')` / `t('key', vars)` 可给应用层自己的 UI 复用同一套兜底链
+  （该语言 → 默认语言 → key 本身）。
+  **边界**：业务文案不走这套 —— 应用层用任意 i18n 库（`Intl` / ICU / i18next）把**最终字符串**
+  交给组件；断行、文字方向（`direction` / `textAlign: 'start' | 'end'`）与输入法由引擎负责。
+  完整契约见 ice-render 的 `docs/architecture/17-i18n-boundary.md`。
 - **Text input & IME** — focusing a text field mounts a **fully transparent native
   `<input>` / `<textarea>`** over it (`ICENativeInput`): the browser and the IME do the
   typing, `input` / `compositionend` write the value back, and `change` / form binding

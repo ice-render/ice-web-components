@@ -1,6 +1,8 @@
 import { ICEGroup } from 'ice-render';
 import type { ICEPainter } from './ICEPainter';
 import { iceUIManager } from './ICEManager';
+import { tFor } from '../i18n/ICEI18n';
+import type { ICETranslate } from '../i18n/ICEI18n';
 
 /**
  * 所有 UI 组件的基类（继承引擎 ICEGroup）。
@@ -10,6 +12,29 @@ import { iceUIManager } from './ICEManager';
  * （`getFormValue` / `setFormValue`）。
  */
 export class ICEWidget extends ICEGroup {
+  /**
+   * 取组件内置文案（i18n 边界见 `docs/architecture/17-i18n-boundary.md`）。
+   *
+   * **按实例**解析：`setLocale(props.locale)` 指定语言（未注册 / 未传则回退当前语言，`tFor` 内部兜底到默认语言）。
+   * 这样同页两个面板可以各用各的语言，库本身也不必持全局状态。
+   * **业务文案不要走这里** —— 它属于应用层，直接传 `text` / `title` 之类的 props。
+   *
+   * 注意：各组件构造函数对 props 是**白名单转发**（只把认识的字段交给基类），
+   * 所以想支持实例级语言的组件必须在自己的构造函数里显式调用 `setLocale(props.locale)`。
+   */
+  protected t(key: string, vars?: Record<string, string | number>): string {
+    return (this.__t || (this.__t = tFor(this.__locale)))(key, vars);
+  }
+
+  /** 设置本实例的语言（语言未注册时 `tFor` 会回退到当前语言）。 */
+  protected setLocale(locale?: string): void {
+    this.__locale = locale;
+    this.__t = null;
+  }
+
+  private __locale?: string;
+  private __t: ICETranslate | null = null;
+
   protected painter: ICEPainter | null = null;
   protected preferredWidth: number = 0;
   protected preferredHeight: number = 0;

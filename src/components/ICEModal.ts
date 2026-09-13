@@ -6,6 +6,9 @@ import { iceUIManager } from '../core/ICEManager';
 import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../core/ICEOverlayManager';
 import { ICEFocusManager, getICEFocusManager } from '../core/ICEFocusManager';
 import type { ICEEasing, ICEFrameDriver } from '../util/ICEAnimation';
+import type { ICELocalizedProps } from '../i18n/ICEI18n';
+import { tFor } from '../i18n/ICEI18n';
+import type { ICETranslate } from '../i18n/ICEI18n';
 
 /**
  * 模态对话框：全屏遮罩 + 居中面板 + 焦点陷阱。
@@ -18,7 +21,7 @@ import type { ICEEasing, ICEFrameDriver } from '../util/ICEAnimation';
 
 export type ICEModalCloseReason = 'mask' | 'esc' | 'confirm' | 'cancel' | 'api';
 
-export interface ICEModalOptions {
+export interface ICEModalOptions extends ICELocalizedProps {
   title?: string;
   /** 正文文本或内容工厂 */
   content?: string | (() => any);
@@ -50,6 +53,8 @@ export class ICEModal {
   private ice: any;
   private options: ICEModalOptions;
   private manager: ICEOverlayManager;
+  /** 内置文案：按 options.locale 解析（实例级；ICEModal 不是组件，自己持有翻译函数） */
+  private __t: ICETranslate;
   private focus: ICEFocusManager;
   private handle: ICEOverlayHandle | null = null;
   private mask: ICEPanel | null = null;
@@ -63,6 +68,7 @@ export class ICEModal {
   constructor(ice: any, options: ICEModalOptions = {}) {
     this.ice = ice;
     this.options = options;
+    this.__t = tFor(options.locale);
     this.manager = options.manager || getICEOverlayManager(ice);
     this.focus = options.focusManager || getICEFocusManager(ice);
   }
@@ -239,7 +245,7 @@ export class ICEModal {
         top: buttonTop,
         width: 80,
         height: 32,
-        text: this.options.cancelText || t('common.cancel'),
+        text: this.options.cancelText || this.__t('common.cancel'),
         variant: 'default',
         size: 'small',
       });
@@ -248,7 +254,7 @@ export class ICEModal {
         top: buttonTop,
         width: 84,
         height: 32,
-        text: this.options.confirmText || t('common.ok'),
+        text: this.options.confirmText || this.__t('common.ok'),
         variant: 'primary',
         size: 'small',
       });
