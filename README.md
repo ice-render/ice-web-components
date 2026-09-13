@@ -27,11 +27,12 @@ rings and shadows) is drawn by the engine.
 - **Bootstrap 5 token theme** (plus a dark theme) — swap with one call.
 - **No name collisions with the engine** — the package’s runtime exports are
   disjoint from `ice-render`’s (there is a regression test for it).
-- **Actually tested** — 769 unit tests (103 suites: form validation, overlay
+- **Actually tested** — 825 unit tests (107 suites: form validation, overlay
   positioning, keyboard navigation, sort/hover/focus edge cases, the Minesweeper,
   Tetris, Snake, 2048 and CHIP-8 rule/machine models, the pixel canvas and the undo
-  stack, and the console BIOS) plus six browser QA suites (`qa:admin`, `qa:gallery`,
-  `qa:workbench`, `qa:xp`, `qa:arcade`, `qa:pixel` — 246 assertions) that drive the demo pages with
+  stack, the console BIOS, the trace player + sorting/pathfinding and the DOS terminal)
+  plus eight browser QA suites (`qa:admin`, `qa:gallery`, `qa:workbench`, `qa:xp`,
+  `qa:arcade`, `qa:pixel`, `qa:algo`, `qa:dos` — 277 assertions) that drive the demo pages with
   real mouse and keyboard events and fail on any console error.
 
 ## Quick start
@@ -374,6 +375,71 @@ The three decisions worth stealing:
 > proper `setSize(rows, cols, cellSize?)` that updates the internals, the state and the
 > default width/height in one go, and clears the old cell data.
 
+### `algorithm-sandbox.html` — ICE Algorithm Sandbox
+
+Sorting and pathfinding, visualised as **recorded traces**: each algorithm runs to
+completion up front and produces a list of frames; the page then plays them back with
+play / pause / single-step / rewind / speed control.
+
+| Sorting (`quick sort`, mid-run) | Pathfinding (`A*`) |
+|---|---|
+| ![Algorithm sandbox · sorting](docs/images/algorithm-sandbox.png) | ![Algorithm sandbox · A*](docs/images/algorithm-maze.png) |
+
+```ts
+import { ICESortModel, ICEMazeModel, ICETracePlayerModel } from 'ice-web-components';
+
+const sort = new ICESortModel({ size: 24, max: 32 });
+const frames = sort.run('quick');     // 一帧 = 当前数组 + 正在比较/交换的下标 + 已就位的位置
+const player = new ICETracePlayerModel({ speed: 8 });
+player.load(frames);                  // 回放：play / pause / stepForward / seek / setSpeed / tick(dt)
+
+const maze = new ICEMazeModel({ rows: 16, cols: 24 });
+maze.randomWalls(0.24);
+maze.solve('astar');                  // 同样是一串帧：访问过的格子 / 边界 / 最终路径
+```
+
+Why “record a trace first, play it back later” instead of painting while the algorithm
+runs: the algorithm becomes a plain function with a testable output (is the last frame
+sorted? does every frame contain the same multiset? do BFS and A* agree on the shortest
+path?), and the player gives pause/step/rewind for free. Four algorithms are covered on
+each side — bubble / insertion / selection / merge / quick, and BFS / DFS / Dijkstra / A* —
+with `ICETracePlayerModel` owning the clock (1–60 steps per second, auto-stop at the end).
+
+Both visualisations are single `ICETileMap` nodes: the sorting bars are a `max × n` grid
+where each column is filled from the bottom (blue = untouched, amber = comparing, red =
+swapping, green = settled), and the maze is a grid of cell states. The A* comparison in
+the QA is the honest one: same shortest path as BFS, **fewer cells visited** (the tie-break
+among equal `f` values is what makes A* actually faster on an open grid).
+
+### `dos-terminal.html` — ICE-DOS Terminal
+
+A terminal you can actually type into: a virtual filesystem plus 16 commands, all in a
+pure model (`ICEDosModel`) that never touches the DOM.
+
+![ICE-DOS Terminal](docs/images/dos-terminal.png)
+
+```ts
+import { ICEDosModel } from 'ice-web-components';
+
+const dos = new ICEDosModel();
+dos.run('cd games');            // 路径解析：\ / .. . 与大小写不敏感
+dos.run('dir');                 // { lines: [{ text, type: 'output' | 'error' }], effect? }
+dos.run('echo hi > note.txt');  // 重定向（> 覆盖 / >> 追加）
+dos.complete('type TET');       // Tab 补全 → 'type TETRIS.EXE'
+dos.historyPrev();              // ↑ 历史
+```
+
+`run()` never throws — a typo becomes one `error` line, so the terminal cannot be crashed
+by typing. The page owns the three things a terminal needs on top of that: echoing the
+command line, auto-scrolling to the bottom, and a blinking cursor that **simulates** a
+keyboard buffer (TAB is completion, ↑↓ is history, `Ctrl+L` clears, `exit` shows a
+“powered off” overlay, any key boots again).
+
+> This page deliberately does **not** start `ICEFocusManager` (same call as the arcade
+> page): the focus manager treats TAB as “rotate focus”, which steals the terminal’s
+> completion key — and once focus lands on the window’s “重新开机” button, pressing Enter
+> to run a command reboots the machine instead.
+
 ## Components
 
 | Group | Components |
@@ -385,7 +451,7 @@ The three decisions worth stealing:
 | Feedback & status | `ICEAlert` `ICEModal` `ICEDrawer` `ICEMessage` `ICENotification` `ICETooltip` `ICEPopover` `ICEPopconfirm` `ICETour` `ICEFloatButton` `ICEEmpty` `ICESkeleton` `ICESpin` `ICEResult` `ICESteps` `ICEOverlayManager` |
 | Navigation | `ICEMenu` `ICEBreadcrumb` `ICEAnchor` `ICEBackTop` `ICEDropdown` `ICEPagination` `ICETabs` |
 | Layout & core | `ICEWidget` `ICEContainer` `ICEHoverManager` `ICEFocusManager` `ICEMessageManager` `ICEManager` (`ICEPainter` / `ICELayoutManager` are types) |
-| Models | `ICEButtonModel` `ICEToggleModel` `ICEBoundedRangeModel` `ICESelectionModel` `ICEFormModel` `ICEBiosModel` `ICEHistoryModel` `ICEPixelModel` `ICETetrisModel` `ICESnakeModel` `ICE2048Model` `ICEChip8Model` `ICEMinesweeperModel` `ICEHighScoreModel` |
+| Models | `ICEButtonModel` `ICEToggleModel` `ICEBoundedRangeModel` `ICESelectionModel` `ICEFormModel` `ICEBiosModel` `ICEHistoryModel` `ICEPixelModel` `ICETracePlayerModel` `ICESortModel` `ICEMazeModel` `ICEDosModel` `ICETetrisModel` `ICESnakeModel` `ICE2048Model` `ICEChip8Model` `ICEMinesweeperModel` `ICEHighScoreModel` |
 
 Helper functions: `attachTooltip` `attachPopover` `attachPopconfirm` `attachDropdown`
 `openModal` `openDrawer` `getICEOverlayManager` `getICEFocusManager` `getICEMessageManager`
@@ -529,6 +595,14 @@ npm run qa:arcade
 # line/rect preview, flood fill, eraser), undo/redo via buttons and Ctrl+Z/Y, and the
 # PNG (IHDR-checked) / SVG exports
 npm run qa:pixel
+
+# browser QA for examples/algorithm-sandbox.html: playback (play/pause/step/space),
+# switching algorithms, the A*-vs-BFS comparison, and painting walls with a real drag
+npm run qa:algo
+
+# browser QA for examples/dos-terminal.html: typing commands, TAB completion, history,
+# redirection, Ctrl+L, exit/reboot and auto-scroll
+npm run qa:dos
 
 # docs: regenerate the API reference and check relative links
 npm run docs

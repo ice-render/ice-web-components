@@ -7,6 +7,45 @@
 
 > 暂无（下一个版本发布前在这里累积）。
 
+## [1.4.0] - 2026-09-13
+
+第 4 批（1-4 的最后一批）：**算法沙盒 + DOS 终端**。两个新页面共用一条思路 ——
+「把过程录成轨迹再回放」与「把规则放进纯模型」，页面只负责画和收键盘。
+
+### 新增 · 算法沙盒（`examples/algorithm-sandbox.html`）
+
+- **`ICETracePlayerModel`**（通用轨迹播放器）：`load / play / pause / stepForward /
+  stepBackward / seek / reset / setSpeed / tick(dt)`，速度 1..60 步/秒、到头自动停、
+  变更通知 —— 排序 / 寻路 / 以后任何「过程可视化」都能用。
+- **`ICESortModel`**：冒泡 / 插入 / 选择 / 归并 / 快速五种排序，`run()` 产出轨迹
+  （每帧带 values / compare / swap / sortedFrom 与比较交换计数）。
+- **`ICEMazeModel`**：网格 + 墙 + 起点终点，`solve()` 产出 BFS / DFS / Dijkstra / A* 的轨迹
+  （每帧带网格快照 / 当前格 / 边界 / 已访问 / 最终路径），另有随机撒墙与 `setStart` / `setGoal`。
+- 页面：排序柱子用 `max × n` 的 `ICETileMap`（蓝=普通 / 黄=比较 / 红=交换 / 绿=已就位），
+  迷宫用格子状态网格；播放 / 单步 / 变速 / 切算法 / 切模式 / 拖动画墙，空格与 ←→ 走键盘。
+
+### 新增 · DOS 终端（`examples/dos-terminal.html`）
+
+- **`ICEDosModel`**（虚拟文件系统 + 命令解释器，纯逻辑）：`DIR / CD / MD / RD / TYPE /
+  ECHO（含 > 与 >> 重定向）/ COPY / REN / DEL / TREE / CLS / VER / DATE / TIME / HELP / EXIT`，
+  路径支持 `\` `/` `.` `..` 与绝对路径、命令与文件名大小写不敏感、`run()` 永不抛；
+  历史（空命令不入栈、相邻重复只记一条）与 Tab 补全都在模型里。
+- 页面：`ICEScrollPane` 输出区 + 自动滚到底 + 闪烁光标 + 提示栏，`exit` 之后任意键重新开机。
+
+### 修复
+
+- **Tab 补全补的是当前目录里的名字**：在 `C:\GAMES` 里敲 `type TET` + TAB 曾补成
+  `GAMES\TETRIS.EXE`（会被当成再进一层目录）；现在目录部分原样保留、名字部分在当前目录里补，
+  `..\REA` 也能补成 `..\README.TXT`。
+- `qa:algo` 里两条依赖随机迷宫的断言改成确定性场景（拖动从空地上开始、比较用固定墙型），
+  不再偶发假红。
+
+### 测试
+
+- 单测 **825 条 / 107 套件**（新增 `ICETracePlayerModel` 9、`ICESortModel` 15、
+  `ICEMazeModel` 13、`ICEDosModel` 19）。
+- 浏览器 QA **277 项 / 八套**（新增 `qa:algo` 14、`qa:dos` 17）。
+
 ## [1.3.0] - 2026-09-13
 
 第 3 批：**掌机的 BIOS**（开机自检 + 启动菜单）。掌机不再「一上来就是卡带」，

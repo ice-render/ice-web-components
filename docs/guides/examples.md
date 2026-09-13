@@ -18,6 +18,8 @@ npx serve .
 | [`windows-xp.html`](../../examples/windows-xp.html) | 全屏 Windows XP 桌面（好玩的那一个） | `ICEWindow`、`ICEIconTile` + 几乎全套组件 |
 | [`arcade.html`](../../examples/arcade.html) | ICE Arcade 掌机（小游戏合集：俄罗斯方块 + 贪吃蛇 + 2048 + CHIP-8 虚拟机） | `ICETetrisModel` / `ICESnakeModel` / `ICE2048Model` / `ICEChip8Model`（纯逻辑）+ 自绘棋盘/HUD，键盘全接管 |
 | [`pixel-editor.html`](../../examples/pixel-editor.html) | 像素画板（画 / 撤销 / 导出 PNG、SVG） | `ICEPixelModel` + `ICEHistoryModel`（纯逻辑）+ 单节点自绘画布，导出走模型 |
+| [`algorithm-sandbox.html`](../../examples/algorithm-sandbox.html) | 算法沙盒（排序 + 寻路可视化） | `ICETracePlayerModel` 回放 + `ICESortModel` / `ICEMazeModel` 产帧，画面是 ICETileMap |
+| [`dos-terminal.html`](../../examples/dos-terminal.html) | ICE-DOS 终端（能敲命令） | `ICEDosModel`（虚拟文件系统 + 命令解释器）+ `ICEScrollPane` 输出区 |
 
 ![组件总览](../images/gallery.png)
 
@@ -568,6 +570,73 @@ model.toRGBA(16);                        // 直接喂 ImageData（PNG 导出）
 > 换尺寸时只 `setState({ rows, cols })` 的话内部字段还是旧的，下一次 `setTiles` 会按旧尺寸
 > 抛错（「需要 1024 个格子，实际 256」）。现在有正经的 `setSize(rows, cols, cellSize?)`：
 > 同步内部字段与 state、重算默认宽高（显式给过 width/height 的保持不变）、清空旧数据。
+
+---
+
+## `algorithm-sandbox.html`：算法沙盒（排序 + 寻路）
+
+同样是「模型算、组件画」，但这次算的是**算法的过程**：先把整段过程录成一串帧，
+再按时间回放。播放 / 暂停 / 单步 / 倒带 / 变速这套逻辑跟具体算法无关，所以单独抽成了一个模型。
+
+| 排序（快速排序跑到一半） | 寻路（A*） |
+|---|---|
+| ![算法沙盒 · 排序](../images/algorithm-sandbox.png) | ![算法沙盒 · A*](../images/algorithm-maze.png) |
+
+```ts
+import { ICESortModel, ICEMazeModel, ICETracePlayerModel } from 'ice-web-components';
+
+const sort = new ICESortModel({ size: 24, max: 32 });
+const frames = sort.run('quick');       // 一帧 = values + compare[] + swap[] + sortedFrom + 计数
+const player = new ICETracePlayerModel({ speed: 8 });
+player.load(frames);                    // play / pause / stepForward / seek / setSpeed / tick(dt)
+
+const maze = new ICEMazeModel({ rows: 16, cols: 24 });
+maze.randomWalls(0.24);
+maze.solve('astar');                    // 一帧 = 网格快照 + 当前格 + 边界 + 已访问 + 路径
+```
+
+**为什么「先录轨迹、再回放」**：算法变成一个纯函数，产出可断言（最后一帧是升序吗？
+每一帧都是同一批数字的重排吗？BFS 与 A* 给的最短路一样长吗？），而回放能力是白送的 ——
+暂停、单步、倒带都不用算法知道「现在第几帧」。
+
+三件值得记的事：
+
+* **中间态也要是合法状态**：插入排序的「腾空位再逐格右移」写法会在帧里暴露重复值
+  （柱子凭空多一根），所以换成相邻交换；归并排序的写回也是**整个区间一次写回**。
+  单测直接断言「每一帧都是原数组的重排」，这类 bug 跑不掉。
+* **A* 的平局打破很关键**：空地上从起点到终点有一整片 f 值相同的格子，按入队顺序挑就退化成
+  BFS（8×10 空地访问 80 格，一格不少）。约定「f 相同就挑 g 更大（更靠近终点）的」之后，
+  A* 才真的比 BFS 少访问 —— QA 会断言这一点（同一条最短路 + 访问格子更少）。
+* **画面还是 `ICETileMap`**：排序柱子是 `max × n` 的网格（每列从底往上填，蓝=普通 / 黄=比较 /
+  红=交换 / 绿=已就位），迷宫是格子状态网格 —— 两块各是一个节点。
+
+---
+
+## `dos-terminal.html`：ICE-DOS 终端
+
+一个真能敲的 DOS 终端：虚拟文件系统 + 16 条命令，逻辑全在 `ICEDosModel` 里（不碰 DOM）。
+
+![ICE-DOS 终端](../images/dos-terminal.png)
+
+```ts
+import { ICEDosModel } from 'ice-web-components';
+
+const dos = new ICEDosModel();
+dos.run('cd games');             // 路径：\ / .. . 大小写都不敏感
+dos.run('dir');                  // { lines: [{ text, type: 'output' | 'error' }], effect? }
+dos.run('echo hi > note.txt');   // 重定向：> 覆盖，>> 追加
+dos.complete('type TET');        // Tab 补全 → 'type TETRIS.EXE'
+dos.historyPrev();               // ↑ 历史
+```
+
+* **`run()` 永不抛**：打错字只会多一行 `error`（Bad command or file name），终端砸不坏；
+* **补全补的是当前目录里的名字**：在 `C:\GAMES` 里敲 `type TET` + TAB 得到 `TETRIS.EXE`，
+  而不是 `GAMES\TETRIS.EXE`（后者会被解析成再进一层 GAMES）—— 这是 QA 抓出来的一个真 bug；
+* **页面只管三件事**：回显命令行、自动滚到底、画一个闪烁光标。输入是页面自己维护的
+  「键盘缓冲」（TAB 补全、↑↓ 历史、Ctrl+L 清屏、EXIT 退出），不需要真的输入框；
+* **这一页不启动 `ICEFocusManager`**（和掌机同款决定）：焦点管理器把 TAB 当「轮转焦点」，
+  会把终端的补全键抢走 —— 更糟的是焦点一旦落到窗口标题栏的「重新开机」按钮上，
+  敲回车执行命令就变成按那个按钮，终端会莫名其妙重启。
 
 ---
 

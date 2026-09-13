@@ -181,6 +181,128 @@
 | `clear(initial?: T)` | `void` |  |
 | `addChangeListener(listener: ICEHistoryListener<T>)` | `() => void` |  |
 
+## `ICETracePlayerModel`
+
+「轨迹播放器」：把一串预先算好的帧按时间回放（纯逻辑，不碰 canvas）。  算法可视化（排序、寻路、正则匹配、Diff…）都是同一个套路：**先把整段过程算成一串帧， 再按时间回放**。播放 / 暂停 / 单步 / 调速 / 进度 / 到头停住这套逻辑跟具体算法无关， 所以单独抽出来 —— 算法只负责产帧（`ICESortModel` / `ICEMazeModel`），播放器只管「第几帧、要不要走」。  约定：
+
+- `load(frames)` 从头开始（游标 0、暂停）；帧是只读的，播放器不复制、不改写；
+- `tick(dt)` 只在播放态推进，按 `stepsPerSecond` 换算（一帧 = 1000 / speed 毫秒）： 攒够几帧就走几帧（页面每帧调一次，所以正常就是每帧一帧；卡顿后不会「欠着时间」）；
+- 走到最后一帧自动停（`isFinished()`），此时再 `play()` 会从头重放；
+- 速度夹在 1..60 步/秒，非法值忽略（NaN / 0 / 负数都当没调用）。
+
+源码：[`src/model/ICETracePlayerModel.ts`](../../src/model/ICETracePlayerModel.ts)
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getFrameCount()` | `number` |  |
+| `getIndex()` | `number` |  |
+| `getFrame()` | `T \| null` |  |
+| `getFrames()` | `T[]` |  |
+| `isPlaying()` | `boolean` |  |
+| `getSpeed()` | `number` |  |
+| `getProgress()` | `number` |  |
+| `isFinished()` | `boolean` | 已经走到（或停在）最后一帧。 |
+| `load(frames: T[])` | `void` |  |
+| `play()` | `void` |  |
+| `pause()` | `void` |  |
+| `togglePlay()` | `void` |  |
+| `stepForward()` | `boolean` |  |
+| `stepBackward()` | `boolean` |  |
+| `seek(index: number)` | `boolean` |  |
+| `reset()` | `void` |  |
+| `setSpeed(stepsPerSecond: number)` | `void` |  |
+| `tick(delta: number)` | `boolean` | 播放中按真实时间推进（页面每帧调用）。 |
+| `addChangeListener(listener: ICETraceListener)` | `() => void` |  |
+
+## `ICESortModel`
+
+排序轨迹（纯逻辑，不碰 canvas）。  它只做一件事：**把排序算法跑一遍，把过程录成一串帧**。回放交给 `ICETracePlayerModel`， 画柱子交给页面（`examples/algorithm-sandbox.html` 里用一张 ICETileMap 画）。  一帧里带四样东西，正好对应可视化要画的四样：
+
+- `values`：当前数组（柱子高度）；
+- `compare`：正在比较的下标（黄色）；
+- `swap`：刚刚交换 / 写入的下标（红色）；
+- `sortedFrom`：从这里往后已经就位（绿色）。 再带上 `comparisons` / `swaps` 两个计数 —— 页面上当「代价」展示，也是算法的客观指标。 为什么「先录轨迹、再回放」而不是「一边算一边画」： 1. 算法本身能被单测（最终升序、每帧只是重排、比较次数上界）； 2. 回放可以随便暂停、单步、倒带、变速，算法不用知道「现在第几帧」； 3. 同一段轨迹可以换任意渲染方式（柱子 / 数字 / 音效），互不影响。
+
+源码：[`src/model/ICESortModel.ts`](../../src/model/ICESortModel.ts)
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getSize()` | `number` |  |
+| `getMax()` | `number` |  |
+| `getArray()` | `number[]` |  |
+| `getAlgorithms()` | `ICESortAlgorithm[]` |  |
+| `setArray(values: number[])` | `void` | 直接给一组数据（会取整、夹到 1..max）。 |
+| `randomize()` | `void` | 换一批新数据（1..max 的随机数）。 |
+| `shuffle()` | `void` | 洗牌：把**当前这批数字**重新打乱（同一批数据换个顺序，方便对比不同算法）。 |
+| `run(algorithm: string)` | `ICESortFrame[]` | 跑一遍算法，返回整段轨迹。 |
+
+### `ICE_SORT_ALGORITHMS` — 常量
+
+源码：`src/model/ICESortModel.ts`
+
+## `ICEMazeModel`
+
+源码：[`src/model/ICEMazeModel.ts`](../../src/model/ICEMazeModel.ts)
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getRows()` | `number` |  |
+| `getCols()` | `number` |  |
+| `getStart()` | `[number, number]` |  |
+| `getGoal()` | `[number, number]` |  |
+| `getAlgorithms()` | `ICEMazeAlgorithm[]` |  |
+| `getCells()` | `number[]` | 可视化用的网格状态（起点/终点/墙）。 |
+| `getCell(row: number, col: number)` | `number` |  |
+| `isWall(row: number, col: number)` | `boolean` |  |
+| `setWall(row: number, col: number, wall: boolean)` | `boolean` |  |
+| `toggleWall(row: number, col: number)` | `boolean` |  |
+| `clearWalls()` | `void` |  |
+| `randomWalls(density: number)` | `void` | 按密度随机撒墙（起点终点永远不盖）。 |
+| `setStart(row: number, col: number)` | `boolean` |  |
+| `setGoal(row: number, col: number)` | `boolean` |  |
+| `solve(algorithm: string)` | `ICEMazeFrame[]` |  |
+
+### `ICE_MAZE_ALGORITHMS` — 常量
+
+源码：`src/model/ICEMazeModel.ts`
+
+### `ICE_MAZE_CELL` — 常量
+
+迷宫寻路轨迹（纯逻辑，不碰 canvas）。  和排序那边同一套路：**先算完整段过程录成一串帧**，回放交给 `ICETracePlayerModel`， 画面由页面用一张 ICETileMap 画（每格一个状态）。  网格是「行优先的一维数组」，每格一个状态（空 / 墙 / 起点 / 终点 / 已访问 / 边界 / 路径）。 四种算法在无权网格上每步代价都是 1，区别只在**怎么挑下一个格子**：
+
+源码：`src/model/ICEMazeModel.ts`
+
+## `ICEDosModel`
+
+DOS 终端（虚拟文件系统 + 命令解释器，纯逻辑，不碰 DOM）。  页面只做三件事：把 `run()` 返回的行画成文字、把键盘输入交给模型、按 `effect` 做副作用 （`cls` 清屏 / `exit` 退出）。所以「命令怎么解析、路径怎么算、文件怎么改」全都能在 node 里断言。  约定：
+
+- 路径分隔符 `\` 与 `/` 等价；支持绝对（`\GAMES`）、相对（`GAMES`）、`.`、`..`；
+- 命令大小写不敏感（`DIR` = `dir`），参数里的文件名也大小写不敏感；
+- `run()` 从不抛：任何坏输入都变成一行 `error`，终端不会因为打错字崩掉；
+- `echo x > a.txt` / `echo x >> a.txt` 也是模型的一部分（重定向在解析层处理掉）；
+- 历史和 Tab 补全归模型管（真终端也有这两个），页面只管按键。
+
+源码：[`src/model/ICEDosModel.ts`](../../src/model/ICEDosModel.ts)
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getCwd()` | `string` |  |
+| `getPrompt()` | `string` |  |
+| `getBanner()` | `string[]` |  |
+| `getHistory()` | `string[]` |  |
+| `run(input: string)` | `ICEDosResult` | 执行一行命令。永不抛：坏输入变成一行 error。 |
+| `historyPrev()` | `string` |  |
+| `historyNext()` | `string` |  |
+| `complete(input: string)` | `string` | Tab 补全：命令名补到唯一前缀（带空格），路径按当前目录补（目录名不带空格，方便继续往下打）。 |
+
 ## `ICEMinesweeperModel`
 
 扫雷的纯逻辑模型（不碰 canvas）。  规则按 Windows XP 扫雷：
