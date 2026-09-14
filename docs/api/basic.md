@@ -157,6 +157,11 @@
 | `setAriaLabel(label: string)` | `this` | 覆盖可读名称（之后 setText 不会再把名字改回去）。 |
 | `setText(text: string)` | `this` |  |
 | `getText()` | `string` |  |
+| `setIcon(icon: string)` | `this` | 换图标（空字符串 = 去掉图标）。 |
+| `getIcon()` | `string` |  |
+| `isLoading()` | `boolean` |  |
+| `setLoading(loading: boolean)` | `this` | 提交态：**挡住重复提交**，不只是换个样子 —— |
+| `activate()` | `void` | 键盘激活（Enter/Space）在提交态下同样无效。 |
 | `initEvents()` | `void` |  |
 | `setEnabled(enabled: boolean)` | `this` |  |
 
