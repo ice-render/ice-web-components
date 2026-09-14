@@ -2,7 +2,10 @@ import { ICEWidget } from '../core/ICEWidget';
 import { ICEContainer } from '../core/ICEContainer';
 import { iceUIManager } from '../core/ICEManager';
 import { createTextNode, readHovered } from '../util/ICEStyle';
+import { estimateTextWidth } from '../util/ICEStyle';
 import { ICESvgIcon } from './ICESvgIcon';
+import { ICEPanel } from './ICEPanel';
+import { getICEOverlayManager } from '../core/ICEOverlayManager';
 
 export type ICEMenuItem = {
   key: string;
@@ -29,6 +32,13 @@ export class ICEMenu extends ICEContainer {
   private selectedKey: string | null;
   private itemHeight: number;
   private onSelect: ((item: ICEMenuItem, index: number) => void) | null;
+  private mode: 'vertical' | 'horizontal';
+  private collapsed = false;
+  private collapsedWidth: number;
+  private expandedWidth: number;
+  private submenu: { key: string; panel: any; handle: any; nodes: Map<string, any> } | null = null;
+  /** 当前画出来的项（横向 / 收起态只有顶层 + 子菜单项） */
+  private itemNodesKeys: string[] = [];
   private __bound = false;
 
   constructor(props: any = {}) {
@@ -52,6 +62,13 @@ export class ICEMenu extends ICEContainer {
 
     this.items = items;
     this.itemHeight = itemHeight;
+    this.mode = props.mode === 'horizontal' ? 'horizontal' : 'vertical';
+    this.collapsed = props.collapsed === true;
+    this.expandedWidth = width;
+    this.collapsedWidth = Math.max(40, Math.floor(Number(props.collapsedWidth) || 56));
+    if (this.collapsed) {
+      this.setState({ width: this.collapsedWidth });
+    }
     this.selectedKey = props.selectedKey ?? null;
     this.onSelect = typeof props.onSelect === 'function' ? props.onSelect : null;
     if (Array.isArray(props.defaultExpandedKeys)) {
@@ -121,6 +138,165 @@ export class ICEMenu extends ICEContainer {
     return !!item.children && item.children.length > 0;
   }
 
+  // ---------------------------------------------------------------- 形态 API
+
+  public getMode(): 'vertical' | 'horizontal' {
+    return this.mode;
+  }
+
+  public isCollapsed(): boolean {
+    return this.collapsed;
+  }
+
+  public setCollapsed(collapsed: boolean): this {
+    const next = collapsed === true;
+    if (next === this.collapsed) {
+      return this;
+    }
+    this.collapsed = next;
+    this.setState({ width: next ? this.collapsedWidth : this.expandedWidth });
+    this.__render();
+    return this;
+  }
+
+  /** 该项当前画没画文字（收起态只有图标）。 */
+  public isLabelVisible(key: string): boolean {
+    return !this.collapsed || this.mode === 'horizontal';
+  }
+
+  public hasIcon(key: string): boolean {
+    const item = this.__findItem(this.items, key);
+    return !!(item && (item.icon || item.iconPath));
+  }
+
+  /** 每个可见项的盒子（形态断言 / 几何审计用）。 */
+  public getItemBoxes(): Array<{ key: string; left: number; top: number; width: number; height: number }> {
+    return this.itemNodesKeys
+      .map((key, index) => {
+        const node = this.itemNodes.get(key);
+        if (!node) return null;
+        return {
+          key,
+          left: Number(node.state.left) || 0,
+          top: Number(node.state.top) || 0,
+          width: Number(node.state.width) || 0,
+          height: Number(node.state.height) || 0,
+        };
+      })
+      .filter(Boolean) as Array<{ key: string; left: number; top: number; width: number; height: number }>;
+  }
+
+  // ---- 横向模式的子菜单浮层 ----
+
+  public isSubmenuOpen(): boolean {
+    return !!this.submenu && this.submenu.handle.isOpen();
+  }
+
+  public getSubmenuKey(): string | null {
+    return this.submenu ? this.submenu.key : null;
+  }
+
+  public getSubmenuItemNode(key: string): any {
+    return this.submenu ? this.submenu.nodes.get(key) || null : null;
+  }
+
+  public closeSubmenu(): this {
+    if (this.submenu) {
+      this.submenu.handle.close();
+      this.submenu = null;
+    }
+    return this;
+  }
+
+  /** 打开某一项的子菜单浮层（横向模式的父项）。 */
+  public openSubmenu(key: string): this {
+    const item = this.__findItem(this.items, key);
+    if (!item || !this.__hasChildren(item)) {
+      return this;
+    }
+    this.closeSubmenu();
+    const theme = iceUIManager.getTheme();
+    const manager = getICEOverlayManager(this.ice);
+    const anchor = this.itemNodes.get(key) || this;
+    const width = Math.max(160, Number(this.state.width) || 160);
+    const panel = new ICEPanel({
+      width,
+      height: (item.children as ICEMenuItem[]).length * this.itemHeight + 8,
+      radius: theme.radius.md,
+      style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border, shadow: 'md' },
+    });
+    const nodes = new Map<string, any>();
+    (item.children as ICEMenuItem[]).forEach((child, index) => {
+      const row = new ICEWidget({
+        left: 4,
+        top: 4 + index * this.itemHeight,
+        width: width - 8,
+        height: this.itemHeight,
+        radius: theme.radius.sm,
+        fill: true,
+        stroke: false,
+        style: { fillStyle: child.key === this.selectedKey ? theme.colors.primaryBg : 'rgba(0,0,0,0)' },
+      });
+      row.addChild(
+        createTextNode({
+          left: theme.spacing.md,
+          top: 0,
+          width: width - theme.spacing.md * 2,
+          height: this.itemHeight,
+          text: child.label,
+          fillStyle: child.key === this.selectedKey ? theme.colors.primary : theme.colors.text,
+          fontFamily: theme.font.family,
+          fontSize: theme.font.size,
+          fontWeight: theme.font.weightNormal,
+          align: 'left',
+          verticalAlign: 'middle',
+        }),
+        false,
+      );
+      row.on(
+        'click',
+        () => {
+          this.activateItem(child.key);
+          this.closeSubmenu();
+        },
+        this,
+      );
+      panel.addChild(row, false);
+      nodes.set(child.key, row);
+    });
+    const handle = manager.open({
+      anchor,
+      content: panel,
+      placement: 'bottomLeft',
+      offset: 2,
+      enterAnimation: 'fade',
+      exitAnimation: 'none',
+      closeOnOutsideClick: true,
+      onClose: () => {
+        if (this.submenu && this.submenu.panel === panel) {
+          this.submenu = null;
+        }
+      },
+    });
+    this.submenu = { key, panel, handle, nodes };
+    return this;
+  }
+
+  private __findItem(items: ICEMenuItem[], key: string): ICEMenuItem | null {
+    for (const item of items) {
+      if (item.key === key) {
+        return item;
+      }
+      if (item.children) {
+        const found = this.__findItem(item.children, key);
+        if (found) {
+          return found;
+        }
+      }
+    }
+    return null;
+  }
+
   /** 按展开状态把树拍平。 */
   private __flatten(items: ICEMenuItem[], depth: number, out: Array<{ item: ICEMenuItem; depth: number }>): void {
     items.forEach((item) => {
@@ -163,12 +339,22 @@ export class ICEMenu extends ICEContainer {
   }
 
   private __render(): void {
+    // 横向（顶栏菜单）与收起态（侧栏只留图标）走各自的渲染：它们是形态，不是同一个布局
+    if (this.mode === 'horizontal') {
+      this.__renderHorizontal();
+      return;
+    }
+    if (this.collapsed) {
+      this.__renderCollapsed();
+      return;
+    }
     this.removeChildren([...this.childNodes]);
     const theme = iceUIManager.getTheme();
     const width = Number(this.state.width) || 240;
     this.itemPanels = [];
     this.itemIcons = [];
     this.itemNodes = new Map();
+    this.itemNodesKeys = [];
     const inset = theme.spacing.xxs;
     this.rows = [];
     this.__flatten(this.items, 0, this.rows);
@@ -192,6 +378,7 @@ export class ICEMenu extends ICEContainer {
       this.addChild(panel, false);
       this.itemPanels.push(panel);
       this.itemNodes.set(item.key, panel);
+      this.itemNodesKeys.push(item.key);
       // 悬停反馈：菜单项常被当作主操作入口，没有 hover 会很"死"
       panel.on(
         'hoverchange',
@@ -279,7 +466,192 @@ export class ICEMenu extends ICEContainer {
     this.__syncSelection();
   }
 
+  /** 收起态：竖向排列，只有图标。 */
+  private __renderCollapsed(): void {
+    this.__renderFlat('vertical');
+  }
+
+  /** 横向（顶栏菜单）：顶层项横排，带子菜单的项点开是浮层。 */
+  private __renderHorizontal(): void {
+    this.__renderFlat('horizontal');
+  }
+
+  private __renderFlat(orientation: 'vertical' | 'horizontal'): void {
+    this.removeChildren([...this.childNodes]);
+    const theme = iceUIManager.getTheme();
+    this.itemPanels = [];
+    this.itemIcons = [];
+    this.itemNodes = new Map();
+    this.itemNodesKeys = [];
+    // 横向要把子项也登记进 rows，子菜单里的点击才能按 key 找到项
+    this.rows =
+      orientation === 'horizontal'
+        ? this.items.reduce((out: Array<{ item: ICEMenuItem; depth: number }>, item) => {
+            out.push({ item, depth: 0 });
+            (item.children || []).forEach((child) => out.push({ item: child, depth: 1 }));
+            return out;
+          }, [])
+        : this.items.map((item) => ({ item, depth: 0 }));
+    const inset = theme.spacing.xxs;
+    const menuWidth = this.collapsed ? this.collapsedWidth : Number(this.state.width) || 240;
+    const itemWidth =
+      orientation === 'horizontal'
+        ? Math.max(
+            88,
+            this.items.reduce(
+              (max, item) =>
+                Math.max(
+                  max,
+                  estimateTextWidth(item.label, theme.font.size) +
+                    (item.icon || item.iconPath ? 34 : 20) +
+                    (this.__hasChildren(item) ? 16 : 0),
+                ),
+              0,
+            ),
+          )
+        : Math.max(0, menuWidth - inset * 2);
+    this.setState({ height: orientation === 'horizontal' ? this.itemHeight : this.items.length * this.itemHeight });
+    let left = 0;
+    this.items.forEach((item, index) => {
+      const panel = new ICEWidget({
+        fill: true,
+        stroke: false,
+        width: itemWidth,
+        height: this.itemHeight,
+        left: orientation === 'horizontal' ? left : inset,
+        top: orientation === 'horizontal' ? 2 : index * this.itemHeight,
+        radius: theme.radius.md,
+        style: { fillStyle: 'rgba(0,0,0,0)' },
+      });
+      this.addChild(panel, false);
+      this.itemPanels.push(panel);
+      this.itemNodes.set(item.key, panel);
+      this.itemNodesKeys.push(item.key);
+      const showLabel = orientation === 'horizontal' || !this.collapsed;
+      const iconWidth = 18;
+      const contentWidth = estimateTextWidth(item.label, theme.font.size) + iconWidth + 8;
+      const contentLeft = orientation === 'horizontal' || this.collapsed
+        ? Math.max(theme.spacing.xs, Math.round((itemWidth - (showLabel ? contentWidth : iconWidth)) / 2))
+        : theme.spacing.md;
+      if (item.iconPath) {
+        const icon = new ICESvgIcon({
+          left: contentLeft,
+          top: Math.round((this.itemHeight - 18) / 2),
+          size: 18,
+          d: item.iconPath,
+          color: item.key === this.selectedKey ? theme.colors.primary : theme.colors.textSecondary,
+          strokeWidth: 1.6,
+        });
+        panel.addChild(icon, false);
+        this.itemIcons.push(icon);
+      } else if (item.icon) {
+        panel.addChild(
+          createTextNode({
+            left: contentLeft,
+            top: 0,
+            width: iconWidth,
+            height: this.itemHeight,
+            text: item.icon,
+            fillStyle: item.key === this.selectedKey ? theme.colors.primary : theme.colors.textSecondary,
+            fontFamily: theme.font.family,
+            fontSize: theme.font.sizeLarge,
+            fontWeight: theme.font.weightNormal,
+            align: 'center',
+            verticalAlign: 'middle',
+          }),
+          false,
+        );
+        this.itemIcons.push(null);
+      } else {
+        this.itemIcons.push(null);
+      }
+      if (showLabel) {
+        panel.addChild(
+          createTextNode({
+            left: contentLeft + iconWidth + 8,
+            top: 0,
+            width: Math.max(0, itemWidth - contentLeft - iconWidth - 16),
+            height: this.itemHeight,
+            text: item.label,
+            fillStyle: item.key === this.selectedKey ? theme.colors.primary : theme.colors.text,
+            fontFamily: theme.font.family,
+            fontSize: theme.font.size,
+            fontWeight: item.key === this.selectedKey ? theme.font.weightSemibold : theme.font.weightNormal,
+            align: 'left',
+            verticalAlign: 'middle',
+          }),
+          false,
+        );
+      }
+      if (this.__hasChildren(item)) {
+        panel.addChild(
+          createTextNode({
+            left: itemWidth - 18,
+            top: 0,
+            width: 14,
+            height: this.itemHeight,
+            text: '⌄',
+            fillStyle: theme.colors.textTertiary,
+            fontFamily: theme.font.family,
+            fontSize: theme.font.sizeSmall,
+            align: 'center',
+            verticalAlign: 'middle',
+          }),
+          false,
+        );
+      }
+      panel.on(
+        'hoverchange',
+        (evt: any) => {
+          const hovered = readHovered(evt);
+          const next = hovered ? item.key : this.hoverKey === item.key ? null : this.hoverKey;
+          if (next === this.hoverKey) {
+            return;
+          }
+          this.hoverKey = next;
+          this.__syncSelection();
+        },
+        this,
+      );
+      panel.on(
+        'click',
+        () => {
+          if (orientation === 'horizontal' && this.__hasChildren(item)) {
+            this.openSubmenu(item.key);
+            return;
+          }
+          this.activateItem(item.key);
+          if (orientation === 'horizontal') {
+            this.closeSubmenu();
+          }
+        },
+        this,
+      );
+      left += itemWidth + 4;
+    });
+    if (orientation === 'horizontal') {
+      this.setState({ width: Math.max(left, Number(this.state.width) || 0) });
+    }
+    this.__syncSelection();
+  }
+
   private __syncSelection(): void {
+    // 收起态 / 横向：只按选中与悬停给底色，不做「父路径文字高亮」（那是纵向内联树的事）
+    if (this.collapsed || this.mode === 'horizontal') {
+      const theme = iceUIManager.getTheme();
+      this.itemPanels.forEach((panel, index) => {
+        const item = this.itemNodesKeys[index];
+        if (!item) return;
+        const active = item === this.selectedKey;
+        const hovered = item === this.hoverKey;
+        panel.setState({
+          style: {
+            fillStyle: active ? theme.colors.primaryBg : hovered ? theme.colors.background : 'rgba(0,0,0,0)',
+          },
+        });
+      });
+      return;
+    }
     const theme = iceUIManager.getTheme();
     // 选中项所在路径上的父节点：只做「当前分组」的文字高亮，不加底色
     const ancestors = this.__ancestorKeys(this.selectedKey);

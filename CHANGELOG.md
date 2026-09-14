@@ -122,6 +122,33 @@
   `setPath()` / `setStrokeWidth()` / `getPath()` / `getPathNode()`，并在 gallery 里加了演示
   —— 矢量图标不依赖 emoji 字体，跨平台一致。
 
+- **`ICETree` 虚拟滚动**（2026-09-14，S2 第二批第一件）：组织架构 / 文件树动辄几千个节点，
+  以前一次全画出来。现在可见节点达到 `virtualThreshold`（默认 200）就只建「可视窗口 + 上下 2 行缓冲」
+  （与表格虚拟行同一套算法），一万节点的树和一个 10 节点的树节点数一样多；滚动只换窗口，
+  展开 / 收起之后窗口重算。配套 `isVirtual()` / `getRenderedRowKeys()` / `getScrollTop()` /
+  `setScrollTop()`；节点少时仍是老行为（全部渲染）。
+
+- **`ICEMenu` 的横向与收起态**（2026-09-14，同批）：
+  - `mode: 'horizontal'`：顶层项横排（高度 = 单行高），带子菜单的项点开是**浮层**（走
+    `ICEOverlayManager`：点外关闭、贴着触发项），不会把菜单撑高；子项点击后自动收起。
+  - `collapsed`：侧栏收起态，宽度缩到 `collapsedWidth`（默认 56），只画图标、不内联展开子菜单；
+    `setCollapsed()` 可来回切。配套 `getMode()` / `getItemBoxes()` / `getSubmenuKey()` /
+    `openSubmenu()` / `closeSubmenu()`。
+
+- **一批「做满」的形态**（2026-09-14，同批）：
+  - `ICEAlert`：`banner`（通栏、直角、无描边，贴页面顶部当提示条）+ `action`（右侧操作区，
+    可传 `{ text, onClick }`，摆在关闭按钮左边）。
+  - `ICESkeleton`：`variant: 'text' | 'card' | 'table' | 'list'` —— 卡片骨架（封面 + 两行）、
+    表格骨架（表头 + 按高度算行数 + 按宽度算列数）、列表骨架（头像 + 两行文字重复）。
+  - `ICESegmented`：`block: false` 时按文字宽度排（默认仍是老行为「等宽铺满」）。
+  - `ICEDrawer`：`size: 'default' | 'large'`（left/right 管宽度 360/560，top/bottom 管高度 240/360），
+    显式 `width` / `height` 仍然优先。
+
+- **修：段控默认值差点变成回归**（2026-09-14）：上面那条一开始把 `block` 的默认写成了
+  「按文字宽度排」，admin 订单页的状态段控立刻有两段探出容器 —— 几何审计当场抓到
+  （orders 待排查线索 0 → 2）。默认值改回「等宽铺满」（老行为），按文字宽度排改成显式
+  `block: false`，orders 回到 0。
+
 > 其余待发布的改动在这里累积。
 
 ## [1.5.4] - 2026-09-14

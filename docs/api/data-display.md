@@ -151,6 +151,8 @@
 | `onExpand?` | `(expandedKeys: string[]) => void` |  |
 | `draggable?` | `boolean` | 开启节点拖拽（按住行拖：上 1/3 插前面、中 1/3 放进去、下 1/3 插后面） |
 | `onDrop?` | `(info: { key: string; targetKey: string; position: string; nodes: ICETreeNode[] }) => void` | 拖拽落下后的回调（与 `nodedrop` 事件同义） |
+| `virtualThreshold?` | `number` | 可见节点达到这个数量就只渲染可视窗口（默认 200；传 0 关闭虚拟化） |
+| `virtualBuffer?` | `number` | 虚拟窗口上下各多渲染几行（默认 2） |
 
 **方法**
 
@@ -167,6 +169,10 @@
 | `getVisibleNodes()` | `ICETreeNode[]` |  |
 | `getRowDepth(key: string)` | `number` | 行所在层级（0 = 根层；缩进 = depth × indent）。 |
 | `getScrollPane()` | `ICEScrollPane \| null` |  |
+| `isVirtual()` | `boolean` |  |
+| `getRenderedRowKeys()` | `string[]` | 当前真的建了行的 key（虚拟时就是那个窗口）。 |
+| `getScrollTop()` | `number` |  |
+| `setScrollTop(y: number)` | `this` | 直接设置滚动位置（会夹到可滚动范围），常用于「滚到某个节点」与测试。 |
 | `isDraggable()` | `boolean` | 键盘：只有焦点在树上时生效。 |
 | `isDragging()` | `boolean` |  |
 | `getDropTarget()` | `{ index: number; position: 'before' \| 'inside' \| 'after' } \| null` |  |

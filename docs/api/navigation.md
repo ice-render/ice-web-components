@@ -20,6 +20,17 @@
 | `toggleExpand(key: string)` | `this` |  |
 | `setExpandedKeys(keys: string[])` | `this` |  |
 | `activateItem(key: string)` | `this` | 激活某个可见项：父节点展开/收起，叶子项选中并回调。 |
+| `getMode()` | `'vertical' \| 'horizontal'` |  |
+| `isCollapsed()` | `boolean` |  |
+| `setCollapsed(collapsed: boolean)` | `this` |  |
+| `isLabelVisible(key: string)` | `boolean` | 该项当前画没画文字（收起态只有图标）。 |
+| `hasIcon(key: string)` | `boolean` |  |
+| `getItemBoxes()` | `Array<{ key: string; left: number; top: number; width: number; height: number }>` | 每个可见项的盒子（形态断言 / 几何审计用）。 |
+| `isSubmenuOpen()` | `boolean` |  |
+| `getSubmenuKey()` | `string \| null` |  |
+| `getSubmenuItemNode(key: string)` | `any` |  |
+| `closeSubmenu()` | `this` |  |
+| `openSubmenu(key: string)` | `this` | 打开某一项的子菜单浮层（横向模式的父项）。 |
 
 ## `ICEBreadcrumb`
 

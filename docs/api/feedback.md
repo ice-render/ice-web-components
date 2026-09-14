@@ -12,6 +12,8 @@
 
 | 方法 | 返回 | 说明 |
 |---|---|---|
+| `isBanner()` | `boolean` |  |
+| `getActionNode()` | `any` |  |
 | `setTitle(title: string)` | `this` |  |
 | `setMessage(message: string)` | `this` |  |
 | `getType()` | `ICEAlertType` |  |
@@ -96,6 +98,7 @@
 | `placement?` | `ICEDrawerPlacement` |  |
 | `width?` | `number` | left/right 方向的宽度（默认 360） |
 | `height?` | `number` | top/bottom 方向的高度（默认 240） |
+| `size?` | `'default' \| 'large'` | 尺寸预设：left/right 是宽度（default 360 / large 560），top/bottom 是高度（240 / 360） |
 | `extra?` | `any \| (() => any)` | 标题栏右侧的扩展区（按钮或说明文字）；返回的组件会被摆到关闭按钮左边 |
 | `footer?` | `any \| (() => any)` | 贴底的页脚区（确定/取消这类操作）；给了就把内容区让出这段高度 |
 | `footerHeight?` | `number` | 页脚高度（默认 56） |
@@ -300,6 +303,7 @@
 |---|---|---|
 | `id?` | `string` | 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） |
 | `rows?` | `number` | 行数 |
+| `variant?` | `'text' \| 'card' \| 'table' \| 'list'` | 形态：`text`（默认，几行文字占位）/ `card` / `table` / `list` |
 | `avatar?` | `boolean` |  |
 | `title?` | `boolean` | 标题 |
 | `active?` | `boolean` |  |
@@ -312,8 +316,11 @@
 
 | 方法 | 返回 | 说明 |
 |---|---|---|
+| `getVariant()` | `'text' \| 'card' \| 'table' \| 'list'` |  |
+| `getPlaceholderCount()` | `number` | 占位块总数（几何审计 / 测试用）。 |
+| `getRowCount()` | `number` |  |
+| `getColumnCount()` | `number` |  |
 | `isActive()` | `boolean` |  |
-| `getPlaceholderCount()` | `number` |  |
 | `setActive(active: boolean)` | `this` |  |
 
 ## `ICESpin`
