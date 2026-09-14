@@ -86,6 +86,13 @@ export class ICEButton extends ICEWidget {
   private size: ICEButtonSize;
   private danger: boolean;
   private pressed = false;
+  /** 纯文字（不含图标字形）：getText 与无障碍名都用它 */
+  private text = '';
+  /** 图标字形，只参与绘制 */
+  private icon = '';
+  private loading = false;
+  /** 构造期声明的可命中性：退出提交态时恢复到它（禁用不改这个） */
+  private baseInteractive = true;
 
   constructor(props: any = {}) {
     const theme = iceUIManager.getTheme();
@@ -119,9 +126,12 @@ export class ICEButton extends ICEWidget {
     this.variant = variant;
     this.size = size;
     this.danger = danger;
+    this.baseInteractive = props.interactive !== false;
+    this.text = String(props.text ?? 'Button');
+    this.icon = props.icon === undefined || props.icon === null ? '' : String(props.icon);
 
     const fontSize = fontSizeForSize(theme, size);
-    this.label = centerTextNode(props.text ?? 'Button', theme, width, height, {
+    this.label = centerTextNode(this.__labelText(), theme, width, height, {
       fontSize,
       fontWeight: theme.font.weightMedium,
       fillStyle: textColor(theme, variant, danger, true, false),
@@ -132,8 +142,9 @@ export class ICEButton extends ICEWidget {
       this.explicitAriaLabel = true;
       super.setAriaLabel(String(props.ariaLabel));
     } else {
-      super.setAriaLabel(String(props.text ?? 'Button'));
+      super.setAriaLabel(this.text);
     }
+    if (props.loading === true) this.setLoading(true);
   }
 
   /** 覆盖可读名称（之后 setText 不会再把名字改回去）。 */
@@ -143,16 +154,60 @@ export class ICEButton extends ICEWidget {
     return this;
   }
 
+  /** 图标只影响画面：`getText()` 与无障碍名始终是纯文字。 */
+  private __labelText(): string {
+    return this.icon ? `${this.icon} ${this.text}` : this.text;
+  }
+
   public setText(text: string): this {
-    this.label.setText(text ?? '');
+    this.text = String(text ?? '');
+    this.label.setText(this.__labelText());
     // 无障碍：按钮的可读名称就是它的文字（否则屏幕阅读器会念 id）
-    if (!this.explicitAriaLabel) super.setAriaLabel(text ?? '');
+    if (!this.explicitAriaLabel) super.setAriaLabel(this.text);
     this.revalidate();
     return this;
   }
 
   public getText(): string {
-    return this.label.getText();
+    return this.text;
+  }
+
+  /** 换图标（空字符串 = 去掉图标）。 */
+  public setIcon(icon: string): this {
+    const next = icon === undefined || icon === null ? '' : String(icon);
+    if (next === this.icon) return this;
+    this.icon = next;
+    this.label.setText(this.__labelText());
+    this.revalidate();
+    return this;
+  }
+
+  public getIcon(): string {
+    return this.icon;
+  }
+
+  public isLoading(): boolean {
+    return this.loading;
+  }
+
+  /**
+   * 提交态：**挡住重复提交**，不只是换个样子 ——
+   * 期间把 `interactive` 关掉，引擎的命中检测与键盘激活都会跳过它；
+   * 与 `disabled` 正交：先禁用再解除 loading，仍然保持禁用。
+   */
+  public setLoading(loading: boolean): this {
+    const next = loading === true;
+    if (next === this.loading) return this;
+    this.loading = next;
+    this.state.interactive = next ? false : this.baseInteractive;
+    this.__sync();
+    return this;
+  }
+
+  /** 键盘激活（Enter/Space）在提交态下同样无效。 */
+  public override activate(): void {
+    if (this.loading) return;
+    super.activate();
   }
 
   protected initEvents(): void {
