@@ -1787,6 +1787,7 @@
           sideBody.removeChildren([...sideBody.childNodes]);
           biosNodes = buildBiosLayer();
           screen.addChild(biosNodes.layer, false);
+          bindBiosScope(); // 键盘也交给 BIOS 层（自检任意键跳过 / 菜单上下选择）
           biosSignature = '';
           biosHudSignature = '';
           renderBios();
@@ -1971,6 +1972,8 @@
             messageBox,
             toast,
           });
+          unbindBiosScope();      // 交棒给卡带：BIOS 层让出键盘
+          bindCartridgeScope();
           detach = watch();
           // 换卡带的仪式感：新棋盘淡入（引擎的子树不透明度，一个 tween 搞定）
           if (runtime.board) W.fadeIn(runtime.board, { duration: 260 });
@@ -2027,6 +2030,65 @@
         const PAD_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowDown', 'ArrowUp', ' ', 'Spacebar'];
         /** 卡带常用字母/数字键（俄罗斯方块 ZX、贪吃蛇 WASD、2048 用方向键）。 */
         const LETTER_KEYS = ['w', 'a', 's', 'd', 'z', 'x', 'c', 'v', 'q', 'e', 'f', '1', '2', '3', '4'];
+
+        /**
+         * 键位归属交给「键盘作用域」模型（`ICEKeyScopeModel`）—— 这台掌机正好是它的活标本：
+         * 卡带要用 R 当机器键 7，外壳却想用 R 重开；自检期间「任意键跳过」又要吃掉一切。
+         * 现在是三层声明：cartridge（最内层，卡带自己声明 keys）→ bios（菜单/自检）→ shell（P/R/L）。
+         * 谁占哪个键一目了然，`keyScope.detectConflicts()` 还能把冲突列出来，不必靠猜。
+         */
+        const keyScope = new W.ICEKeyScopeModel();
+        keyScope.push('shell');
+        keyScope.bind({
+          scope: 'shell',
+          keys: ['p', 'r', 'l'],
+          handler: (key, event) => {
+            if (event && event.repeat === true) return true; // 长按不重复触发
+            if (key === 'p') togglePause();
+            else if (key === 'r') restart();
+            else openLeaderboard();
+            return true;
+          },
+        });
+        /** BIOS 层：只在 BIOS 激活期间存在，且吃掉所有键（自检任意键跳过 / 菜单上下选择）。 */
+        let biosUnbind = null;
+        const bindBiosScope = () => {
+          keyScope.push('bios');
+          biosUnbind = keyScope.bind({
+            scope: 'bios',
+            keys: ['*'],
+            handler: (_key, event) => {
+              handleBiosKey(event);
+              return true;
+            },
+          });
+        };
+        const unbindBiosScope = () => {
+          if (biosUnbind) {
+            biosUnbind();
+            biosUnbind = null;
+          }
+          keyScope.pop('bios');
+        };
+        /** 卡带层：换卡带时重绑（卡带声明了 keys 就用它的，否则用掌机的默认键位）。 */
+        let cartridgeUnbind = null;
+        const bindCartridgeScope = () => {
+          if (cartridgeUnbind) {
+            cartridgeUnbind();
+            cartridgeUnbind = null;
+          }
+          if (!runtime) return;
+          const declared = Array.isArray(runtime.keys) && runtime.keys.length ? runtime.keys : null;
+          keyScope.push('cartridge');
+          cartridgeUnbind = keyScope.bind({
+            scope: 'cartridge',
+            keys: declared || [...PAD_KEYS, ...LETTER_KEYS],
+            handler: (key, event) => {
+              runtime.keydown(key, event && event.repeat === true);
+              return true;
+            },
+          });
+        };
 
         /**
          * BIOS 的按键语义（真机上的老式控制台交互）：
@@ -2087,46 +2149,15 @@
         };
 
         window.addEventListener('keydown', (event) => {
-          // F2 是 BIOS 键：游戏里按它 = 复位回 BIOS 菜单（不用去点按钮）
+          // F2 是全局硬快捷键（唯一的例外）：游戏里按它 = 复位回 BIOS 菜单，不进作用域栈
           if (event.key === 'F2') {
             event.preventDefault();
             openBios();
             return;
           }
-          if (bios.getPhase() !== 'boot') {
-            // BIOS 期间键盘归 BIOS：一个键都不漏给卡带
-            event.preventDefault();
-            handleBiosKey(event);
-            return;
-          }
-          if (!runtime) return;
-          if (event.ctrlKey || event.metaKey || event.altKey) return; // 不抢浏览器的组合键
-          const key = event.key;
-          const lower = key.length === 1 ? key.toLowerCase() : key;
-          const repeating = event.repeat === true;
-          /**
-           * 卡带自己声明的键优先。CHIP-8 的机器键盘占满 1234 QWER ASDF ZXCV，
-           * 连 R 都得让给它（否则那块 ROM 永远按不出 7 号键）；暂停/重开用按钮，
-           * P 仍然留给外壳（CHIP-8 键盘里没有 P）。
-           */
-          const owned = Array.isArray(runtime.keys) && runtime.keys.indexOf(lower) !== -1;
-          if (!owned) {
-            if (lower === 'p') {
-              if (!repeating) togglePause();
-              return;
-            }
-            if (lower === 'r') {
-              if (!repeating) restart();
-              return;
-            }
-            if (lower === 'l') {
-              if (!repeating) openLeaderboard();
-              return;
-            }
-          }
-          if (!owned && PAD_KEYS.indexOf(key) === -1 && LETTER_KEYS.indexOf(lower) === -1) return;
-          event.preventDefault();
-          runtime.keydown(lower, repeating);
+          // 其余键按「内层优先」交给作用域栈：cartridge → bios → shell
+          const result = keyScope.dispatch(event.key, event);
+          if (result.handled) event.preventDefault();
         });
 
         // CHIP-8 需要「按下 / 松开」两个事件（其它卡带用不到 keyup，实现了也没关系）
@@ -2175,6 +2206,7 @@
           sound,
           GAMES,
           bios,
+          keyScope,
           selectGame,
           openBios,
           showBios,

@@ -119,3 +119,6 @@ export * from './model/ICETracePlayerModel';
 export * from './model/ICESortModel';
 export * from './model/ICEMazeModel';
 export * from './model/ICEDosModel';
+export * from './model/ICEKeyScopeModel';
+export * from './util/ICEGeometryAudit';
+export * from './util/ICEKeyScope';

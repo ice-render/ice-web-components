@@ -304,6 +304,33 @@ DOS 终端（虚拟文件系统 + 命令解释器，纯逻辑，不碰 DOM）。
 | `historyNext()` | `string` |  |
 | `complete(input: string)` | `string` | Tab 补全：命令名补到唯一前缀（带空格），路径按当前目录补（目录名不带空格，方便继续往下打）。 |
 
+## `ICEKeyScopeModel`
+
+键盘作用域（纯逻辑）：把「这个键归谁」变成声明式 + 可诊断。  为什么需要它：键盘冲突已经咬过两次 —— 掌机里「卡带要拿 R 当机器键」和「外壳用 R 重开」撞车； 终端里 Tab 既是补全又被焦点管理器当成轮转焦点，回车还会落到按钮上。这都不是打字错误， 而是**没人能回答「这个键归谁」**。  画布体系里这件事比 DOM 好办：组件树是我们自己的，键盘也从同一条总线出来 —— 于是可以做成一个**作用域栈 + 声明式键位**的模型：
+
+- 内层（后 push 的）优先；同层按 `priority` 降序，再按注册顺序**倒序**（后注册的先接）；
+- `keys: ['*']` 表示这一层要吃掉所有键（终端、全屏菜单）；
+- 单字符键大小写不敏感；功能键（`ArrowLeft` / `Enter` / `Escape`）原样比较；
+- `detectConflicts()` 把「同一个键被多处声明」列出来 —— 冲突可见，而不是靠猜；
+- handler 抛错不炸分发：记进 `lastError`，当作「没处理」继续往下找。 模型不认识 DOM、不碰 evtBus；把引擎的事件接进来的是 `bindICEKeyScope()`（见 util）。
+
+源码：[`src/model/ICEKeyScopeModel.ts`](../../src/model/ICEKeyScopeModel.ts)
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `push(scope: string)` | `this` |  |
+| `pop(scope?: string)` | `this` |  |
+| `getActiveScopes()` | `string[]` | 栈顶在前（越靠前越内层）。 |
+| `setEnabled(scope: string, enabled: boolean)` | `this` |  |
+| `isEnabled(scope: string)` | `boolean` |  |
+| `bind(binding: ICEKeyBinding)` | `() => void` |  |
+| `dispatch(key: string, event?: any)` | `ICEKeyDispatchResult` | 按「内层 → 外层、同层 priority 降序、同 priority 后注册先接」的顺序找人消费。 |
+| `detectConflicts()` | `ICEKeyConflict[]` | 同一个键被多处声明 → 列出来（内层作用域排在前面）。 |
+| `getDiagnostics()` | `ICEKeyScopeDiagnostics` |  |
+| `addChangeListener(listener: ICEKeyScopeListener)` | `() => void` |  |
+
 ## `ICEMinesweeperModel`
 
 扫雷的纯逻辑模型（不碰 canvas）。  规则按 Windows XP 扫雷：
@@ -596,4 +623,42 @@ CHIP-8 虚拟机（纯逻辑，不碰 canvas）。  掌机的第四块卡带用�
 
 ```ts
 icePixelParseColor(color: string): [number, number, number]
+```
+
+## `ICEGeometryAudit`
+
+画布几何审计（纯逻辑，不碰 DOM、不碰 ctx）。  为什么值得单独做一件这样的事：这几轮反复咬人的 bug 都是**几何类**的 —— 「自动宽标签的盒子停在兜底测量出的假尺寸上，把邻居挤错位」「一次性布局不重排， 提示文字被按钮切掉」「顶栏面包屑的盒子伸到搜索框底下」。它们的共同点是： **肉眼要盯很久，机器一眼能算出来。**  这正是画布相对 DOM 的天然优势：整棵组件树、每个节点的世界矩形都在内存里 —— 不需要 `getBoundingClientRect()`、不触发重排、不受 CSS 与层叠上下文影响。 于是同一份判据可以：
+
+- 在 node 里喂假组件树跑单测（毫秒级、可穷举边界）；
+- 在真实浏览器里喂真组件树（同一函数、同一阈值），两边结论一致。 判定规则（策略由调用方注入，核心保持中性）：
+- `overlap`：同父兄弟、互不包含、重叠面积 ≥ 较小者 `overlapRatio`（默认 15%）；
+- `size-mismatch`：**自动尺寸**的容器（`props.width/height` 未给出、或等于默认值 10） 与它唯一子节点的内容尺寸不一致（超过 `tolerance`）——「盒子与内容对不上」这一整类；
+- `escape`：子节点超出父容器（父容器开 `clipChildren` 时天然豁免：滚出去是被裁掉的）；
+- `budget`：可见节点数超过 `nodeBudget`（防止「一格一个组件」被写回来）。 坐标系：按 `state.left/top` 累加父链得到世界矩形。这与这些示例的用法一致； 父链上有旋转/缩放时请改用引擎的 `getWorldBox()`（本工具不处理变换）。
+
+源码：[`src/util/ICEGeometryAudit.ts`](../../src/util/ICEGeometryAudit.ts)
+
+**构造参数** `ICEGeometryAuditOptions`
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `nodeBudget?` | `number` | 可见节点预算；不传则不做预算检查。 |
+| `tolerance?` | `number` | 尺寸比较容差（px），默认 1。 |
+| `overlapRatio?` | `number` | 交叠面积占较小者的比例阈值，默认 0.15。 |
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `run(root: ICEGeometryNode)` | `ICEGeometryIssue[]` | 走一遍树，返回全部问题（没问题就是空数组）。 |
+| `count(root: ICEGeometryNode)` | `number` | 可见节点数（隐藏子树整棵不算）。 |
+| `box(node: ICEGeometryNode)` | `ICEGeometryBox` | 节点的世界矩形（按 state.left/top 累加父链）。 |
+| `label(node: ICEGeometryNode)` | `string` | 节点的可读名：id 优先，其次文本，最后类名。 |
+
+### `bindICEKeyScope` — 函数
+
+把键盘接进作用域模型。
+
+```ts
+bindICEKeyScope(ice: any, model: ICEKeyScopeModel, options: ICEKeyScopeBindingOptions): () => void
 ```

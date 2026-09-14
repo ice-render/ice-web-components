@@ -35,7 +35,7 @@ rings and shadows) is drawn by the engine.
   Tetris, Snake, 2048 and CHIP-8 rule/machine models, the pixel canvas and the undo
   stack, the console BIOS, the trace player + sorting/pathfinding and the DOS terminal)
   plus eight browser QA suites (`qa:admin`, `qa:gallery`, `qa:workbench`, `qa:xp`,
-  `qa:arcade`, `qa:pixel`, `qa:algo`, `qa:dos` — 281 assertions) that drive the demo pages with
+  `qa:arcade`, `qa:pixel`, `qa:algo`, `qa:dos` — 284 assertions) that drive the demo pages with
   real mouse and keyboard events and fail on any console error.
 
 ## Quick start
