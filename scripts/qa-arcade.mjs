@@ -250,23 +250,44 @@ const leftMost = await page.evaluate(() => {
 check('俄罗斯方块：一路左移撞墙不越界', leftMost.min === 0, JSON.stringify(leftMost));
 
 await ensureRunning();
+/**
+ * 形状要**归一化**之后再比：直接比原始坐标会被重力坑到 ——
+ * 旋转前后正好落下一格时，坐标整体 +1，形状明明没变却判失败（这条断言偶发红过一次）。
+ * 归一化 = 每块减去自身的最小行/列，只剩「形状」。
+ */
 const beforeRotate = await page.evaluate(() => ({
   type: window.__arcade.model.getCurrent().type,
   cells: JSON.stringify(window.__arcade.model.getCurrent().cells),
+  shape: JSON.stringify(
+    (() => {
+      const cells = window.__arcade.model.getCurrent().cells;
+      const minRow = Math.min(...cells.map(([row]) => row));
+      const minCol = Math.min(...cells.map(([, col]) => col));
+      return cells.map(([row, col]) => [row - minRow, col - minCol]).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    })(),
+  ),
 }));
 await page.keyboard.press('ArrowUp');
 await page.waitForTimeout(80);
 const afterRotate = await page.evaluate(() => ({
   cells: JSON.stringify(window.__arcade.model.getCurrent().cells),
+  shape: JSON.stringify(
+    (() => {
+      const cells = window.__arcade.model.getCurrent().cells;
+      const minRow = Math.min(...cells.map(([row]) => row));
+      const minCol = Math.min(...cells.map(([, col]) => col));
+      return cells.map(([row, col]) => [row - minRow, col - minCol]).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    })(),
+  ),
   max: Math.max(...window.__arcade.model.getCurrent().cells.map(([, col]) => col)),
   cols: window.__arcade.model.getCols(),
 }));
 check(
   beforeRotate.type === 'O' ? '俄罗斯方块：↑ 旋转（O 形旋转后形状不变）' : '俄罗斯方块：↑ 旋转且不出右边界',
   beforeRotate.type === 'O'
-    ? afterRotate.cells === beforeRotate.cells
+    ? afterRotate.shape === beforeRotate.shape
     : afterRotate.cells !== beforeRotate.cells && afterRotate.max < afterRotate.cols,
-  `${beforeRotate.type} ${beforeRotate.cells} → ${afterRotate.cells}`,
+  `${beforeRotate.type} ${beforeRotate.shape} → ${afterRotate.shape}`,
 );
 
 await page.evaluate(() => window.__arcade.model.reset());
