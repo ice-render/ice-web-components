@@ -64,6 +64,7 @@ const GROUPS = [
       'ICEUpload',
       'ICEFormItem',
       'ICEForm',
+      'ICEFormList',
     ],
   },
   {
@@ -205,6 +206,7 @@ const GROUPS = [
       'iceUIManager',
       'ICE_LIGHT_THEME',
       'ICE_DARK_THEME',
+      'ICE_HIGH_CONTRAST_THEME',
       'ICE_XP_THEME',
       'ICE_ARCADE_THEME',
       'ICE_ARCADE_PALETTE',

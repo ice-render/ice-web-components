@@ -1165,6 +1165,25 @@
       affixPane.setContentSize(300, 520);
       window.__affixDemo = () => ({ pane: affixPane, bar: affixBar });
 
+      /* ---- ICESvgIcon：跨平台一致的矢量图标（不依赖 emoji 字体） ---- */
+      const svgCheckIcon = new W.ICESvgIcon({
+        id: 'svg-icon-check',
+        size: 28,
+        d: 'M4 12 L10 18 L20 6',
+        color: theme.colors.success,
+        strokeWidth: 2,
+      });
+      const svgSearchIcon = new W.ICESvgIcon({
+        id: 'svg-icon-search',
+        size: 28,
+        d: 'M11 4 A7 7 0 1 0 11 18 A7 7 0 1 0 11 4 M16 16 L21 21',
+        color: theme.colors.primary,
+      });
+      const svgIconRow = new W.ICEWidget({ width: 120, height: 28, fill: false, stroke: false, interactive: false });
+      svgCheckIcon.setState({ left: 0, top: 0 });
+      svgSearchIcon.setState({ left: 44, top: 0 });
+      svgIconRow.addChildren([svgCheckIcon, svgSearchIcon], { align: 'top' });
+
       const pagedTable = new W.ICETable({
         id: 'paged-table',
         left: 0,
@@ -1396,6 +1415,7 @@
               new W.ICEIcon({ id: 'icon-star', left: 0, top: 32, icon: '★', size: 24, color: theme.colors.warning }),
               new W.ICEIcon({ id: 'icon-check', left: 38, top: 32, icon: '✓', size: 24, color: theme.colors.success }),
               new W.ICEIcon({ id: 'icon-info', left: 76, top: 32, icon: 'ℹ', size: 24, color: theme.colors.info }),
+              svgIconRow,
             ],
             avatarGroup,
           ],
@@ -1627,7 +1647,7 @@
       // 屏幕阅读器/键盘用户才够得着（canvas 本身对辅助技术是完全不可见的）。
       const a11yMirror = W.mountICEAccessibilityMirror(ice, { id: 'gallery-a11y-mirror' });
 
-window.__result = { ice, panel, form, a11yMirror, nameInput, agreeBox, submitButton, submitHint, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, timePicker, timeHint, cascader, transfer, upload, carousel, avatarGroup, closableAlert, progressCircle, progressCircleDone, comment, colorPicker, colorHint, imageFill, imageContain, imageCover, breadcrumb, breadcrumbCollapsed, statistic, countdown, radioGroup, checkboxGroup, splitter, watermark, typographyTitle, typographyParagraph, typographyLink, anchorPane, anchor, backTop, calendar, imagePreview, previewTarget, tour, tourTarget, layoutSpace, layoutGrid, layoutDemo, affixPane, affixBar, fab, pagedTable, crossForm, virtualList, bigTable, kanban };
+window.__result = { ice, panel, form, a11yMirror, nameInput, agreeBox, submitButton, submitHint, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, timePicker, timeHint, cascader, transfer, upload, carousel, avatarGroup, closableAlert, progressCircle, progressCircleDone, comment, colorPicker, colorHint, imageFill, imageContain, imageCover, breadcrumb, breadcrumbCollapsed, statistic, countdown, radioGroup, checkboxGroup, splitter, watermark, typographyTitle, typographyParagraph, typographyLink, anchorPane, anchor, backTop, calendar, imagePreview, previewTarget, tour, tourTarget, layoutSpace, layoutGrid, layoutDemo, affixPane, affixBar, svgCheckIcon, svgSearchIcon, fab, pagedTable, crossForm, virtualList, bigTable, kanban };
     </script>
   </body>
 </html>

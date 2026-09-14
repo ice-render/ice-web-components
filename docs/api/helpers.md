@@ -408,6 +408,12 @@ isPointInsideICEBox(box: ICEWorldBox, x: number, y: number): boolean
 
 源码：`src/theme/ICETheme.ts`
 
+### `ICE_HIGH_CONTRAST_THEME` — 常量
+
+高对比度主题（`high-contrast`）。  给「屏幕反光 / 视力不好 / 投影仪」这些场景：纯黑底 + 纯白正文， 语义色一律换成暗底上也够亮的版本，描边从浅灰提到中灰 —— 不然边界在暗底上根本看不见。 正文对底色 21:1、次要文字 ~15:1（WCAG AAA 是 7:1），主色对底色也在 10:1 以上。
+
+源码：`src/theme/ICETheme.ts`
+
 ### `ICE_XP_THEME` — 常量
 
 Windows XP 经典主题（Luna 蓝 + 米灰控件）。  用途：桌面 / 怀旧风格的应用。用 `iceUIManager.registerTheme('xp', ICE_XP_THEME).setTheme('xp')` 切换（主题在组件构造时读取，先切主题再建组件）。  取色要点：

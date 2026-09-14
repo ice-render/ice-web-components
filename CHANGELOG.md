@@ -86,6 +86,42 @@
     自动展开 —— 层级路径不能丢，否则用户不知道选的是哪一支；搜不到时树是空的，不留一棵
     「看着能点、其实没命中」的树；空查询恢复整棵树；空查询时按 Backspace 删最后一个已选。
 
+- **`ICEFormList` 与表单防抖校验**（2026-09-14，S2 第一批第十件）：
+  - **`ICEFormList`**：可增删的重复表单项（多联系人 / 多地址 / 明细行）。每行有**稳定 rowKey**，
+    增删只动那一行 —— 用下标当 key 是重复行最经典的 bug（删掉第一行，第二行的控件就显示第一行的数据）。
+    `minRows` / `maxRows` 到了按钮变成真禁用态；`addRow` / `removeRow` / `updateRow` / `setRows` /
+    `getRows` / `getRowKeys` / `getContentHeight` 配套，`renderRow(row, { index, rowKey })` 生成行内容。
+  - **`validateDebounce`**：改值后延迟校验 —— 值**立刻**写进模型（`getValues()` 是最新的），
+    只有错误提示延后；连续输入只跑最后一次校验；`validate()` / `submit()` 不受影响，仍立刻出结果。
+    每敲一个字符就弹「格式不正确」是最讨嫌的交互之一，这条把它按住了。
+
+- **`ICEModal` 的形态与 `ICEDrawer` 的插槽**（2026-09-14，S2 第一批第十一件）：
+  - Modal：`draggable`（按住标题栏拖，自动夹在可见区里；全屏时拖拽无意义，直接忽略）、
+    `resizable`（右下角缩放手柄，有下限且不超出可见区，标题/正文/页脚按钮跟着重排）、
+    `size: 'sm' | 'md' | 'lg' | 'fullscreen'` 与 `toggleFullscreen()`（退出全屏**还原到进入前的
+    位置与尺寸**）；`getDialogRect()` / `setPosition()` / `setSize()` / `dragBy()` 可编程控制。
+  - Drawer：`extra`（标题栏右侧扩展区，摆在关闭按钮左边）、`footer`（贴底操作区，
+    内容区让出高度并可用 `getContentBox()` 拿到）；两者都支持工厂函数。
+
+- **三个全局质量开关**（2026-09-14，S2 第一批第十二件）：
+  - **密度**：`iceUIManager.setDensity('compact')` 把控件高度与间距压到 85%（颜色与字体不动），
+    密集后台能多放几行；同一主题 + 同一密度返回**同一个主题对象**（组件会比对引用）。
+  - **减少动效**：`setICEReducedMotion(true | false | 'auto')`，`'auto'` 跟随系统
+    `prefers-reduced-motion`；生效点在 `tween()` —— 开了之后时长按 0 处理，
+    所有过渡（淡入淡出/滑入/缩放）同步落到终点，而不是「动画变快」。
+  - **高对比主题**：`ICE_HIGH_CONTRAST_THEME`（内置 `high-contrast`）：纯黑底 + 纯白正文
+    （对比度 21:1，WCAG AAA 要求 7:1），语义色与描边一并换亮，投影加深以便分层。
+
+- **修：滑块手柄探出组件盒子**（2026-09-14）：手柄原先按「轨道比例 × 整宽」定位，
+  最小值时圆心落在轨道起点、手柄左半截探到盒子外 9px（几何审计在订单页抓到两处），
+  邻居按声明宽度排版就会被压住。现在行程两端各让出半个手柄，任何取值下手柄都完整落在盒子里；
+  区间模式的填充条同步改成「手柄圆心之间」那一段。
+
+- **`ICESvgIcon` 补齐**（2026-09-14）：这个件以前既没单测也没进示例（明账债）。
+  补了 6 条单测（缩放 / 左上原点 / 颜色 / 描边宽度 / 换路径 / 无 `Path2D` 的 polyfill）、
+  `setPath()` / `setStrokeWidth()` / `getPath()` / `getPathNode()`，并在 gallery 里加了演示
+  —— 矢量图标不依赖 emoji 字体，跨平台一致。
+
 > 其余待发布的改动在这里累积。
 
 ## [1.5.4] - 2026-09-14

@@ -339,6 +339,8 @@ ICE 内核的移动类事件为了性能不会在 mousemove 时做全量命中�
 
 | 方法 | 返回 | 说明 |
 |---|---|---|
+| `setDensity(density: ICEDensity)` | `this` | 切换密度。 |
+| `getDensity()` | `ICEDensity` |  |
 | `setTheme(name: ICEThemeName)` | `this` |  |
 | `getThemeName()` | `ICEThemeName` |  |
 | `registerTheme(name: string, tokens: ICEThemeTokens)` | `this` | 注册（或覆盖）一套主题 token。 |

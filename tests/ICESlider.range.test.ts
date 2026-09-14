@@ -53,6 +53,18 @@ describe('ICESlider step 量化', () => {
 });
 
 describe('ICESlider 区间模式', () => {
+  it('手柄在两端取值时也不越出组件盒子（几何审计抓到过的溢出）', () => {
+    const slider = new ICESlider({ range: true, min: 0, max: 100, value: [0, 100], width: 200, height: 18 });
+    slider.getThumbs().forEach((thumb: any) => {
+      const size = thumb.state.radius * 2;
+      expect(thumb.state.left).toBeGreaterThanOrEqual(0);
+      expect(thumb.state.left + size).toBeLessThanOrEqual(200);
+    });
+    // 单值最小值：手柄左缘贴在盒子左边（以前是 -半径）
+    const single = new ICESlider({ value: 0, min: 0, max: 100, width: 200, height: 18 });
+    expect(single.getThumbs()[0].state.left).toBe(0);
+  });
+
   it('构造与取值：getRangeValue / getThumbs / 填充条在两滑块之间', () => {
     const slider = new ICESlider({ range: true, min: 0, max: 100, value: [20, 80], width: 200, height: 18 });
     expect(slider.isRange()).toBe(true);
@@ -62,8 +74,10 @@ describe('ICESlider 区间模式', () => {
 
     const fill = slider.childNodes[1] as any;
     const [lo, hi] = slider.getRangeValue()!;
-    expect(fill.state.left).toBeCloseTo((lo / 100) * 200, 5);
-    expect(fill.state.width).toBeCloseTo(((hi - lo) / 100) * 200, 5);
+    // 填充条走的是「手柄圆心之间」那段行程：两端各让出半个手柄（18/2 = 9）
+    const travel = 200 - 18;
+    expect(fill.state.left).toBeCloseTo(9 + (lo / 100) * travel, 5);
+    expect(fill.state.width).toBeCloseTo(((hi - lo) / 100) * travel, 5);
   });
 
   it('setRangeValue：各自夹取到 [min,max]，反序自动交换', () => {
@@ -92,9 +106,9 @@ describe('ICESlider 区间模式', () => {
   it('区间模式下 fill 随拖动更新；单值模式不受影响', () => {
     const slider = new ICESlider({ range: true, min: 0, max: 100, value: [0, 50], width: 200, height: 18 });
     const fill = slider.childNodes[1] as any;
-    expect(fill.state.width).toBeCloseTo(100, 5);
+    expect(fill.state.width).toBeCloseTo((50 / 100) * (200 - 18), 5);
     slider.setValueFromRatio(1, 'upper');
-    expect(fill.state.width).toBeCloseTo(200, 5);
+    expect(fill.state.width).toBeCloseTo(200 - 18, 5);
 
     const single = new ICESlider({ value: 30, min: 0, max: 100, width: 200, height: 18 });
     expect(single.isRange()).toBe(false);

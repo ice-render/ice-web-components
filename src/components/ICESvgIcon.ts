@@ -87,4 +87,30 @@ export class ICESvgIcon extends ICEWidget {
     this.revalidate();
     return this;
   }
+
+  public setStrokeWidth(width: number): this {
+    this.pathNode.setState({
+      style: {
+        ...this.pathNode.state.style,
+        lineWidth: Number(width) || 0,
+      },
+    });
+    this.revalidate();
+    return this;
+  }
+
+  /** 换一段路径数据（不重建组件，适合「图标随状态变」）。 */
+  public setPath(d: string): this {
+    this.pathNode.setState({ pathData: String(d || '') });
+    this.revalidate();
+    return this;
+  }
+
+  public getPath(): string {
+    return String(this.pathNode.state.pathData || '');
+  }
+
+  public getPathNode(): any {
+    return this.pathNode;
+  }
 }

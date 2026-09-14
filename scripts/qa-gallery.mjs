@@ -923,6 +923,55 @@ check(
 );
 
 const sectionBox = await nodeBox('window.__result.splitter');
+/* ---------- 全局开关（密度 / 减少动效 / 高对比）与 SVG 图标 ---------- */
+const switches = await page.evaluate(() => {
+  const W = window.ICEWEB;
+  const manager = W.iceUIManager;
+  const before = { theme: manager.getThemeName(), density: manager.getDensity(), height: manager.getTheme().control.height };
+  manager.setTheme('high-contrast');
+  const contrast = manager.getTheme().colors;
+  manager.setTheme('light');
+  manager.setDensity('compact');
+  const compact = { density: manager.getDensity(), height: manager.getTheme().control.height };
+  manager.setDensity('default');
+  const restored = { density: manager.getDensity(), height: manager.getTheme().control.height };
+  W.setICEReducedMotion(true);
+  const reduced = W.isICEReducedMotion();
+  const resolved = W.resolveICEAnimationDuration(240);
+  W.setICEReducedMotion('auto');
+  return { before, contrast, compact, restored, reduced, resolved };
+});
+check(
+  '高对比主题：切过去是纯黑底 + 纯白正文，切回来还是浅色',
+  switches.contrast.background === '#000000' && switches.contrast.text === '#ffffff' && switches.before.theme === 'light',
+  JSON.stringify({ background: switches.contrast.background, text: switches.contrast.text }),
+);
+check(
+  '密度开关：compact 压矮控件，切回 default 复原',
+  switches.compact.height < switches.before.height && switches.restored.height === switches.before.height,
+  `${switches.before.height} → ${switches.compact.height} → ${switches.restored.height}`,
+);
+check(
+  '减少动效：开了之后时长按 0 处理（所有过渡同步落到终点）',
+  switches.reduced === true && switches.resolved === 0,
+  JSON.stringify({ reduced: switches.reduced, resolved: switches.resolved }),
+);
+
+const svgIcon = await page.evaluate(() => {
+  const icon = window.__result.svgCheckIcon;
+  if (!icon) return null;
+  return {
+    width: icon.state.width,
+    height: icon.state.height,
+    path: icon.getPath(),
+    stroke: icon.getPathNode().state.style.strokeStyle,
+  };
+});
+check(
+  'SVG 图标：矢量路径真的画出来了（不依赖 emoji 字体）',
+  !!svgIcon && svgIcon.width === 28 && svgIcon.path.indexOf('M4 12') === 0,
+  JSON.stringify(svgIcon),
+);
 const shotRect = await canvasRect();
 if (sectionBox) {
   await page.screenshot({

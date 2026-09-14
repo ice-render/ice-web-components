@@ -246,6 +246,10 @@ SVG 路径图标：给一段 `d` 路径数据，按 `viewBox` 缩放到目标尺
 | 方法 | 返回 | 说明 |
 |---|---|---|
 | `setColor(color: string)` | `this` |  |
+| `setStrokeWidth(width: number)` | `this` |  |
+| `setPath(d: string)` | `this` | 换一段路径数据（不重建组件，适合「图标随状态变」）。 |
+| `getPath()` | `string` |  |
+| `getPathNode()` | `any` |  |
 
 ## `ICEIconTile`
 

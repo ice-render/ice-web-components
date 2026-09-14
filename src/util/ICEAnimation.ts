@@ -33,6 +33,38 @@ export interface ICETweenOptions {
   driver?: ICEFrameDriver;
 }
 
+/**
+ * 减少动效开关（可访问性）。
+ *
+ * `'auto'`（默认）跟随系统的 `prefers-reduced-motion`；`true` / `false` 强制开关。
+ * 生效点在 `tween()`：开了之后时长按 0 处理 —— 所有过渡（淡入淡出、滑入、缩放、卡片翻转…）
+ * 都是同步落到终点，而不是「动画变快」。
+ */
+let reducedMotion: boolean | 'auto' = 'auto';
+
+export function setICEReducedMotion(value: boolean | 'auto'): void {
+  reducedMotion = value;
+}
+
+export function isICEReducedMotion(): boolean {
+  if (reducedMotion !== 'auto') {
+    return reducedMotion === true;
+  }
+  const mq = typeof globalThis !== 'undefined' && typeof (globalThis as any).matchMedia === 'function'
+    ? (globalThis as any).matchMedia('(prefers-reduced-motion: reduce)')
+    : null;
+  return !!(mq && mq.matches);
+}
+
+/** 动画时长归一化：减少动效时一律 0（调用方也可以直接用它算自己的时长）。 */
+export function resolveICEAnimationDuration(duration: number): number {
+  const value = Number(duration);
+  if (!Number.isFinite(value) || value <= 0) {
+    return 0;
+  }
+  return isICEReducedMotion() ? 0 : value;
+}
+
 export interface ICETweenHandle {
   cancel(): void;
 }
@@ -88,8 +120,10 @@ export function resolveICEEasing(easing?: ICEEasing): (t: number) => number {
 export function tween(options: ICETweenOptions): ICETweenHandle {
   const driver = options.driver || defaultDriver;
   const rawDuration = Number(options.duration);
-  const duration = Number.isFinite(rawDuration) && rawDuration > 0 ? rawDuration : 0;
-  const delay = Number(options.delay) || 0;
+  const requested = Number.isFinite(rawDuration) && rawDuration > 0 ? rawDuration : 0;
+  // 减少动效：时长按 0 处理（同步落到终点），延迟也一并去掉 —— 用户要的是「别晃」
+  const duration = resolveICEAnimationDuration(requested);
+  const delay = duration === 0 ? 0 : Number(options.delay) || 0;
   const easing = resolveICEEasing(options.easing);
   const from = Number.isFinite(Number(options.from)) ? Number(options.from) : 0;
   const to = Number(options.to);

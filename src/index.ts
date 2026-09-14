@@ -75,6 +75,7 @@ export * from './components/ICEAffix';
 export * from './components/ICELayout';
 export * from './components/ICEFormItem';
 export * from './components/ICEForm';
+export * from './components/ICEFormList';
 export * from './components/ICECard';
 export * from './components/ICETabs';
 export * from './components/ICETextField';

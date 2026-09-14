@@ -367,3 +367,57 @@ export const ICE_XP_THEME: ICEThemeTokens = {
     lg: { shadowColor: 'rgba(0, 0, 0, 0.25)', shadowBlur: 20, shadowOffsetX: 0, shadowOffsetY: 6 },
   },
 };
+
+/**
+ * 高对比度主题（`high-contrast`）。
+ *
+ * 给「屏幕反光 / 视力不好 / 投影仪」这些场景：纯黑底 + 纯白正文，
+ * 语义色一律换成暗底上也够亮的版本，描边从浅灰提到中灰 —— 不然边界在暗底上根本看不见。
+ * 正文对底色 21:1、次要文字 ~15:1（WCAG AAA 是 7:1），主色对底色也在 10:1 以上。
+ */
+export const ICE_HIGH_CONTRAST_THEME: ICEThemeTokens = {
+  ...ICE_LIGHT_THEME,
+  colors: {
+    primary: '#ffd54f',
+    primaryHover: '#ffe082',
+    primaryActive: '#ffca28',
+    primaryBg: '#3a2f00',
+    primaryBorder: '#ffd54f',
+    primaryText: '#000000',
+    background: '#000000',
+    surface: '#101010',
+    elevated: '#1a1a1a',
+    border: '#8a8a8a',
+    borderSecondary: '#5c5c5c',
+    text: '#ffffff',
+    textSecondary: '#e8e8e8',
+    textTertiary: '#c8c8c8',
+    textDisabled: '#8a8a8a',
+    muted: '#e8e8e8',
+    disabled: '#2a2a2a',
+    disabledText: '#9a9a9a',
+    success: '#69db7c',
+    successBg: '#0f2a17',
+    successBorder: '#69db7c',
+    warning: '#ffd43b',
+    warningBg: '#2f2a00',
+    warningBorder: '#ffd43b',
+    error: '#ff8787',
+    errorBg: '#2f0f0f',
+    errorBorder: '#ff8787',
+    info: '#74c0fc',
+    infoBg: '#0b2436',
+    infoBorder: '#74c0fc',
+    primaryTextEmphasis: '#ffe082',
+    successTextEmphasis: '#8ce99a',
+    warningTextEmphasis: '#ffe066',
+    errorTextEmphasis: '#ffa8a8',
+    infoTextEmphasis: '#a5d8ff',
+    focusRing: '#ffd54f',
+  },
+  shadows: {
+    sm: { shadowColor: 'rgba(0, 0, 0, 0.85)', shadowBlur: 4, shadowOffsetX: 0, shadowOffsetY: 1 },
+    md: { shadowColor: 'rgba(0, 0, 0, 0.9)', shadowBlur: 10, shadowOffsetX: 0, shadowOffsetY: 3 },
+    lg: { shadowColor: 'rgba(0, 0, 0, 0.95)', shadowBlur: 20, shadowOffsetX: 0, shadowOffsetY: 6 },
+  },
+};

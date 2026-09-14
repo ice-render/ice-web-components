@@ -1,7 +1,7 @@
 # 组件速查
 
 > 由 `npm run docs:api` 从源码生成。点组件名进入对应 API 页；每条的说明取自源码里的类注释首句。
-> 当前共 **83 个 UI 组件类**（另有 20 个纯逻辑模型、5 个管理器、2 个基类，合计 **110 个导出类**）。
+> 当前共 **84 个 UI 组件类**（另有 20 个纯逻辑模型、5 个管理器、2 个基类，合计 **111 个导出类**）。
 
 | 分组 | 组件 | 说明 |
 |---|---|---|
@@ -33,6 +33,7 @@
 |  | [`ICEUpload`](./api/data-entry.md#iceupload) | 上传选择器。 |
 |  | [`ICEFormItem`](./api/data-entry.md#iceformitem) | 表单项：标签 + 控件 + 错误文案。  只负责「摆位置 + 显示错误」；值的读写与校验规则由 ICEForm / ICEFormModel 管。 控件必须实现取值约定（`getFormValue` / `setFormValue`）。  布局： |
 |  | [`ICEForm`](./api/data-entry.md#iceform) | 表单容器：把若干 ICEFormItem 纵向堆叠，绑上校验模型。 |
+|  | [`ICEFormList`](./api/data-entry.md#iceformlist) | 可增删的重复表单项（多联系人 / 多地址 / 明细行）。  这类结构的难点不在「画一行」，而在**行身份**：用下标当 key，删掉第一行之后， 第二行的控件就会显示第一行的数据（重复行最经典的 bug）。所以每一行都有稳定的 `rowKey`， 增删只动那一行，`onChange(rows)` 给的是最新全量。  用法： ```ts const list = new ICEFormList({   renderRow: (row, ctx) => textFieldFor(row),   // 返回这一行的内容组件   initialRows: [{}],   minRows: 1, maxRows: 5,   onChange: (rows) => console.log(rows), }); ``` 行内的控件由调用方创建；改完值调 `list.updateRow(index, patch)` 把数据写回去。 |
 | [数据录入（浮层类）](./api/data-entry-popups.md) | [`ICESelect`](./api/data-entry-popups.md#iceselect) | 选择器：输入框外观 + 下拉选项（单选 / 多选 / 搜索过滤）。 |
 |  | [`ICEAutoComplete`](./api/data-entry-popups.md#iceautocomplete) | 自动完成：文本输入 + 候选下拉。 |
 |  | [`ICECascader`](./api/data-entry-popups.md#icecascader) | 级联选择。 |

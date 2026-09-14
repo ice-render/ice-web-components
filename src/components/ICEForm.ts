@@ -18,6 +18,13 @@ export interface ICEFormOptions {
   /** 复用外部模型（表单与业务共享状态） */
   model?: ICEFormModel;
   items?: ICEFormItem[];
+  /**
+   * 改值后延迟多少毫秒再校验（默认 0 = 立刻校验）。
+   *
+   * 每敲一个字符就弹「格式不正确」是最讨嫌的交互之一：值**立刻**写进模型，
+   * 只有错误提示延后；`validate()` / `submit()` 不受影响，仍然立刻出结果。
+   */
+  validateDebounce?: number;
   left?: number;
   top?: number;
 }
@@ -29,6 +36,8 @@ export class ICEForm extends ICEContainer {
   private items: ICEFormItem[] = [];
   private submitHandlers: ICEFormSubmitHandler[] = [];
   private itemGap: number;
+  private validateDebounce: number;
+  private debounceTimers = new Map<string, any>();
   /** reset 期间抑制「控件 change → 写回模型」，避免把初始值当成用户输入再校验一次 */
   private muted = false;
 
@@ -46,6 +55,7 @@ export class ICEForm extends ICEContainer {
       height: 0,
     });
     this.itemGap = props.gap ?? 16;
+    this.validateDebounce = Math.max(0, Math.floor(Number(props.validateDebounce) || 0));
     this.model = props.model || new ICEFormModel();
     this.model.addChangeListener(() => this.__syncErrors());
     if (props.items) {
@@ -55,6 +65,34 @@ export class ICEForm extends ICEContainer {
 
   public getModel(): ICEFormModel {
     return this.model;
+  }
+
+  /** 防抖排期：同一字段连续改值只跑最后一次；到点后校验该字段并刷新错误显示。 */
+  private __scheduleValidate(name: string): void {
+    const pending = this.debounceTimers.get(name);
+    if (pending) {
+      clearTimeout(pending);
+    }
+    const timer = setTimeout(() => {
+      this.debounceTimers.delete(name);
+      this.model.validateField(name);
+      this.__syncErrors();
+    }, this.validateDebounce);
+    this.debounceTimers.set(name, timer);
+  }
+
+  /** 取消防抖（组件卸载 / 立刻校验前调用）。 */
+  public flushValidateDebounce(): this {
+    Array.from(this.debounceTimers.keys()).forEach((name) => {
+      const timer = this.debounceTimers.get(name);
+      if (timer) {
+        clearTimeout(timer);
+      }
+      this.debounceTimers.delete(name);
+      this.model.validateField(name);
+    });
+    this.__syncErrors();
+    return this;
   }
 
   public getItems(): ICEFormItem[] {
@@ -82,7 +120,14 @@ export class ICEForm extends ICEContainer {
         if (this.muted) {
           return;
         }
-        this.model.setValue(name, control.getFormValue ? control.getFormValue() : undefined);
+        const value = control.getFormValue ? control.getFormValue() : undefined;
+        if (this.validateDebounce > 0) {
+          // 值先落进模型（getValues 立刻是最新的），错误提示延后
+          this.model.setValue(name, value, { silent: true });
+          this.__scheduleValidate(name);
+        } else {
+          this.model.setValue(name, value);
+        }
       });
     }
     this.addChild(item, false);
