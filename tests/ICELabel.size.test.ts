@@ -52,4 +52,52 @@ describe('ICELabel 尺寸', () => {
     expect(label.state.left).toBe(0);
     expect(button.state.left).toBe(130); // 120 + gap 10
   });
+
+  /**
+   * 真机踩到的坑（admin.html 批量操作行）：
+   * 构造期还没有 canvas ctx，ICEText 走 DOM 兜底量出来的宽度**偏大**（长中文串量成 418，真实只有 228）。
+   * 之后引擎用真字体重量了一遍（内层 ICEText 自己变准了），但 ICELabel 这层**包装盒**还停在 418 ——
+   * 于是盒子与文字长期不一致：点在盒子右边的空白上会命中标签，按盒子留位的邻居也全错位。
+   * 盒子必须跟着内层实测尺寸走（并且通知父容器重排）。
+   */
+  it('内层文字后来重新量过，包装盒会自己跟上（不依赖调用方再 setText）', () => {
+    const label = new ICELabel({ text: '未选中任何订单（勾选左侧复选框可多选）' });
+    stubTextSize(label, 418, 20); // DOM 兜底量出来的假尺寸
+    expect(label.state.width).toBe(418);
+
+    // 引擎用真字体量完：内层文字变成 228，但没人调 setText
+    const text = label.childNodes[0] as any;
+    text.state.width = 228;
+    text.state.height = 20;
+    (label as any).__syncTextSize();
+
+    expect(label.state.width).toBe(228);
+    expect(label.state.height).toBe(20);
+  });
+
+  it('盒子跟着文字变窄时，会通知父容器重排一次（只发一次，尺寸没变不重复通知）', () => {
+    const parent: any = new ICEPanel({ width: 400, height: 60 });
+    let requested = 0;
+    parent.requestLayout = () => { requested += 1; };
+    const label = new ICELabel({ text: 'hello' });
+    parent.addChild(label, false);
+
+    stubTextSize(label, 300, 20);
+    (label as any).__syncTextSize();
+    expect(label.state.width).toBe(300);
+    expect(requested).toBe(1);
+
+    (label as any).__syncTextSize(); // 尺寸没变 → 不再打扰父容器
+    expect(requested).toBe(1);
+  });
+
+  it('调用方显式给过宽高时，内层文字怎么量都不动包装盒', () => {
+    const label = new ICELabel({ text: 'hello', width: 120, height: 24 });
+    const text = label.childNodes[0] as any;
+    text.state.width = 300;
+    text.state.height = 40;
+    (label as any).__syncTextSize();
+    expect(label.state.width).toBe(120);
+    expect(label.state.height).toBe(24);
+  });
 });

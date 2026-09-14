@@ -119,31 +119,54 @@ export class ICELabel extends ICEWidget {
     if (remeasure && typeof this.textNode.refreshParams === 'function') {
       this.textNode.refreshParams();
     }
-    const width = Number(this.textNode.state.width);
-    const height = Number(this.textNode.state.height);
-    // 直接写 state：与 ICEText 自己的测量逻辑保持一致（派生尺寸不适合走 setState 的递归置脏，
-    // 否则会扰动渲染/离屏缓存的决策）。重排由调用方的 revalidate() 负责。
+    this.__syncTextSize();
+  }
+
+  /**
+   * 让包装盒跟上**内层文字的实际尺寸**（自动宽高时）。
+   *
+   * 为什么不能只在构造 / `setText` 时同步一次：构造期还没有 canvas ctx，`ICEText` 走的是 DOM 兜底测量 ——
+   * 长中文串会被量得偏大（实测 admin 示例里 418 vs 真实 228）。等引擎用真字体重量之后，
+   * 内层 ICEText 自己变准了，但**包装盒还停在旧数字上**：于是点在盒子右边的空白会命中这个标签、
+   * 按盒子宽度留位的邻居也会错位（批量操作行里提示文字压住按钮，就是这么来的）。
+   * 所以每帧渲染前对一次账，差得多就更新盒子并请父容器重排（有布局管理器的容器会自动重排）。
+   */
+  private __syncTextSize(): void {
+    if (!this.textNode || !this.textNode.state) {
+      return;
+    }
+    // 「自动盒」用构造期记下的标志判断（显式写 width: 10 也算给了尺寸，不能拿默认值 10 当哨兵）
+    const autoWidth = this.__autoBoxWidth;
+    const autoHeight = this.__autoBoxHeight;
+    if (!autoWidth && !autoHeight) {
+      return;
+    }
+    const width = Number(this.textNode.state.width) || 0;
+    const height = Number(this.textNode.state.height) || 0;
     let changed = false;
-    if (this.__autoBoxWidth && width > 0) {
-      if (this.state.width !== width) {
-        this.state.width = width;
-        changed = true;
-      }
+    if (autoWidth && width > 0 && Math.abs(Number(this.state.width) - width) > 0.5) {
+      this.state.width = width;
+      changed = true;
     }
-    if (this.__autoBoxHeight && height > 0) {
-      if (this.state.height !== height) {
-        this.state.height = height;
-        changed = true;
-      }
+    if (autoHeight && height > 0 && Math.abs(Number(this.state.height) - height) > 0.5) {
+      this.state.height = height;
+      changed = true;
     }
-    if (changed) {
-      // 盒子尺寸变了：本地原点在中心，原点位置随之变化 → 自身矩阵必须重算
-      this.dirty = true;
-      // 等价于 ICEWidget.__afterStateMerge 的行为：尺寸变化通知父容器重排
-      if (this.parentNode && typeof this.parentNode.requestLayout === 'function') {
-        this.parentNode.requestLayout();
-      }
+    if (!changed) {
+      return;
     }
+    // 盒子尺寸变了：本地原点在中心，原点位置随之变化 → 矩阵要重算、本帧要重画
+    this.dirty = true;
+    this.paramsDirty = true;
+    if (this.parentNode && typeof this.parentNode.requestLayout === 'function') {
+      this.parentNode.requestLayout();
+    }
+  }
+
+  protected doRender(): void {
+    // 渲染前对一次账：内层文字这一帧（或上一帧）用真字体重量过了，包装盒得跟着走
+    this.__syncTextSize();
+    super.doRender();
   }
 
   /**
