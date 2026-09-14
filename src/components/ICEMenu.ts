@@ -110,15 +110,77 @@ export class ICEMenu extends ICEContainer {
   }
 
   public toggleExpand(key: string): this {
-    if (this.expanded.has(key)) {
+    const wasExpanded = this.expanded.has(key);
+    // 收起：先把子行「滑回父行」再重排（展开的那条路径见 __animateExpand）
+    if (wasExpanded) {
+      const animated = this.__animateCollapse(key);
+      if (animated) {
+        this.expanded.delete(key);
+        return this;
+      }
       this.expanded.delete(key);
-    } else {
-      this.expanded.add(key);
+      this.__render();
+      return this;
     }
+    this.expanded.add(key);
     this.__render();
     this.__animateExpand(key);
     return this;
   }
+
+  /**
+   * 收起动画：子行向上滑向父行并淡出，下方行同步上移；动画结束再真正重排。
+   *
+   * 返回 true 表示「已经在做动画了，调用方不要立刻重排」。
+   */
+  private __animateCollapse(key: string): boolean {
+    const duration = resolveICEAnimationDuration(this.expandAnimation);
+    if (duration <= 0) {
+      return false;
+    }
+    const parentIndex = this.rows.findIndex((row) => row.item.key === key);
+    if (parentIndex === -1) {
+      return false;
+    }
+    const parentDepth = this.rows[parentIndex].depth;
+    const parentTop = parentIndex * this.itemHeight;
+    const children: Array<{ node: any; top: number }> = [];
+    let collapsedHeight = 0;
+    const below: Array<{ node: any; top: number }> = [];
+    for (let index = parentIndex + 1; index < this.rows.length; index += 1) {
+      const node = this.itemNodes.get(this.rows[index].item.key);
+      if (!node) continue;
+      if (this.rows[index].depth > parentDepth) {
+        children.push({ node, top: index * this.itemHeight });
+        collapsedHeight += this.itemHeight;
+      } else {
+        below.push({ node, top: index * this.itemHeight });
+      }
+    }
+    if (!children.length || collapsedHeight <= 0) {
+      return false;
+    }
+    this.animatingKeys.add(key);
+    tween({
+      from: 0,
+      to: 1,
+      duration,
+      onUpdate: (progress: number) => {
+        children.forEach((entry) => {
+          entry.node.setState({ top: parentTop + (entry.top - parentTop) * (1 - progress), opacity: 1 - progress });
+        });
+        below.forEach((entry) => entry.node.setState({ top: entry.top - collapsedHeight * progress }));
+      },
+      onFinish: () => {
+        this.animatingKeys.delete(key);
+        // 动画演完再真正重排：此时子行已经「收」到父行上，视觉上没有跳变
+        this.__render();
+      },
+    });
+    return true;
+  }
+
+
 
   public setExpandedKeys(keys: string[]): this {
     this.expanded = new Set(keys || []);
