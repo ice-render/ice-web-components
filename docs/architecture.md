@@ -174,7 +174,7 @@ ICEForm        addItem / validate / submit / reset，负责在控件与模型之
 
 ```
 src/
-  components/   60+ 个组件（一个组件一个文件，文件名＝类名）
+  components/   79 个文件 / 80 个组件类（一个组件一个文件，文件名＝类名）
   core/         ICEWidget / ICEContainer / ICEScrollPane / 四个管理器 / ICEManager
   layouts/      （已删除：布局直接用 ice-render 的 ICEFlowLayout / ICEBoxLayout）
   model/        ICEFormModel / ICEButtonModel / ICEToggleModel / ICESelectionModel / ICEBoundedRangeModel

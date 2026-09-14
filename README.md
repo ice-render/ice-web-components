@@ -12,9 +12,12 @@ rings and shadows) is drawn by the engine.
 
 ## Highlights
 
-- **86 components** — buttons, inputs, selects, tables, trees, menus, modals,
-  drawers, notifications, uploads, date/time pickers, cascader, transfer, carousel,
-  colour picker… and the small stuff (tags, badges, avatars, skeletons, spins).
+- **80 UI components** (+18 pure models, 5 managers, 2 base classes → 105 exported
+  classes, 186 exported names in total; the count in
+  [`docs/components.md`](./docs/components.md) is generated from the source, so it
+  cannot drift) — buttons, inputs, selects, tables, trees, menus, modals, drawers,
+  notifications, uploads, date/time pickers, cascader, transfer, carousel, colour
+  picker… and the small stuff (tags, badges, avatars, skeletons, spins).
 - **One overlay stack for every popup** — Modal / Drawer / Dropdown / Tooltip /
   Popover / Popconfirm / Select / DatePicker / Cascader all go through
   `ICEOverlayManager`: 12 placements, auto flip + clamp to the visible area,
@@ -87,7 +90,7 @@ Full docs live in [`docs/`](./docs/README.md):
 | | |
 |---|---|
 | [Architecture](./docs/architecture.md) | Layers, component model, rendering & repaint, events & hover, overlays / focus / forms / theming, plus a “pitfalls” table |
-| [Component cheat sheet](./docs/components.md) | 85 component classes, one line each, grouped, with links into the API |
+| [Component cheat sheet](./docs/components.md) | 80 component classes, one line each, grouped, with links into the API |
 | [API reference](./docs/api/README.md) | Constructor props and public methods for every component (**generated from source**, so it cannot drift) |
 | [Examples & scenarios](./docs/guides/examples.md) | What each of the six demo pages shows, which components it uses, and a checklist for building your own |
 | [Theming & colour](./docs/guides/theming.md) | Token groups, status colours, `*TextEmphasis`, custom themes |
@@ -444,13 +447,15 @@ keyboard buffer (TAB is completion, ↑↓ is history, `Ctrl+L` clears, `exit` s
 
 | Group | Components |
 |---|---|
-| Basic | `ICEPanel` `ICEButton` `ICELabel` `ICETypography` `ICEIcon` `ICESvgIcon` `ICESeparator` |
+| Basic | `ICEPanel` `ICEButton` `ICELabel` `ICETypography` `ICEIcon` `ICESvgIcon` `ICEIconTile` `ICESeparator` |
 | Layout | `ICESpace` `ICEGrid` `ICEGridCol` `ICESplitter` `ICEScrollPane` |
 | Data entry | `ICETextField` `ICETextArea` `ICEPasswordField` `ICEInputNumber` `ICESelect` `ICEAutoComplete` `ICECascader` `ICETreeSelect` `ICEDatePicker` `ICETimePicker` `ICECheckBox` `ICECheckboxGroup` `ICERadioButton` `ICERadioGroup` `ICESwitch` `ICESlider` `ICESegmented` `ICERate` `ICEColorPicker` `ICETransfer` `ICEUpload` `ICEForm` `ICEFormItem` |
-| Data display | `ICEVirtualList` `ICEKanban` `ICETable` `ICEList` `ICETree` `ICEStatCard` `ICEStatistic` `ICECard` `ICEComment` `ICEDescriptions` `ICETimeline` `ICEProgressBar` `ICEAvatar` `ICEAvatarGroup` `ICETag` `ICEBadge` `ICEImageView` `ICEImagePreview` `ICECalendar` `ICECarousel` `ICECollapse` `ICEWatermark` |
-| Feedback & status | `ICEAlert` `ICEModal` `ICEDrawer` `ICEMessage` `ICENotification` `ICETooltip` `ICEPopover` `ICEPopconfirm` `ICETour` `ICEFloatButton` `ICEEmpty` `ICESkeleton` `ICESpin` `ICEResult` `ICESteps` `ICEOverlayManager` |
+| Data display | `ICEVirtualList` `ICEKanban` `ICETable` `ICEList` `ICETree` `ICEStatCard` `ICEStatistic` `ICECard` `ICEComment` `ICEDescriptions` `ICETimeline` `ICEProgressBar` `ICEAvatar` `ICEAvatarGroup` `ICETag` `ICEBadge` `ICEImageView` `ICEImagePreview` `ICECalendar` `ICECarousel` `ICECollapse` `ICEWatermark` `ICETileMap` |
+| Feedback & status | `ICEAlert` `ICEModal` `ICEDrawer` `ICETooltip` `ICEPopover` `ICEPopconfirm` `ICETour` `ICEFloatButton` `ICEEmpty` `ICESkeleton` `ICESpin` `ICEResult` `ICESteps` |
+| Feedback & status (static APIs) | `ICEMessage` `ICENotification` — not classes: namespace objects with static methods (`ICEMessage.show(ice, …)`) |
 | Navigation | `ICEMenu` `ICEBreadcrumb` `ICEAnchor` `ICEBackTop` `ICEDropdown` `ICEPagination` `ICETabs` |
-| Layout & core | `ICEWidget` `ICEContainer` `ICEHoverManager` `ICEFocusManager` `ICEMessageManager` `ICEManager` (`ICEPainter` / `ICELayoutManager` are types) |
+| Layout & core | `ICEWidget` `ICEContainer` `ICEHoverManager` `ICEFocusManager` `ICEMessageManager` `ICEManager` `ICEOverlayManager` (`ICEPainter` / `ICELayoutManager` are types) |
+| Desktop & canvas-native | `ICEWindow` (draggable/resizable/XP chrome), `ICETileMap` (a whole board in one node — 2048 cells, 1 node) |
 | Models | `ICEButtonModel` `ICEToggleModel` `ICEBoundedRangeModel` `ICESelectionModel` `ICEFormModel` `ICEBiosModel` `ICEHistoryModel` `ICEPixelModel` `ICETracePlayerModel` `ICESortModel` `ICEMazeModel` `ICEDosModel` `ICETetrisModel` `ICESnakeModel` `ICE2048Model` `ICEChip8Model` `ICEMinesweeperModel` `ICEHighScoreModel` |
 
 Helper functions: `attachTooltip` `attachPopover` `attachPopconfirm` `attachDropdown`

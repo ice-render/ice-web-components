@@ -598,10 +598,35 @@ for (const group of GROUPS) {
 fs.writeFileSync(path.join(OUT, 'README.md'), index.join('\n') + '\n', 'utf8');
 
 /* ---------- 组件总览（用于 README / docs 导航） ---------- */
+/**
+ * 口径自算：手写的「多少个组件」数字漂移过好几次（README 86、速查 85、架构 60+，实测 80）。
+ * 这里按源码导出表算一遍，写进速查页首行 —— 数字只有一个来源，改代码就自动跟着变。
+ */
+const componentGroups = GROUPS.filter((group) => !['core', 'models', 'helpers'].includes(group.file));
+const baseClasses = ['ICEWidget', 'ICEContainer'].filter((name) => classes.has(name));
+const managerClasses = [...classes.keys()].filter((name) => /Manager$/.test(name));
+const modelClasses = [...classes.keys()].filter((name) => /Model$/.test(name));
+/** 归在「核心与布局」里、但其实是页面能用的组件（滚动视口 / 分隔条 / 桌面窗口） */
+const coreComponents = (GROUPS.find((group) => group.file === 'core')?.entries || []).filter(
+  (name) => classes.has(name) && !/Manager$/.test(name),
+);
+const uiClasses = [
+  ...new Set([
+    ...componentGroups.flatMap((group) => group.entries).filter((name) => classes.has(name) && !baseClasses.includes(name)),
+    ...coreComponents,
+  ]),
+];
+const exportedClassCount = uiClasses.length + modelClasses.length + managerClasses.length + baseClasses.length;
+const countLine =
+  `> 当前共 **${uiClasses.length} 个 UI 组件类**` +
+  `（另有 ${modelClasses.length} 个纯逻辑模型、${managerClasses.length} 个管理器、${baseClasses.length} 个基类，` +
+  `合计 **${exportedClassCount} 个导出类**）。`;
+
 const overview = [
   '# 组件速查',
   '',
   '> 由 `npm run docs:api` 从源码生成。点组件名进入对应 API 页；每条的说明取自源码里的类注释首句。',
+  countLine,
   '',
   '| 分组 | 组件 | 说明 |',
   '|---|---|---|',
@@ -622,3 +647,4 @@ fs.writeFileSync(path.join(ROOT, 'docs', 'components.md'), overview.join('\n') +
 
 const counts = GROUPS.map((g) => `${g.file}: ${g.entries.length}`).join(', ');
 console.log(`docs:api 已生成 ${GROUPS.length} 个页面（${counts}）→ docs/api/`);
+console.log(`docs:api 组件口径：${uiClasses.length} 个 UI 组件类 + ${modelClasses.length} 模型 + ${managerClasses.length} 管理器 + ${baseClasses.length} 基类 = ${exportedClassCount} 个导出类`);
