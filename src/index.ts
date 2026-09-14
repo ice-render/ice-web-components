@@ -71,6 +71,8 @@ export * from './components/ICESwitch';
 export * from './components/ICEProgressBar';
 export * from './components/ICESlider';
 export * from './components/ICEScrollPane';
+export * from './components/ICEAffix';
+export * from './components/ICELayout';
 export * from './components/ICEFormItem';
 export * from './components/ICEForm';
 export * from './components/ICECard';

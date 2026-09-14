@@ -352,6 +352,7 @@
 - `ICEAlert`：banner 形态（关闭按钮 / 图标 ✅ 已做）
 - `ICEProgressBar`：仪表盘形态（环形 + 状态色 ✅ 已做）
 - `ICESlider`：区间选择 ✅、刻度、拖拽 tooltip
+- `ICEScrollPane`：吸顶 ✅ `ICEAffix`、布局骨架 ✅ `ICELayout`；横向滚动条、平滑滚动待做
 - `ICECard`：操作区、封面、底部（右上角 extra ✅ 已做）
 - `ICEBadge`：红点 / 计数封顶 ✅ 已做
 - `ICEAvatar`：图片头像（头像组 ✅ `ICEAvatarGroup`）

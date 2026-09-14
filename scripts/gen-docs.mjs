@@ -136,6 +136,8 @@ const GROUPS = [
     intro: '不直接出现在业务页面里，但决定一切的东西：组件基类、滚动视口、浮层/焦点/消息管理器，以及布局与动画工具。',
     entries: [
       'ICEScrollPane',
+      'ICEAffix',
+      'ICELayout',
       'ICESplitter',
       'ICEWindow',
       'ICEOverlayManager',

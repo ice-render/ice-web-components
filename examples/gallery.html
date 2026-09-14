@@ -1084,6 +1084,87 @@
         },
       });
       window.__fabPicked = () => fabPicked;
+
+      /* ---- ICELayout：顶栏 / 侧栏 / 内容 / 页脚 ---- */
+      const layoutDemo = new W.ICELayout({
+        id: 'layout-demo',
+        left: 0,
+        top: 0,
+        width: 420,
+        height: 220,
+        headerHeight: 40,
+        footerHeight: 32,
+        siderWidth: 120,
+      });
+      const regionNode = (text) => {
+        const panel = new W.ICEPanel({
+          left: 0,
+          top: 0,
+          width: 10,
+          height: 10,
+          radius: 4,
+          style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border },
+        });
+        panel.addChild(
+          new W.ICELabel({
+            left: 10,
+            top: 0,
+            width: 120,
+            height: 24,
+            text,
+            verticalAlign: 'middle',
+            style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+          }),
+          false,
+        );
+        return panel;
+      };
+      layoutDemo.setHeader(regionNode('Header'));
+      layoutDemo.setSider(regionNode('Sider'));
+      layoutDemo.setContent(regionNode('Content'));
+      layoutDemo.setFooter(regionNode('Footer'));
+
+      /* ---- ICEAffix：滚动时工具条自己贴住视口顶 ---- */
+      const affixPane = new W.ICEScrollPane({ id: 'affix-pane', left: 0, top: 0, width: 300, height: 180 });
+      const affixContent = new W.ICEWidget({ width: 300, height: 520 });
+      const affixBar = new W.ICEAffix({
+        id: 'affix-bar',
+        left: 0,
+        top: 160,
+        width: 300,
+        height: 34,
+        offsetTop: 0,
+        fill: true,
+        style: { fillStyle: theme.colors.primaryBg },
+      });
+      affixBar.addChild(
+        new W.ICELabel({
+          left: 10,
+          top: 0,
+          width: 280,
+          height: 34,
+          verticalAlign: 'middle',
+          text: '吸顶工具条',
+          style: { fontSize: 12, fillStyle: theme.colors.primary },
+        }),
+        false,
+      );
+      for (let i = 0; i < 12; i += 1) {
+        affixContent.addChild(
+          new W.ICELabel({
+            left: 10,
+            top: 12 + i * 38,
+            text: '内容行 ' + (i + 1),
+            style: { fontSize: 12, fillStyle: theme.colors.textTertiary },
+          }),
+          false,
+        );
+      }
+      affixContent.addChild(affixBar, false);
+      affixPane.setContent(affixContent);
+      affixPane.setContentSize(300, 520);
+      window.__affixDemo = () => ({ pane: affixPane, bar: affixBar });
+
       const pagedTable = new W.ICETable({
         id: 'paged-table',
         left: 0,
@@ -1450,7 +1531,7 @@
         },
         {
           title: 'Layout & float',
-          items: [layoutSpace, layoutGrid, [fabSpacer, fab]],
+          items: [layoutSpace, layoutGrid, [fabSpacer, fab], layoutDemo, affixPane],
         },
         {
           title: 'Table with pagination',
@@ -1546,7 +1627,7 @@
       // 屏幕阅读器/键盘用户才够得着（canvas 本身对辅助技术是完全不可见的）。
       const a11yMirror = W.mountICEAccessibilityMirror(ice, { id: 'gallery-a11y-mirror' });
 
-      window.__result = { ice, panel, form, a11yMirror, nameInput, agreeBox, submitButton, submitHint, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, timePicker, timeHint, cascader, transfer, upload, carousel, avatarGroup, closableAlert, progressCircle, progressCircleDone, comment, colorPicker, colorHint, imageFill, imageContain, imageCover, breadcrumb, breadcrumbCollapsed, statistic, countdown, radioGroup, checkboxGroup, splitter, watermark, typographyTitle, typographyParagraph, typographyLink, anchorPane, anchor, backTop, calendar, imagePreview, previewTarget, tour, tourTarget, layoutSpace, layoutGrid, fab, pagedTable, crossForm, virtualList, bigTable, kanban };
+window.__result = { ice, panel, form, a11yMirror, nameInput, agreeBox, submitButton, submitHint, scrollPane, tipTarget, popoverTarget, deleteTarget, deleteHint, modalTarget, modalHint, modal, pagination, pageHint, dropdown, citySelect, cityHint, drawerTarget, drawer, cityList, listHint, tree, treeHint, bioArea, passwordField, rangeSegmented, emptyState, skeleton, collapsePanel, descriptions, timeline, spin, rate, steps, result, quantity, cityAuto, dataTreeSelect, treeSelectHint, datePicker, datePickerHint, timePicker, timeHint, cascader, transfer, upload, carousel, avatarGroup, closableAlert, progressCircle, progressCircleDone, comment, colorPicker, colorHint, imageFill, imageContain, imageCover, breadcrumb, breadcrumbCollapsed, statistic, countdown, radioGroup, checkboxGroup, splitter, watermark, typographyTitle, typographyParagraph, typographyLink, anchorPane, anchor, backTop, calendar, imagePreview, previewTarget, tour, tourTarget, layoutSpace, layoutGrid, layoutDemo, affixPane, affixBar, fab, pagedTable, crossForm, virtualList, bigTable, kanban };
     </script>
   </body>
 </html>

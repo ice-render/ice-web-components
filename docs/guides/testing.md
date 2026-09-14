@@ -137,17 +137,17 @@ PLAYWRIGHT_PATH=/path/to/playwright npm run qa:perf      # 性能门禁：节点
 「整页截图 + 0.64 缩放」，商品/后台各页是逐页 1:1 截图。
 
 <!-- qa-counts:start -->
-<!-- 由 scripts/lib/qa-counts.mjs 生成，请勿手改：八套合计 295 项 -->
+<!-- 由 scripts/lib/qa-counts.mjs 生成，请勿手改：八套合计 299 项 -->
 | 脚本 | 断言数 |
 |---|---|
 | `qa:admin` | 65 |
 | `qa:algo` | 14 |
 | `qa:arcade` | 71 |
 | `qa:dos` | 17 |
-| `qa:gallery` | 49 |
+| `qa:gallery` | 53 |
 | `qa:perf` | 0 |
 | `qa:pixel` | 24 |
 | `qa:workbench` | 15 |
 | `qa:xp` | 40 |
-| **合计** | **295** |
+| **合计** | **299** |
 <!-- qa-counts:end -->

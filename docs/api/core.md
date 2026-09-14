@@ -35,6 +35,97 @@
 | `isScrollbarVisible()` | `boolean` |  |
 | `getScrollbarThumb()` | `any` | 滚动条滑块（测试与自定义样式用）。 |
 
+## `ICEAffix`
+
+吸顶容器（CSS `position: sticky` 的画布版本）。  长页面里「筛选条 / 表头 / 批量操作栏」跟着滚走是后台最常见的抱怨；DOM 里一行 `position: sticky` 就解决，画布里没有这回事，于是这里把它补上：
+
+- 组件留在原来的位置，**占位高度不变** —— 吸顶不该让下面的内容跳一下；
+- 当它随内容滚到「视口顶 + `offsetTop`」以上时，把它贴回去（改自己的 `top` 补偿滚动量）， 并抬到更高 zIndex（否则会被后面的内容盖住）；滚回原位时两样都复原；
+- 贴着**最近的祖先滚动视口**（`ICEScrollPane`）算，不是整页；也可以 `scrollTarget` 显式指定。 语义提醒：吸顶期间它会盖住后面的内容（和 CSS sticky 一致），所以页面要留出足够的高度 —— 例如内容顶部加 `offsetTop` 那一条空白。
+
+源码：[`src/components/ICEAffix.ts`](../../src/components/ICEAffix.ts)
+
+**构造参数** `ICEAffixOptions` — 吸顶容器（CSS `position: sticky` 的画布版本）。  长页面里「筛选条 / 表头 / 批量操作栏」跟着滚走是后台最常见的抱怨；DOM 里一行 `position: sticky` 就解决，画布里没有这回事，于是这里把它补上：
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `offsetTop?` | `number` | 吸顶时距视口顶部多少像素（默认 0；顶部有固定头就传头的高度） |
+| `scrollTarget?` | `any` | 贴哪个滚动视口吸顶；不传则自动沿父链找最近的 ICEScrollPane |
+| `pinnedZIndex?` | `number` | 吸顶时抬到多高（默认「整棵兄弟子树的最大 zIndex + 10」） |
+| `onPinChange?` | `(pinned: boolean) => void` | 吸顶状态翻转时回调 |
+| `id?` | `string` | 组件 id（引擎用它做唯一标识；e2e/调试时可按 id 定位） |
+| `left?` | `number` | 相对父容器的左边距 |
+| `top?` | `number` | 相对父容器的上边距 |
+| `width?` | `number` | 宽度（不传用组件默认值） |
+| `height?` | `number` | 高度（不传用组件默认值） |
+| `style?` | `Record<string, any>` | 覆盖样式（fillStyle / strokeStyle / lineWidth / shadow …） |
+| `fill?` | `boolean` |  |
+| `stroke?` | `boolean` |  |
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getScrollTarget()` | `any` |  |
+| `getOffsetTop()` | `number` |  |
+| `setOffsetTop(value: number)` | `this` |  |
+| `getBaseTop()` | `number` | 布局给的位置（吸顶时它仍然是「本来该在的地方」）。 |
+| `getBaseZIndex()` | `number` |  |
+| `isPinned()` | `boolean` |  |
+| `update()` | `this` | 重算吸顶。 |
+
+## `ICELayout`
+
+布局骨架：顶栏 / 侧栏 / 内容 / 页脚。  后台外壳每个示例都在手搭（算坐标、算剩余宽度、侧栏收起时手动把内容挪过去）， 这里把它沉淀成一个件：
+
+- 四个区域都是可选的，**没给的不占空间**（没页脚时内容直接到底）；
+- 侧栏可在左 / 在右，可收起（`setSiderVisible(false)` / `setSiderWidth(0)`）；
+- 容器尺寸变化会自动重排（`__afterStateMerge` 里补一次），不是一次性算完就固定；
+- 区域节点被真的摆到对应盒子里（改它们的 left/top/width/height）， `getRegionBox(name)` 把版式暴露出来给测试与几何审计。 用在需要「整页骨架」的场景；只是想给一段内容加个壳的话，`ICEPanel` / `ICECard` 更轻。
+
+源码：[`src/components/ICELayout.ts`](../../src/components/ICELayout.ts)
+
+**构造参数** `ICELayoutOptions`
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `id?` | `string` | 组件 id（引擎用它做唯一标识；e2e/调试时可按 id 定位） |
+| `left?` | `number` | 相对父容器的左边距 |
+| `top?` | `number` | 相对父容器的上边距 |
+| `width?` | `number` | 宽度（不传用组件默认值） |
+| `height?` | `number` | 高度（不传用组件默认值） |
+| `headerHeight?` | `number` |  |
+| `footerHeight?` | `number` |  |
+| `siderWidth?` | `number` |  |
+| `siderPosition?` | `'left' \| 'right'` |  |
+| `header?` | `any` |  |
+| `sider?` | `any` |  |
+| `content?` | `any` | 内容（纯文本，或返回组件的工厂函数） |
+| `footer?` | `any` |  |
+| `style?` | `Record<string, any>` | 覆盖样式（fillStyle / strokeStyle / lineWidth / shadow …） |
+| `background?` | `string` |  |
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `setHeader(node: any)` | `this` |  |
+| `setSider(node: any)` | `this` |  |
+| `setContent(node: any)` | `this` |  |
+| `setFooter(node: any)` | `this` |  |
+| `getHeader()` | `any` |  |
+| `getSider()` | `any` |  |
+| `getContent()` | `any` |  |
+| `getFooter()` | `any` |  |
+| `setSiderWidth(width: number)` | `this` |  |
+| `getSiderWidth()` | `number` |  |
+| `setSiderVisible(visible: boolean)` | `this` |  |
+| `isSiderVisible()` | `boolean` |  |
+| `setHeaderHeight(height: number)` | `this` |  |
+| `setFooterHeight(height: number)` | `this` |  |
+| `getRegionBox(name: ICELayoutRegion)` | `ICELayoutBox` | 区域盒子（没给该区域时是零尺寸的盒子，位置按「不占空间」算）。 |
+| `layout()` | `this` | 按当前尺寸把各区域摆好（尺寸变化后由 `__afterStateMerge` 自动调）。 |
+
 ## `ICESplitter`
 
 分隔面板：两栏 + 可拖动的分隔条。

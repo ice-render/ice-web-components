@@ -849,6 +849,79 @@ check(
   JSON.stringify(i18nState),
 );
 
+/* ---------- 布局骨架 + 吸顶（第 81/82 个组件） ---------- */
+const layoutState = await page.evaluate(() => {
+  const layout = window.__result.layoutDemo;
+  const keys = ['header', 'sider', 'content', 'footer'];
+  const boxes = keys.map((key) => layout.getRegionBox(key));
+  let overlaps = 0;
+  for (let i = 0; i < boxes.length; i += 1) {
+    for (let j = i + 1; j < boxes.length; j += 1) {
+      const a = boxes[i];
+      const b = boxes[j];
+      const overlapX = Math.min(a.left + a.width, b.left + b.width) - Math.max(a.left, b.left);
+      const overlapY = Math.min(a.top + a.height, b.top + b.height) - Math.max(a.top, b.top);
+      if (overlapX > 0 && overlapY > 0) overlaps += 1;
+    }
+  }
+  const wideBefore = layout.getRegionBox('content').width;
+  layout.setSiderVisible(false);
+  const wideAfter = layout.getRegionBox('content').width;
+  layout.setSiderVisible(true);
+  return { boxes, overlaps, wideBefore, wideAfter, header: boxes[0].height, footer: boxes[3].height };
+});
+check(
+  '布局骨架：四区域各就各位且互不交叠',
+  layoutState.overlaps === 0 && layoutState.header === 40 && layoutState.footer === 32,
+  JSON.stringify(layoutState.boxes),
+);
+check(
+  '布局骨架：侧栏收起时内容让出宽度',
+  layoutState.wideAfter > layoutState.wideBefore,
+  `${layoutState.wideBefore} → ${layoutState.wideAfter}`,
+);
+
+const affixState = await page.evaluate(() => {
+  const { pane, bar } = window.__affixDemo();
+  const screenTop = (node) => {
+    let top = 0;
+    let current = node;
+    while (current && current.state) {
+      top += Number(current.state.top) || 0;
+      current = current.parentNode;
+    }
+    return top;
+  };
+  const paneTop = screenTop(pane);
+  const baseTop = bar.getBaseTop();
+  const baseZ = bar.getBaseZIndex();
+  pane.setScroll(0, 300);
+  const pinned = bar.isPinned();
+  const pinnedTop = screenTop(bar);
+  const raisedZ = bar.state.zIndex;
+  pane.setScroll(0, 0);
+  return {
+    pinned,
+    paneTop,
+    pinnedTop,
+    raised: raisedZ > baseZ,
+    released: bar.isPinned() === false,
+    restoredTop: screenTop(bar),
+    restoredZ: bar.state.zIndex === baseZ,
+    baseTop,
+  };
+});
+check(
+  '吸顶：滚过位置后贴住视口顶并抬到最上层',
+  affixState.pinned && affixState.pinnedTop === affixState.paneTop && affixState.raised,
+  JSON.stringify(affixState),
+);
+check(
+  '吸顶：滚回原位后位置与层级都复原',
+  affixState.released && affixState.restoredTop === affixState.paneTop + affixState.baseTop && affixState.restoredZ,
+  JSON.stringify({ restoredTop: affixState.restoredTop, expect: affixState.paneTop + affixState.baseTop, restoredZ: affixState.restoredZ }),
+);
+
 const sectionBox = await nodeBox('window.__result.splitter');
 const shotRect = await canvasRect();
 if (sectionBox) {
