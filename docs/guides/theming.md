@@ -14,7 +14,7 @@ theme.colors.primary;              // '#0d6efd'
 > ⚠️ 组件是**构造时**取色的：`setTheme` 之后新建的组件才会用新主题。需要热切换就重建组件树
 > （示例页的做法是切页/重建；`ICEMessage`/`ICEModal` 这类每次打开都新建的组件天然跟随）。
 
-## token 分组
+## 一、token 分组
 
 | 分组 | 说明 |
 |---|---|
@@ -25,7 +25,21 @@ theme.colors.primary;              // '#0d6efd'
 | `control` | 控件高度（24 / 32 / 40）、内边距、线宽、开关/复选/单选/进度/滑块尺寸 |
 | `shadows` | `sm` / `md` / `lg`，值是引擎认的 `{ shadowColor, shadowBlur, shadowOffsetX, shadowOffsetY }` |
 
-## 为什么需要 `*TextEmphasis`
+token 分组归属如下：
+
+```mermaid
+flowchart TD
+  Theme["ICETheme<br/>ICE_LIGHT_THEME / ICE_DARK_THEME"]
+  C["colors<br/>语义色·中性色·文字层级·状态色·focusRing"]
+  S["spacing<br/>xxs4 xs8 sm12 md16 lg24 xl32 xxl48"]
+  R["radius<br/>xs2 sm4 md6 lg8 xl16 pill999"]
+  F["font<br/>系统字体栈·三档字号·四档字重"]
+  K["control<br/>控件高度·内边距·线宽·尺寸"]
+  H["shadows<br/>sm/md/lg（引擎字段）"]
+  Theme --> C & S & R & F & K & H
+```
+
+## 二、为什么需要 `*TextEmphasis`
 
 配色刻意偏 Bootstrap 5，而 Bootstrap 的 `warning` 是**亮黄 `#ffc107`** —— 这种颜色当文字压在浅黄底上
 几乎读不出来。所以每个状态色都有两组文字色：
@@ -47,7 +61,7 @@ const colors = getStatusColors(theme, 'warning');
 // }
 ```
 
-## 实底还是浅底
+## 三、实底还是浅底
 
 `ICETag` / `ICEBadge` 默认是 Bootstrap 的实底风格，`variant: 'soft'` 切回浅底：
 
@@ -56,7 +70,28 @@ new ICETag({ text: 'Paid', status: 'success' });                  // 绿底白�
 new ICETag({ text: 'Paid', status: 'success', variant: 'soft' }); // 浅绿底 + 深绿字
 ```
 
-## 改一套自己的主题
+实底 / 浅底 的取舍与文字配色逻辑如下：
+
+```mermaid
+flowchart TD
+  Start["ICETag / ICEBadge"]
+  Style{"variant？"}
+  Solid["实底（默认）<br/>亮底 → 黑字 onSolid"]
+  Soft["浅底（soft）<br/>subtle 底 → *TextEmphasis 深字"]
+  Bright{"底色亮度高？"}
+  Black["配黑字"]
+  White["配白字"]
+  Start --> Style
+  Style -->|默认| Solid
+  Style -->|soft| Soft
+  Solid --> Bright
+  Soft --> Bright
+  Bright -->|是| Black
+  Bright -->|否| White
+  %% 依亮度自动配文字色：亮底黑字，暗底白字
+```
+
+## 四、改一套自己的主题
 
 两套内置主题都是导出的普通对象，改字段即可（全局生效，建议在应用入口做）：
 
@@ -71,7 +106,7 @@ ICE_LIGHT_THEME.colors.primaryBorder = '#c4b5fd';
 
 颜色值可以是任意 CSS 颜色字符串（`#rrggbb`、`rgba(...)`）。`shadows` 是引擎字段，不是 CSS 文本。
 
-## 注册自定义主题（不污染内置主题）
+## 五、注册自定义主题（不污染内置主题）
 
 直接改 `ICE_LIGHT_THEME` 是全局副作用；更干净的做法是**注册一套新 token** 再切过去：
 
@@ -89,7 +124,7 @@ iceUIManager.registerTheme('xp', ICE_XP_THEME).setTheme('xp');
 
 > 想热切换主题就重建组件 —— 组件只在构造时读一次 token（这是刻意的：绘制阶段零 token 查表）。
 
-## 焦点色
+## 六、焦点色
 
 `colors.focusRing`（浅色 `#86b7fe` / 深色 `#6ea8fe`）用于**焦点环**与**输入框聚焦边框** ——
 浅蓝而不是主色，是 Bootstrap 的取值。

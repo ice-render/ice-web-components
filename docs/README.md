@@ -2,7 +2,7 @@
 
 > 组件库的完整文档：架构思路、组件速查、API 参考、主题/表单/浮层/布局/测试指南，以及破坏性变更记录。
 
-## 从哪里开始
+## 一、从哪里开始
 
 | 你在做什么 | 看这里 |
 |---|---|
@@ -14,29 +14,28 @@
 | 做表单、写校验（含异步） | [表单与校验](./guides/forms.md) |
 | 弹窗 / 抽屉 / 下拉 / 提示怎么用 | [浮层指南](./guides/overlays.md) |
 | 自己排布局、被“组件不见了”坑过 | [画布内布局](./guides/layout.md) |
-| 给库加组件、写测试（含五套浏览器 QA） | [测试](./guides/testing.md) |
+| 给库加组件、写测试（含八套浏览器 QA） | [测试](./guides/testing.md) |
 | 从旧版本升上来 | [迁移说明](./guides/migration.md) |
 
-## 文档地图
+## 二、文档地图
 
-```
-docs/
-  architecture.md        分层、组件模型、渲染、事件、浮层、焦点、表单、主题、目录结构、踩坑表
-  components.md          组件速查（按分组，一句话说明 + 跳转 API）      ← 生成
-  api/                   API 参考（构造参数 + public 方法）              ← 生成
-    README.md  basic  data-entry  data-entry-popups  data-display
-    feedback   navigation  core  helpers  models
-  guides/
-    theming.md           主题 token、状态色、自定义主题
-    forms.md             表单三层结构、规则、异步校验、自定义控件接入
-    overlays.md          三类浮层用法、定位、关闭策略、动画、内容工厂
-    layout.md            坐标、zIndex 与创建顺序、簇+货架布局、裁剪与滚动
-    testing.md           单测套路（假 ICE + 真组件）、五套浏览器 QA
-    migration.md         UI* → ICE*、token 主题、API 变更
-    custom-components.md 三档写法、构造约定、交互/表单/浮层/主题接入、注册与踩坑
-    examples.md          六个示例页分别演示什么、照着做新场景的清单
-  examples/ICEMetric.ts  「写自己的组件」的完整示例（有单测 + 示例页）
-  images/                README 与文档用的截图
+```mermaid
+flowchart TD
+  DOCS["docs/"]
+  DOCS --> ARCH["architecture.md<br/>分层 / 组件模型 / 渲染 / 事件 / 浮层<br/>焦点 / 表单 / 主题 / 目录 / 踩坑"]
+  DOCS --> COMP["components.md（生成）<br/>组件速查：分组 + 一句话说明 + 跳转 API"]
+  DOCS --> API["api/（生成）<br/>basic · data-entry · data-entry-popups · data-display<br/>feedback · navigation · core · helpers · models"]
+  DOCS --> GUIDES["guides/"]
+  DOCS --> EX["examples/ICEMetric.ts<br/>写自己的组件的完整示例（含单测 + 示例页）"]
+  DOCS --> IMG["images/ · 文档与 README 用的截图"]
+  GUIDES --> G1["theming.md · 主题 token / 状态色 / 自定义主题"]
+  GUIDES --> G2["forms.md · 表单三层 / 规则 / 异步校验 / 自定义控件接入"]
+  GUIDES --> G3["overlays.md · 三类浮层 / 定位 / 关闭策略 / 动画"]
+  GUIDES --> G4["layout.md · 坐标 / zIndex 与创建顺序 / 簇+货架 / 裁剪"]
+  GUIDES --> G5["testing.md · 单测套路 / 八套浏览器 QA"]
+  GUIDES --> G6["migration.md · UI* → ICE* / token 主题 / API 变更"]
+  GUIDES --> G7["custom-components.md · 三档写法 / 接入 / 注册 / 踩坑"]
+  GUIDES --> G8["examples.md · 示例页分别演示什么 / 做新场景清单"]
 ```
 
 标了「生成」的文件由 `npm run docs:api` 从 `src/**` 的 JSDoc 与类型定义生成
@@ -52,7 +51,7 @@ docs/
 npm run docs:api     # 重新生成 components.md 与 api/*.md
 ```
 
-## 四个最容易踩的坑（先看，能省半天）
+## 三、四个最容易踩的坑（先看，能省半天）
 
 1. **创建顺序就是 zIndex**：先建容器再建子组件；不得不先建子组件时，把子树整体抬到容器之上。
 2. **纯布局节点要 `interactive: false`**：内部的展示节点会抢走点击（按钮点不动、色块要点两次），

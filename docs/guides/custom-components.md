@@ -10,6 +10,17 @@
 
 下面重点讲第二档 —— 也是「接入 ICE 体系」需要知道的全部约定。
 
+写自己的组件总体心智模型：
+
+```mermaid
+flowchart TD
+    %% 写自己的组件：继承 ICEWidget 并接入四大体系
+    W["继承 ICEWidget"] --> F["表单取值<br/>getFormValue / setFormValue"]
+    W --> O["浮层<br/>getICEOverlayManager"]
+    W --> T["主题 token<br/>iceUIManager.getTheme"]
+    W --> R["焦点环<br/>focusRing: keyboard/always/never"]
+```
+
 ---
 
 ## 一、完整示例：`ICEMetric`
@@ -117,6 +128,21 @@ private __onKeyDown(evt: any): void {
 > 悬停要先在应用里 `new ICEHoverManager(ice).start()`；焦点要 `getICEFocusManager(ice).start()`。
 > 读取 `hoverchange` 事件时用 `readHovered(evt)` —— 引擎把载荷放在 `event.param`，直接读 `evt.hovered` 会永远拿到
 > undefined（**hover 会静默失效**，这是本库踩过的坑）。
+
+四类交互管理器与引擎 evtBus 的关系：
+
+```mermaid
+flowchart LR
+    %% 组件通过四个管理器接入交互体系
+    C["组件<br/>如 ICEMetric"] --> M1["ICEOverlayManager<br/>浮层"]
+    C --> M2["ICEFocusManager<br/>焦点"]
+    C --> M3["ICEHoverManager<br/>悬停"]
+    C --> M4["ICEMessage / ICENotification<br/>消息"]
+    M1 --> Bus["引擎 evtBus"]
+    M2 --> Bus
+    M3 --> Bus
+    M4 --> Bus
+```
 
 ## 五、接进表单
 

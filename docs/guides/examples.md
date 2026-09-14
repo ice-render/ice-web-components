@@ -21,11 +21,28 @@ npx serve .
 | [`algorithm-sandbox.html`](../../examples/algorithm-sandbox.html) | 算法沙盒（排序 + 寻路可视化） | `ICETracePlayerModel` 回放 + `ICESortModel` / `ICEMazeModel` 产帧，画面是 ICETileMap |
 | [`dos-terminal.html`](../../examples/dos-terminal.html) | ICE-DOS 终端（能敲命令） | `ICEDosModel`（虚拟文件系统 + 命令解释器）+ `ICEScrollPane` 输出区 |
 
+> **demo 套件总览**：九套示例页按场景类别分组的导航图。
+
+```mermaid
+flowchart LR
+    root["示例套件总览"]
+    g["组件总览<br/>gallery.html"]
+    a["后台管理<br/>admin.html"]
+    w["客服工作台<br/>workbench.html"]
+    c["自定义组件<br/>custom-component.html"]
+    x["XP 桌面<br/>windows-xp.html"]
+    r["掌机 Arcade<br/>arcade.html"]
+    p["像素画板<br/>pixel-editor.html"]
+    s["算法沙盒<br/>algorithm-sandbox.html"]
+    d["DOS 终端<br/>dos-terminal.html"]
+    root --> g & a & w & c & x & r & p & s & d
+```
+
 ![组件总览](../images/gallery.png)
 
 ---
 
-## `gallery.html`：组件总览
+## 一、`gallery.html`：组件总览
 
 一页把库里能独立展示的组件都摆出来，用来快速“看长相、点交互”。
 
@@ -65,7 +82,7 @@ npx serve .
 > 渲染路径（表头与表体各一个 `ICEScrollPane` + 冻结层），**旧的简单路径原样保留**，
 > 所以现有几十处小表用法一点没变。
 
-## `admin.html`：后台管理（6 页）
+## 二、`admin.html`：后台管理（6 页）
 
 一个虚构的「ICE Shop」后台：**仪表盘 / 订单管理 / 履约中心 / 商品管理 / 客户管理 / 设置**。
 它不是“控件陈列”，而是把组件放进真实业务流里：
@@ -89,7 +106,7 @@ npx serve .
 |---|---|
 | ![订单](../images/admin-orders.png) | ![履约](../images/admin-fulfillment.png) |
 
-## `workbench.html`：客服工单工作台
+## 三、`workbench.html`：客服工单工作台
 
 **刻意做成“非后台列表”**的第二种场景：三栏、高频、以会话为中心。
 
@@ -104,13 +121,13 @@ npx serve .
 
 ![客服工作台](../images/workbench.png)
 
-## `custom-component.html`：写自己的组件
+## 四、`custom-component.html`：写自己的组件
 
 一个手写的 `ICEMetric` 指标卡（点击 +1、聚焦后 ↑/↓ 调值、能进 `ICEForm` 校验），
 把「接入 ICE 体系」的每个接入点都标了序号。完整讲解见
 [写一个自己的组件](./custom-components.md)。
 
-## `windows-xp.html`：全屏 Windows XP 桌面
+## 五、`windows-xp.html`：全屏 Windows XP 桌面
 
 一个纯 canvas 的 XP 桌面：壁纸、桌面图标、任务栏、开始菜单、可拖动/最小化/最大化/关闭的窗口，
 外加七个能点的小程序 —— 全部用这套组件拼出来（壁纸和「画图」的笔画用的是引擎原语）。
@@ -119,11 +136,23 @@ npx serve .
 
 这一页现在**是开机的**。会话是个显式状态机：
 
-```
-boot ──(任意键/点击 或 2.2s)──▶ login ──(点用户磁贴)──▶ password ──(回车/登录)──▶ welcome ──▶ desktop
-                                ▲                                                             │
-                                └──────────────────(注销)─────────────────────────────────────┘
-                                                desktop ──(关闭计算机)──▶ shutdown ──(重新开机)──▶ boot
+```mermaid
+%% XP 会话状态机：开机 → 登录 → 桌面，含注销 / 关机回路
+flowchart TD
+    boot["boot<br/>(开机画面)"]
+    login["login<br/>(欢迎界面)"]
+    password["password<br/>(密码页)"]
+    welcome["welcome<br/>(登录中)"]
+    desktop["desktop<br/>(桌面)"]
+    shutdown["shutdown<br/>(关机)"]
+
+    boot -->|"任意键/点击 或 2.2s"| login
+    login -->|"点用户磁贴"| password
+    password -->|"回车/登录"| welcome
+    welcome --> desktop
+    desktop -->|"注销"| login
+    desktop -->|"关闭计算机"| shutdown
+    shutdown -->|"重新开机"| boot
 ```
 
 * **开机画面**：黑底 + 自绘的四色小旗 + `Windows xp` 字标 + 一截来回跑的进度条
@@ -290,7 +319,7 @@ setInterval(() => model.tick(), 1000);      // 计时（只有 playing 会累加
 
 ---
 
-## `arcade.html`：ICE Arcade（小游戏合集，四块卡带）
+## 六、`arcade.html`：ICE Arcade（小游戏合集，四块卡带）
 
 同样是「把组件当积木」，但换了个方向：做的不是业务页面，而是一台**掌机**。
 机壳、屏幕框、HUD 卡片（`ICEPanel`）/数值（`ICELabel`）/进度（`ICEProgressBar`）/按钮
@@ -528,7 +557,7 @@ model.pause(); model.resume();         // 与其它三块卡带共用同一套�
 
 ---
 
-## `pixel-editor.html`：ICE Pixel Studio（像素画板）
+## 七、`pixel-editor.html`：ICE Pixel Studio（像素画板）
 
 这个示例反过来用：前几个页面是「把业务画出来」，它是一台**真的编辑器** ——
 画布、工具列、色板、状态栏全是组件，只有画布里的像素是自绘的（一个 `ICETileMap` 节点）。
@@ -573,7 +602,7 @@ model.toRGBA(16);                        // 直接喂 ImageData（PNG 导出）
 
 ---
 
-## `algorithm-sandbox.html`：算法沙盒（排序 + 寻路）
+## 八、`algorithm-sandbox.html`：算法沙盒（排序 + 寻路）
 
 同样是「模型算、组件画」，但这次算的是**算法的过程**：先把整段过程录成一串帧，
 再按时间回放。播放 / 暂停 / 单步 / 倒带 / 变速这套逻辑跟具体算法无关，所以单独抽成了一个模型。
@@ -612,7 +641,7 @@ maze.solve('astar');                    // 一帧 = 网格快照 + 当前格 + �
 
 ---
 
-## `dos-terminal.html`：ICE-DOS 终端
+## 九、`dos-terminal.html`：ICE-DOS 终端
 
 一个真能敲的 DOS 终端：虚拟文件系统 + 16 条命令，逻辑全在 `ICEDosModel` 里（不碰 DOM）。
 
@@ -640,7 +669,7 @@ dos.historyPrev();               // ↑ 历史
 
 ---
 
-## 照着做一个新场景的清单
+## 十、照着做一个新场景的清单
 
 1. **先定场景，再选组件**：把业务动作列成表（谁在什么界面做什么），再往里填组件 ——
    `admin.html` 的六个页面就是这么拆出来的；

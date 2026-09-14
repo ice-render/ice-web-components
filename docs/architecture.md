@@ -14,29 +14,30 @@
 
 ## 一、分层
 
-```
-┌──────────────────────────── 应用 / 示例页 ────────────────────────────┐
-│  examples/admin.html   examples/gallery.html                          │
-└───────────────────────────────┬───────────────────────────────────────┘
-                                │ new ICEPanel / ICEButton / ICETable …
-┌───────────────────────────────▼───────────────────────────────────────┐
-│                        ice-web-components                            │
-│  components/  60+ 个 ICE* 组件                                        │
-│  core/        ICEWidget ICEContainer ICEScrollPane                    │
-│               ICEOverlayManager ICEFocusManager ICEHoverManager       │
-│               ICEMessageManager ICEManager                            │
-│  model/       ICEFormModel ICEButtonModel ICESelectionModel …         │
-│  theme/       ICE_LIGHT_THEME / ICE_DARK_THEME（Bootstrap 5 token）    │
-│  util/        ICEStyle（文本/状态色） ICEAnimation（补间） …            │
-└───────────────────────────────┬───────────────────────────────────────┘
-                                │ 只依赖公开 API
-┌───────────────────────────────▼───────────────────────────────────────┐
-│                           ice-render（引擎）                           │
-│  ICE / ICEGroup / ICERect / ICECircle / ICEPath / ICEText / ICEImage   │
-│  CanvasRenderer（脏矩形 + 离屏缓存） ObjectCache  ImageCache           │
-│  ICELayoutManager / ICEFlowLayout / ICEBoxLayout                       │
-│  EventBus / DOMEventDispatcher（指针·键盘·滚轮归一化）                  │
-└───────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+  subgraph APP["应用 / 示例页"]
+    A1["examples/admin.html"]
+    A2["examples/gallery.html"]
+  end
+  subgraph LIB["ice-web-components"]
+    direction TB
+    L1["components/ · 60+ 个 ICE* 组件"]
+    L2["core/ · ICEWidget · ICEContainer · ICEScrollPane"]
+    L3["四个管理器 · Overlay / Focus / Hover / Message"]
+    L4["model/ · ICEFormModel · ICEButtonModel …"]
+    L5["theme/ · ICE_LIGHT_THEME / ICE_DARK_THEME"]
+    L6["util/ · ICEStyle · ICEAnimation …"]
+  end
+  subgraph ENGINE["ice-render（引擎）"]
+    direction TB
+    E1["ICE / ICEGroup / ICERect / ICECircle / ICEPath / ICEText / ICEImage"]
+    E2["CanvasRenderer（脏矩形 + 离屏缓存）ObjectCache / ImageCache"]
+    E3["ICELayoutManager / ICEFlowLayout / ICEBoxLayout"]
+    E4["EventBus / DOMEventDispatcher（指针·键盘·滚轮归一化）"]
+  end
+  APP -->|"new ICEPanel / ICEButton / ICETable …"| LIB
+  LIB -->|"只依赖公开 API"| ENGINE
 ```
 
 两条硬边界：
@@ -85,6 +86,21 @@ protected __applyValidateState() // …
 
 引擎的事件链是：`DOM 事件 → normalize → hitTest → 目标组件 trigger → evtBus 广播`。
 
+```mermaid
+sequenceDiagram
+  participant DOM as DOM 事件
+  participant Norm as DOMEventDispatcher（归一化）
+  participant HT as hitTest（命中检测）
+  participant C as 目标组件
+  participant Bus as evtBus（广播）
+  DOM->>Norm: pointerdown / keydown / wheel
+  Norm->>HT: 归一化后的坐标 + 事件类型
+  HT->>C: 选“可交互且可见”的最深组件
+  C->>C: trigger(name, evt)
+  C->>Bus: 广播同名事件
+  Bus-->>C: 订阅者（管理器 / 上层）收到
+```
+
 * **点谁给谁**：命中检测只挑“可交互且可见”的最深组件；这带来两条组件库规范：
   * UI 组件内部的**纯展示节点一律 `interactive: false`**（比如按钮里的文字、色块的标签），
     否则它们会抢走点击；
@@ -112,6 +128,20 @@ Select / DatePicker / TimePicker / Cascader / TreeSelect / AutoComplete）都走
 * **键盘接管**：`keyboardCaptured` 让 `ICEFocusManager` 把 Enter/Space 让给浮层（比如下拉里的 Enter 选中）。
 * **进/出场动画**：`enterAnimation: 'fade' | 'scale'`、`exitAnimation: 'fade'`。
 
+定位的兜底逻辑用一张图更清楚：
+
+```mermaid
+flowchart TD
+  Start["按 12 种 placement 算出期望位置 + 偏移"]
+  Main["主轴方向放得下？"]
+  Start --> Main
+  Main -->|否| Flip["翻到对侧 placement"]
+  Main -->|是| Cross["交叉轴：允许先夹取"]
+  Flip --> Cross
+  Cross --> Clamp["整体夹进可见区"]
+  Clamp --> End["浮层最终落位"]
+```
+
 有一个反复踩到的坑值得记住：**如果浮层里要点击行，别用 overlay 的 `closeOnOutsideClick`** ——
 它按盒子判定，可能在 `click` 派发之前就把浮层关掉。这类组件的做法是
 `closeOnOutsideClick: false` + 自己监听 `mousedown` 判点外（`UIDatePicker`/`UITimePicker`/`UICascader`/`UITreeSelect`/`UIAutoComplete` 都是这么写的）。
@@ -119,6 +149,19 @@ Select / DatePicker / TimePicker / Cascader / TreeSelect / AutoComplete）都走
 ## 六、焦点与键盘
 
 `ICEFocusManager` 负责四件事：
+
+```mermaid
+flowchart TD
+  FM["ICEFocusManager"]
+  TAB["Tab / Shift+Tab 轮转<br/>收集 isFocusable() 组件，按树序循环"]
+  ACT["激活<br/>Enter / Space → activate()<br/>（控件可覆盖成切换 / 打开）"]
+  RING["焦点环<br/>画在工具层，遵循 :focus-visible<br/>仅键盘聚焦才画"]
+  TRAP["焦点陷阱<br/>setFocusScope() 把 Tab 限制在对话框内<br/>关闭后归还焦点"]
+  FM --> TAB
+  FM --> ACT
+  FM --> RING
+  FM --> TRAP
+```
 
 1. **Tab / Shift+Tab 轮转**：收集场景里所有 `isFocusable()` 的组件，按树序循环；
 2. **激活**：Enter / Space 调用组件的 `activate()`（控件可覆盖成切换/打开）；
@@ -142,12 +185,13 @@ Select / DatePicker / TimePicker / Cascader / TreeSelect / AutoComplete）都走
 
 三层结构，各管一件事：
 
-```
-ICEFormModel   值 + 规则 + 错误 + 监听器（纯逻辑，不碰 canvas）
-   ▲
-ICEFormItem    标签 / 控件 / 错误文案的排版；把错误转成控件的 validateStatus
-   ▲
-ICEForm        addItem / validate / submit / reset，负责在控件与模型之间搬值
+```mermaid
+flowchart TD
+  F["ICEForm<br/>addItem / validate / submit / reset<br/>在控件与模型之间搬值"]
+  FI["ICEFormItem<br/>标签 / 控件 / 错误文案排版<br/>把错误转成控件的 validateStatus"]
+  FM["ICEFormModel<br/>值 + 规则 + 错误 + 监听器<br/>（纯逻辑，不碰 canvas）"]
+  F --> FI
+  FI --> FM
 ```
 
 * 控件只要实现 `getFormValue()` / `setFormValue()` 并发 `change` 事件，就能被表单直接使用；

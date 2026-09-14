@@ -1,8 +1,21 @@
 # 测试
 
-两层：**单元测试**跑在 node 里（快、无浏览器），**浏览器 QA** 跑真实页面（慢、但能查外观与交互）。
+两层：**单元测试**跑在 node 里（快、无浏览器），**浏览器 QA** 跑真实页面（慢、但能查外观与交互）。两层测试的职责划分与覆盖：
 
-## 单元测试（`npm test`）
+```mermaid
+flowchart TD
+    Unit["单元测试<br/>jest + 假 ICE + 真组件<br/>node 环境，无浏览器"] -->|支撑| QA["浏览器 QA<br/>真开 Chromium 点一遍<br/>八套场景"]
+    QA --> A1["admin · 54 项"]
+    QA --> A2["gallery · 49 项"]
+    QA --> A3["workbench · 15 项"]
+    QA --> A4["xp · 40 项"]
+    QA --> A5["arcade · 71 项"]
+    QA --> A6["pixel · 24 项"]
+    QA --> A7["algo · 14 项"]
+    QA --> A8["dos · 17 项"]
+```
+
+## 一、单元测试（`npm test`）
 
 `jest` + node 环境（没有 jsdom）。所以组件测试的套路是：**假 ICE + 真组件**。
 
@@ -48,7 +61,7 @@ const picker = new ICEDatePicker({ /* … */ });
 3. 有全局事件的（`mousedown`/`keydown`/`wheel`）一定要测**组件被移出场景后不崩**（守卫）；
 4. 有浮层的，断言「打开 / 关闭 / 关闭原因」。
 
-## 浏览器 QA（八套 / 284 项）
+## 二、浏览器 QA（八套 / 284 项）
 
 > 各套的断言数与合计**由脚本统计**：`npm run qa:counts`（写文档用 `npm run qa:counts:write`）。
 > `npm run verify` 末尾会跑 `--check`，手写的数字对不上会直接失败 —— 数字只有这一个来源。
@@ -130,7 +143,7 @@ PLAYWRIGHT_PATH=/path/to/playwright npm run qa:perf      # 性能门禁：节点
 * **等页面就绪用 `waitForFunction`**，别写死 `waitForTimeout(900)`：UMD 包冷启动解析耗时浮动，
   `qa:arcade` 等的是 `window.__arcade` 这个句柄出现。
 
-## 示例页截图
+## 三、示例页截图
 
 `docs/images/` 里的图由一次性脚本生成（Playwright 打开示例页 → 逐页截图 → 必要时缩放宽度）。
 要更新时照着 `scripts/qa-admin.mjs` 的导航/裁剪逻辑改一版即可；组件总览那张是

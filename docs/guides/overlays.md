@@ -2,7 +2,7 @@
 
 所有弹出类组件共用一套 `ICEOverlayManager`：内容挂在引擎的**工具层**（递归绘制、永远在业务层之上、不参与业务层命中）。
 
-## 三种用法
+## 一、三种用法
 
 ### 1. 命令式打开（弹窗 / 抽屉）
 
@@ -42,7 +42,17 @@ attachDropdown(ice, button, { items: [{ key: 'a', label: '选项 A' }], onSelect
 new ICEDatePicker({ width: 180, value: '2026-09-12', onChange: (v) => {} });
 ```
 
-## 定位
+三种接入方式及其典型组件：
+
+```mermaid
+flowchart LR
+    %% 三类接入方式及其典型组件
+    A["命令式打开<br/>openModal / openDrawer"] --> A1["ICEModal / ICEDrawer"]
+    B["挂到某组件<br/>attach*"] --> B1["Tooltip / Popover<br/>Popconfirm / Dropdown"]
+    C["组件自带浮层<br/>字段类"] --> C1["ICESelect / ICEAutoComplete / ICECascader<br/>ICETreeSelect / ICEDatePicker / ICETimePicker"]
+```
+
+## 二、定位
 
 12 种 placement（`top` / `topLeft` / `bottom` / `rightTop` …）：优先用请求的位置，
 放不下会自动翻到对侧，最后夹进可见世界矩形。判定分两条轴：
@@ -59,7 +69,20 @@ resolveICEOverlayPosition({ anchor, content: { width, height }, container, place
 // → { left, top, placement, flipped }
 ```
 
-## 关闭策略
+placement 空间不足时的兜底链：
+
+```mermaid
+flowchart TD
+    %% 12 种 placement 的定位判定
+    Req["请求 placement<br/>如 topLeft"] --> Main{"主轴放得下？"}
+    Main -->|是| Loc["按请求位置定位"]
+    Main -->|否| Flip["翻到对侧 placement"]
+    Flip --> Cross{"交叉轴放得下？"}
+    Cross -->|是| Loc
+    Cross -->|否| Clamp["夹进可见世界矩形"]
+```
+
+## 三、关闭策略
 
 | 选项 | 默认 | 说明 |
 |---|---|---|
@@ -74,7 +97,18 @@ resolveICEOverlayPosition({ anchor, content: { width, height }, container, place
 > 就把浮层关掉。这类组件的做法是 `closeOnOutsideClick: false` + 自己监听 `mousedown` 判点外
 > （`ICESelect` / `ICEDatePicker` / `ICETimePicker` / `ICECascader` / `ICETreeSelect` / `ICEAutoComplete` 都这么做）。
 
-## 动画
+四种关闭触发条件：
+
+```mermaid
+flowchart LR
+    %% 关闭策略的四个开关
+    Open["打开浮层"] --> C1["closeOnOutsideClick<br/>点浮层外关闭"]
+    Open --> C2["closeOnEsc<br/>按 Esc 关闭"]
+    Open --> C3["exclusive:true<br/>开新浮层关旧浮层"]
+    Open --> C4["blocking:true<br/>模态遮罩挡下层<br/>maskClosable 点遮罩关"]
+```
+
+## 四、动画
 
 ```ts
 overlay.open({
@@ -85,7 +119,7 @@ overlay.open({
 });
 ```
 
-## 自定义浮层内容
+## 五、自定义浮层内容
 
 `content` 除了字符串还能传**工厂函数**，在浮层打开时创建组件树 —— 这样内容的创建顺序晚于浮层面板，
 zIndex 天然在上层：
@@ -103,7 +137,7 @@ openModal(ice, {
 });
 ```
 
-## 消息与通知
+## 六、消息与通知
 
 ```ts
 import { ICEMessage, ICENotification } from 'ice-web-components';
@@ -113,7 +147,7 @@ ICEMessage.show(ice, '同步中…', { type: 'loading', duration: 0 });
 ICENotification.open(ice, { title: '导出完成', description: 'reports.csv 已生成' });
 ```
 
-## 测试
+## 七、测试
 
 浮层相关逻辑在 node 环境可测：现有的测试用「假 ICE + 真 `ICEOverlayManager`」验证位置、
 关闭原因（`outside` / `esc` / `mask` / `api`）、动画帧推进（注入 frame driver）。

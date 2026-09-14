@@ -15,6 +15,14 @@ import { ICEButton, ICELabel, ICEUIManager, iceUIManager } from 'ice-web-compone
 （`UI_LIGHT_THEME` → `ICE_LIGHT_THEME`、`getUIOverlayManager` → `getICEOverlayManager`）。
 文件也同名重命名（`src/components/UIButton.ts` → `ICEButton.ts`）。
 
+命名空间整体重命名趋势：
+
+```mermaid
+flowchart LR
+    %% 全局命名空间重命名 UI -> ICE
+    Old["旧命名空间 UI*<br/>UIButton / UILabel / UIManager<br/>UI_LIGHT_THEME / getUIOverlayManager"] --> New["新命名空间 ICE*<br/>ICEButton / ICELabel / ICEUIManager<br/>ICE_LIGHT_THEME / getICEOverlayManager"]
+```
+
 ## 2. 与引擎同名的两个类避开了
 
 引擎也有 `ICEComponent` / `ICEImage`，为避免“同名不同物”，本库改成：
