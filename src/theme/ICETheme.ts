@@ -105,6 +105,29 @@ export type ICEThemeTokens = {
     md: ICEShadowTokens;
     lg: ICEShadowTokens;
   };
+  /**
+   * 拟物窗口（`ICEWindow`）的默认外观。
+   *
+   * 以前这套配色**写死在组件里**（注释还写着"与组件库主题无关"），于是换主题时窗口是唯一不跟着变的东西。
+   * 现在归主题：默认取这里的值，`props.appearance` 仍然可以逐项覆盖。
+   * 怀旧主题（XP / arcade）在这里放它们自己的窗口外观，所以那些页面的观感不变。
+   */
+  window: {
+    /** 激活态标题栏渐变（两段色）。 */
+    titleActive: [ICEColor, ICEColor];
+    /** 非激活态标题栏渐变。 */
+    titleInactive: [ICEColor, ICEColor];
+    titleText: ICEColor;
+    titleTextInactive: ICEColor;
+    /** 客户端区域底色。 */
+    body: ICEColor;
+    /** 窗口外框。 */
+    border: ICEColor;
+    /** 标题栏上的按钮底（常态 / 悬停）与字形色。 */
+    captionFace: ICEColor;
+    captionFaceHover: ICEColor;
+    captionGlyph: ICEColor;
+  };
 };
 
 /**
@@ -121,6 +144,18 @@ const LIGHT_TEXT_TERTIARY = '#adb5bd';
 const LIGHT_TEXT_DISABLED = '#adb5bd';
 
 export const ICE_LIGHT_THEME: ICEThemeTokens = {
+  // 拟物窗口：浅色主题下用"白体 + 主色标题栏"，与卡片/面板同一套语义色
+  window: {
+    titleActive: ['#0d6efd', '#3d8bfd'],
+    titleInactive: ['#adb5bd', '#ced4da'],
+    titleText: '#ffffff',
+    titleTextInactive: '#f8f9fa',
+    body: '#ffffff',
+    border: '#0d6efd',
+    captionFace: 'rgba(255,255,255,0.45)',
+    captionFaceHover: 'rgba(255,255,255,0.85)',
+    captionGlyph: '#0d6efd',
+  },
   colors: {
     primary: '#0d6efd',
     primaryHover: '#0b5ed7',
@@ -223,6 +258,18 @@ const DARK_TEXT_DISABLED = '#6c757d';
 
 export const ICE_DARK_THEME: ICEThemeTokens = {
   ...ICE_LIGHT_THEME,
+  // 拟物窗口：深色主题下标题栏用暗蓝、窗体用 elevated 面，别再是亮黄的 XP 脸
+  window: {
+    titleActive: ['#0a58ca', '#3d8bfd'],
+    titleInactive: ['#343a40', '#495057'],
+    titleText: '#ffffff',
+    titleTextInactive: '#adb5bd',
+    body: '#343a40',
+    border: '#495057',
+    captionFace: 'rgba(255,255,255,0.18)',
+    captionFaceHover: 'rgba(255,255,255,0.32)',
+    captionGlyph: '#e9ecef',
+  },
   colors: {
     primary: '#0d6efd',
     primaryHover: '#3d8bfd',
@@ -275,6 +322,18 @@ export const ICE_DARK_THEME: ICEThemeTokens = {
  * - 阴影几乎不用（XP 是描边风格，不是投影风格）。
  */
 export const ICE_XP_THEME: ICEThemeTokens = {
+  // 怀旧主题的窗口外观 = 原来的 Windows XP Luna 配色（从组件里搬过来的，观感不变）
+  window: {
+    titleActive: ['#0058ee', '#3f8cf3'],
+    titleInactive: ['#7f9db9', '#a8c0dd'],
+    titleText: '#ffffff',
+    titleTextInactive: '#e9eef5',
+    body: '#ece9d8',
+    border: '#0054e3',
+    captionFace: 'rgba(255,255,255,0.45)',
+    captionFaceHover: 'rgba(255,255,255,0.85)',
+    captionGlyph: '#0a246a',
+  },
   colors: {
     primary: '#316ac5',
     primaryHover: '#4a86e8',
@@ -377,6 +436,18 @@ export const ICE_XP_THEME: ICEThemeTokens = {
  */
 export const ICE_HIGH_CONTRAST_THEME: ICEThemeTokens = {
   ...ICE_LIGHT_THEME,
+  // 高对比：窗体外黑内黑、标题栏亮黄，边框白（对比度优先）
+  window: {
+    titleActive: ['#000000', '#101010'],
+    titleInactive: ['#101010', '#181818'],
+    titleText: '#ffd54f',
+    titleTextInactive: '#ffffff',
+    body: '#101010',
+    border: '#ffffff',
+    captionFace: 'rgba(255,255,255,0.2)',
+    captionFaceHover: 'rgba(255,255,255,0.4)',
+    captionGlyph: '#ffd54f',
+  },
   colors: {
     primary: '#ffd54f',
     primaryHover: '#ffe082',

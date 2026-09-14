@@ -264,7 +264,7 @@ export class ICETree extends ICEWidget {
     if (!row || row.node.disabled) return;
     const theme = iceUIManager.getTheme();
     const indicator = new ICEWidget({ left: 0, top: 0, width: Number(this.content.state.width) || 0, height: 2, fill: true, stroke: false, display: false, interactive: false, style: { fillStyle: theme.colors.primary } });
-    const highlight = new ICEWidget({ left: 0, top: 0, width: Number(this.content.state.width) || 0, height: this.itemHeight, radius: 3, fill: true, stroke: false, display: false, interactive: false, style: { fillStyle: 'rgba(13,110,253,0.14)' } });
+    const highlight = new ICEWidget({ left: 0, top: 0, width: Number(this.content.state.width) || 0, height: this.itemHeight, radius: 3, fill: true, stroke: false, display: false, interactive: false, style: { fillStyle: iceUIManager.getTheme().colors.primaryBg } });
     this.content.addChild(highlight, false);
     this.content.addChild(indicator, false);
     this.dragState = { key: row.node.key, target: null, indicator, highlight };

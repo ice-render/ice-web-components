@@ -5,22 +5,6 @@
 
 所有组件都导出为 `ICE` 前缀的类，包内运行时导出与 `ice-render` 零重叠（有回归测试守着）。
 
-```mermaid
-%% API 文档地图：按功能分组的九个文档
-flowchart LR
-    root["API 文档地图"]
-    basic["基础组件<br/>basic.md"]
-    core["核心与布局<br/>core.md"]
-    datadisplay["数据展示<br/>data-display.md"]
-    dataentry["数据录入<br/>data-entry.md"]
-    datapopups["数据录入浮层<br/>data-entry-popups.md"]
-    feedback["反馈与状态<br/>feedback.md"]
-    helpers["工具函数<br/>helpers.md"]
-    models["模型<br/>models.md"]
-    nav["导航<br/>navigation.md"]
-    root --> basic & core & datadisplay & dataentry & datapopups & feedback & helpers & models & nav
-```
-
 - [基础组件](./basic.md) — `ICEWidget` `ICEContainer` `ICEPanel` `ICESpace` `ICEGrid` `ICEGridCol` `ICEButton` `ICELabel` `ICETypography` `ICEIcon` `ICESvgIcon` `ICEIconTile` `ICESeparator`
 - [数据录入](./data-entry.md) — `ICETextField` `ICETextArea` `ICEPasswordField` `ICEInputNumber` `ICECheckBox` `ICERadioButton` `ICERadioGroup` `ICECheckboxGroup` `ICESwitch` `ICESlider` `ICESegmented` `ICERate` `ICEUpload` `ICEFormItem` `ICEForm` `ICEFormList`
 - [数据录入（浮层类）](./data-entry-popups.md) — `ICESelect` `ICEAutoComplete` `ICECascader` `ICETreeSelect` `ICEDatePicker` `ICEDateRangePicker` `ICETimePicker` `ICEColorPicker` `ICETransfer`

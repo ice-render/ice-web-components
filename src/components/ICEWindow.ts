@@ -14,8 +14,9 @@ import { getICEWorldBox } from '../util/ICEWorldBox';
  * - **缩放**：右下角手柄（`resizable: false` 可关），受 `minWidth` / `minHeight` 限制；
  * - **内容**：`content` 或 `setContent()` 装进客户端区域，自动铺满。
  *
- * 外观默认走 Windows XP Luna 配色（可传 `appearance` 覆盖），与组件库主题无关 ——
- * 这类“拟物外壳”本来就要固定配色。
+ * 外观**默认取主题里的 `window` token**（`iceUIManager.setTheme()` 换主题时窗口跟着换），
+ * `props.appearance` 可以逐项覆盖。怀旧主题（XP / 街机）在 `window` 里放它们自己的窗口外观，
+ * 所以那些页面的观感不变 —— 但不再是"写死在组件里、主题改不动"。
  */
 export type ICEWindowAppearance = {
   /** 激活态标题栏渐变（两段色） */
@@ -26,6 +27,12 @@ export type ICEWindowAppearance = {
   titleTextInactive?: string;
   body?: string;
   border?: string;
+  /** 标题栏按钮底色（常态）。 */
+  captionFace?: string;
+  /** 标题栏按钮底色（悬停）。 */
+  captionFaceHover?: string;
+  /** 标题栏按钮字形色。 */
+  captionGlyph?: string;
 };
 
 export interface ICEWindowOptions {
@@ -77,9 +84,9 @@ class ICEWindowButton extends ICEWidget {
       radius: 3,
       fill: true,
       stroke: false,
-      style: { fillStyle: 'rgba(255,255,255,0.45)' },
+      style: { fillStyle: themeWindowAppearance().captionFace },
     });
-    this.baseColor = 'rgba(255,255,255,0.45)';
+    this.baseColor = themeWindowAppearance().captionFace;
     this.glyph = new ICELabel({
       interactive: false,
       left: 0,
@@ -89,7 +96,7 @@ class ICEWindowButton extends ICEWidget {
       text: props.text,
       align: 'center',
       verticalAlign: 'middle',
-      style: { fontSize: 11, fontWeight: theme.font.weightBold, fillStyle: '#0a246a' },
+      style: { fontSize: 11, fontWeight: theme.font.weightBold, fillStyle: themeWindowAppearance().captionGlyph },
     });
     this.addChild(this.glyph, false);
     this.on('click', props.onClick);
@@ -99,11 +106,20 @@ class ICEWindowButton extends ICEWidget {
     this.setState({
       style: {
         ...this.state.style,
-        fillStyle: this.hovered ? 'rgba(255,255,255,0.85)' : this.baseColor,
+        fillStyle: this.hovered ? themeWindowAppearance().captionFaceHover : this.baseColor,
       },
     });
     this.revalidate();
   }
+}
+
+/**
+ * 主题里取窗口外观（`ICEThemeTokens.window`），缺字段时退回下面这份兜底。
+ * 兜底值 = 迁移前的 XP Luna 配色，保证老代码在没主题的环境里观感不变。
+ */
+function themeWindowAppearance(): Required<ICEWindowAppearance> {
+  const fromTheme: any = (iceUIManager.getTheme() as any)?.window || {};
+  return { ...DEFAULT_APPEARANCE, ...fromTheme };
 }
 
 const DEFAULT_APPEARANCE: Required<ICEWindowAppearance> = {
@@ -113,6 +129,9 @@ const DEFAULT_APPEARANCE: Required<ICEWindowAppearance> = {
   titleTextInactive: '#e9eef5',
   body: '#ece9d8',
   border: '#0054e3',
+  captionFace: 'rgba(255,255,255,0.45)',
+  captionFaceHover: 'rgba(255,255,255,0.85)',
+  captionGlyph: '#0a246a',
 };
 
 const TITLE_BANDS = 10;
@@ -167,7 +186,7 @@ export class ICEWindow extends ICEWidget {
       height: props.height ?? 320,
     });
     this.options = props;
-    this.appearance = { ...DEFAULT_APPEARANCE, ...(props.appearance || {}) };
+    this.appearance = { ...themeWindowAppearance(), ...(props.appearance || {}) };
     this.titleBarHeight = titleBarHeight;
     this.active = props.active !== false;
     this.bounds = props.bounds || null;
@@ -206,7 +225,7 @@ export class ICEWindow extends ICEWidget {
         height: titleBarHeight / TITLE_BANDS + 1,
         fill: true,
         stroke: false,
-        style: { fillStyle: '#0058ee' },
+        style: { fillStyle: this.appearance.titleActive[0] },
       });
       this.titleBar.addChild(band, false);
       this.titleBands.push(band);
@@ -226,7 +245,7 @@ export class ICEWindow extends ICEWidget {
         text: props.icon ?? '',
         align: 'center',
         verticalAlign: 'middle',
-        style: { fontSize: 13, fillStyle: '#ffffff' },
+        style: { fontSize: 13, fillStyle: this.appearance.titleText },
       });
     }
     this.titleLabel = new ICELabel({
@@ -290,7 +309,7 @@ export class ICEWindow extends ICEWidget {
       fill: true,
       stroke: false,
       clipChildren: true,
-      style: { fillStyle: '#ffffff' },
+      style: { fillStyle: this.appearance.body },
     });
     this.addChild(this.client, false);
 
