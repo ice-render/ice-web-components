@@ -214,3 +214,7 @@
 | `getActiveIndex()` | `number` |  |
 | `setActiveIndex(index: number)` | `this` |  |
 | `getTabs()` | `string[]` |  |
+| `getType()` | `'line' \| 'card'` |  |
+| `isClosable()` | `boolean` |  |
+| `getExtra()` | `any[]` |  |
+| `closeTab(index: number)` | `this` | 关掉某个页签：移除按钮与标签、通知 `onClose`、把激活下标夹回合法范围。 |
