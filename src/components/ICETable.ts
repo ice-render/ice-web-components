@@ -34,6 +34,11 @@ export type ICETableColumn = {
   editable?: boolean;
   /** 编辑提交前的校验：返回字符串 = 不通过（就是错误文案），返回空 = 通过 */
   validate?: (value: string, row: ICETableRow) => string | null | undefined;
+  /**
+   * 自定义编辑器：返回一个组件替代默认文本输入框（下拉、日历、数字框…）。
+   * 返回 null 表示「这一格用默认输入框」。
+   */
+  editor?: (value: string, row: ICETableRow, meta: { cellWidth: number; cellHeight: number }) => any;
   renderCell?: (
     value: string,
     row: ICETableRow,
@@ -215,6 +220,10 @@ export class ICETable extends ICEWidget {
   /** 表头「已选 N 行」提示 */
   private selectionSummary = false;
   private selectionHintNode: any = null;
+  /** 树形筛选口径：`flat` = 逐条筛（默认）；`ancestors` = 保留命中行的祖先链 */
+  private treeFilterMode: 'flat' | 'ancestors' = 'flat';
+  /** 表头全选范围：`visible` = 眼前这些行（默认）；`all` = 整棵树（含折叠的后代） */
+  private selectAllScope: 'visible' | 'all' = 'visible';
   private summaryNode: any = null;
   private summaryTexts: Record<string, string> = {};
   /** 单元格编辑态：改哪一行哪一列 + 盖在格子上的输入框 */
@@ -314,6 +323,8 @@ export class ICETable extends ICEWidget {
     this.summaryRowsMode = props.summaryRowsMode === 'leaves' ? 'leaves' : 'all';
     this.summaryScope = props.summaryScope === 'page' ? 'page' : 'all';
     this.selectionSummary = props.selectionSummary === true;
+    this.treeFilterMode = props.treeFilterMode === 'ancestors' ? 'ancestors' : 'flat';
+    this.selectAllScope = props.selectAllScope === 'all' ? 'all' : 'visible';
     this.rowKeyProp = typeof props.rowKey === 'function' || typeof props.rowKey === 'string' ? props.rowKey : null;
     if (props.expandable && typeof props.expandable.render === 'function') {
       this.expandable = props.expandable;
@@ -689,13 +700,28 @@ export class ICETable extends ICEWidget {
     }
     const columnWidth = widths[this.columns.findIndex((item) => item.key === key)] || 120;
     const original = this.__format(this.data[rowIndex][key]);
-    const node = new ICETextField({
-      left,
-      top: this.headerHeight + rowIndex * this.rowHeight + 4,
-      width: Math.max(60, columnWidth - 8),
-      height: this.rowHeight - 8,
-      value: original,
-    });
+    // 列上给了 editor 就用它（下拉 / 日历 / 数字框…）；返回 null 退回默认文本输入框
+    const custom = typeof column.editor === 'function'
+      ? column.editor(original, this.data[rowIndex], { cellWidth: columnWidth, cellHeight: this.rowHeight })
+      : null;
+    const node =
+      custom ||
+      new ICETextField({
+        left,
+        top: this.headerHeight + rowIndex * this.rowHeight + 4,
+        width: Math.max(60, columnWidth - 8),
+        height: this.rowHeight - 8,
+        value: original,
+      });
+    if (custom) {
+      // 位置与尺寸仍由表格按格子算（编辑器自己只关心内容）
+      custom.setState({
+        left,
+        top: this.headerHeight + rowIndex * this.rowHeight + 4,
+        width: Math.max(60, columnWidth - 8),
+        height: this.rowHeight - 8,
+      });
+    }
     node.on('keydown', (evt: any) => {
       const raw = evt && (evt.originalEvent || evt);
       const pressed = raw && (raw.key || raw.code);
@@ -719,7 +745,9 @@ export class ICETable extends ICEWidget {
     if (!state) {
       return false;
     }
-    const value = String(state.node.getValue() ?? '');
+    // 自定义编辑器优先读 getFormValue（下拉的值就在那儿），没有就退回 getValue
+    const raw = typeof state.node.getFormValue === 'function' ? state.node.getFormValue() : state.node.getValue();
+    const value = String(raw ?? '');
     // 提交前校验：不通过就留在编辑态、标红、给文案，**不写回也不回调**
     const column = this.columns.find((item) => item.key === state.key);
     if (column && typeof column.validate === 'function') {
@@ -956,14 +984,30 @@ export class ICETable extends ICEWidget {
   private __computeFiltered(): ICETableRow[] {
     // 树形数据：先按「展开到哪一层」拍平，再筛 —— 筛掉父行时它的子行也不该冒出来
     this.__indexTree();
-    const flat = this.__flattenTree(this.sourceData);
+    const flat = this.__flattenTree(this.sourceData, 0, null, [], this.treeFilterMode === 'ancestors' && this.__hasActiveFilters());
     const keys = Object.keys(this.filters).filter((key) => (this.filters[key] || []).length > 0);
     if (!keys.length) {
       return flat;
     }
-    return flat.filter((row) =>
-      keys.every((key) => this.filters[key].indexOf(String(row[key])) !== -1),
-    );
+    const matches = (row: ICETableRow) => keys.every((key) => this.filters[key].indexOf(String(row[key])) !== -1);
+    if (this.treeFilterMode !== 'ancestors' || !this.hasTreeData) {
+      return flat.filter(matches);
+    }
+    // ancestors 口径：命中行留下，**祖先链也留下**（否则用户不知道这行在哪一支下面）
+    return flat.filter((row) => matches(row) || this.__hasMatchingDescendant(row, matches));
+  }
+
+  private __hasActiveFilters(): boolean {
+    return Object.keys(this.filters).some((key) => (this.filters[key] || []).length > 0);
+  }
+
+  /** 这一行的后代里有没有命中的（ancestors 口径用它决定父行要不要露出来）。 */
+  private __hasMatchingDescendant(row: ICETableRow, matches: (row: ICETableRow) => boolean): boolean {
+    const children = row[this.treeChildrenKey];
+    if (!Array.isArray(children) || !children.length) {
+      return false;
+    }
+    return (children as ICETableRow[]).some((child) => matches(child) || this.__hasMatchingDescendant(child, matches));
   }
 
   /**
@@ -971,15 +1015,22 @@ export class ICETable extends ICEWidget {
    *
    * 没有子行的普通表格走这一趟也不亏：返回值就是原数组的浅拷贝。
    */
-  private __flattenTree(rows: ICETableRow[], depth = 0, parentKey: string | null = null, out: ICETableRow[] = []): ICETableRow[] {
+  private __flattenTree(
+    rows: ICETableRow[],
+    depth = 0,
+    parentKey: string | null = null,
+    out: ICETableRow[] = [],
+    forceExpand = false,
+  ): ICETableRow[] {
     rows.forEach((row, index) => {
       const key = this.__keyOf(row, index);
       this.rowDepths.set(key, depth);
       this.rowParents.set(key, parentKey);
       out.push(row);
       const children = row[this.treeChildrenKey];
-      if (Array.isArray(children) && children.length && this.treeExpanded.has(key)) {
-        this.__flattenTree(children as ICETableRow[], depth + 1, key, out);
+      // forceExpand：筛选的 ancestors 口径下，命中行藏在折叠的父行里时也要把路径摊出来
+      if (Array.isArray(children) && children.length && (this.treeExpanded.has(key) || forceExpand)) {
+        this.__flattenTree(children as ICETableRow[], depth + 1, key, out, forceExpand);
       }
     });
     return out;
@@ -1322,6 +1373,24 @@ export class ICETable extends ICEWidget {
 
   /** 选中的行（多选按行序返回）。 */
   public getSelectedRows(): ICETableRow[] {
+    if (this.hasTreeData) {
+      // 树形：按树的前序收集选中的行 —— 含级联选中的后代与「别的页选中的行」
+      const out: ICETableRow[] = [];
+      const visit = (rows: ICETableRow[]) => {
+        rows.forEach((row, index) => {
+          const key = this.__keyOf(row, index);
+          if (this.treeSelection.has(key)) {
+            out.push(row);
+          }
+          const children = row[this.treeChildrenKey];
+          if (Array.isArray(children)) {
+            visit(children as ICETableRow[]);
+          }
+        });
+      };
+      visit(this.sourceData);
+      return out;
+    }
     return this.getSelectedIndexes()
       .map((index) => this.data[index])
       .filter(Boolean);
@@ -1573,8 +1642,23 @@ export class ICETable extends ICEWidget {
       selectAllBox.on('change', () => {
         if (selectAllBox.isSelected()) {
           if (this.hasTreeData) {
-            // 树形：全选 = 所有可见行的 key 都选上（父行的级联会自然带上未展开的后代）
-            this.data.forEach((row, index) => this.setTreeRowSelected(this.__keyOf(row, index), true));
+            // 树形：默认只选眼前这些行；`selectAllScope: 'all'` 时把整棵树的 key 都选上（含折叠的后代）
+            if (this.selectAllScope === 'all') {
+              const visit = (rows: ICETableRow[]) => {
+                rows.forEach((row, index) => {
+                  this.treeSelection.add(this.__keyOf(row, index));
+                  const children = row[this.treeChildrenKey];
+                  if (Array.isArray(children)) {
+                    visit(children as ICETableRow[]);
+                  }
+                });
+              };
+              visit(this.sourceData);
+            } else {
+              // 「全选眼前这些行」不走级联：级联是「用户主动勾某一行」时的行为，
+              // 全选要的就是眼前这些（折叠起来的后代等展开或切到 'all' 口径再说）
+              this.data.forEach((row, index) => this.treeSelection.add(this.__keyOf(row, index)));
+            }
             this.__syncTreeCheckboxes();
           } else {
             this.selectAll();
