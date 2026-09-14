@@ -138,6 +138,18 @@ export class ICENativeInput {
     return this;
   }
 
+  /**
+   * 改光标颜色（密码框在明文 / 掩码之间切换时用）。
+   *
+   * 掩码显示下 canvas 画的是 `•`、与输入框里的真实字符宽度不同，原生光标会漂移，
+   * 这时宿主会把它设成 `transparent`，改由 canvas 画光标（见 `ICETextField`）。
+   */
+  public setCaretColor(color: string): this {
+    this.options.caretColor = color;
+    if (this.element && this.element.style) this.element.style.caretColor = color;
+    return this;
+  }
+
   // ---------------------------------------------------------------- 内部
 
   private __normalize(value: string): string {

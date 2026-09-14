@@ -47,6 +47,7 @@ attachTooltip(ice: any, target: any, options: ICETooltipOptions): ICETooltip
 | `unmount()` | `void` | 卸载并解绑；重复调用安全。 |
 | `setValue(value: string)` | `this` | 外部改值（例如 setValue）：同步到元素并把光标移到末尾。 |
 | `focus()` | `this` |  |
+| `setCaretColor(color: string)` | `this` | 改光标颜色（密码框在明文 / 掩码之间切换时用）。 |
 
 ### `computeVirtualRange` — 函数
 

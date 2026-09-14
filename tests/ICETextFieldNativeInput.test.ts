@@ -194,3 +194,69 @@ describe('ICETextArea / ICEPasswordField：同样受益', () => {
     expect(field.getFieldText()).toBe('••••••');
   });
 });
+
+/**
+ * 光标错位回归（smart-water 登录页实测：原生光标比画面文字**偏左 12px** = `theme.spacing.sm`）。
+ *
+ * 三层原因：
+ * ① 替身 box 取的是**组件整盒**，而 canvas 把文字内缩了 `textNode.left`（默认 12）再画 → 光标整体偏左；
+ * ② 挂载期间 canvas 还画了一个 `|` 假光标 → 两个光标、相隔 12px；
+ * ③ 掩码（密码框）另有第三层：canvas 画 `•`、与输入框里的真实字符宽度不同 → 原生光标还会随长度漂移。
+ */
+describe('ICETextField：光标对齐（替身 box = 文本盒 + 只留一个光标）', () => {
+  it('替身 box 对齐到文本盒（含左内缩），不是组件整盒', () => {
+    const env = makeEnv();
+    const field: any = attach(new ICETextField({ width: 200 }), env);
+    field.getMinBoundingBox = () => ({ tl: [40, 8], br: [240, 40] });
+    field.setFocused(true);
+    const element = env.created[0];
+    const textLeft = Number(field.textNode.state.left);
+    const textWidth = Number(field.textNode.state.width);
+    const px = (v: any) => Number(String(v).replace('px', ''));
+
+    expect(textLeft).toBeGreaterThan(0); // canvas 文字有左内缩（theme.spacing.sm）
+    expect(px(element.style.left)).toBe(40 + textLeft); // 替身跟着内缩 —— 老实现这里是 40
+    expect(px(element.style.top)).toBe(8);
+    expect(px(element.style.width)).toBe(textWidth); // 宽度 = 文本盒宽，不是组件整宽
+    expect(px(element.style.width)).toBeLessThan(200);
+  });
+
+  it('非掩码：挂了替身就不再画 canvas 的 `|`（避免两个光标）', () => {
+    const env = makeEnv();
+    const field = attach(new ICETextField({ width: 200, value: 'abc' }), env);
+    field.setFocused(true);
+    expect(field.getFieldText()).toBe('abc'); // 不再有 `|`
+  });
+
+  it('没有替身（Node / 小程序）时仍画 canvas 的 `|`（老兜底不丢）', () => {
+    const field = new ICETextField({ width: 200, value: 'abc' });
+    const ice: any = { dirty: false, root: {}, canvasEl: null, evtBus: { on() {}, off() {} } };
+    attach(field, { ice } as any);
+    field.setFocused(true);
+    expect(field.getFieldText()).toBe('abc|');
+  });
+
+  it('掩码（密码框）：原生光标设成 transparent，光标交给 canvas 的 `|`', () => {
+    const env = makeEnv();
+    const field = attach(new ICEPasswordField({ width: 200 }), env);
+    field.setFocused(true);
+    const element = env.created[0];
+    element.value = 'secret';
+    element.dispatch('input');
+    expect(element.style.caretColor).toBe('transparent');
+    expect(field.getFieldText()).toBe('••••••|');
+  });
+
+  it('密码框聚焦期间切明文：原生光标恢复、canvas `|` 收起（不会两个都没有）', () => {
+    const env = makeEnv();
+    const field: any = attach(new ICEPasswordField({ width: 200 }), env);
+    field.setFocused(true);
+    env.created[0].value = 'secret';
+    env.created[0].dispatch('input');
+    expect(env.created[0].style.caretColor).toBe('transparent');
+
+    field.setVisible(true); // 切明文
+    expect(env.created[0].style.caretColor).not.toBe('transparent'); // 原生光标恢复
+    expect(field.getFieldText()).toBe('secret'); // 明文、无 `|`（用原生光标）
+  });
+});

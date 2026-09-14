@@ -255,17 +255,25 @@ export class ICETextField extends ICEWidget {
       this.ice && this.ice.canvasEl && typeof this.ice.canvasEl.getBoundingClientRect === 'function'
         ? this.ice.canvasEl.getBoundingClientRect()
         : { left: 0, top: 0 };
+    // 替身要盖在**文本盒**上，而不是组件整盒：canvas 把文字内缩了 textNode.left（默认 spacing.sm = 12）、
+    // 并按 textNode.width 排布。box 不跟着缩，原生光标就会整体偏左 12px、与画面文字错位。
+    const textLeft = Number(this.textNode && this.textNode.state ? this.textNode.state.left : 0) || 0;
+    const rawTextWidth = Number(this.textNode && this.textNode.state ? this.textNode.state.width : 0) || 0;
+    const textWidth = rawTextWidth > 0 ? rawTextWidth : Number(this.state.width) || 0;
+    // 掩码显示（密码框）：canvas 画的是 •，与输入框里的真实字符宽度不同，原生光标会随长度漂移
+    const masked = this.__isMaskedDisplay();
     this.nativeInput = new ICENativeInput({
       doc,
       box: {
-        left: (Number(canvasRect.left) || 0) + left,
+        left: (Number(canvasRect.left) || 0) + left + textLeft,
         top: (Number(canvasRect.top) || 0) + top,
-        width: Number(this.state.width) || 0,
+        width: textWidth,
         height: Number(this.state.height) || 0,
       },
       value: this.value,
       font: `${theme.font.weightNormal} ${theme.font.size}px ${theme.font.family}`,
-      caretColor: theme.colors.text,
+      // 掩码时把原生光标藏掉（它按真实字符定位、会和 • 的落点错开），改由 canvas 的 `|` 当光标
+      caretColor: masked ? 'transparent' : theme.colors.text,
       maxLength: this.maxLength,
       multiline: this.allowNewline,
       onInput: (value) => this.__applyNativeValue(value),
@@ -334,6 +342,16 @@ export class ICETextField extends ICEWidget {
    */
   protected formatDisplayValue(value: string): string {
     return value;
+  }
+
+  /**
+   * 显示文本是否与真实值不同（即被掩码，如密码框的 `•`）。
+   *
+   * 掩码下 canvas 画的字符与输入框里的真实字符**宽度不同**，原生光标会随长度漂移，
+   * 所以这时藏掉原生光标、改用 canvas 画的 `|`（见 `__mountNativeInput` / `__sync`）。
+   */
+  private __isMaskedDisplay(): boolean {
+    return this.formatDisplayValue(this.value) !== this.value;
   }
 
   private __normalize(value: string): string {
@@ -456,7 +474,14 @@ export class ICETextField extends ICEWidget {
     }
     const display = this.formatDisplayValue(this.value);
     const text = display || this.placeholder;
-    this.textNode.setText(this.focused && display ? `${display}|` : text);
+    // 掩码状态可能在聚焦期间变化（密码框切明文 / 掩码）：同步替身的光标颜色 ——
+    // 否则会出现「原生光标被藏掉、canvas 光标又被抑制」→ 一个光标都没有。
+    const masked = this.__isMaskedDisplay();
+    if (this.nativeInput) this.nativeInput.setCaretColor(masked ? 'transparent' : theme.colors.text);
+    // 光标占位：只在「没有原生替身」（Node / 小程序 / 未聚焦）或「掩码显示」时画 canvas 的 `|`。
+    // 非掩码且已挂替身时用原生光标（box 已对齐到文本盒，位置正确）—— 两个都画就会出现两个错位的光标。
+    const showCanvasCaret = this.focused && !!display && (!this.nativeInput || masked);
+    this.textNode.setText(showCanvasCaret ? `${display}|` : text);
     this.textNode.setState({
       style: {
         fillStyle: this.value ? theme.colors.text : theme.colors.textTertiary,
