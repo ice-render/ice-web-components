@@ -39,7 +39,7 @@
         const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
         const ice = new ICE.ICE().init('canvas', { dpr });
         // 街机主题：HUD 卡片、按钮、开关、**以及方块与蛇的配色**都走同一套 token
-        W.iceUIManager.registerTheme('arcade', W.ICE_ARCADE_THEME).setTheme('arcade');
+        W.iceUIManager.registerTheme('arcade', W.ICE_ARCADE_THEME).setTheme('arcade', ice); // 第二个参数 = 顺带把主题同步到引擎（选中框 / 手柄 / 插槽等外壳 token）
         const theme = W.iceUIManager.getTheme();
         new W.ICEHoverManager(ice).start();
 

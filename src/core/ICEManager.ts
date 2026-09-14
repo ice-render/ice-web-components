@@ -1,4 +1,5 @@
 import { ICE_DARK_THEME, ICE_HIGH_CONTRAST_THEME, ICE_LIGHT_THEME, ICEThemeTokens } from '../theme/ICETheme';
+import { applyThemeToEngine } from './ICEThemeBridge';
 
 /** 内置 `light` / `dark`；也可以用 `registerTheme()` 注册自定义（例如 `xp`）。 */
 export type ICEThemeName = string;
@@ -40,10 +41,22 @@ export class ICEManager {
     return this.density;
   }
 
-  public setTheme(name: ICEThemeName): this {
+  /**
+   * 切换主题。
+   *
+   * 传了 `ice` 就顺带把主题同步到引擎（语义色 + 交互外壳 token）—— 引擎自己画的那层
+   * （选中框 / 手柄 / 插槽 / 引导线 / 连线标签 / 阴影色）以前是写死的，换了主题不会跟着变，
+   * 见 `ICEThemeBridge`。不传 `ice` 时只改本库 token（网页里后续新建的组件才会用新主题）。
+   */
+  public setTheme(name: ICEThemeName, ice?: any): this {
     // 未注册的名字直接忽略：保持「setTheme 不抛异常」的既有行为
     if (typeof name === 'string' && this.themes.has(name)) {
       this.themeName = name;
+      if (ice) {
+        // 静态 import：两边都是"函数内部才用对方"，模块循环是安全的；
+        // 这里**不能用 require** —— UMD 产物在浏览器里没有 require，页面会直接报错（踩过）。
+        applyThemeToEngine(ice);
+      }
     }
     return this;
   }
