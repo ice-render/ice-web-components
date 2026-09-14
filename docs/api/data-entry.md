@@ -13,6 +13,10 @@
 | 方法 | 返回 | 说明 |
 |---|---|---|
 | `getValue()` | `string` |  |
+| `getTextNodes()` | `{ prefix: string; suffix: string; count: string; clear: any }` | 附属物句柄（QA / 调试用；也让调用方能读到当前显示的字数）。 |
+| `getCountText()` | `string` |  |
+| `isClearVisible()` | `boolean` |  |
+| `clear()` | `this` | 清空（表单重置 / 点击清除按钮都走它）。 |
 | `getFormValue()` | `any` |  |
 | `setFormValue(value: any)` | `void` |  |
 | `setValue(value: string)` | `this` |  |

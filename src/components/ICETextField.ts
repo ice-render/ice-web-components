@@ -1,5 +1,6 @@
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
+import { ICEButton } from './ICEButton';
 import { createTextNode } from '../util/ICEStyle';
 import { ICENativeInput } from '../util/ICENativeInput';
 
@@ -25,6 +26,13 @@ export class ICETextField extends ICEWidget {
   protected allowNewline = false;
   /** 聚焦期间挂载的原生输入替身（浏览器环境才有；见 ICENativeInput） */
   private nativeInput: ICENativeInput | null = null;
+  /** 附属物：前后缀 / 清除按钮 / 字数统计（都跟随焦点与值自己显隐） */
+  private prefixNode: any = null;
+  private suffixNode: any = null;
+  private countNode: any = null;
+  private clearButton: any = null;
+  private allowClear = false;
+  private showCount = false;
 
   constructor(props: any = {}) {
     const theme = iceUIManager.getTheme();
@@ -52,6 +60,8 @@ export class ICETextField extends ICEWidget {
     this.value = value;
     this.placeholder = placeholder;
     this.maxLength = Math.max(0, maxLength);
+    this.allowClear = props.allowClear === true;
+    this.showCount = props.showCount === true;
     this.textNode = createTextNode({
       left: theme.spacing.sm,
       top: 0,
@@ -66,6 +76,7 @@ export class ICETextField extends ICEWidget {
       verticalAlign: 'middle',
     });
     this.addChild(this.textNode, false);
+    this.__buildAdornments(props);
     this.focusable = props.focusable !== false;
     // 无障碍：没显式给 ariaLabel 时用占位符当可读名称（比念 id 强得多）
     if (props.ariaLabel !== undefined) this.setAriaLabel(String(props.ariaLabel));
@@ -76,6 +87,30 @@ export class ICETextField extends ICEWidget {
 
   public getValue(): string {
     return this.value;
+  }
+
+  /** 附属物句柄（QA / 调试用；也让调用方能读到当前显示的字数）。 */
+  public getTextNodes(): { prefix: string; suffix: string; count: string; clear: any } {
+    return {
+      prefix: this.prefixNode ? String(this.prefixNode.getText() || '') : '',
+      suffix: this.suffixNode ? String(this.suffixNode.getText() || '') : '',
+      count: this.getCountText(),
+      clear: this.clearButton,
+    };
+  }
+
+  public getCountText(): string {
+    return this.countNode ? String(this.countNode.getText() || '') : '';
+  }
+
+  public isClearVisible(): boolean {
+    return !!(this.clearButton && this.clearButton.state.display !== false);
+  }
+
+  /** 清空（表单重置 / 点击清除按钮都走它）。 */
+  public clear(): this {
+    this.setValue('');
+    return this;
   }
 
   public getFormValue(): any {
@@ -322,6 +357,61 @@ export class ICETextField extends ICEWidget {
     this.__sync();
   }
 
+  /** 建附属物：前缀 / 后缀 / 清除按钮 / 字数（都贴在输入框内部，跟随内边距走）。 */
+  private __buildAdornments(props: any): void {
+    const theme = iceUIManager.getTheme();
+    const height = Number(this.state.height) || theme.control.height;
+    const width = Number(this.state.width) || 200;
+    const makeHint = (text: string, alignRight: boolean) =>
+      createTextNode({
+        left: alignRight ? width - theme.spacing.sm - 24 : theme.spacing.sm,
+        top: 0,
+        width: 120,
+        height,
+        text,
+        fillStyle: theme.colors.textTertiary,
+        fontFamily: theme.font.family,
+        fontSize: theme.font.size,
+        fontWeight: theme.font.weightNormal,
+        align: 'left',
+        verticalAlign: 'middle',
+      });
+    if (props.prefix !== undefined && props.prefix !== null && String(props.prefix) !== '') {
+      this.prefixNode = makeHint(String(props.prefix), false);
+      this.addChild(this.prefixNode, false);
+    }
+    if (props.suffix !== undefined && props.suffix !== null && String(props.suffix) !== '') {
+      this.suffixNode = makeHint(String(props.suffix), true);
+      this.addChild(this.suffixNode, false);
+    }
+    if (this.showCount && this.maxLength > 0) {
+      this.countNode = makeHint(`0/${this.maxLength}`, true);
+      this.addChild(this.countNode, false);
+    }
+    if (this.allowClear) {
+      this.clearButton = new ICEButton({
+        left: Math.max(0, width - theme.spacing.sm - 18),
+        top: Math.max(0, (height - 20) / 2),
+        width: 18,
+        height: 20,
+        text: '✕',
+        variant: 'text',
+        size: 'small',
+        focusable: false,
+        style: { fontSize: 11 },
+      });
+      this.clearButton.setState({ display: false });
+      this.clearButton.on('click', () => this.clear());
+      this.addChild(this.clearButton, false);
+    }
+  }
+
+  /** 供测试/内部使用的悬停钩子：附属物要跟着 hover 显隐（子类不暴露 hovered 字段）。 */
+  public __setHoverForTest(hovered: boolean): void {
+    (this as any).hovered = hovered === true;
+    this.__sync();
+  }
+
   private __sync(): void {
     const theme = iceUIManager.getTheme();
     const borderColor =
@@ -342,6 +432,28 @@ export class ICETextField extends ICEWidget {
             : theme.control.lineWidth,
       },
     });
+    // 附属物：内边距与显隐都在这里算 —— 前缀挤左、后缀/字数/清除挤右
+    const width = Number(this.state.width) || 200;
+    const height = Number(this.state.height) || theme.control.height;
+    const widthOf = (node: any) => (node ? Math.round(Number(node.state.width) || 0) : 0);
+    const leftInset = theme.spacing.sm + (this.prefixNode ? widthOf(this.prefixNode) + 6 : 0);
+    let rightInset = theme.spacing.sm;
+    if (this.suffixNode) rightInset += widthOf(this.suffixNode) + 6;
+    if (this.countNode) rightInset += widthOf(this.countNode) + 6;
+    if (this.clearButton && this.isClearVisible()) rightInset += 20;
+    this.textNode.setState({ left: leftInset, width: Math.max(20, width - leftInset - rightInset) });
+    if (this.prefixNode) this.prefixNode.setState({ left: theme.spacing.sm, top: 0, height });
+    if (this.suffixNode) this.suffixNode.setState({ left: width - theme.spacing.sm - widthOf(this.suffixNode), top: 0, height });
+    if (this.countNode) {
+      const offset = width - theme.spacing.sm - widthOf(this.countNode) - (this.clearButton ? 20 : 0);
+      this.countNode.setText(`${this.value.length}/${this.maxLength}`);
+      this.countNode.setState({ left: Math.max(theme.spacing.sm, width - theme.spacing.sm - widthOf(this.countNode) - (this.clearButton ? 20 : 0)), top: 0, height });
+      void offset;
+    }
+    if (this.clearButton) {
+      const visible = this.allowClear && this.value.length > 0 && (this.hovered || this.focused);
+      this.clearButton.setState({ display: visible, left: Math.max(0, width - theme.spacing.sm - 18), top: Math.max(0, (height - 20) / 2) });
+    }
     const display = this.formatDisplayValue(this.value);
     const text = display || this.placeholder;
     this.textNode.setText(this.focused && display ? `${display}|` : text);
