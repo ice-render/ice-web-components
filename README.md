@@ -10,7 +10,30 @@ rings and shadows) is drawn by the engine.
 > ⚠️ **Just for fun.** This project is created purely for fun and exploration. It is
 > not intended as a production-ready or battle-tested UI library.
 
-## Highlights
+## 1. Architecture at a glance
+
+`ice-web-components` sits on top of the `ice-render` engine: the engine draws the
+canvas and runs the scene graph, layout and hit-testing; this package adds managers,
+components and pure logic models on top of it.
+
+```mermaid
+graph TD
+    subgraph engine["ice-render — the engine"]
+        E1["Canvas + scene graph"]
+        E2["Hit-testing, events, layout, animation"]
+    end
+    subgraph wc["ice-web-components"]
+        M["Managers<br/>Overlay · Focus · Hover · Message"]
+        C["80 UI components<br/>(ICEWidget base)"]
+        D["Pure models<br/>Tetris · Snake · 2048 · CHIP-8 · BIOS<br/>Pixel · Sort · Maze · DOS · …"]
+    end
+    E1 --> M
+    M --> C
+    C --> D
+    M -. "popups mounted on the tool layer" .-> E1
+```
+
+## 2. Highlights
 
 - **80 UI components** (+18 pure models, 5 managers, 2 base classes → 105 exported
   classes, 186 exported names in total; the count in
@@ -38,7 +61,45 @@ rings and shadows) is drawn by the engine.
   `qa:arcade`, `qa:pixel`, `qa:algo`, `qa:dos` — 284 assertions) that drive the demo pages with
   real mouse and keyboard events and fail on any console error.
 
-## Quick start
+## 3. Core systems
+
+Two subsystems are worth a closer look before the examples.
+
+### 3.1 One overlay stack
+
+Every popup — Modal / Drawer / Dropdown / Tooltip / Popover / Popconfirm / Select /
+DatePicker / Cascader — opens through `getICEOverlayManager(ice)` and is mounted on the
+engine’s tool layer, above the scene and excluded from scene hit-testing. The manager
+owns placement, the close policy and the enter/exit animation:
+
+```mermaid
+flowchart LR
+    P["Popup components<br/>Modal · Drawer · Dropdown · Tooltip<br/>Popover · Popconfirm · Select · DatePicker · Cascader"]
+    O["ICEOverlayManager"]
+    L["Engine tool layer<br/>(above scene, not hit-tested)"]
+    P -->|open| O
+    O -->|"12 placements"| O1["auto flip + clamp to viewport"]
+    O -->|"close"| O2["Esc · outside-click · focus trap"]
+    O -->|"enter / exit"| O3["tween animation"]
+    O -->|mount| L
+```
+
+### 3.2 Forms: sync + async validation
+
+`ICEFormModel` holds the rules, `ICEFormItem` renders the error (or a “validating…”
+state), and `submitAsync()` waits for the async rules to settle before resolving:
+
+```mermaid
+flowchart LR
+    FM["ICEFormModel<br/>required · min · max · length<br/>pattern · custom · asyncValidator"]
+    FI["ICEFormItem<br/>error / validating…"]
+    S["submitAsync()"]
+    FM -->|validate| FI
+    FM -->|"await async rules"| S
+    FI -->|"blocks until resolved"| S
+```
+
+## 4. Quick start
 
 > **Install**: both packages are on npm now — `npm install ice-web-components` (it pulls
 > `ice-render` as a dependency). `1.0.0` is the first published release; from a checkout you
@@ -83,7 +144,7 @@ ice.addChild(panel);
 
 ![Quick start](docs/images/quick-start.png)
 
-## Documentation
+## 5. Documentation
 
 Full docs live in [`docs/`](./docs/README.md):
 
@@ -103,12 +164,12 @@ Full docs live in [`docs/`](./docs/README.md):
 
 > The guide pages themselves are written in Chinese for now; this README is English-only.
 
-## Demos
+## 6. Demos
 
 All pages under `examples/` are plain HTML — build the package, then open them
 (or serve the folder with any static server).
 
-### `gallery.html` — every component in one page
+### 6.1 `gallery.html` — every component in one page
 
 Rendered with a small hand-rolled flow layout (clusters keep their internal
 geometry, clusters wrap like shelves), so adding a demo never requires hunting for
@@ -116,7 +177,7 @@ free coordinates.
 
 ![Component gallery](docs/images/gallery.png)
 
-### `admin.html` — a six-page back-office
+### 6.2 `admin.html` — a six-page back-office
 
 A small “ICE Shop” admin: sidebar with submenus, breadcrumb + page search +
 notifications/user menu in the header, a floating action button, a first-run tour,
@@ -141,7 +202,7 @@ Popup layers used by that demo:
 |---|---|---|
 | ![Drawer](docs/images/popup-drawer.png) | ![Modal](docs/images/popup-modal.png) | ![Dropdown](docs/images/popup-dropdown.png) |
 
-### `custom-component.html` — write your own component
+### 6.3 `custom-component.html` — write your own component
 
 The same “write a component and plug it into ICE” story as
 [`docs/guides/custom-components.md`](./docs/guides/custom-components.md), but
@@ -150,7 +211,7 @@ keyboard, and participates in `ICEForm` validation.
 
 ![Custom component](docs/images/custom-component.png)
 
-### `workbench.html` — customer-support workbench
+### 6.4 `workbench.html` — customer-support workbench
 
 A second end-to-end scenario (deliberately *not* a dashboard): a three-pane support
 workbench built with `ICESplitter` — ticket queue with filters and skeleton loading,
@@ -162,7 +223,7 @@ back-to-top button appears once the conversation scrolls.
 
 ![Support workbench](docs/images/workbench.png)
 
-### `windows-xp.html` — a full-screen Windows XP desktop
+### 6.5 `windows-xp.html` — a full-screen Windows XP desktop
 
 The fun one: a canvas-only XP desktop that **boots**. Turn it on and you get the black
 boot splash (self-drawn four-colour flag + the running progress blocks), then the blue
@@ -191,6 +252,8 @@ placement, flood fill, right-click flag cycle (🚩 / ❓), chord on double clic
 counters, a timer that starts on the first click, and per-difficulty best times. Its
 rules live in a tested pure model (`ICEMinesweeperModel`) — the UI only draws it.
 
+![Minesweeper](docs/images/xp-minesweeper.png)
+
 Internet Explorer is a **real** browser too: the address bar `fetch()`es the URL,
 `DOMParser` parses the HTML, and the title / headings / paragraphs / links / images are
 drawn with canvas components inside a scroll pane (with back / forward / refresh).
@@ -199,6 +262,8 @@ land on an XP-style error page. Serve the folder over http (`npx serve .`) — `
 does not work from `file://`.
 Right-click works because `ICE.init()` no longer stops the `contextmenu` event on its
 way to the dispatcher (ice-render 1.4.1).
+
+![Internet Explorer](docs/images/xp-ie.png)
 
 Two new generic components came out of it: `ICEWindow` (window chrome with an XP Luna
 title bar, drag, resize, maximise/restore, activate event) and `ICEIconTile`
@@ -210,6 +275,7 @@ inside an XP window. It reuses the same two pure models and the same `ICETileMap
 that window is active; closing the window stops its step timer.
 
 ![ICE Arcade inside a Windows XP window](docs/images/xp-arcade.png)
+![ICE Arcade · Snake inside the XP window](docs/images/xp-arcade-snake.png)
 
 | Boot splash | Welcome screen | Password page |
 |---|---|---|
@@ -217,7 +283,7 @@ that window is active; closing the window stops its step timer.
 
 ![Windows XP desktop](docs/images/xp-desktop.png)
 
-### `arcade.html` — ICE Arcade (a handheld console)
+### 6.6 `arcade.html` — ICE Arcade (a handheld console)
 
 Not a web page but a **handheld console**: the shell, the screen bezel, the HUD cards,
 the buttons and the sound switch are all ICE components, and there is not a single
@@ -239,6 +305,23 @@ reports `pending` / `running` / `ok`; the menu is a cursor + confirm console UI 
 of executing it, so the whole flow is testable in node. Settings (quick boot + default
 cartridge) persist through an injected storage that degrades gracefully on corrupt JSON
 or a full quota.
+
+The boot flow is a small state machine the page drives (`tick(dt)` advances the
+self-test; the menu is a cursor + confirm console):
+
+```mermaid
+flowchart TD
+    PWR["Power on"] --> POST["POST self-test<br/>CPU · RAM · VRAM · SOUND · CART<br/>grey → amber → green + beep"]
+    POST --> BM["BIOS boot menu<br/>cursor + confirm (wrapping)"]
+    BM -->|confirm| ACT{"action"}
+    ACT -->|boot| GAME["load cartridge"]
+    ACT -->|settings| SET["quick boot / default cart"]
+    ACT -->|menu| BM
+    SET --> BM
+    GAME --> END(["running"])
+    POST -. "any key skips remaining steps" .-> BM
+    BM -. "quick boot (default) → last cartridge" .-> GAME
+```
 
 F2 (or the BIOS button) returns to the menu at any time — on a game page that *is* the
 reset button. Any key during POST skips the rest of the self-test, and with quick boot on
@@ -296,7 +379,17 @@ and re-captions the HUD, so another game is a registry entry plus a `mount()`.
 Switching away from the tab pauses whatever is running (CHIP-8 also drops its pressed
 keys, otherwise a lost `keyup` would leave `FX0A` waiting forever).
 
-| Pause overlay (`已暂停`) |
+Switching cartridges is a teardown-and-rebuild, not a mutation of a shared board:
+
+```mermaid
+flowchart LR
+    SEL["user picks cartridge"] --> TEAR["tear down old board<br/>unmount model + stop timers"]
+    TEAR --> BUILD["build new ICETileMap<br/>+ mount model"]
+    BUILD --> HUD["re-caption HUD (fadeIn)"]
+    HUD --> READY["ready to play"]
+```
+
+| Pause overlay (`Paused`) |
 |---|
 | ![ICE Arcade paused](docs/images/arcade-paused.png) |
 
@@ -319,7 +412,7 @@ Under the hood this page is where the engine work happens:
   caught a stack of three toasts covering the cartridge row (the click never reached the
   button). `ICEMessage` still supports stacking for pages that want it.
 - CHIP-8 also drove two engine fixes: an offscreen-cache bug where a bitmap baked the
-  *ancestor’s* opacity (so the pause plate faded in but its “已暂停” text never appeared —
+  *ancestor’s* opacity (so the pause plate faded in but its “Paused” text never appeared —
   translucent subtrees are no longer cached, and stale bitmaps are dropped), and
   keyboard routing that lets a cartridge declare the keys it owns.
 
@@ -332,7 +425,7 @@ Under the hood this page is where the engine work happens:
 > A game page keeps the keyboard for itself; mouse hover still goes through
 > `ICEHoverManager`.
 
-### `pixel-editor.html` — ICE Pixel Studio (a real pixel editor)
+### 6.7 `pixel-editor.html` — ICE Pixel Studio (a real pixel editor)
 
 The other direction: instead of “draw a business screen”, this page is a **tool**.
 The canvas, tool palette, colour swatches and status bar are all components — only the
@@ -372,13 +465,24 @@ The three decisions worth stealing:
    `ImageData` buffer; only the page touches `canvas.toDataURL()`. The QA asserts on the
    data: the PNG check decodes the **IHDR** chunk to prove the bitmap is 512×512.
 
+The edit loop keeps history per *operation*, not per pixel:
+
+```mermaid
+flowchart LR
+    D["mousedown"] --> P["paint live<br/>preview via highlight layer"]
+    P --> U["mouseup"]
+    U --> C["commit() = 1 undo step"]
+    C --> H["ICEHistoryModel.push<br/>(clears redo, trims to limit)"]
+    H -->|"Ctrl+Z / Ctrl+Y"| R["undo / redo"]
+```
+
 > A component gap this page closed: `ICETileMap` cached `rows`/`cols`/`cellSize` in
 > instance fields, so resizing with only `setState({ rows, cols })` left the internals
 > stale and the next `setTiles` threw (“expected 1024 cells, got 256”). There is now a
 > proper `setSize(rows, cols, cellSize?)` that updates the internals, the state and the
 > default width/height in one go, and clears the old cell data.
 
-### `algorithm-sandbox.html` — ICE Algorithm Sandbox
+### 6.8 `algorithm-sandbox.html` — ICE Algorithm Sandbox
 
 Sorting and pathfinding, visualised as **recorded traces**: each algorithm runs to
 completion up front and produces a list of frames; the page then plays them back with
@@ -392,13 +496,13 @@ play / pause / single-step / rewind / speed control.
 import { ICESortModel, ICEMazeModel, ICETracePlayerModel } from 'ice-web-components';
 
 const sort = new ICESortModel({ size: 24, max: 32 });
-const frames = sort.run('quick');     // 一帧 = 当前数组 + 正在比较/交换的下标 + 已就位的位置
+const frames = sort.run('quick');     // one frame = current array + indices being compared/swapped + settled positions
 const player = new ICETracePlayerModel({ speed: 8 });
-player.load(frames);                  // 回放：play / pause / stepForward / seek / setSpeed / tick(dt)
+player.load(frames);                  // playback: play / pause / stepForward / seek / setSpeed / tick(dt)
 
 const maze = new ICEMazeModel({ rows: 16, cols: 24 });
 maze.randomWalls(0.24);
-maze.solve('astar');                  // 同样是一串帧：访问过的格子 / 边界 / 最终路径
+maze.solve('astar');                  // also a series of frames: visited cells / frontier / final path
 ```
 
 Why “record a trace first, play it back later” instead of painting while the algorithm
@@ -408,13 +512,27 @@ path?), and the player gives pause/step/rewind for free. Four algorithms are cov
 each side — bubble / insertion / selection / merge / quick, and BFS / DFS / Dijkstra / A* —
 with `ICETracePlayerModel` owning the clock (1–60 steps per second, auto-stop at the end).
 
+The split is: an algorithm model produces a list of frames, then a player owns the
+clock and renders them — so the algorithm is a plain testable function and the player
+gives pause / step / rewind for free:
+
+```mermaid
+flowchart LR
+    M["ICESortModel / ICEMazeModel<br/>.run(algo)"] --> F["frames[]<br/>each frame = array state + cursors"]
+    F --> P["ICETracePlayerModel.load(frames)"]
+    P --> C{"controls"}
+    C -->|"play / pause"| C
+    C -->|"step / seek / setSpeed"| C
+    C -->|"tick(dt)"| R["render via ICETileMap"]
+```
+
 Both visualisations are single `ICETileMap` nodes: the sorting bars are a `max × n` grid
 where each column is filled from the bottom (blue = untouched, amber = comparing, red =
 swapping, green = settled), and the maze is a grid of cell states. The A* comparison in
 the QA is the honest one: same shortest path as BFS, **fewer cells visited** (the tie-break
 among equal `f` values is what makes A* actually faster on an open grid).
 
-### `dos-terminal.html` — ICE-DOS Terminal
+### 6.9 `dos-terminal.html` — ICE-DOS Terminal
 
 A terminal you can actually type into: a virtual filesystem plus 16 commands, all in a
 pure model (`ICEDosModel`) that never touches the DOM.
@@ -425,11 +543,11 @@ pure model (`ICEDosModel`) that never touches the DOM.
 import { ICEDosModel } from 'ice-web-components';
 
 const dos = new ICEDosModel();
-dos.run('cd games');            // 路径解析：\ / .. . 与大小写不敏感
+dos.run('cd games');            // path resolution: \ / .. . and case-insensitive
 dos.run('dir');                 // { lines: [{ text, type: 'output' | 'error' }], effect? }
-dos.run('echo hi > note.txt');  // 重定向（> 覆盖 / >> 追加）
-dos.complete('type TET');       // Tab 补全 → 'type TETRIS.EXE'
-dos.historyPrev();              // ↑ 历史
+dos.run('echo hi > note.txt');  // redirection (> overwrite / >> append)
+dos.complete('type TET');       // Tab completion → 'type TETRIS.EXE'
+dos.historyPrev();              // ↑ history
 ```
 
 `run()` never throws — a typo becomes one `error` line, so the terminal cannot be crashed
@@ -440,10 +558,10 @@ keyboard buffer (TAB is completion, ↑↓ is history, `Ctrl+L` clears, `exit` s
 
 > This page deliberately does **not** start `ICEFocusManager` (same call as the arcade
 > page): the focus manager treats TAB as “rotate focus”, which steals the terminal’s
-> completion key — and once focus lands on the window’s “重新开机” button, pressing Enter
+> completion key — and once focus lands on the window’s “reboot” button, pressing Enter
 > to run a command reboots the machine instead.
 
-## Components
+## 7. Components
 
 | Group | Components |
 |---|---|
@@ -463,7 +581,7 @@ Helper functions: `attachTooltip` `attachPopover` `attachPopconfirm` `attachDrop
 `formatStatisticValue` `formatCountdown` `truncateTextLines` `buildMonthGrid` `formatCalendarDate`
 `openImagePreview` `icePixelParseColor` `tween` `fadeIn` `fadeOut` `slideIn` `scaleIn` and friends.
 
-## Theme
+## 8. Theme
 
 A compact **Bootstrap 5-style** token set (see `ICE_LIGHT_THEME` / `ICE_DARK_THEME`):
 
@@ -493,7 +611,7 @@ new ICETag({ text: 'Paid', status: 'success' });                     // solid gr
 new ICETag({ text: 'Paid', status: 'success', variant: 'soft' });    // #d1e7dd / #0a3622
 ```
 
-## Naming & exports
+## 9. Naming & exports
 
 Everything exported by this package uses the **`ICE`** prefix (same convention as
 `ice-render`), and the package’s runtime exports do **not overlap** with the
@@ -514,7 +632,7 @@ import { ICEPanel } from 'ice-web-components';
 panel.setLayout(new ICEFlowLayout({ gap: 8 }));
 ```
 
-## Interaction notes
+## 10. Interaction notes
 
 - **Hover** — ICE deliberately skips full hit-testing on `mousemove`, so canvas
   components have no native `mouseenter` / `mouseleave`. Attach
@@ -552,20 +670,29 @@ panel.setLayout(new ICEFlowLayout({ gap: 8 }));
   (`role` / `aria-label` / `tabindex`, positioned over the canvas). Clicking or focusing a
   mirror element focuses and activates the canvas component, so screen readers and keyboard
   users can drive a canvas UI.
-- **i18n（组件内置文案）** — 组件自己会渲染的那几条文案（表格空态、确定/取消、上传提示、分页
-  「共 N 条」、日历月份与周标题、表单默认校验文案……）来自语言包：内置 `zh-CN` + `en-US`，
-  `registerICELocale()` 可加自己的包，`setICELocale('en-US')` 改**全局默认**。
-  组件在构造 / 重排时读文案，所以切语言之后需要重建或触发一次重排。
-  **实例级覆盖**：任何带内置文案的组件都接受 `locale`（`new ICEUpload({ locale: 'en-US' })`，
-  表单模型是 `new ICEFormModel({ locale: 'en-US' })`），因此同一页面里两个面板可以各用各的语言，
-  库本身不持有全局状态；`tFor('en-US')` / `t('key', vars)` 可给应用层自己的 UI 复用同一套兜底链
-  （该语言 → 默认语言 → key 本身）。
-  **优先级**：实例 `locale` > 全局 `setICELocale()`（后者只是"应用级默认"，不指定实例语言时生效）。
-  **日历/日期选择器的一周首日**按语言推导（`Intl.Locale(...).weekInfo.firstDay`：`en-US` 周日开头、
-  `zh-CN` 周一开头；运行时没有该 API 或语言未知时兜底周一），也可用 `weekStart: 0..6` 显式覆盖。
-  **边界**：业务文案不走这套 —— 应用层用任意 i18n 库（`Intl` / ICU / i18next）把**最终字符串**
-  交给组件；断行、文字方向（`direction` / `textAlign: 'start' | 'end'`）与输入法由引擎负责。
-  完整契约见 ice-render 的 `docs/architecture/17-i18n-boundary.md`。
+- **i18n (built-in component text)** — the few strings the components render
+  themselves (table empty state, OK / Cancel, upload hints, the “N items” pagination
+  label, calendar month and weekday headings, default form validation messages…) come
+  from a locale pack: `zh-CN` + `en-US` are built in, `registerICELocale()` adds your
+  own, and `setICELocale('en-US')` changes the **global default**.
+  Components read the strings when they are constructed / laid out, so after switching
+  locale you must rebuild or trigger a relayout.
+  **Per-instance override**: any component with built-in text accepts a `locale`
+  (`new ICEUpload({ locale: 'en-US' })`, or `new ICEFormModel({ locale: 'en-US' })` for
+  the form model), so two panels on the same page can each use their own language — the
+  library holds no global state. `tFor('en-US')` / `t('key', vars)` let your app reuse
+  the same fallback chain (requested language → default language → the key itself).
+  **Priority**: instance `locale` > global `setICELocale()` (the latter is only an
+  “app-level default” that applies when no instance language is set).
+  **First day of the week** for calendars / date pickers is derived from the locale
+  (`Intl.Locale(...).weekInfo.firstDay`: `en-US` starts on Sunday, `zh-CN` on Monday;
+  falls back to Monday when the API is unavailable or the language is unknown), or
+  override explicitly with `weekStart: 0..6`.
+  **Boundary**: business copy does **not** go through this system — your app passes the
+  **final string** to the component via any i18n library (`Intl` / ICU / i18next); line
+  breaking, text direction (`direction` / `textAlign: 'start' | 'end'`) and IME are the
+  engine’s responsibility.
+  The full contract lives in ice-render’s `docs/architecture/17-i18n-boundary.md`.
 - **Text input & IME** — focusing a text field mounts a **fully transparent native
   `<input>` / `<textarea>`** over it (`ICENativeInput`): the browser and the IME do the
   typing, `input` / `compositionend` write the value back, and `change` / form binding
@@ -574,7 +701,7 @@ panel.setLayout(new ICEFlowLayout({ gap: 8 }));
   In a runtime without `document` (Node / mini-program) it degrades to the old
   per-key `keydown` path. Pressing Enter emits `submit` on single-line fields.
 
-## Development
+## 11. Development
 
 ```bash
 npm install
@@ -668,6 +795,6 @@ keep both boards inside the screen bezel and the panels from overlapping.
 See [ROADMAP.md](./ROADMAP.md) for the component backlog and what is still missing
 per component.
 
-## License
+## 12. License
 
 [MIT](./LICENSE)
