@@ -353,6 +353,15 @@ export class ICEMenu extends ICEContainer {
     return this.submenu ? this.submenu.key : null;
   }
 
+  /** 横向模式下父项上的指示符：收起 ⌄ / 展开 ⌃（没子菜单的项返回空串）。 */
+  public getSubmenuIndicator(key: string): string {
+    const item = this.__findItem(this.items, key);
+    if (!item || !this.__hasChildren(item)) {
+      return '';
+    }
+    return this.getSubmenuKey() === key ? '⌃' : '⌄';
+  }
+
   public getSubmenuItemNode(key: string): any {
     return this.submenu ? this.submenu.nodes.get(key) || null : null;
   }
@@ -882,7 +891,13 @@ export class ICEMenu extends ICEContainer {
         'click',
         () => {
           if (orientation === 'horizontal' && this.__hasChildren(item)) {
-            this.openSubmenu(item.key);
+            // 开关语义：点已打开的父项收起，点别的父项换过去
+            if (this.getSubmenuKey() === item.key) {
+              this.closeSubmenu();
+            } else {
+              this.openSubmenu(item.key);
+            }
+            this.__syncSubmenuIndicators();
             return;
           }
           this.activateItem(item.key);
@@ -896,8 +911,31 @@ export class ICEMenu extends ICEContainer {
     });
     if (orientation === 'horizontal') {
       this.setState({ width: Math.max(left, Number(this.state.width) || 0) });
+      this.__syncSubmenuIndicators();
     }
     this.__syncSelection();
+  }
+
+  /** 横向父项的 ⌄/⌃ 指示符跟着子菜单开合状态刷新。 */
+  private __syncSubmenuIndicators(): void {
+    if (this.mode !== 'horizontal') {
+      return;
+    }
+    this.items.forEach((item) => {
+      if (!this.__hasChildren(item)) {
+        return;
+      }
+      const panel = this.itemNodes.get(item.key);
+      if (!panel) {
+        return;
+      }
+      const indicator = (panel.childNodes || []).find(
+        (node: any) => node.state && (node.state.text === '⌄' || node.state.text === '⌃'),
+      );
+      if (indicator) {
+        indicator.setState({ text: this.getSubmenuIndicator(item.key) });
+      }
+    });
   }
 
   private __syncSelection(): void {

@@ -207,6 +207,8 @@ export class ICETable extends ICEWidget {
   private onFilterChange: ((key: string, values: string[]) => void) | null = null;
   /** 汇总行：算出来的一行文案 + 渲染出来的节点 */
   private summaryFn: ICETableSummary | null = null;
+  /** 汇总口径：`all` = 当前可见行（默认）；`leaves` = 只要叶子行（树形数据算总额不重复） */
+  private summaryRowsMode: 'all' | 'leaves' = 'all';
   private summaryNode: any = null;
   private summaryTexts: Record<string, string> = {};
   /** 单元格编辑态：改哪一行哪一列 + 盖在格子上的输入框 */
@@ -221,8 +223,12 @@ export class ICETable extends ICEWidget {
   private treeToggleNodes = new Map<string, any>();
   /** 树形选择：记 key（与「当前展开到第几层」「当前在第几页」都无关） */
   private treeSelection = new Set<string>();
+  /** 内部同步复选框时置上：`setSelected` 会再抛 change，不挡住就会递归成「勾上又取消」 */
+  private syncingSelection = false;
   /** 全树索引：key → 直接子行 key（**与展开状态无关**，选择级联靠它） */
   private treeChildKeys = new Map<string, string[]>();
+  /** 这张表是不是真的有层级（有任意一行带子行）—— 普通表格不能走树形那套选择语义 */
+  private hasTreeData = false;
   private manager: any = null;
   /** 行展开：渲染区 + 状态（按 rowKey 记，默认行下标） */
   private expandable: ICETableExpandable | null = null;
@@ -299,6 +305,7 @@ export class ICETable extends ICEWidget {
     this.treeChildrenKey = typeof props.treeChildrenKey === 'string' ? props.treeChildrenKey : 'children';
     (props.defaultExpandedKeys || []).forEach((key: string) => this.treeExpanded.add(String(key)));
     this.summaryFn = typeof props.summary === 'function' ? props.summary : null;
+    this.summaryRowsMode = props.summaryRowsMode === 'leaves' ? 'leaves' : 'all';
     this.rowKeyProp = typeof props.rowKey === 'function' || typeof props.rowKey === 'string' ? props.rowKey : null;
     if (props.expandable && typeof props.expandable.render === 'function') {
       this.expandable = props.expandable;
@@ -977,12 +984,14 @@ export class ICETable extends ICEWidget {
    */
   private __indexTree(rows: ICETableRow[] = this.sourceData, parentKey: string | null = null): void {
     this.treeChildKeys.clear();
+    let anyParent = false;
     const visit = (list: ICETableRow[], parent: string | null) => {
       list.forEach((row, index) => {
         const key = this.__keyOf(row, index);
         this.rowParents.set(key, parent);
         const children = row[this.treeChildrenKey];
         if (Array.isArray(children) && children.length) {
+          anyParent = true;
           const childKeys = (children as ICETableRow[]).map((child, childIndex) => this.__keyOf(child, childIndex));
           this.treeChildKeys.set(key, childKeys);
           visit(children as ICETableRow[], key);
@@ -992,6 +1001,7 @@ export class ICETable extends ICEWidget {
       });
     };
     visit(rows, parentKey);
+    this.hasTreeData = anyParent;
   }
 
   // ---- 树形数据 API ----
@@ -1104,6 +1114,28 @@ export class ICETable extends ICEWidget {
     return (this.treeChildKeys.get(key) || []).slice();
   }
 
+  /** 把当前页的复选框刷成「树形选择的真实状态」（级联选中的子行也要是勾上的）。 */
+  private __syncTreeCheckboxes(): void {
+    this.syncingSelection = true;
+    try {
+      this.data.forEach((row, index) => {
+        const box = this.selectionNodes[index];
+        if (box) {
+          box.setSelected(this.treeSelection.has(this.__keyOf(row, index)));
+        }
+      });
+      if (this.headerCheckbox) {
+        const keys = this.data.map((row, index) => this.__keyOf(row, index));
+        this.headerCheckbox.setSelected(keys.length > 0 && keys.every((key) => this.treeSelection.has(key)));
+      }
+    } finally {
+      this.syncingSelection = false;
+    }
+    if (this.ice && this.ice.dirty !== undefined) {
+      this.ice.dirty = true;
+    }
+  }
+
   private __findRowByKey(key: string): ICETableRow | null {
     const visit = (rows: ICETableRow[]): ICETableRow | null => {
       for (let index = 0; index < rows.length; index += 1) {
@@ -1129,6 +1161,32 @@ export class ICETable extends ICEWidget {
   /** 有没有汇总行要画（筛选后 0 行不画：没东西可汇总）。 */
   private __hasSummary(): boolean {
     return !!this.summaryFn && this.data.length > 0;
+  }
+
+  /**
+   * 汇总用的「叶子行」：把整棵树摊平只取叶子，再套上当前的筛选条件。
+   *
+   * 注意是**摊平整棵树**（不受展开状态影响）：父行的数字本来就是子行的合计，
+   * 展开与否不该改变「总额是多少」。
+   */
+  private __leafRows(): ICETableRow[] {
+    const leaves: ICETableRow[] = [];
+    const visit = (rows: ICETableRow[]) => {
+      rows.forEach((row) => {
+        const children = row[this.treeChildrenKey];
+        if (Array.isArray(children) && children.length) {
+          visit(children as ICETableRow[]);
+        } else {
+          leaves.push(row);
+        }
+      });
+    };
+    visit(this.sourceData);
+    const keys = Object.keys(this.filters).filter((key) => (this.filters[key] || []).length > 0);
+    if (!keys.length) {
+      return leaves;
+    }
+    return leaves.filter((row) => keys.every((key) => this.filters[key].indexOf(String(row[key])) !== -1));
   }
 
   /** 按当前页/每页条数切出要渲染的行，并把高度（含分页器 / 空态）算好。 */
@@ -1443,9 +1501,20 @@ export class ICETable extends ICEWidget {
       });
       selectAllBox.on('change', () => {
         if (selectAllBox.isSelected()) {
-          this.selectAll();
+          if (this.hasTreeData) {
+            // 树形：全选 = 所有可见行的 key 都选上（父行的级联会自然带上未展开的后代）
+            this.data.forEach((row, index) => this.setTreeRowSelected(this.__keyOf(row, index), true));
+            this.__syncTreeCheckboxes();
+          } else {
+            this.selectAll();
+          }
         } else {
-          this.clearSelection();
+          if (this.hasTreeData) {
+            this.treeSelection.clear();
+            this.__syncTreeCheckboxes();
+          } else {
+            this.clearSelection();
+          }
         }
       });
       header.addChild(selectAllBox, false);
@@ -1721,10 +1790,24 @@ export class ICETable extends ICEWidget {
         top: (this.rowHeight - 24) / 2,
         width: 24,
         height: 24,
-        selected: this.selectedIndexes.indexOf(rowIndex) !== -1,
+        // 树形数据下以「按 key 记的级联选择」为准（勾父行带出来的子行也要是勾上的）
+        selected: this.hasTreeData
+          ? this.treeSelection.has(this.__keyOf(row, rowIndex))
+          : this.selectedIndexes.indexOf(rowIndex) !== -1,
       });
       checkbox.on('change', () => {
+        if (this.syncingSelection) {
+          return;
+        }
         const selected = checkbox.isSelected();
+        // 树形数据：走级联（勾父行带子行），其它表格仍是「只勾这一行」
+        if (this.hasTreeData) {
+          const key = this.__keyOf(row, rowIndex);
+          this.setTreeRowSelected(key, selected);
+          this.__syncTreeCheckboxes();
+          this.__emitSelection();
+          return;
+        }
         const has = this.selectedIndexes.indexOf(rowIndex) !== -1;
         if (selected === has) {
           return;
@@ -2024,7 +2107,11 @@ export class ICETable extends ICEWidget {
    */
   private __renderSummary(parent: any, widths: number[], top: number, offset: number, panelWidth: number): void {
     const theme = iceUIManager.getTheme();
-    const values = this.summaryFn ? this.summaryFn(this.sortedData.slice(), this.columns) || {} : {};
+    const rows =
+      this.summaryRowsMode === 'leaves'
+        ? this.__leafRows()
+        : this.sortedData.slice();
+    const values = this.summaryFn ? this.summaryFn(rows, this.columns) || {} : {};
     const node = new ICEWidget({
       left: 0,
       top,
@@ -2399,8 +2486,13 @@ export class ICETable extends ICEWidget {
   private __syncSelection(): void {
     const theme = iceUIManager.getTheme();
     this.rowPanels.forEach((panel, index) => {
-      const selected =
-        this.selectionMode === 'multiple' ? this.selectedIndexes.indexOf(index) !== -1 : index === this.selectedIndex;
+      // 树形数据：选中态以「按 key 记的级联选择」为准（勾父行带出来的子行也要一起高亮）
+      const row = this.data[index];
+      const selected = this.hasTreeData
+        ? !!row && this.treeSelection.has(this.__keyOf(row, index))
+        : this.selectionMode === 'multiple'
+          ? this.selectedIndexes.indexOf(index) !== -1
+          : index === this.selectedIndex;
       const hovered = index === this.hoveredIndex;
       panel.setState({
         style: {
@@ -2415,7 +2507,13 @@ export class ICETable extends ICEWidget {
       });
       const checkbox = this.selectionNodes[index];
       if (checkbox && checkbox.isSelected() !== selected) {
-        checkbox.setSelected(selected);
+        // 同步期间挡住 change 回调：setSelected 会再抛 change，不挡会递归
+        this.syncingSelection = true;
+        try {
+          checkbox.setSelected(selected);
+        } finally {
+          this.syncingSelection = false;
+        }
       }
     });
     this.revalidate();
