@@ -3,6 +3,39 @@
 本文件记录所有值得注意的变更，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循[语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.6.0] - 2026-09-14
+
+### 新增
+
+- **主题桥：UI token 同步到引擎**（引擎 2.4.0 起）。引擎把「引擎自己画的那层」收成了主题 token
+  （`semantic.chrome`：选中框 / 变换手柄 / 连接插槽 / 对齐引导线 / 连线标签 / 文本选区 / 阴影色 / 调试框），
+  本库一直有自己的一套 UI token，缺的就是两者之间的一条桥 —— 以前换深色主题会出现
+  「面板是暗的、手柄还是亮红亮绿」，因为那些外壳是写死在引擎里的。
+  - `toEngineThemePatch(tokens)`：按**同名语义**映射（primary / success / warning / error→danger /
+    text / border / background；选中框取 primaryBorder + primaryBg，手柄取 primary + primaryText，
+    插槽取 success（悬停高亮 warning），引导线取 focusRing，连线标签取 surface + text，
+    阴影色取 `shadows.*.shadowColor`），不新造颜色；缺字段有兜底，不会产出 undefined。
+  - `applyThemeToEngine(ice, tokens?)`：把当前（或指定）主题一次性应用 —— 语义色 + 外壳一起对齐。
+  - `iceUIManager.setTheme(name, ice)` 支持可选第二参：传了 ICE 实例就顺带同步引擎，
+    不传维持既有行为（只改本库 token）。
+  - 示例 `windows-xp.html` / `arcade.html` 改用 `.setTheme('xp', ice)`，自绘主题连外壳一起生效。
+
+### 变更
+
+- **peer / dev 依赖对齐 ice-render `^2.4.0`**：主题桥依赖 2.4 的 chrome token 与 `setChrome`，
+  声明低了会**静默无效**（外壳还是旧色），所以把范围据实提到 2.4。
+
+### 注意（实现细节，避免重复踩）
+
+- 主题桥**不能用 `require()` 做延迟加载**：UMD 产物在浏览器里没有 `require`，
+  两个示例页会直接白屏（e2e 冒烟第一时间抓到）。改成静态 import —— 两边都只在函数内用对方，模块循环安全。
+
+### 验证
+
+- 单测 +7（映射原则 / 三套主题都变 / 缺字段兜底 / `setTheme(name, ice)` 带动引擎 / 非 ICE 实例报错）。
+- `npm run verify` 全绿（types + 1226 单测 + build + 文档生成与链接检查 + QA 计数）；
+  `npm run test:e2e` 全绿：9 个示例页无报错且画布有输出。
+
 ## [Unreleased]
 
 ### 新增
