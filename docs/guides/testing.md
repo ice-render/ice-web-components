@@ -66,6 +66,7 @@ PLAYWRIGHT_PATH=/path/to/playwright npm run qa:arcade
 PLAYWRIGHT_PATH=/path/to/playwright npm run qa:pixel
 PLAYWRIGHT_PATH=/path/to/playwright npm run qa:algo
 PLAYWRIGHT_PATH=/path/to/playwright npm run qa:dos
+PLAYWRIGHT_PATH=/path/to/playwright npm run qa:perf      # 性能门禁：节点数 / 空闲重绘 / 帧耗时
 ```
 
 | 脚本 | 页面 | 项数 | 覆盖 |
@@ -78,6 +79,19 @@ PLAYWRIGHT_PATH=/path/to/playwright npm run qa:dos
 | `qa:pixel` | `examples/pixel-editor.html` | 24 | 开局（32×32 空画布 / 画板与色板各是单节点 / 5 工具 / 12 色）；**真实鼠标**：点一格上色、按住拖过 11 格只占一次撤销、撤销与重做（按钮 + Ctrl+Z / Ctrl+Y）、矩形框（描边 24 像素）、油漆桶（框内 25 格灌满、框外不动）、直线工具（拖动时 11 格高亮预览**且画布没变**，松手才落笔，预览收干净）、橡皮擦回纸色、点色板换色（高亮与落笔颜色都跟着走）、清空 + 可撤销、示例图案（26 像素笑脸）；**导出**：SVG 字符串（viewBox 512×512、同色横向合并后 20 个 rect）、PNG data URL（解 IHDR 得到 512×512）；换尺寸 16×16（棋盘与格子大小同步换、历史清空）；四块面板零交叠 |
 | `qa:algo` | `examples/algorithm-sandbox.html` | 14 | 开局（排序模式 / 24 根柱子画在单节点网格上 / 轨迹已录好 / 统计面板）；回放（点播放帧前进、暂停真的停、→ 与 ← 单步、**点空白清焦点后**空格播放/暂停）；跑到底（最后一帧升序 + 已结束）；切算法（快速排序：轨迹重录、帧号归零、复杂度换成 O(n log n)）；寻路（切模式换网格、A* 与 BFS 同最短路但访问更少、**真实鼠标在确定空地**上拖动画墙、轨迹作废）；四块面板零交叠 |
 | `qa:dos` | `examples/dos-terminal.html` | 17 | 开机（横幅 / 提示符 C:\>）；命令（DIR 输出含文件与目录、CD 后提示符跟着变、TYPE 走 `..\` 跨目录）；编辑（TAB 补全命令名与**当前目录**里的文件名、Backspace、↑ 历史、未知命令一行 error）；重定向（echo hello > note.txt 后 type 得回 hello）；副作用（Ctrl+L 清屏、exit 进退出态、任意键重新开机、「重新开机」按钮）；输出变长后**自动滚到底**；终端窗口与提示栏零交叠 |
+
+### 性能门禁（`qa:perf`）
+
+「单节点自绘」是这套库的结构优势，但**优势没有门禁就会被悄悄吃掉**。`qa:perf` 在真实浏览器里逐页量三个数：
+
+| 量什么 | 判据 | 为什么 |
+|---|---|---|
+| 节点数 | 每页预算 = 基线 × 1.4 | 谁把 `ICETileMap` 改回「一格一个组件」，界面上看不出来、数字上翻几百倍 |
+| 空闲重绘 | 静止 1 秒里自绘组件（`getPaintCount()`）的增长 | 静止页面应当接近 0；大了说明有东西在空转重画 |
+| 帧耗时 | 60 帧**中位数** ≤ 20ms（最大值仅记录） | 中位数抗 GC 抖动；20ms = 能跑满 60fps |
+
+掌机页会先等 BIOS 自检交棒给卡带再量（否则量到的是自检阶段每帧重画，实测虚高到 18 次/秒）。
+**已知待优化**：`gallery.html` 的帧中位数基线 50ms（≈20fps），目前按现状钉住（预算 60ms）并在脚本里标了 TODO —— 门禁的作用是「不许更差」，不是假装达标。
 
 > `qa:xp` 会**自己起一个静态服务器用 http 打开页面**（而不是 `file://`）：XP 里的「IE」是真的会
 > `fetch()` 的，而 `fetch` 在 `file://` 下不可用 —— 要演示真导航就必须走 http。用例还会故意访问
@@ -131,6 +145,7 @@ PLAYWRIGHT_PATH=/path/to/playwright npm run qa:dos
 | `qa:arcade` | 71 |
 | `qa:dos` | 17 |
 | `qa:gallery` | 49 |
+| `qa:perf` | 0 |
 | `qa:pixel` | 24 |
 | `qa:workbench` | 15 |
 | `qa:xp` | 40 |
