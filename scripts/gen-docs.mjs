@@ -228,6 +228,7 @@ const GROUPS = [
       'ICE_MAZE_ALGORITHMS',
       'ICE_MAZE_CELL',
       'ICEDosModel',
+      'ICEKeyScopeModel',
       'ICEMinesweeperModel',
       'ICE_MINESWEEPER_DIFFICULTIES',
       'ICETetrisModel',
@@ -243,6 +244,8 @@ const GROUPS = [
       'ICEPixelModel',
       'ICE_PIXEL_DEFAULT_PALETTE',
       'icePixelParseColor',
+      'ICEGeometryAudit',
+      'bindICEKeyScope',
     ],
   },
 ];

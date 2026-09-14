@@ -1080,6 +1080,20 @@ check(
   JSON.stringify(ridge),
 );
 
+/* ---------- 10.5 键位归属是声明式的（ICEKeyScopeModel） ---------- */
+const keyScopeInfo = await page.evaluate(() => {
+  const scope = window.__arcade.keyScope;
+  if (!scope) return null;
+  const diagnostics = scope.getDiagnostics();
+  return { scopes: diagnostics.scopes, bindings: diagnostics.bindings, conflicts: diagnostics.conflicts.map((item) => `${item.key}→${item.scopes.join('>')}`) };
+});
+check(
+  '键位作用域：卡带声明自己的键，冲突列表里能看清「谁先接」（R 先给卡带、再给外壳）',
+  keyScopeInfo !== null && keyScopeInfo.scopes.indexOf('cartridge') !== -1 && keyScopeInfo.scopes.indexOf('shell') !== -1 &&
+    keyScopeInfo.conflicts.some((line) => /^p→cartridge>shell$/.test(line) || /^r→cartridge>shell$/.test(line)),
+  JSON.stringify(keyScopeInfo),
+);
+
 /* ---------- 11. BIOS：启动菜单 / 设置 / 快速启动 ---------- */
 await page.keyboard.press('F2');
 await page.waitForTimeout(400);

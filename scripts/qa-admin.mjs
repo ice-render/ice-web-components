@@ -17,6 +17,7 @@
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import process from 'node:process';
+import { auditGeometry, formatGeometryIssues } from './lib/geometry-audit.mjs';
 
 const require = createRequire(import.meta.url);
 
@@ -219,6 +220,39 @@ for (const key of PAGE_KEYS) {
   layout[key] = info;
   check(`[${key}] 顶层元素零交叠`, info.hits.length === 0, info.hits.join(','));
 }
+/* ---------- 1.5 画布几何审计（ICEGeometryAudit，纯逻辑 + 12 条单测） ---------- */
+/**
+ * 顶层「零交叠」只能防住面板级错位；这里往下走一层：
+ * 交叠（兄弟们真的压住彼此）、自动盒与内容实测不一致、子节点越出父容器、节点预算。
+ * 豁免规则（徽标叠锚点 / 堆叠头像 / 滑轨×滑块 / 密码框眼睛）写在 scripts/lib/geometry-audit.mjs。
+ */
+const geometryReports = {};
+let geometryOverlaps = 0;
+let geometryOther = [];
+for (const key of PAGE_KEYS) {
+  await page.evaluate((k) => window.__result.showPage(k), key);
+  await page.waitForTimeout(380);
+  const report = await auditGeometry(page, { nodeBudget: 4000 });
+  geometryReports[key] = report;
+  geometryOverlaps += report.issues.filter((issue) => issue.kind === 'overlap').length;
+  geometryOther = geometryOther.concat(report.issues.filter((issue) => issue.kind !== 'overlap').map((issue) => `[${key}] ${issue.detail}`));
+}
+check(
+  '几何审计：六个页面都没有「兄弟实打实压住」（豁免了徽标/头像组/滑轨/密码眼睛）',
+  geometryOverlaps === 0,
+  `交叠 ${geometryOverlaps} 处：` + Object.entries(geometryReports).map(([k, r]) => `${k}=${r.issues.length}`).join(' '),
+);
+check(
+  '几何审计：可见节点数在预算内（防止「一格一个组件」被写回来）',
+  PAGE_KEYS.every((key) => geometryReports[key].nodeCount <= 4000),
+  PAGE_KEYS.map((key) => `${key}:${geometryReports[key].nodeCount}`).join(' '),
+);
+if (geometryOther.length) {
+  // 这些是「待排查线索」而不是失败：审计先只对「压住」这一类下判决，避免误报把门禁变噪声
+  console.log(`  · 几何审计另有 ${geometryOther.length} 条待排查线索：`);
+  geometryOther.slice(0, 4).forEach((line) => console.log('    - ' + line));
+}
+
 const lefts = new Set(Object.values(layout).map((l) => l.firstLeft));
 const tops = new Set(Object.values(layout).map((l) => l.firstTop));
 check('各页首元素左边距一致', lefts.size === 1, [...lefts].join(' / '));
