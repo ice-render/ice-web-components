@@ -25,7 +25,7 @@ export interface ICEUploadFile {
   /** 上传进度 0-100（100 = 已完成；不设 = 未开始/不需要进度） */
   progress?: number;
   /** 上传状态（有 customRequest 时由它维护） */
-  status?: 'uploading' | 'done' | 'error';
+  status?: 'pending' | 'uploading' | 'done' | 'error';
   /** 失败原因（status = 'error' 时显示） */
   error?: string;
 }
@@ -69,6 +69,8 @@ export interface ICEUploadOptions extends ICELocalizedProps {
   draggable?: boolean;
   /** 排序落下后的回调（顺序变了才触发） */
   onReorder?: (files: ICEUploadFile[], from: number, to: number) => void;
+  /** 同时上传几个（默认 1）；其余排队，按列表顺序依次启动 */
+  uploadConcurrency?: number;
 }
 
 const DROP_ZONE_HEIGHT = 96;
@@ -106,6 +108,7 @@ export class ICEUpload extends ICEWidget {
   private draggableRows = false;
   private rowDrag: { from: number; to: number } | null = null;
   private onReorderCallback: ((files: ICEUploadFile[], from: number, to: number) => void) | null = null;
+  private uploadConcurrency = 1;
   private lastRejectReason: string | null = null;
   private dropZone: ICEWidget | null = null;
   private fileNodes = new Map<string, ICEWidget>();
@@ -140,6 +143,7 @@ export class ICEUpload extends ICEWidget {
     this.customRequest = typeof props.customRequest === 'function' ? props.customRequest : null;
     this.draggableRows = props.draggable === true;
     this.onReorderCallback = typeof props.onReorder === 'function' ? props.onReorder : null;
+    this.uploadConcurrency = Math.max(1, Math.floor(Number(props.uploadConcurrency) || 1));
     this.focusable = !this.disabled;
     this.__render();
   }
@@ -185,9 +189,9 @@ export class ICEUpload extends ICEWidget {
     }
     this.lastRejectReason = null;
     this.files.push(normalized);
-    // 有自定义上传实现就自动开始（没传的话只是加进列表，行为不变）
+    // 有自定义上传实现就进队列（没传的话只是加进列表，行为不变）
     if (this.customRequest) {
-      this.__startUpload(normalized.uid);
+      this.__pumpQueue();
     }
     this.__render();
     this.__emit();
@@ -215,6 +219,7 @@ export class ICEUpload extends ICEWidget {
           target.url = response.url;
         }
         this.__render();
+        this.__pumpQueue();
       },
       onError: (message: string) => {
         const target = this.files.find((item) => item.uid === uid);
@@ -223,6 +228,7 @@ export class ICEUpload extends ICEWidget {
         target.error = String(message || '');
         target.progress = undefined;
         this.__render();
+        this.__pumpQueue();
       },
     };
     const result = this.customRequest({ ...file }, hooks);
@@ -234,8 +240,43 @@ export class ICEUpload extends ICEWidget {
     }
   }
 
+  /**
+   * 往队列里灌：按**当前列表顺序**启动还没开始的（`pending` / 没有状态）文件，直到跑满并发。
+   *
+   * 顺序取自 `this.files` 的当前顺序 —— 所以用户拖拽换序之后，下一个启动的就是新顺序里的那个。
+   */
+  private __pumpQueue(): void {
+    if (!this.customRequest) {
+      return;
+    }
+    const running = this.files.filter((file) => file.status === 'uploading').length;
+    let slots = Math.max(0, this.uploadConcurrency - running);
+    for (const file of this.files) {
+      if (slots <= 0) {
+        break;
+      }
+      if (file.status === 'uploading' || file.status === 'done' || file.status === 'error') {
+        continue;
+      }
+      file.status = 'pending';
+      this.__startUpload(file.uid);
+      slots -= 1;
+    }
+    // 还排着的标成 pending，界面上一眼能看出「在等」
+    this.files.forEach((file) => {
+      if (!file.status) {
+        file.status = 'pending';
+      }
+    });
+  }
+
+  /** 排队中的文件数（不含正在传的）。 */
+  public getQueuedCount(): number {
+    return this.files.filter((file) => file.status === 'pending').length;
+  }
+
   /** 上传状态：'uploading' | 'done' | 'error'（没用 customRequest 时是 null）。 */
-  public getFileStatus(uid: string): 'uploading' | 'done' | 'error' | null {
+  public getFileStatus(uid: string): 'pending' | 'uploading' | 'done' | 'error' | null {
     const file = this.files.find((item) => item.uid === uid);
     return file && file.status ? file.status : null;
   }

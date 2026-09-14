@@ -238,6 +238,8 @@ export class ICETable extends ICEWidget {
   private columnDropIndicator: any = null;
   /** 编辑校验失败时的可见提示节点 */
   private editErrorNode: any = null;
+  /** 编辑态按回车的行为：`commit` = 提交退出（默认，老行为）；`next` = 提交并往下走同一列 */
+  private editEnterBehavior: 'commit' | 'next' = 'commit';
   private summaryNode: any = null;
   private summaryTexts: Record<string, string> = {};
   /** 单元格编辑态：改哪一行哪一列 + 盖在格子上的输入框 */
@@ -340,6 +342,7 @@ export class ICETable extends ICEWidget {
     this.treeFilterMode = props.treeFilterMode === 'ancestors' ? 'ancestors' : 'flat';
     this.selectAllScope = props.selectAllScope === 'all' ? 'all' : 'visible';
     this.columnDraggable = props.columnDraggable === true;
+    this.editEnterBehavior = props.editEnterBehavior === 'next' ? 'next' : 'commit';
     this.onColumnReorder = typeof props.onColumnReorder === 'function' ? props.onColumnReorder : null;
     this.rowKeyProp = typeof props.rowKey === 'function' || typeof props.rowKey === 'string' ? props.rowKey : null;
     if (props.expandable && typeof props.expandable.render === 'function') {
@@ -744,7 +747,17 @@ export class ICETable extends ICEWidget {
       const raw = evt && (evt.originalEvent || evt);
       const pressed = raw && (raw.key || raw.code);
       if (pressed === 'Enter') {
-        this.commitEdit();
+        if (this.editEnterBehavior === 'next') {
+          // 像表格软件那样：提交并往下走同一列（最后一行就提交退出）
+          const rowIndex = this.editing ? this.editing.rowIndex : -1;
+          const key = this.editing ? this.editing.key : null;
+          if (key && this.commitEdit() && rowIndex + 1 < this.data.length) {
+            this.startEdit(rowIndex + 1, key);
+            this.__ensureCellVisible(rowIndex + 1, key);
+          }
+        } else {
+          this.commitEdit();
+        }
       } else if (pressed === 'Escape' || pressed === 'Esc') {
         this.cancelEdit();
       } else if (pressed === 'Tab') {

@@ -187,6 +187,7 @@
 | 方法 | 返回 | 说明 |
 |---|---|---|
 | `getExpandedKeys()` | `string[]` |  |
+| `getNodes()` | `ICETreeNode[]` | 当前树数据（跨父级移动 / 增删之后拿到的就是最新结构）。 |
 | `setExpandedKeys(keys: string[])` | `this` |  |
 | `expandAll()` | `this` |  |
 | `collapseAll()` | `this` |  |

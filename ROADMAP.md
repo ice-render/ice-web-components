@@ -357,13 +357,13 @@
 - `ICEDrawer`：`extra` ✅、`footer` ✅、尺寸预设待做
 - `ICESvgIcon`：单测 ✅、gallery 演示 ✅、`setPath` / `setStrokeWidth` ✅
 - 全局：密度 ✅ `setDensity('compact')`、减少动效 ✅ `setICEReducedMotion`、高对比主题 ✅ `high-contrast`
-- `ICETree`：虚拟滚动 ✅（默认 200 节点起）；树形拖拽 ✅、搜索 ✅（`ICETreeSelect`）
+- `ICETree`：虚拟滚动 ✅（默认 200 节点起）；树形拖拽 ✅（含跨父级）、搜索 ✅（`ICETreeSelect`）、`getNodes()` ✅
 - `ICEMenu`：横向 ✅（子菜单开关语义）、收起态 ✅、键盘导航 ✅（跳过 disabled）、展开/收起动画 ✅
 - `ICETabs`：溢出滚动 ✅、方位（上下左右）✅、拖动排序 ✅
 - `ICETable`：列筛选 ✅、行展开 ✅、汇总行 ✅、单元格编辑 ✅（校验 + 失焦提交）、
   树形数据 ✅（展开 + 选择级联 + 子树拖拽含跨父级 + 汇总 all/page·leaves + 已选提示 + 筛选保留祖先 + 全选范围）
-- `ICETable`：单元格自定义编辑器 ✅（`column.editor`）、编辑 Tab 流转 ✅（含自动滚动）、列版式导出/还原 ✅、列头拖拽换序 ✅（含落点指示线）、编辑校验可见提示 ✅、宽表 Tab 横向滚 ✅
-- `ICEUpload`：文件列表 ✅、进度 ✅、`onRemove` ✅、自定义上传 ✅（含重试）、桌面拖放 ✅
+- `ICETable`：单元格自定义编辑器 ✅（`column.editor`）、编辑 Tab 流转 ✅（含自动滚动）、列版式导出/还原 ✅、列头拖拽换序 ✅（含落点指示线）、编辑校验可见提示 ✅、宽表 Tab 横向滚 ✅、回车流转向下 ✅
+- `ICEUpload`：文件列表 ✅、进度 ✅、`onRemove` ✅、自定义上传 ✅（含重试）、桌面拖放 ✅、上传队列（并发 + 顺序跟列表）✅
 - `ICEScrollPane`：横向滚动条 ✅、平滑滚动 ✅（自动跟随减少动效）、滑块拖拽 ✅
 - `ICEAlert`：关闭动画 ✅（默认立即关闭，显式 `animation: true` 才淡出）
 - `ICETree`：虚拟 × 拖拽交叉用例 ✅（`getRowIndexAt`）
