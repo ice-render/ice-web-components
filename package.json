@@ -29,10 +29,12 @@
     "qa:pixel": "node scripts/qa-pixel.mjs",
     "qa:algo": "node scripts/qa-algo.mjs",
     "qa:dos": "node scripts/qa-dos.mjs",
+    "qa:counts": "node scripts/lib/qa-counts.mjs",
+    "qa:counts:write": "node scripts/lib/qa-counts.mjs --write",
     "docs:api": "node scripts/gen-docs.mjs",
     "docs:check": "node scripts/check-docs.mjs",
     "docs": "npm run docs:api && npm run docs:check",
-    "verify": "npm run types:check && npm test && npm run build && npm run docs",
+    "verify": "npm run types:check && npm test && npm run build && npm run docs && node scripts/lib/qa-counts.mjs --check",
     "test:e2e": "npm run build && playwright test",
     "verify:full": "npm run verify && npm run test:e2e"
   },

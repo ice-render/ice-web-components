@@ -115,6 +115,8 @@ export class ICEInputNumber extends ICEWidget {
   }
 
   public setEnabled(enabled: boolean): this {
+    // 基类的 enabled 才是 isEnabled() 读的那一个：只改自己的 disabled 会出现「禁用了就再也启用不回来」
+    super.setEnabled(enabled);
     this.disabled = !enabled;
     this.focusable = !this.disabled;
     this.__render();
