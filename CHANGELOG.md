@@ -69,6 +69,15 @@
   —— 折叠**只影响显示**，`getValue()` 永远给全量。单选/多选的既有语义（含 `getFieldLabel()`
   的文本口径）保持不变。
 
+- **`ICESelect` 的大候选列表：滚动 + 虚拟窗口**（2026-09-14，S2 第一批第八件）。
+  修的是一个**真缺口**：候选超过 6 条时下拉只画前 6 条，剩下的根本翻不到（只能靠搜索）。
+  现在候选区自己就是滚动视口（`listHeight` 默认 6 行，内容高度按总条数算，滚动条比例才对）；
+  条数到 `virtualThreshold`（默认 100）以上时只渲染可视窗口 + 上下 2 行缓冲 ——
+  一万条候选的节点数和一个 8 条的下拉一样多。键盘上下移动会把窗口滚过去（`setListScroll` 也会），
+  搜索过滤后重新判断要不要虚拟（过滤到几条就老实全画）。配套
+  `isVirtual()` / `isListScrollable()` / `getListScroll()` / `setListScroll()` /
+  `getListContentHeight()` / `getRenderedOptionValues()` / `getActiveIndex()`。
+
 > 其余待发布的改动在这里累积。
 
 ## [1.5.4] - 2026-09-14

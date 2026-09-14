@@ -23,6 +23,8 @@
 | `mode?` | `'single' \| 'multiple' \| 'tags'` | `single` 单选；`multiple` 多选；`tags` 多选 + 可以**创造**候选里没有的取值 |
 | `showSearch?` | `boolean` |  |
 | `maxTagCount?` | `number` | 字段区最多画几个标签片，超出的折叠成 `+M`（只影响显示，取值始终是全量） |
+| `listHeight?` | `number` | 候选区高度（默认 6 行）；候选比它高时候选区自己滚动 |
+| `virtualThreshold?` | `number` | 条数达到这个阈值就只渲染可视窗口（默认 100） |
 | `placeholder?` | `string` | 占位文案 |
 | `disabled?` | `boolean` | 是否禁用（禁用后不响应交互、不可聚焦） |
 | `left?` | `number` | 相对父容器的左边距 |
@@ -57,6 +59,14 @@
 | `toggle()` | `this` |  |
 | `open()` | `this` |  |
 | `close()` | `this` |  |
+| `isVirtual()` | `boolean` |  |
+| `isListScrollable()` | `boolean` |  |
+| `getListScroll()` | `number` |  |
+| `setListScroll(y: number)` | `this` |  |
+| `getListContentHeight()` | `number` |  |
+| `getRenderedOptionValues()` | `string[]` | 当前真的画出来的候选值（虚拟时就是那个窗口）。 |
+| `getSelectedOptionValues()` | `string[]` |  |
+| `getActiveIndex()` | `number` |  |
 
 ## `ICEAutoComplete`
 
