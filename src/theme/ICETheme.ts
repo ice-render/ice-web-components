@@ -108,7 +108,7 @@ export type ICEThemeTokens = {
 };
 
 /**
- * 配色取 **Bootstrap 5** 的语义色板（不是 业界组件库 那套）：
+ * 配色取 **Bootstrap 5** 的语义色板：
  * - 主色 `#0d6efd`，悬停 `#0b5ed7`（shade），按下 `#0a58ca`；
  * - subtle 背景 / 边框用 Bootstrap 的 `*-bg-subtle` / `*-border-subtle`
  *   （primary #cfe2ff / #9ec5fe、success #d1e7dd / #a3cfbb …）；

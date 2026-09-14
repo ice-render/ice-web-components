@@ -4,7 +4,7 @@ import { iceUIManager } from '../core/ICEManager';
 import { tween, ICETweenHandle, ICEFrameDriver } from '../util/ICEAnimation';
 
 /**
- * 轮播（业界组件库 Carousel 的最小版）。
+ * 轮播。
  *
  * - 结构：裁剪视口（`clipChildren`）里一条横向轨道，幻灯片并排；轨道 left = -index * width；
  * - `goTo` / `next` / `prev` 切换，`loop` 控制是否循环；箭头与圆点可点，方向键 ←/→ 也可切；

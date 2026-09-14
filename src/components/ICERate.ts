@@ -3,7 +3,7 @@ import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 
 /**
- * 评分（业界组件库 Rate）：N 颗星，点击设置分值、悬停预览、键盘 ←/→ 调整。
+ * 评分：N 颗星，点击设置分值、悬停预览、键盘 ←/→ 调整。
  */
 export interface ICERateOptions {
   /** 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） */

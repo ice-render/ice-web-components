@@ -23,11 +23,11 @@
 
 ## `ICEBreadcrumb`
 
-面包屑（业界组件库 Breadcrumb）：一行「路径 + 分隔符」，最后一项是当前页。
+面包屑：一行「路径 + 分隔符」，最后一项是当前页。
 
 - 宽度按内容自适应（中文按 1em 估算，不会把文字压出色块外）；
 - 除最后一项外都可点击，点击触发 `navigate` 事件（载荷 `{ item, index }`）与 `onNavigate`；
-- `maxItems` 超长时把中间项折叠成「…」，点击省略号展开（业界组件库 的折叠语义： `maxItems` 只数真实项，省略号不占额度）。
+- `maxItems` 超长时把中间项折叠成「…」，点击省略号展开（折叠语义： `maxItems` 只数真实项，省略号不占额度）。
 
 源码：[`src/components/ICEBreadcrumb.ts`](../../src/components/ICEBreadcrumb.ts)
 
@@ -60,7 +60,7 @@
 
 ## `ICEAnchor`
 
-锚点导航（业界组件库 Anchor）：一列锚点，点击滚到目标位置，滚动时自动高亮当前项。  与 `ICEScrollPane` 配合使用：`target` 传滚动容器，`items[].top` 是该段落在 **内容坐标系**里的纵向位置。滚动事件由 `ICEScrollPane` 的 `scroll` 事件驱动。
+锚点导航：一列锚点，点击滚到目标位置，滚动时自动高亮当前项。  与 `ICEScrollPane` 配合使用：`target` 传滚动容器，`items[].top` 是该段落在 **内容坐标系**里的纵向位置。滚动事件由 `ICEScrollPane` 的 `scroll` 事件驱动。
 
 源码：[`src/components/ICEAnchor.ts`](../../src/components/ICEAnchor.ts)
 
@@ -93,11 +93,11 @@
 
 ## `ICEBackTop`
 
-回到顶部（业界组件库 BackTop）：一个小圆按钮，滚动超过阈值才出现。  用法是把滚动容器交给它：`new ICEBackTop({ target: scrollPane })`。 依赖 `ICEScrollPane` 的 `scroll` 事件（滚动位置变化时派发）， 点击后把目标滚回 `(0, 0)` 并回调 `onClick`。
+回到顶部：一个小圆按钮，滚动超过阈值才出现。  用法是把滚动容器交给它：`new ICEBackTop({ target: scrollPane })`。 依赖 `ICEScrollPane` 的 `scroll` 事件（滚动位置变化时派发）， 点击后把目标滚回 `(0, 0)` 并回调 `onClick`。
 
 源码：[`src/components/ICEBackTop.ts`](../../src/components/ICEBackTop.ts)
 
-**构造参数** `ICEBackTopOptions` — 回到顶部（业界组件库 BackTop）：一个小圆按钮，滚动超过阈值才出现。  用法是把滚动容器交给它：`new ICEBackTop({ target: scrollPane })`。 依赖 `ICEScrollPane` 的 `scroll` 事件（滚动位置变化时派发）， 点击后把目标滚回 `(0, 0)` 并回调 `onClick`。
+**构造参数** `ICEBackTopOptions` — 回到顶部：一个小圆按钮，滚动超过阈值才出现。  用法是把滚动容器交给它：`new ICEBackTop({ target: scrollPane })`。 依赖 `ICEScrollPane` 的 `scroll` 事件（滚动位置变化时派发）， 点击后把目标滚回 `(0, 0)` 并回调 `onClick`。
 
 | 参数 | 类型 | 说明 |
 |---|---|---|

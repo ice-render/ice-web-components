@@ -69,7 +69,7 @@ export type ICETypographyVariant = 'title' | 'paragraph' | 'text' | 'link';
 export type ICETypographyType = 'default' | 'secondary' | 'success' | 'warning' | 'danger' | 'primary';
 
 /**
- * 排版文本（业界组件库 Typography）：标题层级 / 正文 / 链接，自带省略与折行。
+ * 排版文本：标题层级 / 正文 / 链接，自带省略与折行。
  *
  * - `variant: 'title'` + `level: 1..5`：五级标题，字号递减；
  * - `variant: 'paragraph'`：正文，配合 `rows` 做多行折行（末行补 `…`）；

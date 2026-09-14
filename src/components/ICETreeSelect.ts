@@ -6,7 +6,7 @@ import { iceUIManager } from '../core/ICEManager';
 import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../core/ICEOverlayManager';
 
 /**
- * 树选择器（业界组件库 TreeSelect）：下拉里放一棵 ICETree，选中节点后回写值。
+ * 树选择器：下拉里放一棵 ICETree，选中节点后回写值。
  *
  * - 字段区与 ICESelect 同构（选中标签 / placeholder + ▾），错误态边框标红；
  * - 下拉内容直接复用 `ICETree`（层级展开、缩进、箭头命中区、选择模型都在那边）；

@@ -44,7 +44,7 @@ import { ICEBoxLayout, ICEFlowLayout } from 'ice-render';
 panel.setLayout(new ICEFlowLayout({ gap: 8 }));   // 对齐引擎 ICEGroup.setLayout，可链式
 ```
 
-## 5. 主题从 业界组件库 换到 Bootstrap 5
+## 5. 主题从旧的语义色方案换到 Bootstrap 5
 
 * 语义色换成 Bootstrap 取值：`primary #0d6efd`、`success #198754`、`warning #ffc107`、
   `error #dc3545`、`info #0dcaf0`；

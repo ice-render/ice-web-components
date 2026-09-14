@@ -4,7 +4,7 @@ import { iceUIManager } from '../core/ICEManager';
 import { estimateTextWidth } from '../util/ICEStyle';
 
 /**
- * 锚点导航（业界组件库 Anchor）：一列锚点，点击滚到目标位置，滚动时自动高亮当前项。
+ * 锚点导航：一列锚点，点击滚到目标位置，滚动时自动高亮当前项。
  *
  * 与 `ICEScrollPane` 配合使用：`target` 传滚动容器，`items[].top` 是该段落在
  * **内容坐标系**里的纵向位置。滚动事件由 `ICEScrollPane` 的 `scroll` 事件驱动。

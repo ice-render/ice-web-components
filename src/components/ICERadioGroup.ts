@@ -5,7 +5,7 @@ import { iceUIManager } from '../core/ICEManager';
 import { estimateTextWidth } from '../util/ICEStyle';
 
 /**
- * 单选组（业界组件库 Radio.Group）：一组互斥选项，整行可点，值是选项的 `value`。
+ * 单选组：一组互斥选项，整行可点，值是选项的 `value`。
  *
  * 与 `ICERadioButton` 的分工：单个按钮只管「选中/未选中」，**互斥与取值由本组件维护**，
  * 因此业务代码不用再自己写「点了 A 要把 B 取消」这类同步逻辑。
@@ -241,7 +241,7 @@ export class ICERadioGroup extends ICEWidget {
       const itemWidth = radioSize + controlGap + textWidth;
       const left = this.direction === 'vertical' ? 0 : cursor;
       const top = this.direction === 'vertical' ? index * this.itemHeight : 0;
-      // 整行（圈 + 文字）是一个可点节点：点文字也能选中，这是 业界组件库 的行为
+      // 整行（圈 + 文字）是一个可点节点：点文字也能选中，这是单选组的常规行为
       const item = new ICEWidget({
         left,
         top,

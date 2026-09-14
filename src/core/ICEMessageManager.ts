@@ -10,7 +10,7 @@ import { fadeOut, slideIn, ICEEasing, ICEFrameDriver } from '../util/ICEAnimatio
  *
  * - 消息挂在**独立的工具层容器**上，与浮层系统解耦：打开 Modal / Popover 不会清掉消息，
  *   消息也不参与浮层的 exclusive 关闭；
- * - `show()` 顶部居中堆叠（业界组件库 的 message），`notification()` 右下角倒序堆叠；
+ * - `show()` 顶部居中堆叠，`notification()` 右下角倒序堆叠；
  * - duration 到期自动淡出后移除（0 表示常驻）；每条消息返回 handle 可单独关闭。
  */
 

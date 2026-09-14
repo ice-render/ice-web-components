@@ -4,7 +4,7 @@ import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 
 /**
- * 评论（业界组件库 Comment 的最小版）：文字头像 + 作者 + 时间 + 正文 + 操作按钮 + 嵌套回复。
+ * 评论：文字头像 + 作者 + 时间 + 正文 + 操作按钮 + 嵌套回复。
  *
  * 布局自上而下：头像在左，右侧依次是「作者 · 时间」「正文」「操作」「回复（缩进）」。
  * 高度按内容自动累加（正文单行 20px，多行请自行用 content 组件工厂）。

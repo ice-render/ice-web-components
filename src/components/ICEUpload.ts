@@ -6,7 +6,7 @@ import { iceUIManager } from '../core/ICEManager';
 import type { ICELocalizedProps } from '../i18n/ICEI18n';
 
 /**
- * 上传选择器（业界组件库 Upload 的最小版）。
+ * 上传选择器。
  *
  * - 上：虚线拖拽区（点击唤起隐藏的 `<input type="file">`）；
  * - 下：文件列表（名称 / 大小 / 删除）；

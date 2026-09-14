@@ -55,7 +55,7 @@
 
 ## `ICEAutoComplete`
 
-自动完成（业界组件库 AutoComplete）：文本输入 + 候选下拉。
+自动完成：文本输入 + 候选下拉。
 
 - 组合 `ICETextField`（输入与取值/表单语义）与浮层里的候选列表；
 - 输入即过滤（label/value 包含匹配，忽略大小写），无候选时下拉收起；
@@ -63,7 +63,7 @@
 
 源码：[`src/components/ICEAutoComplete.ts`](../../src/components/ICEAutoComplete.ts)
 
-**构造参数** `ICEAutoCompleteOptions` — 自动完成（业界组件库 AutoComplete）：文本输入 + 候选下拉。
+**构造参数** `ICEAutoCompleteOptions` — 自动完成：文本输入 + 候选下拉。
 
 | 参数 | 类型 | 说明 |
 |---|---|---|
@@ -101,7 +101,7 @@
 
 ## `ICECascader`
 
-级联选择（业界组件库 Cascader 的最小版）。
+级联选择。
 
 - 字段显示已选路径（`separator` 可定制），未选显示 placeholder，错误态边框标红；
 - 浮层按层级横向排列：点父节点展开下一列（不关闭），点叶子定值并关闭；
@@ -150,7 +150,7 @@
 
 ## `ICETreeSelect`
 
-树选择器（业界组件库 TreeSelect）：下拉里放一棵 ICETree，选中节点后回写值。
+树选择器：下拉里放一棵 ICETree，选中节点后回写值。
 
 - 字段区与 ICESelect 同构（选中标签 / placeholder + ▾），错误态边框标红；
 - 下拉内容直接复用 `ICETree`（层级展开、缩进、箭头命中区、选择模型都在那边）；
@@ -159,7 +159,7 @@
 
 源码：[`src/components/ICETreeSelect.ts`](../../src/components/ICETreeSelect.ts)
 
-**构造参数** `ICETreeSelectOptions` — 树选择器（业界组件库 TreeSelect）：下拉里放一棵 ICETree，选中节点后回写值。
+**构造参数** `ICETreeSelectOptions` — 树选择器：下拉里放一棵 ICETree，选中节点后回写值。
 
 | 参数 | 类型 | 说明 |
 |---|---|---|
@@ -195,7 +195,7 @@
 
 ## `ICEDatePicker`
 
-日期选择器（业界组件库 DatePicker 的最小版）。
+日期选择器。
 
 - 字段区显示所选日期（可自定义 `format`），未选显示 placeholder，错误态边框标红；
 - 日历浮层：月份标题 + ‹/› 切月 + 周标题（周一开头）+ 6×7 网格（含上下月补位）； 今天、选中日分别高亮；
@@ -248,7 +248,7 @@
 
 ## `ICETimePicker`
 
-时间选择器（业界组件库 TimePicker 的最小版）。
+时间选择器。
 
 - 字段区显示所选时间，未选显示 placeholder，错误态边框标红；
 - 浮层是「时/分/秒」三列（`format: 'HH:mm'` 时只有两列），列内用 `ICEScrollPane` 滚动， 打开时自动滚到当前取值；
@@ -300,7 +300,7 @@
 
 ## `ICEColorPicker`
 
-颜色选择器（业界组件库 ColorPicker 的色板网格最小版）。
+颜色选择器。
 
 - 按 `colors` 渲染色块网格（`columns` 控制列数），选中色块带描边环；
 - 点击色块回写 value 并回调 `onChange`；`disabled` 时忽略交互且不可聚焦；
@@ -309,7 +309,7 @@
 
 源码：[`src/components/ICEColorPicker.ts`](../../src/components/ICEColorPicker.ts)
 
-**构造参数** `ICEColorPickerOptions` — 颜色选择器（业界组件库 ColorPicker 的色板网格最小版）。
+**构造参数** `ICEColorPickerOptions` — 颜色选择器。
 
 | 参数 | 类型 | 说明 |
 |---|---|---|
@@ -341,7 +341,7 @@
 
 ## `ICETransfer`
 
-穿梭框（业界组件库 Transfer 的最小版）。
+穿梭框。
 
 - 按 `targetKeys` 把 `dataSource` 分成「源 / 目标」两栏，栏内各自可滚动；
 - 点行切换勾选；中间按钮把勾选项整体右移 / 左移，移动后清空勾选并回调；

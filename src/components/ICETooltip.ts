@@ -20,7 +20,7 @@ export function tooltipPanelWidth(title: string): number {
  *
  * - 悬停检测复用 `ICEWidget` 的 hover 状态（ICEHoverManager 命中后调 `setHovered`，
  *   本组件监听目标的 `hoverchange` 事件）；
- * - 弹出/关闭都有延时（业界组件库 的 mouseEnterDelay / mouseLeaveDelay 语义），进入延时期内离开则不弹；
+ * - 弹出/关闭都有延时，进入延时期内离开则不弹；
  * - 浮层定位、点外关闭、z 序全部交给 `ICEOverlayManager`（工具层，恒在组件之上）；
  * - 浮层关闭时内容会被销毁，所以内容每次弹出都新建（`title` 字符串自动包成小面板，
  *   或用 `content: () => component` 自定义）。

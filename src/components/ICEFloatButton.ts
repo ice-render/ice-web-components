@@ -3,7 +3,7 @@ import { iceUIManager } from '../core/ICEManager';
 import { centerTextNode } from '../util/ICEStyle';
 
 /**
- * 悬浮操作按钮（业界组件库 FloatButton）：一个圆形主按钮，点击展开一组子按钮。
+ * 悬浮操作按钮：一个圆形主按钮，点击展开一组子按钮。
  *
  * - 默认收起，子按钮 `display:false`（既不显示也不参与命中）；
  * - 展开后子按钮沿 `direction`（默认向上）依次排开；

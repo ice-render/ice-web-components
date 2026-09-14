@@ -6,7 +6,7 @@ import { iceUIManager } from '../core/ICEManager';
 import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../core/ICEOverlayManager';
 
 /**
- * 级联选择（业界组件库 Cascader 的最小版）。
+ * 级联选择。
  *
  * - 字段显示已选路径（`separator` 可定制），未选显示 placeholder，错误态边框标红；
  * - 浮层按层级横向排列：点父节点展开下一列（不关闭），点叶子定值并关闭；

@@ -6,7 +6,7 @@ import { iceUIManager } from '../core/ICEManager';
 import { ICESelectionModel, ICESelectionMode } from '../model/ICESelectionModel';
 
 /**
- * 列表（Swing JList / 业界组件库 List 的最小版）。
+ * 列表（Swing JList 的最小版）。
  *
  * - 选择逻辑在 `ICESelectionModel` 里（single 替换 / multiple 切换），组件只负责渲染与交互；
  * - 内容高于可视高度时自动套一层 `ICEScrollPane`（复用 A2 的滚动底座与子树裁剪）；

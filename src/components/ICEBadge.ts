@@ -14,7 +14,7 @@ export class ICEBadge extends ICEWidget {
   constructor(props: any = {}) {
     const theme = iceUIManager.getTheme();
     const dot = props.dot === true;
-    // 红点语义（业界组件库：状态点默认告警色），普通徽标默认主色
+    // 红点语义（状态点默认告警色），普通徽标默认主色
     const status = props.status || props.color || (dot ? 'error' : 'primary');
     const colors = getStatusColors(theme, status);
     const variant: 'solid' | 'soft' = props.variant === 'soft' ? 'soft' : 'solid';

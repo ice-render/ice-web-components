@@ -4,7 +4,7 @@ import { ICEButton } from './ICEButton';
 import { iceUIManager } from '../core/ICEManager';
 
 /**
- * 数字输入框（业界组件库 InputNumber / Swing JSpinner 的最小版）。
+ * 数字输入框。
  *
  * - 左右步进按钮 + 键盘 ↑/↓ 步进，按 min/max 夹取，结果按 precision 取整；
  * - 支持直接输入数字（数字键 / 小数点 / 负号 / Backspace）；

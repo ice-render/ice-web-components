@@ -61,7 +61,7 @@
 
 ## `ICEList`
 
-列表（Swing JList / 业界组件库 List 的最小版）。
+列表（Swing JList 的最小版）。
 
 - 选择逻辑在 `ICESelectionModel` 里（single 替换 / multiple 切换），组件只负责渲染与交互；
 - 内容高于可视高度时自动套一层 `ICEScrollPane`（复用 A2 的滚动底座与子树裁剪）；
@@ -99,7 +99,7 @@
 
 ## `ICETree`
 
-树（Swing JTree / 业界组件库 Tree 的最小可用版）。
+树（Swing JTree 的最小可用版）。
 
 - 可见行 = 深度优先遍历、只展开 expandedKeys 里的节点；
 - 每层缩进 16px，有子节点的行显示 ▸ / ▾（点箭头只切换展开，不改选择）；
@@ -161,7 +161,7 @@
 | 方法 | 返回 | 说明 |
 |---|---|---|
 | `setTitle(title: string)` | `this` |  |
-| `setExtra(extra: any)` | `this` | 右上角插槽（业界组件库 Card 的 `extra`）：放操作链接 / 按钮等。 |
+| `setExtra(extra: any)` | `this` | 右上角插槽：放操作链接 / 按钮等。 |
 | `getExtraNode()` | `any` |  |
 | `getTitleNode()` | `any` |  |
 
@@ -181,11 +181,11 @@
 
 ## `ICEStatistic`
 
-统计数值（业界组件库 Statistic）：标题 + 大号数字 + 前缀/后缀，支持千分位与精度。  传 `countdown`（剩余毫秒）时进入倒计时模式：按「N 天 HH:mm:ss」显示剩余时间， 归零触发 `finish` 事件与 `onFinish` 回调（业界组件库 的 `Statistic.Countdown`）。
+统计数值：标题 + 大号数字 + 前缀/后缀，支持千分位与精度。  传 `countdown`（剩余毫秒）时进入倒计时模式：按「N 天 HH:mm:ss」显示剩余时间， 归零触发 `finish` 事件与 `onFinish` 回调。
 
 源码：[`src/components/ICEStatistic.ts`](../../src/components/ICEStatistic.ts)
 
-**构造参数** `ICEStatisticOptions` — 统计数值（业界组件库 Statistic）：标题 + 大号数字 + 前缀/后缀，支持千分位与精度。  传 `countdown`（剩余毫秒）时进入倒计时模式：按「N 天 HH:mm:ss」显示剩余时间， 归零触发 `finish` 事件与 `onFinish` 回调（业界组件库 的 `Statistic.Countdown`）。
+**构造参数** `ICEStatisticOptions` — 统计数值：标题 + 大号数字 + 前缀/后缀，支持千分位与精度。  传 `countdown`（剩余毫秒）时进入倒计时模式：按「N 天 HH:mm:ss」显示剩余时间， 归零触发 `finish` 事件与 `onFinish` 回调。
 
 | 参数 | 类型 | 说明 |
 |---|---|---|
@@ -224,7 +224,7 @@
 
 ## `ICEDescriptions`
 
-描述列表（业界组件库 Descriptions）：成对的「标签 / 值」，支持单列与多列。 常用于详情页（订单信息、用户资料）。
+描述列表：成对的「标签 / 值」，支持单列与多列。 常用于详情页（订单信息、用户资料）。
 
 源码：[`src/components/ICEDescriptions.ts`](../../src/components/ICEDescriptions.ts)
 
@@ -250,7 +250,7 @@
 
 ## `ICETimeline`
 
-时间线（业界组件库 Timeline）：竖线 + 节点圆点 + 标题/描述/时间。
+时间线：竖线 + 节点圆点 + 标题/描述/时间。
 
 源码：[`src/components/ICETimeline.ts`](../../src/components/ICETimeline.ts)
 
@@ -324,7 +324,7 @@
 
 ## `ICEImagePreview`
 
-图片预览（业界组件库 `Image.PreviewGroup`）：全屏遮罩 + 居中图片 + 底部工具栏。
+图片预览：全屏遮罩 + 居中图片 + 底部工具栏。
 
 - 上一张 / 下一张循环切换（`change` 事件 + `onIndexChange`）；
 - 缩放（步进 + 上下限）与 90° 旋转，`reset()` 复位；
@@ -378,7 +378,7 @@
 
 ## `ICECalendar`
 
-日历（业界组件库 Calendar 的最小版）：月视图 + 日期选择。
+日历：月视图 + 日期选择。
 
 - 标题「YYYY 年 M 月」+ 上/下月切换（回调 `onChangeMonth`）；
 - 6×7 网格：相邻月份补齐的格子弱化显示，点击仍然可选；
@@ -387,7 +387,7 @@
 
 源码：[`src/components/ICECalendar.ts`](../../src/components/ICECalendar.ts)
 
-**构造参数** `ICECalendarOptions` — 日历（业界组件库 Calendar 的最小版）：月视图 + 日期选择。
+**构造参数** `ICECalendarOptions` — 日历：月视图 + 日期选择。
 
 | 参数 | 类型 | 说明 |
 |---|---|---|
@@ -441,7 +441,7 @@
 
 ## `ICEAvatarGroup`
 
-头像组（业界组件库 Avatar.Group 的最小版）。
+头像组。
 
 - 头像横向**重叠**排布（每个左移 `overlap`），靠 ICEAvatar 自带的描边把相邻头像分开；
 - 超过 `max` 个时折叠：只显示前 max 个，末尾补一个 `+N` 头像；
@@ -500,7 +500,7 @@
 
 ## `ICECarousel`
 
-轮播（业界组件库 Carousel 的最小版）。
+轮播。
 
 - 结构：裁剪视口（`clipChildren`）里一条横向轨道，幻灯片并排；轨道 left = -index * width；
 - `goTo` / `next` / `prev` 切换，`loop` 控制是否循环；箭头与圆点可点，方向键 ←/→ 也可切；
@@ -552,7 +552,7 @@
 
 ## `ICECollapse`
 
-折叠面板（业界组件库 Collapse / Swing 无直接对应物）。
+折叠面板。
 
 - 每项 = 标题行（▸/▾ + 标题）+ 展开时的内容区；内容支持纯文本或组件工厂；
 - `accordion: true` 时同时只展开一个；展开/收起会重排并回调 onExpand(keys)；
@@ -588,7 +588,7 @@
 
 ## `ICEComment`
 
-评论（业界组件库 Comment 的最小版）：文字头像 + 作者 + 时间 + 正文 + 操作按钮 + 嵌套回复。  布局自上而下：头像在左，右侧依次是「作者 · 时间」「正文」「操作」「回复（缩进）」。 高度按内容自动累加（正文单行 20px，多行请自行用 content 组件工厂）。
+评论：文字头像 + 作者 + 时间 + 正文 + 操作按钮 + 嵌套回复。  布局自上而下：头像在左，右侧依次是「作者 · 时间」「正文」「操作」「回复（缩进）」。 高度按内容自动累加（正文单行 20px，多行请自行用 content 组件工厂）。
 
 源码：[`src/components/ICEComment.ts`](../../src/components/ICEComment.ts)
 
@@ -619,7 +619,7 @@
 
 ## `ICEWatermark`
 
-水印（业界组件库 Watermark）：把一段旋转文字平铺在自己的区域上。
+水印：把一段旋转文字平铺在自己的区域上。
 
 - 用于「内部资料 / 草稿 / 不可外传」这类页面级标记；
 - 不参与交互（`interactive: false`），不会挡住底下的点击；
@@ -629,7 +629,7 @@
 
 源码：[`src/components/ICEWatermark.ts`](../../src/components/ICEWatermark.ts)
 
-**构造参数** `ICEWatermarkOptions` — 水印（业界组件库 Watermark）：把一段旋转文字平铺在自己的区域上。
+**构造参数** `ICEWatermarkOptions` — 水印：把一段旋转文字平铺在自己的区域上。
 
 | 参数 | 类型 | 说明 |
 |---|---|---|

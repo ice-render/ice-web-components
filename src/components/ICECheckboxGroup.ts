@@ -5,7 +5,7 @@ import { iceUIManager } from '../core/ICEManager';
 import { estimateTextWidth } from '../util/ICEStyle';
 
 /**
- * 多选组（业界组件库 Checkbox.Group）：一组可多选的选项，值是 `string[]`（按选项顺序）。
+ * 多选组：一组可多选的选项，值是 `string[]`（按选项顺序）。
  *
  * - 整行可点（点文字也能勾选）；
  * - `max` 限制最多勾选几项，超出时忽略并触发 `exceed`（载荷 `{ value, max }`）；

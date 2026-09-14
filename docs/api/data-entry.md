@@ -48,7 +48,7 @@
 
 ## `ICEInputNumber`
 
-数字输入框（业界组件库 InputNumber / Swing JSpinner 的最小版）。
+数字输入框。
 
 - 左右步进按钮 + 键盘 ↑/↓ 步进，按 min/max 夹取，结果按 precision 取整；
 - 支持直接输入数字（数字键 / 小数点 / 负号 / Backspace）；
@@ -56,7 +56,7 @@
 
 源码：[`src/components/ICEInputNumber.ts`](../../src/components/ICEInputNumber.ts)
 
-**构造参数** `ICEInputNumberOptions` — 数字输入框（业界组件库 InputNumber / Swing JSpinner 的最小版）。
+**构造参数** `ICEInputNumberOptions` — 数字输入框。
 
 | 参数 | 类型 | 说明 |
 |---|---|---|
@@ -122,7 +122,7 @@
 
 ## `ICERadioGroup`
 
-单选组（业界组件库 Radio.Group）：一组互斥选项，整行可点，值是选项的 `value`。  与 `ICERadioButton` 的分工：单个按钮只管「选中/未选中」，**互斥与取值由本组件维护**， 因此业务代码不用再自己写「点了 A 要把 B 取消」这类同步逻辑。
+单选组：一组互斥选项，整行可点，值是选项的 `value`。  与 `ICERadioButton` 的分工：单个按钮只管「选中/未选中」，**互斥与取值由本组件维护**， 因此业务代码不用再自己写「点了 A 要把 B 取消」这类同步逻辑。
 
 - 键盘：聚焦后 ←/↑ 上一项、→/↓ 下一项（自动跳过禁用项），Enter/Space 选中当前项；
 - 表单：实现取值约定，可直接放进 `ICEForm`；
@@ -163,7 +163,7 @@
 
 ## `ICECheckboxGroup`
 
-多选组（业界组件库 Checkbox.Group）：一组可多选的选项，值是 `string[]`（按选项顺序）。
+多选组：一组可多选的选项，值是 `string[]`（按选项顺序）。
 
 - 整行可点（点文字也能勾选）；
 - `max` 限制最多勾选几项，超出时忽略并触发 `exceed`（载荷 `{ value, max }`）；
@@ -250,7 +250,7 @@
 
 ## `ICESegmented`
 
-分段控制器（业界组件库 Segmented / iOS ICESegmentedControl 的最小版）： 一组互斥选项，选中项实心高亮。每个分段是 ICEButton，因此天然可聚焦（Tab/Enter 可操作）。
+分段控制器： 一组互斥选项，选中项实心高亮。每个分段是 ICEButton，因此天然可聚焦（Tab/Enter 可操作）。
 
 源码：[`src/components/ICESegmented.ts`](../../src/components/ICESegmented.ts)
 
@@ -277,11 +277,11 @@
 
 ## `ICERate`
 
-评分（业界组件库 Rate）：N 颗星，点击设置分值、悬停预览、键盘 ←/→ 调整。
+评分：N 颗星，点击设置分值、悬停预览、键盘 ←/→ 调整。
 
 源码：[`src/components/ICERate.ts`](../../src/components/ICERate.ts)
 
-**构造参数** `ICERateOptions` — 评分（业界组件库 Rate）：N 颗星，点击设置分值、悬停预览、键盘 ←/→ 调整。
+**构造参数** `ICERateOptions` — 评分：N 颗星，点击设置分值、悬停预览、键盘 ←/→ 调整。
 
 | 参数 | 类型 | 说明 |
 |---|---|---|
@@ -307,7 +307,7 @@
 
 ## `ICEUpload`
 
-上传选择器（业界组件库 Upload 的最小版）。
+上传选择器。
 
 - 上：虚线拖拽区（点击唤起隐藏的 `<input type="file">`）；
 - 下：文件列表（名称 / 大小 / 删除）；

@@ -3,7 +3,7 @@ import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 
 /**
- * 步骤条（业界组件库 Steps）：横向序号 + 标题/描述 + 连接线，当前步骤高亮、已完成打勾。
+ * 步骤条：横向序号 + 标题/描述 + 连接线，当前步骤高亮、已完成打勾。
  */
 export interface ICEStepsItem {
   title: string;

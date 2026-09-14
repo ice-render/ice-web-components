@@ -4,11 +4,11 @@
 
 ## `ICEScrollPane`
 
-滚动视口（Swing 的 JScrollPane / 业界组件库 的 overflow:auto 容器）。  依赖引擎的**子树裁剪**（`clipChildren`）：内容超出视口的部分被裁掉，滚出去的子组件 也命不中（命中检测同样尊重裁剪区）。  结构： ``` ICEScrollPane (clipChildren: true)   ├── contentBox   位置 = (-scrollX, -scrollY)，尺寸 = 内容尺寸   │     └── 调用方的内容组件   └── scrollbarTrack + scrollbarThumb   滚动条（内容超出时才显示） ``` 内容盒与滚动条都在构造期创建，保证滚动条的 zIndex 恒高于内容（引擎按 zIndex 排序渲染）。
+滚动视口（Swing 的 JScrollPane / CSS 的 overflow:auto 容器）。  依赖引擎的**子树裁剪**（`clipChildren`）：内容超出视口的部分被裁掉，滚出去的子组件 也命不中（命中检测同样尊重裁剪区）。  结构： ``` ICEScrollPane (clipChildren: true)   ├── contentBox   位置 = (-scrollX, -scrollY)，尺寸 = 内容尺寸   │     └── 调用方的内容组件   └── scrollbarTrack + scrollbarThumb   滚动条（内容超出时才显示） ``` 内容盒与滚动条都在构造期创建，保证滚动条的 zIndex 恒高于内容（引擎按 zIndex 排序渲染）。
 
 源码：[`src/components/ICEScrollPane.ts`](../../src/components/ICEScrollPane.ts)
 
-**构造参数** `ICEScrollPaneOptions` — 滚动视口（Swing 的 JScrollPane / 业界组件库 的 overflow:auto 容器）。  依赖引擎的**子树裁剪**（`clipChildren`）：内容超出视口的部分被裁掉，滚出去的子组件 也命不中（命中检测同样尊重裁剪区）。  结构： ``` ICEScrollPane (clipChildren: true)   ├── contentBox   位置 = (-scrollX, -scrollY)，尺寸 = 内容尺寸   │     └── 调用方的内容组件   └── scrollbarTrack + scrollbarThumb   滚动条（内容超出时才显示） ``` 内容盒与滚动条都在构造期创建，保证滚动条的 zIndex 恒高于内容（引擎按 zIndex 排序渲染）。
+**构造参数** `ICEScrollPaneOptions` — 滚动视口（Swing 的 JScrollPane / CSS 的 overflow:auto 容器）。  依赖引擎的**子树裁剪**（`clipChildren`）：内容超出视口的部分被裁掉，滚出去的子组件 也命不中（命中检测同样尊重裁剪区）。  结构： ``` ICEScrollPane (clipChildren: true)   ├── contentBox   位置 = (-scrollX, -scrollY)，尺寸 = 内容尺寸   │     └── 调用方的内容组件   └── scrollbarTrack + scrollbarThumb   滚动条（内容超出时才显示） ``` 内容盒与滚动条都在构造期创建，保证滚动条的 zIndex 恒高于内容（引擎按 zIndex 排序渲染）。
 
 | 参数 | 类型 | 说明 |
 |---|---|---|
@@ -37,7 +37,7 @@
 
 ## `ICESplitter`
 
-分隔面板（业界组件库 Splitter）：两栏 + 可拖动的分隔条。
+分隔面板：两栏 + 可拖动的分隔条。
 
 - `direction: 'horizontal'`（默认）左右分栏，`'vertical'` 上下分栏；
 - `size` 是第一栏的像素尺寸，夹取范围 `[min, 容器尺寸 - dividerSize - min]`；
@@ -46,7 +46,7 @@
 
 源码：[`src/components/ICESplitter.ts`](../../src/components/ICESplitter.ts)
 
-**构造参数** `ICESplitterOptions` — 分隔面板（业界组件库 Splitter）：两栏 + 可拖动的分隔条。
+**构造参数** `ICESplitterOptions` — 分隔面板：两栏 + 可拖动的分隔条。
 
 | 参数 | 类型 | 说明 |
 |---|---|---|
@@ -217,7 +217,7 @@ ICE 内核的移动类事件为了性能不会在 mousemove 时做全量命中�
 全局提示（Message / Notification）。
 
 - 消息挂在**独立的工具层容器**上，与浮层系统解耦：打开 Modal / Popover 不会清掉消息， 消息也不参与浮层的 exclusive 关闭；
-- `show()` 顶部居中堆叠（业界组件库 的 message），`notification()` 右下角倒序堆叠；
+- `show()` 顶部居中堆叠，`notification()` 右下角倒序堆叠；
 - duration 到期自动淡出后移除（0 表示常驻）；每条消息返回 handle 可单独关闭。
 
 源码：[`src/core/ICEMessageManager.ts`](../../src/core/ICEMessageManager.ts)

@@ -3,7 +3,7 @@ import { iceUIManager } from '../core/ICEManager';
 import { centerTextNode } from '../util/ICEStyle';
 
 /**
- * 回到顶部（业界组件库 BackTop）：一个小圆按钮，滚动超过阈值才出现。
+ * 回到顶部：一个小圆按钮，滚动超过阈值才出现。
  *
  * 用法是把滚动容器交给它：`new ICEBackTop({ target: scrollPane })`。
  * 依赖 `ICEScrollPane` 的 `scroll` 事件（滚动位置变化时派发），

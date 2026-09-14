@@ -35,7 +35,7 @@ rings and shadows) is drawn by the engine.
   Tetris, Snake, 2048 and CHIP-8 rule/machine models, the pixel canvas and the undo
   stack, the console BIOS, the trace player + sorting/pathfinding and the DOS terminal)
   plus eight browser QA suites (`qa:admin`, `qa:gallery`, `qa:workbench`, `qa:xp`,
-  `qa:arcade`, `qa:pixel`, `qa:algo`, `qa:dos` — 282 assertions) that drive the demo pages with
+  `qa:arcade`, `qa:pixel`, `qa:algo`, `qa:dos` — 281 assertions) that drive the demo pages with
   real mouse and keyboard events and fail on any console error.
 
 ## Quick start
@@ -99,7 +99,7 @@ Full docs live in [`docs/`](./docs/README.md):
 | [Canvas layout](./docs/guides/layout.md) | Coordinates & zIndex, cluster + shelf layout, clipping & scrolling, when sizes are ready |
 | [Writing your own component](./docs/guides/custom-components.md) | Three levels of effort, constructor conventions, interaction / form / overlay / theme hooks, type registration and pitfalls |
 | [Testing](./docs/guides/testing.md) | Unit-test recipes (fake ICE + real components) and the browser QA scripts |
-| [Migration](./docs/guides/migration.md) | `UI*` → `ICE*`, 业界组件库 → Bootstrap theming, other breaking changes |
+| [Migration](./docs/guides/migration.md) | `UI*` → `ICE*`, token theming, other breaking changes |
 
 > The guide pages themselves are written in Chinese for now; this README is English-only.
 
