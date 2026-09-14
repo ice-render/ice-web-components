@@ -345,6 +345,7 @@
 | `onChange?` | `(files: ICEUploadFile[]) => void` | 值变化回调 |
 | `onRemove?` | `(file: ICEUploadFile) => void` | 删掉一个文件时回调（✕ 与 `removeFile` 同一条路径） |
 | `showFileList?` | `boolean` | 是否画文件列表（默认 true；只要拖拽区就传 false） |
+| `customRequest?` | `( file: ICEUploadFile, hooks: { onProgress: (percent: number) => void; onSuccess: (response?: { url?: string }) => void; onError: (message: string) => void; }, ) => void \| Promise<any>` | 自定义上传实现：给了它，加入文件就自动开始上传。 |
 
 **方法**
 
@@ -357,6 +358,8 @@
 | `getHintText()` | `string` | 上传区提示文案（测试 / QA 用）。 |
 | `getFileNode(uid: string)` | `ICEWidget \| null` |  |
 | `addFile(file: Partial<ICEUploadFile>)` | `boolean` | 加入一个文件（真实选择结果或调用方构造的数据）；被拒时返回 false。 |
+| `getFileStatus(uid: string)` | `'uploading' \| 'done' \| 'error' \| null` | 上传状态：'uploading' | 'done' | 'error'（没用 customRequest 时是 null）。 |
+| `retryFile(uid: string)` | `boolean` | 失败重传（只有失败的行能重试）。 |
 | `removeFile(uid: string)` | `this` |  |
 | `getFileRows()` | `any[]` | 文件行节点（`showFileList: false` 时为空）。 |
 | `getFileRowText(uid: string)` | `string` | 某一行的整行文案（测试 / 无障碍镜像用）。 |

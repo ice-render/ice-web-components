@@ -34,6 +34,10 @@
 | `scrollBy(dx: number, dy: number)` | `this` |  |
 | `isScrollbarVisible()` | `boolean` |  |
 | `getScrollbarThumb()` | `any` | 滚动条滑块（测试与自定义样式用）。 |
+| `isHorizontalScrollbarVisible()` | `boolean` |  |
+| `getHorizontalTrackWidth()` | `number` |  |
+| `getHorizontalThumb()` | `any` |  |
+| `smoothScrollTo(x: number, y: number, options: { duration?: number })` | `this` | 平滑滚动到 (x, y)。 |
 
 ## `ICEAffix`
 

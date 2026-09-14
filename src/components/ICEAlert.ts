@@ -2,6 +2,7 @@ import { ICEWidget } from '../core/ICEWidget';
 import { ICELabel } from './ICELabel';
 import { iceUIManager } from '../core/ICEManager';
 import { createTextNode, getStatusColors } from '../util/ICEStyle';
+import { fadeTo } from '../util/ICEAnimation';
 
 export type ICEAlertType = 'info' | 'success' | 'warning' | 'error';
 
@@ -19,6 +20,8 @@ export class ICEAlert extends ICEWidget {
   private onCloseCallback: (() => void) | null;
   private banner: boolean;
   private actionNode: any = null;
+  private closeDuration: number;
+  private animationEnabled: boolean;
 
   constructor(props: any = {}) {
     const theme = iceUIManager.getTheme();
@@ -49,6 +52,9 @@ export class ICEAlert extends ICEWidget {
     this.type = type;
     this.closable = closable;
     this.banner = banner;
+    // 默认不播动画（老行为：点 ✕ 立刻消失）；要淡出的调用方显式传 `animation: true`
+    this.animationEnabled = props.animation === true;
+    this.closeDuration = Math.max(0, Math.floor(props.closeDuration === undefined ? 180 : Number(props.closeDuration) || 0));
     this.onCloseCallback = typeof props.onClose === 'function' ? props.onClose : null;
     // 图标时整块文案右移，给图标让位
     const iconWidth = showIcon ? 24 : 0;
@@ -227,10 +233,21 @@ export class ICEAlert extends ICEWidget {
       return this;
     }
     this.closed = true;
-    this.setState({ display: false });
-    if (this.onCloseCallback) {
-      this.onCloseCallback();
+    const finish = () => {
+      this.setState({ display: false });
+      if (this.onCloseCallback) {
+        this.onCloseCallback();
+      }
+    };
+    // 关了动效（或开了「减少动效」）就立即收：`fadeTo` 内部会把时长收敛到 0
+    if (!this.animationEnabled || this.closeDuration === 0) {
+      finish();
+      return this;
     }
+    fadeTo(this, 0, {
+      duration: this.closeDuration,
+      onFinish: finish,
+    });
     return this;
   }
 

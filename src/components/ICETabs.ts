@@ -24,6 +24,19 @@ export class ICETabs extends ICEContainer {
   private prevButton: ICEButton | null = null;
   private nextButton: ICEButton | null = null;
   private tabBoxes: Array<{ left: number; width: number }> = [];
+  /** 方位：上/下（横向条）与左/右（竖向条） */
+  private placement: 'top' | 'bottom' | 'left' | 'right' = 'top';
+  private itemGap = 8;
+  /** 拖动排序：按住页签拖到别的槽位松手 */
+  private draggable = false;
+  private dragState: { from: number; to: number } | null = null;
+  private reorderCallback: ((from: number, to: number, tabs: string[]) => void) | null = null;
+  private heightValue = 32;
+  private declaredWidth = 0;
+  private minTabWidth = 64;
+  private extraSource: any[] = [];
+  private scrollableProp: boolean | undefined;
+  private __bound = false;
 
   constructor(props: any = {}) {
     const theme = iceUIManager.getTheme();
@@ -33,28 +46,49 @@ export class ICETabs extends ICEContainer {
       stroke: false,
       ...props,
     });
-    this.setLayout(new ICEFlowLayout({ gap: 8, align: 'left' }));
     const tabs: string[] = props.tabs || [];
     this.tabs = tabs.slice();
+    this.heightValue = height;
     this.onChangeCallback = typeof props.onChange === 'function' ? props.onChange : null;
     this.type = props.type === 'card' ? 'card' : 'line';
+    this.placement = props.placement === 'bottom' || props.placement === 'left' || props.placement === 'right' ? props.placement : 'top';
+    this.draggable = props.draggable === true;
+    this.reorderCallback = typeof props.onReorder === 'function' ? props.onReorder : null;
+    this.itemGap = Math.max(0, Math.floor(Number(props.itemGap) || 8));
     this.closable = props.closable === true;
     this.closeCallback = typeof props.onClose === 'function' ? props.onClose : null;
-    const gap = 8;
     this.tabWidthValue = Math.max(48, Math.floor(Number(props.tabWidth) || 96));
-    const totalGap = Math.max(0, tabs.length - 1) * gap;
-    const autoWidth = props.width ? (props.width - totalGap) / Math.max(1, tabs.length) : 90;
-    const declaredWidth = Number(props.width) || tabs.length * 90;
+    this.declaredWidth = Number(props.width) || tabs.length * 90;
+    this.minTabWidth = Math.max(40, Math.floor(Number(props.minTabWidth) || 64));
+    this.scrollableProp = props.scrollable;
+    this.extraSource = props.extra === undefined || props.extra === null ? [] : Array.isArray(props.extra) ? props.extra : [props.extra];
+    this.__render();
+  }
+
+  /** 重建页签（构造与拖动排序后都走这里）。 */
+  private __render(): void {
+    this.removeChildren([...this.childNodes]);
+    this.buttons = [];
+    this.extraNodes = [];
+    this.strip = null;
+    this.prevButton = null;
+    this.nextButton = null;
+    this.scrollOffset = 0;
+    const gap = this.itemGap;
+    const totalGap = Math.max(0, this.tabs.length - 1) * gap;
+    const autoWidth = this.declaredWidth ? (this.declaredWidth - totalGap) / Math.max(1, this.tabs.length) : 90;
     // 只有「等宽排也会挤到小于 minTabWidth」时才切滚动形态：几个页签的小组件保持老行为，
     // 页签多到装不下才出现箭头（默认 64 是「还能看清文字」的底线）
-    const minTabWidth = Math.max(40, Math.floor(Number(props.minTabWidth) || 64));
-    const fitWidth = (declaredWidth - totalGap) / Math.max(1, tabs.length);
-    this.overflow = props.scrollable === true || (props.scrollable !== false && fitWidth < minTabWidth);
-    tabs.forEach((text, index) => {
+    const fitWidth = (this.declaredWidth - totalGap) / Math.max(1, this.tabs.length);
+    this.overflow = this.scrollableProp === true || (this.scrollableProp !== false && fitWidth < this.minTabWidth);
+    // 只有「顶部横向条且不溢出」才交给流式布局；其它方位由本组件自己摆
+    // （流式布局会把贴底 / 竖排的位置重新算一遍，等于白摆）
+    this.setLayout(this.placement === 'top' && !this.overflow ? new ICEFlowLayout({ gap, align: 'left' }) : (null as any));
+    this.tabs.forEach((text, index) => {
       const button = new ICEButton({
         text,
         width: Math.max(64, autoWidth),
-        height,
+        height: this.heightValue,
         variant: index === 0 ? 'primary' : 'default',
       });
       this.buttons.push(button);
@@ -64,9 +98,7 @@ export class ICETabs extends ICEContainer {
     if (this.overflow) {
       this.__applyOverflowLayout();
     }
-    // 右侧扩展区：直接挂在页签之后，让流式布局把它排到最右
-    const extra = props.extra === undefined || props.extra === null ? [] : Array.isArray(props.extra) ? props.extra : [props.extra];
-    extra.forEach((node: any) => {
+    this.extraSource.forEach((node: any) => {
       if (!node) return;
       this.extraNodes.push(node);
       this.addChild(node, false);
@@ -74,8 +106,127 @@ export class ICETabs extends ICEContainer {
     this.buttons.forEach((button, index) => {
       button.on('mousedown', () => this.__activate(index), this);
     });
-    this.setActiveIndex(0);
+    // 拖动排序后重建时保留原来的选中项（构造期本来就是 0）
+    this.setActiveIndex(Math.min(Math.max(0, this.activeIndex), Math.max(0, this.tabs.length - 1)));
     this.doLayout();
+    if (this.placement === 'left' || this.placement === 'right') {
+      this.setState({ height: this.tabs.length * this.heightValue });
+      this.__applyVerticalLayout();
+    }
+    if (this.placement === 'bottom') {
+      this.__applyBottomLayout();
+    }
+  }
+
+  public getPlacement(): 'top' | 'bottom' | 'left' | 'right' {
+    return this.placement;
+  }
+
+  public isReordering(): boolean {
+    return !!this.dragState;
+  }
+
+  public getActiveLabel(): string {
+    return this.tabs[this.activeIndex] || '';
+  }
+
+  /** 竖向条（left / right）：一列排下去，宽度 = 页签宽。 */
+  private __applyVerticalLayout(): void {
+    const itemHeight = this.heightValue;
+    const width = Number(this.state.width) || 96;
+    this.buttons.forEach((button, index) => {
+      button.setState({
+        left: 0,
+        top: index * itemHeight,
+        width,
+        height: itemHeight - this.itemGap,
+      });
+    });
+  }
+
+  /** 贴底：横向条整体下移。 */
+  private __applyBottomLayout(): void {
+    const height = Number(this.state.height) || 34;
+    const itemHeight = Math.max(20, height - 6);
+    this.buttons.forEach((button) => button.setState({ top: height - itemHeight, height: itemHeight }));
+  }
+
+  protected afterAddHandler(): void {
+    super.afterAddHandler();
+    this.__bindDragEvents();
+  }
+
+  private __bindDragEvents(): void {
+    if (this.__bound || !this.ice || !this.ice.evtBus) {
+      return;
+    }
+    this.__bound = true;
+    this.ice.evtBus.on('mousedown', this.__onGlobalMouseDown, this);
+    this.ice.evtBus.on('mousemove', this.__onGlobalMouseMove, this);
+    this.ice.evtBus.on('mouseup', this.__onGlobalMouseUp, this);
+  }
+
+  private __onGlobalMouseDown(evt: any): void {
+    if (!this.draggable || !evt || typeof evt.offsetX !== 'number') {
+      return;
+    }
+    const index = this.__tabIndexAt(evt.offsetX, evt.offsetY);
+    if (index < 0) {
+      return;
+    }
+    this.dragState = { from: index, to: index };
+  }
+
+  private __onGlobalMouseMove(evt: any): void {
+    if (!this.dragState || !evt) {
+      return;
+    }
+    const index = this.__tabIndexAt(evt.offsetX, evt.offsetY);
+    if (index >= 0) {
+      this.dragState.to = index;
+    }
+  }
+
+  private __onGlobalMouseUp(): void {
+    if (!this.dragState) {
+      return;
+    }
+    const { from, to } = this.dragState;
+    this.dragState = null;
+    if (from === to) {
+      return;
+    }
+    this.__moveTab(from, to);
+  }
+
+  /** 指针落在第几个页签上（按方位取横/纵坐标）。 */
+  private __tabIndexAt(x: number, y: number): number {
+    const boxes = this.getTabBoxes();
+    const vertical = this.placement === 'left' || this.placement === 'right';
+    const probe = vertical ? Number(y) || 0 : Number(x) || 0;
+    for (let index = 0; index < boxes.length; index += 1) {
+      const box = boxes[index];
+      const start = vertical ? box.top : box.left;
+      const size = vertical ? box.height : box.width;
+      if (probe >= start && probe <= start + size) {
+        return index;
+      }
+    }
+    return boxes.length ? (probe < 0 ? 0 : boxes.length - 1) : -1;
+  }
+
+  /** 换位置：页签顺序、选中下标（跟着页签走）与回调。 */
+  private __moveTab(from: number, to: number): void {
+    const next = this.tabs.slice();
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    const activeLabel = this.tabs[this.activeIndex];
+    this.tabs = next;
+    this.activeIndex = Math.max(0, next.indexOf(activeLabel));
+    this.__render();
+    if (this.reorderCallback) {
+      this.reorderCallback(from, to, next.slice());
+    }
   }
 
   public getActiveIndex(): number {
