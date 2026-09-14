@@ -113,4 +113,62 @@ describe('ICEMessageManager', () => {
     const ice = makeICE();
     expect(getICEMessageManager(ice) === getICEMessageManager(ice)).toBe(true);
   });
+
+  /**
+   * 观感事故（smart-water 实测）：顶部 Message 的长中文被**横向压扁**、还溢出面板。
+   *
+   * 两个原因叠在一起：
+   * ① 引擎把组件宽度当 `fillText(..., maxWidth)` 传下去 —— canvas 会压字形而不是截断（已在 ice-render 修掉）；
+   * ② 这一层的宽度用 `text.length * 7` 粗估 —— 中文一字≈13px，估出来只有实际的一半。
+   */
+  describe('气泡宽度：按实测文字算，不再用「字符数 × 7」粗估', () => {
+    /** 取出面板里的文案标签（左偏移 34 的那个）。 */
+    const textLabelOf = (panel: any) => (panel.childNodes || []).find((c: any) => Number(c.state.left) === 34);
+
+    it('长中文消息：宽度跟着实测长大（上限之内），不再被按 7px/字压到一半', () => {
+      const ice = makeICE();
+      const manager = new ICEMessageManager(ice).start();
+      const text = '报警：生化池溶解氧偏低，建议提高鼓风机频率并检查曝气头堵塞情况';
+      const handle = manager.show({ text, type: 'warning', duration: 0 });
+      const panel = manager.getLayer()!.childNodes[0];
+
+      // 旧算法：text.length * 7 + 48 ≈ 265
+      const oldWidth = text.length * 7 + 48;
+      expect(panel.state.width).toBeGreaterThan(oldWidth);
+      // 上限之内（480），且文案区跟着面板走
+      expect(panel.state.width).toBeLessThanOrEqual(480);
+      expect(textLabelOf(panel).state.width).toBe(panel.state.width - 46);
+      handle.close();
+    });
+
+    it('短消息不小于最小宽度', () => {
+      const ice = makeICE();
+      const manager = new ICEMessageManager(ice).start();
+      const handle = manager.show({ text: '已保存', duration: 0 });
+      expect(manager.getLayer()!.childNodes[0].state.width).toBe(160);
+      handle.close();
+    });
+
+    it('超长消息：宽度封顶，且文案标签仍是「不压字形」的默认口径（由引擎按省略号截断）', () => {
+      const ice = makeICE();
+      const manager = new ICEMessageManager(ice).start();
+      const handle = manager.show({ text: '很长的告警'.repeat(40), duration: 0 });
+      const panel = manager.getLayer()!.childNodes[0];
+      const label = textLabelOf(panel);
+      expect(panel.state.width).toBe(480);
+      expect(label.state.textOverflow ?? 'ellipsis').toBe('ellipsis');
+      // 内层 ICEText 用同一个盒子（ICELabel 会把 width 透传下去）
+      expect((label.childNodes[0] || {}).state.width).toBe(panel.state.width - 46);
+      handle.close();
+    });
+
+    it('窄画布不越界：最大宽度受画布宽度约束', () => {
+      const ice = makeICE();
+      ice.canvasWidth = 300;
+      const manager = new ICEMessageManager(ice).start();
+      const handle = manager.show({ text: '很长的告警'.repeat(40), duration: 0 });
+      expect(manager.getLayer()!.childNodes[0].state.width).toBe(300 - 32);
+      handle.close();
+    });
+  });
 });

@@ -52,7 +52,16 @@ interface ICEMessageEntry {
 const MESSAGE_GAP = 12;
 const EDGE = 16;
 const MIN_WIDTH = 160;
-const MAX_WIDTH = 320;
+/**
+ * 单条消息的最大宽度。
+ *
+ * 以前是 320 —— 对中文太窄：13px 一行只放得下约 24 个字，
+ * 「报警：生化池溶解氧偏低，建议提高鼓风机频率并检查曝气头堵塞情况」这种**正常长度的告警**
+ * 都会被截掉一截。放宽到 480（约 36 个中文字），同时不超过画布宽度（两边各留 EDGE）。
+ */
+const MAX_WIDTH = 480;
+/** 文案区两侧预留给类型图标与内边距的宽度（与下面 show() 里的布局保持一致）。 */
+const TEXT_INSET = 46;
 
 export class ICEMessageManager {
   private ice: any;
@@ -102,11 +111,43 @@ export class ICEMessageManager {
     return this.layer;
   }
 
+  /**
+   * 量一行文字的宽度：借引擎的 `ICELabel`（内层是 `ICEText`）实测。
+   *
+   * 拿不到实测值时按「中文一字 = 一个字号」粗估 —— 比旧的 `length × 7` 靠谱得多
+   * （那等于假设每个字都是半个字号，中文必然溢出）。
+   */
+  private __measureTextWidth(text: string, fontSize: number): number {
+    try {
+      const probe = new ICELabel({ text, style: { fontSize } });
+      const width = Number(probe.state && probe.state.width) || 0;
+      // 构造期还没有 canvas ctx，`ICEText` 走 DOM 兜底测量；在无 DOM 量测的运行时（jsdom / 小程序）
+      // 拿到的会是包装盒的默认值（10）—— 小于一个字号就当作"没量出来"，走下面的粗估。
+      // 真实浏览器里这条分支给出的是按同一套字体量出来的宽度，比按字数估准得多。
+      if (width >= fontSize) return width;
+    } catch (error) {
+      // 量不出来（无 DOM / 极端环境）就走下面的粗估，不要让消息发不出来
+    }
+    return Array.from(text).length * fontSize;
+  }
+
+  /** 消息的最大宽度：不越过画布（两边各留 EDGE），避免窄画布上出界。 */
+  private __messageMaxWidth(): number {
+    const canvasWidth = Number(this.ice && this.ice.canvasWidth) || 0;
+    if (!(canvasWidth > 0)) return MAX_WIDTH;
+    return Math.min(MAX_WIDTH, canvasWidth - 2 * EDGE);
+  }
+
   /** 顶部居中消息。 */
   public show(options: ICEMessageOptions): ICEMessageHandle {
     const text = String(options.text ?? '');
     return this.__push('message', options, (theme) => {
-      const width = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Math.round(text.length * 7) + 48));
+      // 宽度按**实测**文字算，不再用 `text.length * 7` 粗估：中文一字约等于字号宽、拉丁约 0.55 字号宽，
+      // 一个系数必然一边溢出、一边留白 —— 溢出的那一侧以前会被 canvas 压扁字形（见 ice-render 的 textOverflow）。
+      const width = Math.max(
+        MIN_WIDTH,
+        Math.min(this.__messageMaxWidth(), Math.round(this.__measureTextWidth(text, 13)) + TEXT_INSET)
+      );
       const height = 34;
       const panel = new ICEPanel({
         width,
@@ -129,10 +170,10 @@ export class ICEMessageManager {
       );
       panel.addChild(
         new ICELabel({
-          left: 34,
-          top: 0,
-          width: width - 46,
-          height,
+            left: 34,
+            top: 0,
+            width: width - TEXT_INSET,
+            height,
           verticalAlign: 'middle',
           text,
           style: { fontSize: 13, fillStyle: theme.colors.text },
