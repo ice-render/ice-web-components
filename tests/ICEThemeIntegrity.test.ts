@@ -10,7 +10,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { ICE_LIGHT_THEME, ICE_DARK_THEME, ICE_XP_THEME } from '../src/theme/ICETheme';
+import { ICE_LIGHT_THEME, ICE_DARK_THEME, ICE_HIGH_CONTRAST_THEME, ICE_XP_THEME } from '../src/theme/ICETheme';
 import { ICE_ARCADE_THEME } from '../src/theme/ICEArcadeTheme';
 
 type RGB = [number, number, number];
@@ -48,6 +48,7 @@ const THEMES: Array<[string, any]> = [
   ['dark', ICE_DARK_THEME],
   ['xp', ICE_XP_THEME],
   ['arcade', ICE_ARCADE_THEME],
+  ['high-contrast', ICE_HIGH_CONTRAST_THEME],
 ];
 
 describe('主题完整性', () => {

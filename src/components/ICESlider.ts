@@ -64,7 +64,7 @@ export class ICESlider extends ICEWidget {
     this.fill = new ICERect({
       left: 0,
       top: trackTop,
-      width: this.__fillWidth(width),
+      width: this.__fillWidth(width, thumbSize),
       height: trackHeight,
       radius: trackHeight / 2,
       style: {
@@ -360,19 +360,39 @@ export class ICESlider extends ICEWidget {
 
   private __thumbLeft(width: number, thumbSize?: number): number {
     const size = thumbSize ?? (Number(this.thumb.state.radius) * 2 || 0);
-    return width * this.__ratio(this.model.getValue()) - size / 2;
+    return this.__thumbOffset(width, size, this.__ratio(this.model.getValue()));
   }
 
   private __upperThumbLeft(width: number, thumbSize: number): number {
     const hi = this.rangeValue ? this.rangeValue[1] : this.model.getValue();
-    return width * this.__ratio(hi) - thumbSize / 2;
+    return this.__thumbOffset(width, thumbSize, this.__ratio(hi));
   }
 
-  private __fillWidth(width: number): number {
+  /**
+   * 手柄在某比例处的位置。
+   *
+   * **行程两端各让出半个手柄**：手柄是圆心落在轨道上的，不让位的话，最小值时手柄会探出
+   * 组件盒子左边 9px（几何审计实测），邻居按声明宽度排版就会被压住。让位之后
+   * 手柄在任何取值下都完整落在自己的盒子里。
+   */
+  private __thumbOffset(width: number, thumbSize: number, ratio: number): number {
+    const travel = Math.max(0, width - thumbSize);
+    // 手柄左缘的行程就是 [0, width - thumbSize]：两端各留半个手柄给圆心，
+    // ratio=0 时左缘贴盒子左边，ratio=1 时右缘贴盒子右边（两边都不越界）
+    return travel * ratio;
+  }
+
+  private __fillWidth(width: number, thumbSize?: number): number {
     if (this.range && this.rangeValue) {
-      return width * Math.max(0, this.__ratio(this.rangeValue[1]) - this.__ratio(this.rangeValue[0]));
+      return this.__travel(width, thumbSize) * Math.max(0, this.__ratio(this.rangeValue[1]) - this.__ratio(this.rangeValue[0]));
     }
-    return width * this.__ratio(this.model.getValue());
+    return this.__travel(width, thumbSize) * this.__ratio(this.model.getValue());
+  }
+
+  /** 轨道上可用的行程长度（两端各让出半个手柄）。 */
+  private __travel(width: number, thumbSize?: number): number {
+    const size = thumbSize ?? ((this.thumb && this.thumb.state ? Number(this.thumb.state.radius) * 2 : 0) || 0);
+    return Math.max(0, width - size);
   }
 
   private __sync(): void {
@@ -386,7 +406,9 @@ export class ICESlider extends ICEWidget {
     if (this.upperThumb) {
       this.upperThumb.setState({ left: this.__upperThumbLeft(width, thumbSize), style: this.__thumbStyle('upper') });
     }
-    const fillLeft = this.range && this.rangeValue ? width * this.__ratio(this.rangeValue[0]) : 0;
+    const radius = thumbSize / 2;
+    const fillLeft =
+      (this.range && this.rangeValue ? this.__travel(width) * this.__ratio(this.rangeValue[0]) : 0) + radius;
     const fillColor = this.hovered ? theme.colors.primaryHover : theme.colors.primary;
     this.fill.setState({
       left: fillLeft,

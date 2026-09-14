@@ -419,6 +419,7 @@
 | `gap?` | `number` |  |
 | `model?` | `ICEFormModel` | 复用外部模型（表单与业务共享状态） |
 | `items?` | `ICEFormItem[]` | 数据项 |
+| `validateDebounce?` | `number` | 改值后延迟多少毫秒再校验（默认 0 = 立刻校验）。 |
 | `left?` | `number` | 相对父容器的左边距 |
 | `top?` | `number` | 相对父容器的上边距 |
 
@@ -427,6 +428,7 @@
 | 方法 | 返回 | 说明 |
 |---|---|---|
 | `getModel()` | `ICEFormModel` |  |
+| `flushValidateDebounce()` | `this` | 取消防抖（组件卸载 / 立刻校验前调用）。 |
 | `getItems()` | `ICEFormItem[]` |  |
 | `addItems(items: ICEFormItem[])` | `this` |  |
 | `addItem(item: ICEFormItem)` | `this` |  |
@@ -438,3 +440,47 @@
 | `onSubmit(handler: ICEFormSubmitHandler)` | `this` |  |
 | `submit()` | `boolean` | 校验通过才回调 onSubmit。 |
 | `submitAsync()` | `Promise<boolean>` | 异步版提交：等异步校验通过才回调 onSubmit。 |
+
+## `ICEFormList`
+
+可增删的重复表单项（多联系人 / 多地址 / 明细行）。  这类结构的难点不在「画一行」，而在**行身份**：用下标当 key，删掉第一行之后， 第二行的控件就会显示第一行的数据（重复行最经典的 bug）。所以每一行都有稳定的 `rowKey`， 增删只动那一行，`onChange(rows)` 给的是最新全量。  用法： ```ts const list = new ICEFormList({   renderRow: (row, ctx) => textFieldFor(row),   // 返回这一行的内容组件   initialRows: [{}],   minRows: 1, maxRows: 5,   onChange: (rows) => console.log(rows), }); ``` 行内的控件由调用方创建；改完值调 `list.updateRow(index, patch)` 把数据写回去。
+
+源码：[`src/components/ICEFormList.ts`](../../src/components/ICEFormList.ts)
+
+**构造参数** `ICEFormListOptions`
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `id?` | `string` | 组件 id（引擎用它做唯一标识；e2e/调试时可按 id 定位） |
+| `left?` | `number` | 相对父容器的左边距 |
+| `top?` | `number` | 相对父容器的上边距 |
+| `width?` | `number` | 宽度（不传用组件默认值） |
+| `rowHeight?` | `number` | 每行内容的高度（默认 36） |
+| `gap?` | `number` | 行间距（默认 8） |
+| `initialRows?` | `any[]` | 初始行（默认一行空数据） |
+| `minRows?` | `number` | 最少几行（到了就禁用「删除」，默认 0） |
+| `maxRows?` | `number` | 最多几行（到了就禁用「添加」，默认不限） |
+| `addText?` | `string` |  |
+| `removeText?` | `string` |  |
+| `renderRow` | `(row: any, ctx: ICEFormListRowContext) => any` | 生成一行内容；返回的组件会被放到该行里（宽 = width - 删除按钮那一列） |
+| `onChange?` | `(rows: any[]) => void` | 值变化回调 |
+| `onAdd?` | `(row: any) => void` |  |
+| `onRemove?` | `(row: any, index: number) => void` |  |
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getRows()` | `any[]` |  |
+| `getRowKeys()` | `string[]` |  |
+| `getRowCount()` | `number` |  |
+| `addRow(data: any)` | `this` |  |
+| `removeRow(index: number)` | `this` |  |
+| `updateRow(index: number, patch: any)` | `this` |  |
+| `setRows(rows: any[])` | `this` |  |
+| `isAddDisabled()` | `boolean` |  |
+| `isRemoveDisabled(index: number)` | `boolean` |  |
+| `getRowNode(index: number)` | `ICEWidget \| null` |  |
+| `getRemoveButton(index: number)` | `ICEButton \| null` |  |
+| `getAddButton()` | `ICEButton \| null` |  |
+| `getContentHeight()` | `number` | 内容总高（行 + 间隙 + 添加按钮那一行）。 |

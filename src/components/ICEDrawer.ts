@@ -26,6 +26,12 @@ export interface ICEDrawerOptions {
   width?: number;
   /** top/bottom 方向的高度（默认 240） */
   height?: number;
+  /** 标题栏右侧的扩展区（按钮或说明文字）；返回的组件会被摆到关闭按钮左边 */
+  extra?: any | (() => any);
+  /** 贴底的页脚区（确定/取消这类操作）；给了就把内容区让出这段高度 */
+  footer?: any | (() => any);
+  /** 页脚高度（默认 56） */
+  footerHeight?: number;
   closable?: boolean;
   maskClosable?: boolean;
   closeOnEsc?: boolean;
@@ -44,6 +50,8 @@ export class ICEDrawer {
   private mask: ICEPanel | null = null;
   private panel: ICEPanel | null = null;
   private closeButton: ICEButton | null = null;
+  private extraNode: any = null;
+  private footerNode: any = null;
   private previousFocus: any = null;
   private pendingReason: ICEDrawerCloseReason | null = null;
 
@@ -68,6 +76,34 @@ export class ICEDrawer {
 
   public getCloseButton(): ICEButton | null {
     return this.closeButton;
+  }
+
+  /** 标题栏右侧的扩展区节点（没传就是 null）。 */
+  public getExtraNode(): any {
+    return this.extraNode;
+  }
+
+  /** 页脚节点（没传就是 null）。 */
+  public getFooterNode(): any {
+    return this.footerNode;
+  }
+
+  /** 内容区可用矩形（页脚会把底部让出来）。 */
+  public getContentBox(): { left: number; top: number; width: number; height: number } {
+    const panel = this.panel;
+    if (!panel) {
+      return { left: 0, top: 0, width: 0, height: 0 };
+    }
+    const width = Number(panel.state.width) || 0;
+    const height = Number(panel.state.height) || 0;
+    const headerHeight = this.options.title ? 48 : 16;
+    const footerHeight = this.footerNode ? Math.max(0, Math.floor(Number(this.options.footerHeight) || 56)) : 0;
+    return {
+      left: 20,
+      top: headerHeight,
+      width: Math.max(0, width - 40),
+      height: Math.max(0, height - headerHeight - footerHeight - 16),
+    };
   }
 
   public open(): this {
@@ -141,6 +177,8 @@ export class ICEDrawer {
     this.mask = null;
     this.panel = null;
     this.closeButton = null;
+    this.extraNode = null;
+    this.footerNode = null;
     handle.close();
     return this;
   }
@@ -212,6 +250,19 @@ export class ICEDrawer {
       this.closeButton = null;
     }
 
+    // 标题栏右侧扩展区：摆在关闭按钮左边（关闭按钮占右侧 48px）
+    this.extraNode = null;
+    if (this.options.extra) {
+      const node = typeof this.options.extra === 'function' ? this.options.extra() : this.options.extra;
+      if (node) {
+        const right = this.options.closable === false ? width - 20 : width - 56;
+        const nodeWidth = Number(node.state && node.state.width) || 0;
+        node.setState({ left: Math.max(20, right - nodeWidth), top: Math.round((headerHeight - 28) / 2) });
+        panel.addChild(node, false);
+        this.extraNode = node;
+      }
+    }
+
     if (typeof this.options.content === 'function') {
       const node = this.options.content();
       if (node) {
@@ -231,6 +282,27 @@ export class ICEDrawer {
         }),
         false,
       );
+    }
+
+    // 页脚贴底：内容区（调用方自己摆的）要按 getContentBox() 让出这段高度
+    this.footerNode = null;
+    if (this.options.footer) {
+      const footerHeight = Math.max(0, Math.floor(Number(this.options.footerHeight) || 56));
+      const footer = typeof this.options.footer === 'function' ? this.options.footer() : this.options.footer;
+      if (footer) {
+        const bar = new ICEPanel({
+          left: 0,
+          top: Math.max(0, height - footerHeight),
+          width,
+          height: footerHeight,
+          radius: 0,
+          style: { fillStyle: theme.colors.background, strokeStyle: theme.colors.border },
+        });
+        footer.setState({ left: 20, top: Math.round((footerHeight - (Number(footer.state && footer.state.height) || 32)) / 2) });
+        bar.addChild(footer, false);
+        panel.addChild(bar, false);
+        this.footerNode = footer;
+      }
     }
     return panel;
   }

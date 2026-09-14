@@ -351,7 +351,12 @@
 - `ICETabs`：卡片式 ✅、关闭 ✅、extra ✅；溢出滚动、位置（上下左右）待做
 - `ICEAlert`：banner 形态（关闭按钮 / 图标 ✅ 已做）
 - `ICEProgressBar`：仪表盘形态（环形 + 状态色 ✅ 已做）
-- `ICESlider`：区间选择 ✅、刻度、拖拽 tooltip
+- `ICESlider`：区间选择 ✅、手柄不越界 ✅、刻度、拖拽 tooltip
+- `ICEForm`：声明式重复行（`Form.List`）✅ `ICEFormList`、`validateDebounce` ✅；`hasFeedback` 待做
+- `ICEModal`：拖拽 ✅、缩放 ✅、全屏 ✅、尺寸预设 ✅
+- `ICEDrawer`：`extra` ✅、`footer` ✅、尺寸预设待做
+- `ICESvgIcon`：单测 ✅、gallery 演示 ✅、`setPath` / `setStrokeWidth` ✅
+- 全局：密度 ✅ `setDensity('compact')`、减少动效 ✅ `setICEReducedMotion`、高对比主题 ✅ `high-contrast`
 - `ICEScrollPane`：吸顶 ✅ `ICEAffix`、布局骨架 ✅ `ICELayout`；横向滚动条、平滑滚动待做
 - `ICECard`：操作区、封面、底部（右上角 extra ✅ 已做）
 - `ICEBadge`：红点 / 计数封顶 ✅ 已做

@@ -47,6 +47,9 @@
 | `maskClosable?` | `boolean` |  |
 | `closeOnEsc?` | `boolean` |  |
 | `confirmLoading?` | `boolean` |  |
+| `draggable?` | `boolean` | 按住标题栏拖动对话框（默认 false） |
+| `resizable?` | `boolean` | 右下角出现缩放手柄，可拖拽改变对话框尺寸（默认 false） |
+| `size?` | `'sm' \| 'md' \| 'lg' \| 'fullscreen'` | 尺寸预设：`sm` 360 / `md` 420（默认）/ `lg` 640 / `fullscreen` 打开即铺满 |
 | `onConfirm?` | `() => void` |  |
 | `onCancel?` | `() => void` |  |
 | `onClose?` | `(reason: ICEModalCloseReason) => void` | 关闭回调 |
@@ -61,6 +64,15 @@
 | `isOpen()` | `boolean` |  |
 | `getMask()` | `ICEPanel \| null` |  |
 | `getDialog()` | `ICEPanel \| null` |  |
+| `isDraggable()` | `boolean` |  |
+| `isResizable()` | `boolean` |  |
+| `isFullscreen()` | `boolean` |  |
+| `getDialogRect()` | `{ left: number; top: number; width: number; height: number } \| null` | 对话框当前矩形（相对遮罩）。 |
+| `setPosition(left: number, top: number)` | `this` | 移动对话框（自动夹在遮罩里，不让它跑出可见区）。 |
+| `dragBy(dx: number, dy: number)` | `this` |  |
+| `setSize(width: number, height: number)` | `this` | 改尺寸（有下限，且不超出遮罩）；标题/正文/页脚会重新摆位。 |
+| `toggleFullscreen()` | `this` | 全屏 / 还原（还原到进入全屏之前的位置与尺寸）。 |
+| `setFullscreen(full: boolean)` | `this` |  |
 | `getConfirmButton()` | `ICEButton \| null` |  |
 | `getCancelButton()` | `ICEButton \| null` |  |
 | `open()` | `this` |  |
@@ -84,6 +96,9 @@
 | `placement?` | `ICEDrawerPlacement` |  |
 | `width?` | `number` | left/right 方向的宽度（默认 360） |
 | `height?` | `number` | top/bottom 方向的高度（默认 240） |
+| `extra?` | `any \| (() => any)` | 标题栏右侧的扩展区（按钮或说明文字）；返回的组件会被摆到关闭按钮左边 |
+| `footer?` | `any \| (() => any)` | 贴底的页脚区（确定/取消这类操作）；给了就把内容区让出这段高度 |
+| `footerHeight?` | `number` | 页脚高度（默认 56） |
 | `closable?` | `boolean` |  |
 | `maskClosable?` | `boolean` |  |
 | `closeOnEsc?` | `boolean` |  |
@@ -100,6 +115,9 @@
 | `getMask()` | `ICEPanel \| null` |  |
 | `getPanel()` | `ICEPanel \| null` |  |
 | `getCloseButton()` | `ICEButton \| null` |  |
+| `getExtraNode()` | `any` | 标题栏右侧的扩展区节点（没传就是 null）。 |
+| `getFooterNode()` | `any` | 页脚节点（没传就是 null）。 |
+| `getContentBox()` | `{ left: number; top: number; width: number; height: number }` | 内容区可用矩形（页脚会把底部让出来）。 |
 | `open()` | `this` |  |
 | `close(reason: ICEDrawerCloseReason)` | `this` |  |
 

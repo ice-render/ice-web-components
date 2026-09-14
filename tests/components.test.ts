@@ -201,7 +201,8 @@ describe('ice-web-components component behavior', () => {
       expect(slider.getValue()).toBe(100);
       expect(thumb.state.left).toBeGreaterThan(0);
       slider.setValue(0);
-      expect(thumb.state.left).toBeLessThan(0);
+      // 最小值时手柄左缘贴盒子左边（以前是 -半径，会探出组件盒子压到邻居）
+      expect(thumb.state.left).toBe(0);
     });
   });
 
