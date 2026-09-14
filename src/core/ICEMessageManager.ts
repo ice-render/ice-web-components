@@ -63,6 +63,25 @@ const MAX_WIDTH = 480;
 /** 文案区两侧预留给类型图标与内边距的宽度（与下面 show() 里的布局保持一致）。 */
 const TEXT_INSET = 46;
 
+/**
+ * 引擎「置顶档」的起点 —— `bigZIndexNum`（ice-render `src/consts/BIG_ZINDEX_NUMBER.ts`）。
+ * 引擎自带的工具层（变换 / 连线控制面板、连线插槽）都落在这一档里（`1e7 + 1 .. +1002`）。
+ */
+const ENGINE_TOP_BAND = 10000000;
+
+/**
+ * 消息层及其子树的 zIndex。
+ *
+ * 为什么不靠默认的自增 zIndex（必须显式给定一个「高于全部工具」的固定值）：
+ * 1. 引擎的工具层之间**也按 `state.zIndex` 排序**，且渲染队列是把工具树 `flattenTree` 拉平后
+ *    **全局**按 zIndex 稳定排序 —— 层和它的所有后代在同一个序列里，所以「只抬层、不抬子树」无效；
+ * 2. 各工具层（浮层管理器 / 焦点环 / 控制面板）的 zIndex 都是**构造时自增**的，而消息层是首次
+ *    `show()` 才懒创建，于是**任何在第一条消息之后创建的工具层都会拿到更大的自增值而反超它**
+ *    （典型现象：「先弹消息、再打开 Modal」时，后建的浮层把顶部的消息盖住）。
+ * 因此消息层与每条消息的整棵子树都固定抬到置顶档之上，保证永远在最上层。
+ */
+const MESSAGE_LAYER_ZINDEX = ENGINE_TOP_BAND * 2;
+
 export class ICEMessageManager {
   private ice: any;
   private layer: ICEWidget | null = null;
@@ -90,6 +109,8 @@ export class ICEMessageManager {
       width: Number(this.ice.canvasWidth) || 0,
       height: Number(this.ice.canvasHeight) || 0,
     });
+    // 消息层固定置顶：其余工具层都是构造时自增的 zIndex，后建者会反超（见 MESSAGE_LAYER_ZINDEX）。
+    this.layer.state.zIndex = MESSAGE_LAYER_ZINDEX;
     if (typeof this.ice.addTool === 'function') {
       this.ice.addTool(this.layer);
     }
@@ -277,6 +298,8 @@ export class ICEMessageManager {
     entry.handle = handle;
 
     this.layer!.addChild(node);
+    // 整棵消息子树同抬到置顶档（拉平后是全局 zIndex 排序，只抬层不够）。
+    this.__raiseSubtree(node, MESSAGE_LAYER_ZINDEX);
     this.entries.push(entry);
     this.__relayout();
 
@@ -355,6 +378,15 @@ export class ICEMessageManager {
       entry.node.setState({ left: canvasWidth - EDGE - width, top: bottom - height });
       bottom -= height + MESSAGE_GAP;
     });
+  }
+
+  /** 把整棵子树统一抬到指定 zIndex（同值不破坏子树内「先父后子」的绘制顺序）。 */
+  private __raiseSubtree(node: any, zIndex: number): void {
+    if (!node || !node.state) {
+      return;
+    }
+    node.state.zIndex = zIndex;
+    (node.childNodes || []).forEach((child: any) => this.__raiseSubtree(child, zIndex));
   }
 
   private __typeColor(type?: ICEMessageType): string {

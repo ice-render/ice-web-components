@@ -171,4 +171,51 @@ describe('ICEMessageManager', () => {
       handle.close();
     });
   });
+
+  /**
+   * 置顶：消息层与消息子树必须压过其它工具层。
+   *
+   * 事故（smart-water / web-components 共同现象）：工具层之间也按 `state.zIndex` 排序，且渲染队列把
+   * 工具树 `flattenTree` 拉平后是**全局**排序（层与后代在同一序列）；而各工具层（浮层管理器 / 焦点环 /
+   * 控制面板）的 zIndex 都是构造时自增的。消息层首次 show() 才懒创建 → 任何之后创建的工具层都会反超它，
+   * 「先弹消息、再打开 Modal」时顶部消息被盖住。修法：消息层与整棵消息子树固定抬到置顶档之上。
+   */
+  describe('置顶：压过其它工具层', () => {
+    it('消息层与整棵消息子树都高于既有的高 z 工具层，且子树同值', () => {
+      const ice = makeICE();
+      // 模拟一个已存在的引擎工具层（变换 / 连线控制面板落在 bigZIndexNum = 1e7 档里）
+      ice.toolNodes.push({ state: { zIndex: 10000002 } });
+      const manager = new ICEMessageManager(ice).start();
+      const handle = manager.show({ text: '置顶消息', duration: 0 });
+
+      const layer = manager.getLayer()!;
+      const node = layer.childNodes[0];
+      expect(layer.state.zIndex).toBeGreaterThan(10000002);
+      // 子节点也必须高于该工具层 —— 因为 flattenTree 后层与后代在同一序列里全局排序
+      expect(node.state.zIndex).toBeGreaterThan(10000002);
+      // 子树同值：靠稳定排序保持「先父后子」
+      const label = (node.childNodes || []).find((c: any) => Number(c.state.left) === 34);
+      expect(label.state.zIndex).toBe(node.state.zIndex);
+
+      handle.close();
+    });
+
+    it('消息之后才创建的工具层（自增小 z / 控制面板档）都盖不过消息', () => {
+      const ice = makeICE();
+      const manager = new ICEMessageManager(ice).start();
+      const handle = manager.show({ text: '常驻', duration: 0 });
+      const layer = manager.getLayer()!;
+      const layerZ = layer.state.zIndex;
+
+      // 消息之后才出现的工具层：自增小 z 与引擎置顶档（控制面板 1e7+1002）都应低于消息层
+      ice.toolNodes.push({ state: { zIndex: 500 } });
+      ice.toolNodes.push({ state: { zIndex: 10000000 + 1002 } });
+      const maxOther = Math.max(
+        ...ice.toolNodes.filter((t: any) => t !== layer).map((t: any) => t.state.zIndex)
+      );
+      expect(layerZ).toBeGreaterThan(maxOther);
+
+      handle.close();
+    });
+  });
 });
