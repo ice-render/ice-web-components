@@ -199,6 +199,11 @@ export class ICETree extends ICEWidget {
     return this.scrollTop;
   }
 
+  /** 指针的局部纵坐标 → 全局行号（把滚动偏移加回来；命中计算与拖拽都靠它）。 */
+  public getRowIndexAt(localY: number): number {
+    return this.__rowIndexAt(localY);
+  }
+
   /** 直接设置滚动位置（会夹到可滚动范围），常用于「滚到某个节点」与测试。 */
   public setScrollTop(y: number): this {
     if (this.pane) {

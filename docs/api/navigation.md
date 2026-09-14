@@ -31,6 +31,8 @@
 | `getSubmenuItemNode(key: string)` | `any` |  |
 | `closeSubmenu()` | `this` |  |
 | `openSubmenu(key: string)` | `this` | 打开某一项的子菜单浮层（横向模式的父项）。 |
+| `getActiveKey()` | `string \| null` |  |
+| `setActiveKey(key: string \| null)` | `this` |  |
 
 ## `ICEBreadcrumb`
 
@@ -228,4 +230,14 @@
 | `getType()` | `'line' \| 'card'` |  |
 | `isClosable()` | `boolean` |  |
 | `getExtra()` | `any[]` |  |
+| `isOverflow()` | `boolean` |  |
+| `getScrollOffset()` | `number` |  |
+| `getViewportWidth()` | `number` |  |
+| `getMaxScroll()` | `number` |  |
+| `setScrollOffset(offset: number)` | `this` | 按固定偏移滚动（自动夹取）。 |
+| `scrollBy(delta: number)` | `this` |  |
+| `scrollIntoView(index: number)` | `this` | 把某一页滚进可视区（点被裁掉的页签时用）。 |
+| `getPrevButton()` | `ICEButton \| null` |  |
+| `getNextButton()` | `ICEButton \| null` |  |
+| `getTabBoxes()` | `Array<{ left: number; top: number; width: number; height: number }>` | 页签当前的盒子（相对组件；含滚动偏移）。 |
 | `closeTab(index: number)` | `this` | 关掉某个页签：移除按钮与标签、通知 `onClose`、把激活下标夹回合法范围。 |

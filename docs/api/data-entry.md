@@ -343,6 +343,8 @@
 | `rowHeight?` | `number` |  |
 | `beforeUpload?` | `(file: ICEUploadFile) => boolean \| string \| undefined` |  |
 | `onChange?` | `(files: ICEUploadFile[]) => void` | 值变化回调 |
+| `onRemove?` | `(file: ICEUploadFile) => void` | 删掉一个文件时回调（✕ 与 `removeFile` 同一条路径） |
+| `showFileList?` | `boolean` | 是否画文件列表（默认 true；只要拖拽区就传 false） |
 
 **方法**
 
@@ -356,6 +358,13 @@
 | `getFileNode(uid: string)` | `ICEWidget \| null` |  |
 | `addFile(file: Partial<ICEUploadFile>)` | `boolean` | 加入一个文件（真实选择结果或调用方构造的数据）；被拒时返回 false。 |
 | `removeFile(uid: string)` | `this` |  |
+| `getFileRows()` | `any[]` | 文件行节点（`showFileList: false` 时为空）。 |
+| `getFileRowText(uid: string)` | `string` | 某一行的整行文案（测试 / 无障碍镜像用）。 |
+| `getFileRemoveButton(uid: string)` | `any` |  |
+| `getFileProgressNode(uid: string)` | `any` | 上传中那一行的进度条（没有进度 / 已完成时为 null）。 |
+| `getFileProgress(uid: string)` | `number \| null` |  |
+| `setFileProgress(uid: string, progress: number)` | `this` | 设置某一行进度（0-100 夹取）；100 表示完成，行里不再显示进度条。 |
+| `formatFileSize(bytes: number)` | `string` | 人类可读的文件大小（512 B / 2.0 KB / 5.0 MB）。 |
 | `clear()` | `this` |  |
 | `setDisabled(disabled: boolean)` | `this` |  |
 | `openPicker()` | `boolean` | 唤起系统文件选择框（无 DOM 环境返回 false）。 |

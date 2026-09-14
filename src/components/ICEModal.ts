@@ -48,6 +48,9 @@ export interface ICEModalOptions extends ICELocalizedProps {
   resizable?: boolean;
   /** 尺寸预设：`sm` 360 / `md` 420（默认）/ `lg` 640 / `fullscreen` 打开即铺满 */
   size?: 'sm' | 'md' | 'lg' | 'fullscreen';
+  /** 缩放下限（默认 240×140）；复杂表单可以要求更大 */
+  minWidth?: number;
+  minHeight?: number;
   onConfirm?: () => void;
   onCancel?: () => void;
   onClose?: (reason: ICEModalCloseReason) => void;
@@ -158,8 +161,10 @@ export class ICEModal {
       return this;
     }
     const viewport = this.__visibleWorldRect();
-    const nextWidth = Math.min(Math.max(240, Math.round(Number(width) || 0)), viewport.width);
-    const nextHeight = Math.min(Math.max(140, Math.round(Number(height) || 0)), viewport.height);
+    const minWidth = Math.max(120, Math.floor(Number(this.options.minWidth) || 240));
+    const minHeight = Math.max(80, Math.floor(Number(this.options.minHeight) || 140));
+    const nextWidth = Math.min(Math.max(minWidth, Math.round(Number(width) || 0)), viewport.width);
+    const nextHeight = Math.min(Math.max(minHeight, Math.round(Number(height) || 0)), viewport.height);
     dialog.setState({ width: nextWidth, height: nextHeight });
     this.__layoutDialog();
     this.setPosition(Number(dialog.state.left) || 0, Number(dialog.state.top) || 0);

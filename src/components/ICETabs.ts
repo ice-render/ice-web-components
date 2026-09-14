@@ -16,6 +16,14 @@ export class ICETabs extends ICEContainer {
   private closable = false;
   private closeCallback: ((tab: string, index: number) => void) | null = null;
   private extraNodes: any[] = [];
+  /** 溢出滚动：页签多到装不下时按自然宽度排，用左右箭头翻 */
+  private scrollOffset = 0;
+  private overflow = false;
+  private tabWidthValue = 96;
+  private strip: any = null;
+  private prevButton: ICEButton | null = null;
+  private nextButton: ICEButton | null = null;
+  private tabBoxes: Array<{ left: number; width: number }> = [];
 
   constructor(props: any = {}) {
     const theme = iceUIManager.getTheme();
@@ -33,8 +41,15 @@ export class ICETabs extends ICEContainer {
     this.closable = props.closable === true;
     this.closeCallback = typeof props.onClose === 'function' ? props.onClose : null;
     const gap = 8;
+    this.tabWidthValue = Math.max(48, Math.floor(Number(props.tabWidth) || 96));
     const totalGap = Math.max(0, tabs.length - 1) * gap;
     const autoWidth = props.width ? (props.width - totalGap) / Math.max(1, tabs.length) : 90;
+    const declaredWidth = Number(props.width) || tabs.length * 90;
+    // 只有「等宽排也会挤到小于 minTabWidth」时才切滚动形态：几个页签的小组件保持老行为，
+    // 页签多到装不下才出现箭头（默认 64 是「还能看清文字」的底线）
+    const minTabWidth = Math.max(40, Math.floor(Number(props.minTabWidth) || 64));
+    const fitWidth = (declaredWidth - totalGap) / Math.max(1, tabs.length);
+    this.overflow = props.scrollable === true || (props.scrollable !== false && fitWidth < minTabWidth);
     tabs.forEach((text, index) => {
       const button = new ICEButton({
         text,
@@ -46,6 +61,9 @@ export class ICETabs extends ICEContainer {
       this.addChild(button, false);
       if (this.closable) this.__attachCloseButton(button, index);
     });
+    if (this.overflow) {
+      this.__applyOverflowLayout();
+    }
     // 右侧扩展区：直接挂在页签之后，让流式布局把它排到最右
     const extra = props.extra === undefined || props.extra === null ? [] : Array.isArray(props.extra) ? props.extra : [props.extra];
     extra.forEach((node: any) => {
@@ -82,6 +100,154 @@ export class ICETabs extends ICEContainer {
 
   public getExtra(): any[] {
     return this.extraNodes.slice();
+  }
+
+  // ---------------------------------------------------------------- 溢出滚动
+
+  public isOverflow(): boolean {
+    return this.overflow;
+  }
+
+  public getScrollOffset(): number {
+    return this.scrollOffset;
+  }
+
+  public getViewportWidth(): number {
+    return (Number(this.state.width) || 0) - (this.overflow ? 48 : 0);
+  }
+
+  public getMaxScroll(): number {
+    if (!this.overflow) {
+      return 0;
+    }
+    const contentWidth = this.tabBoxes.reduce((max, box) => Math.max(max, box.left + box.width), 0);
+    return Math.max(0, contentWidth - this.getViewportWidth());
+  }
+
+  /** 按固定偏移滚动（自动夹取）。 */
+  public setScrollOffset(offset: number): this {
+    if (!this.overflow) {
+      return this;
+    }
+    const next = Math.min(Math.max(0, Math.round(Number(offset) || 0)), this.getMaxScroll());
+    if (next === this.scrollOffset) {
+      return this;
+    }
+    this.scrollOffset = next;
+    this.__applyOverflowLayout();
+    return this;
+  }
+
+  public scrollBy(delta: number): this {
+    return this.setScrollOffset(this.scrollOffset + (Number(delta) || 0));
+  }
+
+  /** 把某一页滚进可视区（点被裁掉的页签时用）。 */
+  public scrollIntoView(index: number): this {
+    if (!this.overflow) {
+      return this;
+    }
+    const box = this.tabBoxes[index];
+    if (!box) {
+      return this;
+    }
+    const viewport = this.getViewportWidth();
+    if (box.left < this.scrollOffset) {
+      return this.setScrollOffset(box.left);
+    }
+    if (box.left + box.width > this.scrollOffset + viewport) {
+      return this.setScrollOffset(box.left + box.width - viewport);
+    }
+    return this;
+  }
+
+  public getPrevButton(): ICEButton | null {
+    return this.prevButton;
+  }
+
+  public getNextButton(): ICEButton | null {
+    return this.nextButton;
+  }
+
+  /** 页签当前的盒子（相对组件；含滚动偏移）。 */
+  public getTabBoxes(): Array<{ left: number; top: number; width: number; height: number }> {
+    if (!this.overflow) {
+      return this.buttons.map((button) => ({
+        left: Number(button.state.left) || 0,
+        top: Number(button.state.top) || 0,
+        width: Number(button.state.width) || 0,
+        height: Number(button.state.height) || 0,
+      }));
+    }
+    return this.tabBoxes.map((box) => ({
+      left: box.left - this.scrollOffset,
+      top: 0,
+      width: box.width,
+      height: Number(this.state.height) || 32,
+    }));
+  }
+
+  /** 溢出时：页签放进可裁剪的条带里，两端各一个箭头。 */
+  private __applyOverflowLayout(): void {
+    const theme = iceUIManager.getTheme();
+    const width = Number(this.state.width) || 300;
+    const height = Number(this.state.height) || 32;
+    const arrowWidth = 24;
+    if (!this.strip) {
+      this.strip = new ICEContainer({
+        left: arrowWidth,
+        top: 0,
+        width: Math.max(0, width - arrowWidth * 2),
+        height,
+        fill: false,
+        stroke: false,
+        clipChildren: true,
+      });
+      this.addChild(this.strip, false);
+      this.buttons.forEach((button) => {
+        this.removeChild(button);
+        this.strip.addChild(button, false);
+      });
+      const arrow = (text: string, left: number, delta: number, key: 'prev' | 'next') => {
+        const button = new ICEButton({
+          left,
+          top: 1,
+          width: arrowWidth,
+          height: height - 2,
+          text,
+          size: 'small',
+          variant: 'text',
+        });
+        button.on('click', () => this.scrollBy(delta), this);
+        this.addChild(button, false);
+        if (key === 'prev') {
+          this.prevButton = button;
+        } else {
+          this.nextButton = button;
+        }
+        return button;
+      };
+      arrow('‹', 0, -this.tabWidthValue, 'prev');
+      arrow('›', width - arrowWidth, this.tabWidthValue, 'next');
+      this.strip.setState({ style: { ...this.strip.state.style, fillStyle: theme.colors.background } });
+    }
+    // 页签按自然宽度排；条的 left 是「内容盒的负偏移」，等于滚动量
+    this.tabBoxes = [];
+    let left = 0;
+    this.buttons.forEach((button, index) => {
+      button.setState({
+        left,
+        top: 0,
+        width: this.tabWidthValue,
+        height,
+      });
+      this.tabBoxes.push({ left, width: this.tabWidthValue });
+      left += this.tabWidthValue + 8;
+    });
+    this.strip.setState({ left: arrowWidth - this.scrollOffset });
+    if (this.ice) {
+      this.ice.dirty = true;
+    }
   }
 
   /**
@@ -130,6 +296,8 @@ export class ICETabs extends ICEContainer {
   private __activate(index: number): void {
     const changed = index !== this.activeIndex;
     this.__applyActive(index);
+    // 点到被裁掉的页签时自己滚进视野（否则用户点了却看不见选中态）
+    this.scrollIntoView(index);
     if (changed && this.onChangeCallback) {
       this.onChangeCallback(index, this.tabs[index]);
     }

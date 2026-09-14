@@ -149,6 +149,34 @@
   （orders 待排查线索 0 → 2）。默认值改回「等宽铺满」（老行为），按文字宽度排改成显式
   `block: false`，orders 回到 0。
 
+- **`ICEMenu` 键盘导航**（2026-09-14，S2 第三批第一件）：侧栏菜单不能只能用鼠标点。
+  现在 ↓/↑ 移动激活项（**跳过 `disabled` 项**、到头回绕、还没激活时 ↓ 落第一项 / ↑ 落最后一项）、
+  → 展开父项（再按一次落到第一个子项）、← 收起（已收起则回到父项）、Enter / Space 激活、
+  Home / End 跳首尾、Esc 收起子菜单浮层；横向模式用 ← / → 在顶层项之间走。
+  `ICEMenuItem` 补上 `disabled`（键盘与鼠标一起挡）；配 `getActiveKey()` / `setActiveKey()`。
+  约定与树一致：**只在获得焦点时响应全局 keydown**。
+
+- **`ICETabs` 溢出滚动**（2026-09-14，同批）：页签多到装不下时，以前只能被挤成一条条窄按钮
+  （文字全糊）。现在会自动切到滚动形态：页签按自然宽度排、超出部分被裁剪，两端出现 ‹ › 箭头；
+  `scrollBy()` / `scrollIntoView(index)` / `getScrollOffset()` / `getMaxScroll()` / `getTabBoxes()` 配套，
+  点到被裁掉的页签会自己滚进视野。**只有当「等宽排也会挤到小于 `minTabWidth`（默认 64）」时才切**，
+  几个页签的小组件保持老行为（这一条也是被 `components.test.ts` 的旧断言逼出来的）。
+
+- **`ICEUpload` 的文件列表与进度**（2026-09-14，同批）：选完文件能看见「传了什么、传到哪了」。
+  每行是「文件名 + 人类可读大小（512 B / 2.0 KB / 5.0 MB）+ 状态 + ✕」，
+  `setFileProgress(uid, 0-100)` 之后行内出现细进度条（100 变「已完成」、进度条消失），
+  删除走 `onRemove` 并照常触发 `onChange`；`showFileList: false` 可以只要拖拽区。
+  配 `getFileRows()` / `getFileRowText()` / `getFileRemoveButton()` / `getFileProgressNode()`。
+
+- **Modal 尺寸下限可配 + Drawer 数字尺寸**（2026-09-14，同批）：`ICEModal` 的 `minWidth` /
+  `minHeight`（默认 240×140），复杂表单可以要求更大的缩放下限；`ICEDrawer` 的 `size` 现在也接受数字
+  （比如「这一单要 480 宽」），`default` / `large` 预设不变。
+
+- **Tree 虚拟滚动 × 拖拽的交叉验证**（2026-09-14，同批）：虚拟化之后只有窗口内的行有节点、
+  滚动位置还会影响命中计算，两件事叠在一起最容易出错。新增 `getRowIndexAt(localY)`（把滚动偏移
+  加回来）并补 4 条用例：滚动后命中到正确的全局行、真实鼠标路径按下/移动/落下按全局行号算、
+  窗口外的行没有节点也拖不动（不会静默拖错行）、`moveNode` 之后窗口按新顺序渲染。
+
 > 其余待发布的改动在这里累积。
 
 ## [1.5.4] - 2026-09-14

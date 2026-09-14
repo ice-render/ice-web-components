@@ -14,6 +14,8 @@ export type ICEMenuItem = {
   iconPath?: string;
   /** 子菜单：带非空 children 的项是父节点（内联展开，点它不触发 onSelect） */
   children?: ICEMenuItem[];
+  /** 禁用项：键盘会跳过它，鼠标点击也不响应 */
+  disabled?: boolean;
 };
 
 /**
@@ -39,6 +41,8 @@ export class ICEMenu extends ICEContainer {
   private submenu: { key: string; panel: any; handle: any; nodes: Map<string, any> } | null = null;
   /** 当前画出来的项（横向 / 收起态只有顶层 + 子菜单项） */
   private itemNodesKeys: string[] = [];
+  /** 键盘激活项（与「选中」「悬停」三态分离） */
+  private activeKey: string | null = null;
   private __bound = false;
 
   constructor(props: any = {}) {
@@ -119,7 +123,7 @@ export class ICEMenu extends ICEContainer {
   /** 激活某个可见项：父节点展开/收起，叶子项选中并回调。 */
   public activateItem(key: string): this {
     const row = this.rows.find((entry) => entry.item.key === key);
-    if (!row) {
+    if (!row || row.item.disabled) {
       return this;
     }
     if (this.__hasChildren(row.item)) {
@@ -318,6 +322,114 @@ export class ICEMenu extends ICEContainer {
     }
     this.__bound = true;
     this.ice.evtBus.on('mousedown', this.__onGlobalMouseDown, this);
+    this.ice.evtBus.on('keydown', this.__onKeyDown, this);
+  }
+
+  public getActiveKey(): string | null {
+    return this.activeKey;
+  }
+
+  public setActiveKey(key: string | null): this {
+    this.activeKey = key;
+    this.__syncSelection();
+    return this;
+  }
+
+  /**
+   * 键盘导航（只在菜单获得焦点时响应）。
+   *
+   * ↓/↑ 移动（跳过 disabled、到头回绕）；→ 展开父项 / 落到第一个子项；← 收起 / 回到父项；
+   * Enter / Space 激活；Home / End 跳首尾；Esc 收起子菜单。
+   */
+  private __onKeyDown(evt: any): void {
+    if (!this.isFocused() || !this.rows.length) {
+      return;
+    }
+    const raw = evt && (evt.originalEvent || evt);
+    const key = raw && (raw.key || raw.code);
+    const horizontal = this.mode === 'horizontal';
+    // 横向模式：顶层项之间用 ← / → 走；纵向：↑ / ↓ 走，→ / ← 管展开收起
+    const nextKey = horizontal ? 'ArrowRight' : 'ArrowDown';
+    const prevKey = horizontal ? 'ArrowLeft' : 'ArrowUp';
+    if (key === 'Escape' || key === 'Esc') {
+      this.closeSubmenu();
+      return;
+    }
+    if (key === nextKey || key === prevKey) {
+      this.__moveActive(key === nextKey ? 1 : -1);
+      return;
+    }
+    if (!horizontal && (key === 'ArrowRight' || key === 'ArrowLeft')) {
+      const row = this.rows.find((entry) => entry.item.key === this.activeKey);
+      if (!row) {
+        return;
+      }
+      if (key === 'ArrowRight') {
+        if (this.__hasChildren(row.item) && !this.expanded.has(row.item.key)) {
+          this.toggleExpand(row.item.key);
+        } else if (this.__hasChildren(row.item)) {
+          const index = this.rows.indexOf(row);
+          const child = this.rows.slice(index + 1).find((entry) => entry.depth > row.depth);
+          if (child) {
+            this.activeKey = child.item.key;
+            this.__syncSelection();
+          }
+        }
+      } else {
+        if (this.__hasChildren(row.item) && this.expanded.has(row.item.key)) {
+          this.toggleExpand(row.item.key);
+        } else {
+          const parent = this.rows
+            .slice(0, this.rows.indexOf(row))
+            .reverse()
+            .find((entry) => entry.depth < row.depth);
+          if (parent) {
+            this.activeKey = parent.item.key;
+            this.__syncSelection();
+          }
+        }
+      }
+      return;
+    }
+    if (key === 'Home' || key === 'End') {
+      const candidates = this.rows.filter((entry) => !entry.item.disabled);
+      const target = key === 'Home' ? candidates[0] : candidates[candidates.length - 1];
+      if (target) {
+        this.activeKey = target.item.key;
+        this.__syncSelection();
+      }
+      return;
+    }
+    if (key === 'Enter' || key === ' ' || key === 'Spacebar') {
+      if (this.activeKey) {
+        this.activateItem(this.activeKey);
+      }
+    }
+  }
+
+  private __moveActive(step: number): void {
+    // 横向菜单只在顶层项之间走（子项在浮层里，不参与顶层的左右移动）
+    const candidates = this.mode === 'horizontal' ? this.rows.filter((entry) => entry.depth === 0) : this.rows;
+    const count = candidates.length;
+    let index = candidates.findIndex((entry) => entry.item.key === this.activeKey);
+    if (index === -1) {
+      // 还没激活：往下落到第一项、往上落到最后一项
+      const enabled = candidates.filter((entry) => !entry.item.disabled);
+      const target = step > 0 ? enabled[0] : enabled[enabled.length - 1];
+      if (target) {
+        this.activeKey = target.item.key;
+        this.__syncSelection();
+      }
+      return;
+    }
+    for (let i = 0; i < count; i += 1) {
+      index = (index + step + count) % count;
+      if (!candidates[index].item.disabled) {
+        this.activeKey = candidates[index].item.key;
+        this.__syncSelection();
+        return;
+      }
+    }
   }
 
   private __onGlobalMouseDown(evt: any): void {
