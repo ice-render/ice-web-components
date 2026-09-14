@@ -17,6 +17,8 @@ export class ICEAlert extends ICEWidget {
   private closeButton: ICEWidget | null = null;
   private iconNode: ICELabel | null = null;
   private onCloseCallback: (() => void) | null;
+  private banner: boolean;
+  private actionNode: any = null;
 
   constructor(props: any = {}) {
     const theme = iceUIManager.getTheme();
@@ -26,14 +28,16 @@ export class ICEAlert extends ICEWidget {
     const height = props.height || 60;
     const closable = props.closable === true;
     const showIcon = props.showIcon !== false;
+    const banner = props.banner === true;
 
     super({
       ...props,
       fill: true,
-      stroke: true,
+      // banner 是通栏提示条：不留圆角、不描边，直接贴在页面顶部
+      stroke: !banner,
       width,
       height,
-      radius: theme.radius.md,
+      radius: banner ? 0 : theme.radius.md,
       style: {
         fillStyle: colors.background,
         strokeStyle: colors.border,
@@ -44,6 +48,7 @@ export class ICEAlert extends ICEWidget {
 
     this.type = type;
     this.closable = closable;
+    this.banner = banner;
     this.onCloseCallback = typeof props.onClose === 'function' ? props.onClose : null;
     // 图标时整块文案右移，给图标让位
     const iconWidth = showIcon ? 24 : 0;
@@ -122,6 +127,61 @@ export class ICEAlert extends ICEWidget {
       this.addChild(button, false);
       this.closeButton = button;
     }
+
+    // 右侧操作区（「立即刷新」这类）：摆在关闭按钮左边
+    if (props.action) {
+      const actionText = typeof props.action === 'string' ? props.action : String(props.action.text || '');
+      const actionWidth = Math.max(64, actionText.length * 13 + 16);
+      const action = new ICEWidget({
+        left: width - (closable ? 38 : 16) - actionWidth,
+        top: Math.round((height - 26) / 2),
+        width: actionWidth,
+        height: 26,
+        radius: theme.radius.sm,
+        fill: true,
+        stroke: false,
+        interactive: true,
+        style: { fillStyle: 'rgba(0,0,0,0)' },
+      });
+      action.addChild(
+        createTextNode({
+          left: 0,
+          top: 0,
+          width: actionWidth,
+          height: 26,
+          text: actionText,
+          fillStyle: colors.strong,
+          fontFamily: theme.font.family,
+          fontSize: theme.font.sizeSmall,
+          fontWeight: theme.font.weightSemibold,
+          align: 'center',
+          verticalAlign: 'middle',
+        }),
+        false,
+      );
+      const onAction = typeof props.action === 'object' && typeof props.action.onClick === 'function' ? props.action.onClick : null;
+      action.on(
+        'click',
+        () => {
+          if (onAction) {
+            onAction();
+          } else {
+            this.close();
+          }
+        },
+        this,
+      );
+      this.addChild(action, false);
+      this.actionNode = action;
+    }
+  }
+
+  public isBanner(): boolean {
+    return this.banner;
+  }
+
+  public getActionNode(): any {
+    return this.actionNode;
   }
 
   public setTitle(title: string): this {

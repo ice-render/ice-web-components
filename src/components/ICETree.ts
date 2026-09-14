@@ -5,6 +5,7 @@ import { computeTreeDropTarget, moveTreeNode } from '../util/ICEDragReorder';
 import { iceUIManager } from '../core/ICEManager';
 import { ICESelectionModel, ICESelectionMode } from '../model/ICESelectionModel';
 import { readHovered } from '../util/ICEStyle';
+import { computeVirtualRange } from './ICEVirtualList';
 
 /**
  * 树（Swing JTree 的最小可用版）。
@@ -44,6 +45,10 @@ export interface ICETreeOptions {
   draggable?: boolean;
   /** 拖拽落下后的回调（与 `nodedrop` 事件同义） */
   onDrop?: (info: { key: string; targetKey: string; position: string; nodes: ICETreeNode[] }) => void;
+  /** 可见节点达到这个数量就只渲染可视窗口（默认 200；传 0 关闭虚拟化） */
+  virtualThreshold?: number;
+  /** 虚拟窗口上下各多渲染几行（默认 2） */
+  virtualBuffer?: number;
 }
 
 interface FlatRow {
@@ -70,6 +75,11 @@ export class ICETree extends ICEWidget {
   private rows: FlatRow[] = [];
   private rowNodes = new Map<string, ICEWidget>();
   private activeKey: string | null = null;
+  private virtualThreshold: number;
+  private virtualBuffer: number;
+  private virtual = false;
+  private scrollTop = 0;
+  private windowRange: { start: number; end: number; count: number } = { start: 0, end: 0, count: 0 };
   private running = false;
 
   constructor(props: ICETreeOptions) {
@@ -98,6 +108,8 @@ export class ICETree extends ICEWidget {
     this.onExpand = typeof props.onExpand === 'function' ? props.onExpand : null;
     this.draggable = props.draggable === true;
     this.onDrop = typeof props.onDrop === 'function' ? props.onDrop : null;
+    this.virtualThreshold = Math.max(0, Math.floor(Number(props.virtualThreshold === undefined ? 200 : props.virtualThreshold) || 0));
+    this.virtualBuffer = Math.max(0, Math.floor(Number(props.virtualBuffer === undefined ? 2 : props.virtualBuffer) || 0));
     this.model = new ICESelectionModel({ mode: props.mode || 'single', selected: props.value || [] });
     this.model.addChangeListener(() => this.__syncRows());
     this.expanded = props.defaultExpandAll
@@ -170,6 +182,32 @@ export class ICETree extends ICEWidget {
 
   public getScrollPane(): ICEScrollPane | null {
     return this.pane;
+  }
+
+  // ---- 虚拟滚动（大树的性能开关） ----
+
+  public isVirtual(): boolean {
+    return this.virtual;
+  }
+
+  /** 当前真的建了行的 key（虚拟时就是那个窗口）。 */
+  public getRenderedRowKeys(): string[] {
+    return Array.from(this.rowNodes.keys());
+  }
+
+  public getScrollTop(): number {
+    return this.scrollTop;
+  }
+
+  /** 直接设置滚动位置（会夹到可滚动范围），常用于「滚到某个节点」与测试。 */
+  public setScrollTop(y: number): this {
+    if (this.pane) {
+      this.pane.setScroll(0, Number(y) || 0);
+      const [, actual] = this.pane.getScroll();
+      this.scrollTop = actual;
+      this.__syncRows();
+    }
+    return this;
   }
 
   /** 键盘：只有焦点在树上时生效。 */
@@ -398,7 +436,6 @@ export class ICETree extends ICEWidget {
     const needScroll = contentHeight > height;
     const hostWidth = width - 2;
     this.content.setState({ width: hostWidth - (needScroll ? 10 : 0), height: contentHeight });
-    this.__syncRows();
 
     if (needScroll) {
       const pane = new ICEScrollPane({
@@ -411,11 +448,18 @@ export class ICETree extends ICEWidget {
       });
       pane.setContent(this.content);
       pane.setContentSize(Number(this.content.state.width), contentHeight);
+      pane.on('scroll', (evt: any) => {
+        this.scrollTop = evt && evt.param ? Number(evt.param.y) || 0 : 0;
+        this.__syncRows();
+      });
       this.addChild(pane, false);
       this.pane = pane;
     } else {
+      this.scrollTop = 0;
       this.addChild(this.content, false);
     }
+    // 窗口要在滚动视口就位之后再算：没有 pane 时算不出「可视区」，会退化成全量渲染
+    this.__syncRows();
     if (this.ice && this.ice.dirty !== undefined) {
       this.ice.dirty = true;
     }
@@ -427,7 +471,23 @@ export class ICETree extends ICEWidget {
     this.content.removeChildren([...this.content.childNodes]);
     this.rowNodes.clear();
 
-    this.rows.forEach((row, index) => {
+    // 虚拟窗口：只在「可视区 + 缓冲」里建行；节点少（或没有滚动视口）时就是全部
+    const viewportHeight = this.pane ? this.pane.getViewportSize()[1] : Number(this.state.height) || 200;
+    this.virtual =
+      !!this.pane && this.virtualThreshold > 0 && this.rows.length >= this.virtualThreshold;
+    const range = this.virtual
+      ? computeVirtualRange({
+          scrollTop: this.scrollTop,
+          viewportHeight,
+          itemHeight: this.itemHeight,
+          itemCount: this.rows.length,
+          buffer: this.virtualBuffer,
+        })
+      : { start: 0, end: this.rows.length, count: this.rows.length };
+    this.windowRange = range;
+
+    this.rows.slice(range.start, range.end).forEach((row, offset) => {
+      const index = range.start + offset;
       const selected = this.model.isSelected(row.node.key);
       const active = row.node.key === this.activeKey;
       const node = new ICEWidget({

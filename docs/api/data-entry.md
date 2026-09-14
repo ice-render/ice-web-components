@@ -269,6 +269,7 @@
 | `top?` | `number` | 相对父容器的上边距 |
 | `width?` | `number` | 宽度（不传用组件默认值） |
 | `height?` | `number` | 高度（不传用组件默认值） |
+| `block?` | `boolean` | `block`：各段等宽铺满整条（默认，也是老行为）；传 `false` 时按文字宽度排。 |
 | `onChange?` | `(value: string) => void` | 值变化回调 |
 
 **方法**
@@ -278,6 +279,8 @@
 | `getValue()` | `string \| null` |  |
 | `setValue(value: string)` | `this` |  |
 | `getSegmentNode(value: string)` | `ICEButton \| null` |  |
+| `isBlock()` | `boolean` |  |
+| `getSegmentBoxes()` | `Array<{ value: string; left: number; top: number; width: number; height: number }>` | 各段的实际盒子（测试与几何审计用）。 |
 
 ## `ICERate`
 
