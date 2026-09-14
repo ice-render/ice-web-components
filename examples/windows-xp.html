@@ -24,7 +24,7 @@
       const ice = new ICE.ICE().init('canvas', { dpr });
       const W = ICEWEB;
       // 先切主题、再建组件：组件在构造时读一次主题 token
-      W.iceUIManager.registerTheme('xp', W.ICE_XP_THEME).setTheme('xp');
+      W.iceUIManager.registerTheme('xp', W.ICE_XP_THEME).setTheme('xp', ice); // 第二个参数 = 顺带把主题同步到引擎（选中框 / 手柄 / 插槽等外壳 token）
       const theme = W.iceUIManager.getTheme();
       new W.ICEHoverManager(ice).start();
       W.getICEFocusManager(ice).start();
