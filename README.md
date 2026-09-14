@@ -27,12 +27,12 @@ rings and shadows) is drawn by the engine.
 - **Bootstrap 5 token theme** (plus a dark theme) — swap with one call.
 - **No name collisions with the engine** — the package’s runtime exports are
   disjoint from `ice-render`’s (there is a regression test for it).
-- **Actually tested** — 825 unit tests (107 suites: form validation, overlay
+- **Actually tested** — 840 unit tests (108 suites: form validation, overlay
   positioning, keyboard navigation, sort/hover/focus edge cases, the Minesweeper,
   Tetris, Snake, 2048 and CHIP-8 rule/machine models, the pixel canvas and the undo
   stack, the console BIOS, the trace player + sorting/pathfinding and the DOS terminal)
   plus eight browser QA suites (`qa:admin`, `qa:gallery`, `qa:workbench`, `qa:xp`,
-  `qa:arcade`, `qa:pixel`, `qa:algo`, `qa:dos` — 277 assertions) that drive the demo pages with
+  `qa:arcade`, `qa:pixel`, `qa:algo`, `qa:dos` — 282 assertions) that drive the demo pages with
   real mouse and keyboard events and fail on any console error.
 
 ## Quick start
