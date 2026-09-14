@@ -9,6 +9,8 @@
  */
 import { ICELabel } from '../src/components/ICELabel';
 import { ICEWindow } from '../src/components/ICEWindow';
+import { iceUIManager } from '../src/core/ICEManager';
+import { ICE_XP_THEME } from '../src/theme/ICETheme';
 
 function setupIce() {
   const handlers: Record<string, Array<{ handler: any; ctx: any }>> = {};
@@ -158,5 +160,60 @@ describe('ICEWindow', () => {
     expect(win.state.width).toBe(600);
     expect(Number(win.getCloseButton()!.state.left)).toBeGreaterThan(closeBefore);
     expect(win.getClientBox().width).toBe(600 - 6);
+  });
+});
+
+describe('ICEWindow 外观来自主题（不再是写死的 XP 脸）', () => {
+  const makeWindow = () =>
+    new ICEWindow({
+      left: 0,
+      top: 0,
+      width: 320,
+      height: 200,
+      title: '窗口',
+    } as any);
+
+  it('默认主题下，标题栏 / 窗体 / 边框取主题的 window token', () => {
+    iceUIManager.setTheme('light');
+    const window = makeWindow();
+    const appearance: any = (window as any).appearance;
+    expect(appearance.body).toBe(iceUIManager.getTheme().window.body);
+    expect(appearance.border).toBe(iceUIManager.getTheme().window.border);
+    expect(appearance.titleActive).toEqual(iceUIManager.getTheme().window.titleActive);
+  });
+
+  it('切换主题后新建窗口跟着换（深色主题不再是亮色窗体）', () => {
+    iceUIManager.setTheme('light');
+    const lightBody = (makeWindow() as any).appearance.body;
+    iceUIManager.setTheme('dark');
+    const darkBody = (makeWindow() as any).appearance.body;
+    expect(darkBody).not.toBe(lightBody);
+    expect(darkBody).toBe(iceUIManager.getTheme().window.body);
+    iceUIManager.setTheme('light');
+  });
+
+  it('XP 主题保留原来的 Luna 配色（观感不变）', () => {
+    iceUIManager.registerTheme('xp', ICE_XP_THEME);
+    iceUIManager.setTheme('xp');
+    const appearance: any = (makeWindow() as any).appearance;
+    expect(appearance.titleActive).toEqual(['#0058ee', '#3f8cf3']);
+    expect(appearance.body).toBe('#ece9d8');
+    iceUIManager.setTheme('light');
+  });
+
+  it('props.appearance 仍然可以逐项覆盖主题', () => {
+    iceUIManager.setTheme('light');
+    const window = new ICEWindow({
+      left: 0,
+      top: 0,
+      width: 320,
+      height: 200,
+      title: '窗口',
+      appearance: { body: '#123456' },
+    } as any);
+    const appearance: any = (window as any).appearance;
+    expect(appearance.body).toBe('#123456');
+    // 没覆盖的字段仍来自主题
+    expect(appearance.border).toBe(iceUIManager.getTheme().window.border);
   });
 });

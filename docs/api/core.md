@@ -181,7 +181,7 @@
 - **焦点**：`active` 决定标题栏配色（XP 蓝 / 灰），点窗口任意位置会 `activate()` 并广播 `activate` 事件 —— 由外部窗口管理器据此抬 zIndex；
 - **最大化 / 还原**：记住还原前的盒子，按 `bounds` 铺满；`minimize()` 只广播事件， 怎么藏（隐藏 or 收到任务栏）交给调用方；
 - **缩放**：右下角手柄（`resizable: false` 可关），受 `minWidth` / `minHeight` 限制；
-- **内容**：`content` 或 `setContent()` 装进客户端区域，自动铺满。 外观默认走 Windows XP Luna 配色（可传 `appearance` 覆盖），与组件库主题无关 —— 这类“拟物外壳”本来就要固定配色。
+- **内容**：`content` 或 `setContent()` 装进客户端区域，自动铺满。 外观**默认取主题里的 `window` token**（`iceUIManager.setTheme()` 换主题时窗口跟着换）， `props.appearance` 可以逐项覆盖。怀旧主题（XP / 街机）在 `window` 里放它们自己的窗口外观， 所以那些页面的观感不变 —— 但不再是"写死在组件里、主题改不动"。
 
 源码：[`src/components/ICEWindow.ts`](../../src/components/ICEWindow.ts)
 
