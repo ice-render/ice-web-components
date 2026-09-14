@@ -24,6 +24,10 @@ export interface ICEUploadFile {
   url?: string;
   /** 上传进度 0-100（100 = 已完成；不设 = 未开始/不需要进度） */
   progress?: number;
+  /** 上传状态（有 customRequest 时由它维护） */
+  status?: 'uploading' | 'done' | 'error';
+  /** 失败原因（status = 'error' 时显示） */
+  error?: string;
 }
 
 export interface ICEUploadOptions extends ICELocalizedProps {
@@ -48,6 +52,19 @@ export interface ICEUploadOptions extends ICELocalizedProps {
   onRemove?: (file: ICEUploadFile) => void;
   /** 是否画文件列表（默认 true；只要拖拽区就传 false） */
   showFileList?: boolean;
+  /**
+   * 自定义上传实现：给了它，加入文件就自动开始上传。
+   *
+   * 实现里通过 hooks 回报进度 / 成功 / 失败；也可以直接返回 Promise（resolve 成功、reject 失败）。
+   */
+  customRequest?: (
+    file: ICEUploadFile,
+    hooks: {
+      onProgress: (percent: number) => void;
+      onSuccess: (response?: { url?: string }) => void;
+      onError: (message: string) => void;
+    },
+  ) => void | Promise<any>;
 }
 
 const DROP_ZONE_HEIGHT = 96;
@@ -70,6 +87,13 @@ export class ICEUpload extends ICEWidget {
   private fileRemoveButtons = new Map<string, any>();
   private fileLabels = new Map<string, any>();
   private fileProgressNodes = new Map<string, any>();
+  private customRequest:
+    | ((file: ICEUploadFile, hooks: {
+        onProgress: (percent: number) => void;
+        onSuccess: (response?: { url?: string }) => void;
+        onError: (message: string) => void;
+      }) => void | Promise<any>)
+    | null = null;
   private lastRejectReason: string | null = null;
   private dropZone: ICEWidget | null = null;
   private fileNodes = new Map<string, ICEWidget>();
@@ -101,6 +125,7 @@ export class ICEUpload extends ICEWidget {
     this.onChangeCallback = typeof props.onChange === 'function' ? props.onChange : null;
     this.onRemoveCallback = typeof props.onRemove === 'function' ? props.onRemove : null;
     this.showFileList = props.showFileList !== false;
+    this.customRequest = typeof props.customRequest === 'function' ? props.customRequest : null;
     this.focusable = !this.disabled;
     this.__render();
   }
@@ -146,6 +171,68 @@ export class ICEUpload extends ICEWidget {
     }
     this.lastRejectReason = null;
     this.files.push(normalized);
+    // 有自定义上传实现就自动开始（没传的话只是加进列表，行为不变）
+    if (this.customRequest) {
+      this.__startUpload(normalized.uid);
+    }
+    this.__render();
+    this.__emit();
+    return true;
+  }
+
+  /** 开始 / 重试一次上传：把 hooks 接到这一行上。 */
+  private __startUpload(uid: string): void {
+    const file = this.files.find((item) => item.uid === uid);
+    if (!file || !this.customRequest) {
+      return;
+    }
+    file.status = 'uploading';
+    file.error = undefined;
+    file.progress = 0;
+    const hooks = {
+      onProgress: (percent: number) => this.setFileProgress(uid, percent),
+      onSuccess: (response?: { url?: string }) => {
+        const target = this.files.find((item) => item.uid === uid);
+        if (!target) return;
+        target.status = 'done';
+        target.progress = 100;
+        target.error = undefined;
+        if (response && response.url) {
+          target.url = response.url;
+        }
+        this.__render();
+      },
+      onError: (message: string) => {
+        const target = this.files.find((item) => item.uid === uid);
+        if (!target) return;
+        target.status = 'error';
+        target.error = String(message || '');
+        target.progress = undefined;
+        this.__render();
+      },
+    };
+    const result = this.customRequest({ ...file }, hooks);
+    if (result && typeof (result as any).then === 'function') {
+      (result as Promise<any>).then(
+        () => hooks.onSuccess(),
+        (error: any) => hooks.onError(String((error && error.message) || error || '上传失败')),
+      );
+    }
+  }
+
+  /** 上传状态：'uploading' | 'done' | 'error'（没用 customRequest 时是 null）。 */
+  public getFileStatus(uid: string): 'uploading' | 'done' | 'error' | null {
+    const file = this.files.find((item) => item.uid === uid);
+    return file && file.status ? file.status : null;
+  }
+
+  /** 失败重传（只有失败的行能重试）。 */
+  public retryFile(uid: string): boolean {
+    const file = this.files.find((item) => item.uid === uid);
+    if (!file || !this.customRequest || file.status !== 'error') {
+      return false;
+    }
+    this.__startUpload(uid);
     this.__render();
     this.__emit();
     return true;
@@ -435,7 +522,13 @@ export class ICEUpload extends ICEWidget {
       const sizeText = file.size ? `（${this.formatFileSize(file.size)}）` : '';
       const progress = typeof file.progress === 'number' ? file.progress : null;
       const statusText =
-        progress === null ? '' : progress >= 100 ? ' · 已完成' : ` · ${progress}%`;
+        file.status === 'error'
+          ? ` · 失败：${file.error || '上传失败'}`
+          : file.status === 'done' || progress === 100
+          ? ' · 已完成'
+          : progress === null
+          ? ''
+          : ` · ${progress}%`;
       const label = new ICELabel({
           interactive: false,
           left: 8,
@@ -449,7 +542,8 @@ export class ICEUpload extends ICEWidget {
       row.addChild(label, false);
       this.fileLabels.set(file.uid, label);
       // 上传中：行内加一条细进度条，让「传到哪了」看得见
-      if (progress !== null && progress < 100) {
+      // 上传中才画进度条：失败 / 已完成都不画（失败的原因写在文案里）
+      if (progress !== null && progress < 100 && file.status !== 'error') {
         const bar = new ICEProgressBar({
           left: 8,
           top: this.rowHeight - 8,

@@ -359,8 +359,10 @@
 - 全局：密度 ✅ `setDensity('compact')`、减少动效 ✅ `setICEReducedMotion`、高对比主题 ✅ `high-contrast`
 - `ICETree`：虚拟滚动 ✅（默认 200 节点起）；树形拖拽 ✅、搜索 ✅（`ICETreeSelect`）
 - `ICEMenu`：横向 ✅、收起态 ✅、键盘导航 ✅（跳过 disabled）、disabled 项 ✅
-- `ICETabs`：溢出滚动 ✅（`scrollBy` / `scrollIntoView`）；位置（上下左右）待做
-- `ICEUpload`：文件列表 ✅、进度 ✅、`onRemove` ✅；自定义上传实现待做
+- `ICETabs`：溢出滚动 ✅、方位（上下左右）✅、拖动排序 ✅
+- `ICEUpload`：文件列表 ✅、进度 ✅、`onRemove` ✅、自定义上传 ✅（含重试）
+- `ICEScrollPane`：横向滚动条 ✅、平滑滚动 ✅（自动跟随减少动效）
+- `ICEAlert`：关闭动画 ✅（默认立即关闭，显式 `animation: true` 才淡出）
 - `ICETree`：虚拟 × 拖拽交叉用例 ✅（`getRowIndexAt`）
 - `ICEAlert`：banner ✅、操作区 ✅；`ICESkeleton`：card / table / list 变体 ✅
 - `ICESegmented`：`block: false` 按文字宽度 ✅；`ICEDrawer`：尺寸预设 ✅

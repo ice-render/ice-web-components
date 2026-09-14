@@ -224,6 +224,9 @@
 
 | 方法 | 返回 | 说明 |
 |---|---|---|
+| `getPlacement()` | `'top' \| 'bottom' \| 'left' \| 'right'` |  |
+| `isReordering()` | `boolean` |  |
+| `getActiveLabel()` | `string` |  |
 | `getActiveIndex()` | `number` |  |
 | `setActiveIndex(index: number)` | `this` |  |
 | `getTabs()` | `string[]` |  |

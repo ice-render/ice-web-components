@@ -1,6 +1,7 @@
 import { ICEContainer } from '../core/ICEContainer';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
+import { tween, resolveICEAnimationDuration } from '../util/ICEAnimation';
 
 /**
  * 滚动视口（Swing 的 JScrollPane / CSS 的 overflow:auto 容器）。
@@ -39,6 +40,9 @@ export class ICEScrollPane extends ICEContainer {
   private contentNode: any = null;
   private scrollbarTrack: ICEWidget;
   private scrollbarThumb: ICEWidget;
+  /** 横向滚动条（内容比视口宽时才出现） */
+  private hTrack: ICEWidget;
+  private hThumb: ICEWidget;
 
   private scrollX = 0;
   private scrollY = 0;
@@ -101,6 +105,30 @@ export class ICEScrollPane extends ICEContainer {
     });
     this.scrollbarTrack.addChild(this.scrollbarThumb, false);
     this.addChild(this.scrollbarTrack, false);
+
+    this.hTrack = new ICEWidget({
+      left: SCROLLBAR_INSET,
+      top: height - SCROLLBAR_WIDTH - SCROLLBAR_INSET,
+      width: Math.max(0, width - SCROLLBAR_INSET * 2),
+      height: SCROLLBAR_WIDTH,
+      radius: SCROLLBAR_WIDTH / 2,
+      fill: true,
+      stroke: false,
+      style: { fillStyle: theme.colors.borderSecondary },
+    });
+    this.hThumb = new ICEWidget({
+      left: 0,
+      top: 0,
+      width: 0,
+      height: SCROLLBAR_WIDTH,
+      radius: SCROLLBAR_WIDTH / 2,
+      fill: true,
+      stroke: false,
+      style: { fillStyle: theme.colors.textTertiary },
+    });
+    this.hTrack.addChild(this.hThumb, false);
+    this.addChild(this.hTrack, false);
+    this.hTrack.setState({ display: false });
 
     this.setScroll(this.scrollX, this.scrollY);
   }
@@ -168,6 +196,7 @@ export class ICEScrollPane extends ICEContainer {
     // 注意：0 要写成 0 而不是 -0（-0 在 Object.is 语义下不等于 0，断言/序列化都容易踩）
     this.contentBox.setState({ left: nextX === 0 ? 0 : -nextX, top: nextY === 0 ? 0 : -nextY });
     this.__syncScrollbar();
+    this.__syncHorizontalScrollbar();
     if (changed && this.ice) {
       this.ice.dirty = true;
     }
@@ -195,6 +224,59 @@ export class ICEScrollPane extends ICEContainer {
   /** 滚动条滑块（测试与自定义样式用）。 */
   public getScrollbarThumb(): any {
     return this.scrollbarThumb;
+  }
+
+  // ---- 横向滚动条 + 平滑滚动 ----
+
+  public isHorizontalScrollbarVisible(): boolean {
+    if (this.scrollbarMode === 'never') {
+      return false;
+    }
+    if (this.scrollbarMode === 'always') {
+      return true;
+    }
+    return this.contentWidth > this.getViewportSize()[0];
+  }
+
+  public getHorizontalTrackWidth(): number {
+    return Number(this.hTrack.state.width) || 0;
+  }
+
+  public getHorizontalThumb(): any {
+    return this.hThumb;
+  }
+
+  /**
+   * 平滑滚动到 (x, y)。
+   *
+   * `duration: 0`（或开了「减少动效」）时立即到位 —— 与其余动画同一个开关。
+   */
+  public smoothScrollTo(x: number, y: number, options: { duration?: number } = {}): this {
+    const duration = resolveICEAnimationDuration(options.duration === undefined ? 220 : options.duration);
+    const [maxX, maxY] = this.getScrollRange();
+    const targetX = Math.min(Math.max(Number(x) || 0, 0), maxX);
+    const targetY = Math.min(Math.max(Number(y) || 0, 0), maxY);
+    if (duration <= 0) {
+      return this.setScroll(targetX, targetY);
+    }
+    const fromX = this.scrollX;
+    const fromY = this.scrollY;
+    let frame = 0;
+    tween({
+      from: 0,
+      to: 1,
+      duration,
+      onUpdate: (progress: number) => {
+        frame = progress;
+        this.setScroll(fromX + (targetX - fromX) * progress, fromY + (targetY - fromY) * progress);
+      },
+      onFinish: () => {
+        if (frame >= 0) {
+          this.setScroll(targetX, targetY);
+        }
+      },
+    });
+    return this;
   }
 
   protected afterAddHandler(): void {
@@ -304,5 +386,49 @@ export class ICEScrollPane extends ICEContainer {
       width: SCROLLBAR_WIDTH,
       height: thumbHeight,
     });
+  }
+
+  /** 横向滚动条：轨道宽 - 滑块宽 = 可拖行程（比例与竖向一致）。 */
+  private __syncHorizontalScrollbar(): void {
+    const [vw, vh] = this.getViewportSize();
+    const trackWidth = Math.max(0, vw - SCROLLBAR_INSET * 2);
+    const visible = this.isHorizontalScrollbarVisible() && this.contentWidth > vw && trackWidth > 0 && vh > SCROLLBAR_WIDTH * 3;
+    this.hTrack.setState({
+      left: SCROLLBAR_INSET,
+      top: vh - SCROLLBAR_WIDTH - SCROLLBAR_INSET,
+      width: trackWidth,
+      height: SCROLLBAR_WIDTH,
+      display: visible,
+    });
+    if (!visible) {
+      this.hThumb.setState({ display: false });
+      return;
+    }
+    const ratio = vw / this.contentWidth;
+    const thumbWidth = Math.max(SCROLLBAR_MIN_THUMB, Math.round(trackWidth * ratio));
+    const [maxX] = this.getScrollRange();
+    const progress = maxX > 0 ? this.scrollX / maxX : 0;
+    this.hThumb.setState({
+      display: true,
+      left: Math.round((trackWidth - thumbWidth) * progress),
+      top: 0,
+      width: thumbWidth,
+      height: SCROLLBAR_WIDTH,
+    });
+  }
+
+  /** 拖横向滑块：入口给 0-1 的进度（真实拖拽与测试用同一条路径）。 */
+  public __onHorizontalThumbDrag(progress: number): this {
+    const [maxX] = this.getScrollRange();
+    const clamped = Math.min(1, Math.max(0, Number(progress) || 0));
+    return this.setScroll(maxX * clamped, this.scrollY);
+  }
+
+  protected __afterStateMerge(sizeChanged: boolean): void {
+    super.__afterStateMerge(sizeChanged);
+    if (sizeChanged) {
+      this.__syncScrollbar();
+      this.__syncHorizontalScrollbar();
+    }
   }
 }
