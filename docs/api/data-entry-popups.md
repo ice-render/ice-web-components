@@ -180,7 +180,10 @@
 |---|---|---|
 | `id?` | `string` | 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） |
 | `nodes` | `ICETreeNode[]` | 树节点 |
-| `value?` | `string` | 当前值 |
+| `value?` | `string \| string[]` | 当前值 |
+| `mode?` | `'single' \| 'multiple'` | `single`（默认）或 `multiple`（多选：值是 `string[]`，选中不关面板） |
+| `showSearch?` | `boolean` | 是否可搜索（按 label 过滤，命中节点的祖先链会保留并自动展开） |
+| `maxTagCount?` | `number` | 字段最多显示几个标签，超出折叠成 `+N`（只影响显示） |
 | `placeholder?` | `string` | 占位文案 |
 | `disabled?` | `boolean` | 是否禁用（禁用后不响应交互、不可聚焦） |
 | `left?` | `number` | 相对父容器的左边距 |
@@ -189,18 +192,26 @@
 | `height?` | `number` | 高度（不传用组件默认值） |
 | `treeHeight?` | `number` |  |
 | `defaultExpandAll?` | `boolean` |  |
-| `onChange?` | `(key: string, node: ICETreeNode) => void` | 值变化回调 |
+| `onChange?` | `(key: any, node: ICETreeNode \| null) => void` | 值变化回调 |
 | `manager?` | `ICEOverlayManager` | 浮层管理器（一般不用传，组件会取共享实例） |
 
 **方法**
 
 | 方法 | 返回 | 说明 |
 |---|---|---|
-| `getValue()` | `string \| null` |  |
-| `setValue(key: string \| null)` | `this` |  |
+| `getValue()` | `any` |  |
+| `setValue(value: any)` | `this` |  |
 | `getFormValue()` | `any` |  |
 | `setFormValue(value: any)` | `void` |  |
 | `getFieldLabel()` | `string` |  |
+| `getMode()` | `'single' \| 'multiple'` |  |
+| `getSelectedLabels()` | `string[]` | 选中的标签（按选中顺序）。 |
+| `clear()` | `this` | 清空选择。 |
+| `removeValue(key: string)` | `this` | 删掉一个取值（多选时用）。 |
+| `getQuery()` | `string` |  |
+| `setQuery(query: string)` | `this` | 设置搜索词：过滤树（保留祖先链）并重画；空串恢复整棵树。 |
+| `getMatchedKeys()` | `string[]` | 命中的节点 key（不含为了保留层级而带上的祖先）。 |
+| `getFilteredNodes()` | `ICETreeNode[] \| null` | 搜索时真正喂给树的那份（null = 没在搜索）。 |
 | `isOpen()` | `boolean` |  |
 | `getTree()` | `ICETree \| null` |  |
 | `activate()` | `void` |  |
