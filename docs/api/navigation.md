@@ -22,6 +22,10 @@
 | `activateItem(key: string)` | `this` | 激活某个可见项：父节点展开/收起，叶子项选中并回调。 |
 | `getMode()` | `'vertical' \| 'horizontal'` |  |
 | `isCollapsed()` | `boolean` |  |
+| `getExpandAnimation()` | `number` | 折叠动画时长（毫秒，0 = 立即展开）。 |
+| `setExpandAnimation(duration: number)` | `this` |  |
+| `isAnimating(key: string)` | `boolean` | 某个父项正在做展开/收起动画吗。 |
+| `getItemBox(key: string)` | `{ left: number; top: number; width: number; height: number } \| null` | 某一项当前的盒子（动画中就是插值后的位置）。 |
 | `setCollapsed(collapsed: boolean)` | `this` |  |
 | `isLabelVisible(key: string)` | `boolean` | 该项当前画没画文字（收起态只有图标）。 |
 | `hasIcon(key: string)` | `boolean` |  |

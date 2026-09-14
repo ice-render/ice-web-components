@@ -6,6 +6,7 @@ import { estimateTextWidth } from '../util/ICEStyle';
 import { ICESvgIcon } from './ICESvgIcon';
 import { ICEPanel } from './ICEPanel';
 import { getICEOverlayManager } from '../core/ICEOverlayManager';
+import { tween, resolveICEAnimationDuration } from '../util/ICEAnimation';
 
 export type ICEMenuItem = {
   key: string;
@@ -43,6 +44,9 @@ export class ICEMenu extends ICEContainer {
   private itemNodesKeys: string[] = [];
   /** 键盘激活项（与「选中」「悬停」三态分离） */
   private activeKey: string | null = null;
+  /** 折叠动画时长（0 = 立即展开，老行为）；展开中记下哪些 key 在动 */
+  private expandAnimation = 0;
+  private animatingKeys = new Set<string>();
   private __bound = false;
 
   constructor(props: any = {}) {
@@ -70,6 +74,7 @@ export class ICEMenu extends ICEContainer {
     this.collapsed = props.collapsed === true;
     this.expandedWidth = width;
     this.collapsedWidth = Math.max(40, Math.floor(Number(props.collapsedWidth) || 56));
+    this.expandAnimation = Math.max(0, Math.floor(Number(props.expandAnimation) || 0));
     if (this.collapsed) {
       this.setState({ width: this.collapsedWidth });
     }
@@ -111,6 +116,7 @@ export class ICEMenu extends ICEContainer {
       this.expanded.add(key);
     }
     this.__render();
+    this.__animateExpand(key);
     return this;
   }
 
@@ -142,6 +148,62 @@ export class ICEMenu extends ICEContainer {
     return !!item.children && item.children.length > 0;
   }
 
+  /**
+   * 展开动画：把刚露出来的子行从父行位置滑到自己的位置。
+   *
+   * 默认不动画（`expandAnimation: 0`，老行为）；开了「减少动效」也直接到位 ——
+   * 时长统一走 `resolveICEAnimationDuration`。
+   */
+  private __animateExpand(key: string): void {
+    const duration = resolveICEAnimationDuration(this.expandAnimation);
+    if (duration <= 0 || !this.expanded.has(key)) {
+      return;
+    }
+    const parentIndex = this.rows.findIndex((row) => row.item.key === key);
+    if (parentIndex === -1) {
+      return;
+    }
+    const parentTop = parentIndex * this.itemHeight;
+    const children: Array<{ node: any; top: number }> = [];
+    for (let index = parentIndex + 1; index < this.rows.length; index += 1) {
+      const row = this.rows[index];
+      if (row.depth <= this.rows[parentIndex].depth) {
+        break;
+      }
+      const node = this.itemNodes.get(row.item.key);
+      if (node) {
+        children.push({ node, top: index * this.itemHeight });
+      }
+    }
+    if (!children.length) {
+      return;
+    }
+    this.animatingKeys.add(key);
+    children.forEach((entry) => {
+      entry.node.setState({ top: parentTop, opacity: 0 });
+    });
+    tween({
+      from: 0,
+      to: 1,
+      duration,
+      onUpdate: (progress: number) => {
+        children.forEach((entry) => {
+          entry.node.setState({
+            top: parentTop + (entry.top - parentTop) * progress,
+            opacity: progress,
+          });
+        });
+      },
+      onFinish: () => {
+        children.forEach((entry) => entry.node.setState({ top: entry.top, opacity: 1 }));
+        this.animatingKeys.delete(key);
+        if (this.ice) {
+          this.ice.dirty = true;
+        }
+      },
+    });
+  }
+
   // ---------------------------------------------------------------- 形态 API
 
   public getMode(): 'vertical' | 'horizontal' {
@@ -150,6 +212,35 @@ export class ICEMenu extends ICEContainer {
 
   public isCollapsed(): boolean {
     return this.collapsed;
+  }
+
+  /** 折叠动画时长（毫秒，0 = 立即展开）。 */
+  public getExpandAnimation(): number {
+    return this.expandAnimation;
+  }
+
+  public setExpandAnimation(duration: number): this {
+    this.expandAnimation = Math.max(0, Math.floor(Number(duration) || 0));
+    return this;
+  }
+
+  /** 某个父项正在做展开/收起动画吗。 */
+  public isAnimating(key: string): boolean {
+    return this.animatingKeys.has(key);
+  }
+
+  /** 某一项当前的盒子（动画中就是插值后的位置）。 */
+  public getItemBox(key: string): { left: number; top: number; width: number; height: number } | null {
+    const node = this.itemNodes.get(key);
+    if (!node) {
+      return null;
+    }
+    return {
+      left: Number(node.state.left) || 0,
+      top: Number(node.state.top) || 0,
+      width: Number(node.state.width) || 0,
+      height: Number(node.state.height) || 0,
+    };
   }
 
   public setCollapsed(collapsed: boolean): this {
