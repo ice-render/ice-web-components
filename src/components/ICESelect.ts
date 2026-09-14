@@ -4,6 +4,8 @@ import { ICEPanel } from './ICEPanel';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../core/ICEOverlayManager';
 import { estimateTextWidth } from '../util/ICEStyle';
+import { ICEScrollPane } from './ICEScrollPane';
+import { computeVirtualRange } from './ICEVirtualList';
 
 /**
  * 选择器：输入框外观 + 下拉选项（单选 / 多选 / 搜索过滤）。
@@ -34,6 +36,10 @@ export interface ICESelectOptions {
   showSearch?: boolean;
   /** 字段区最多画几个标签片，超出的折叠成 `+M`（只影响显示，取值始终是全量） */
   maxTagCount?: number;
+  /** 候选区高度（默认 6 行）；候选比它高时候选区自己滚动 */
+  listHeight?: number;
+  /** 条数达到这个阈值就只渲染可视窗口（默认 100） */
+  virtualThreshold?: number;
   placeholder?: string;
   disabled?: boolean;
   left?: number;
@@ -68,6 +74,13 @@ export class ICESelect extends ICEWidget {
   private fieldText = '';
   private tagNodes: Array<{ value: string; label: string; node: any; close: any }> = [];
   private overflowCount = 0;
+  private listHeight: number;
+  private virtualThreshold: number;
+  private virtual = false;
+  private listScrollTop = 0;
+  private listPane: ICEScrollPane | null = null;
+  private listContent: any = null;
+  private windowRange: { start: number; end: number; count: number } = { start: 0, end: 0, count: 0 };
   private running = false;
 
   constructor(props: ICESelectOptions) {
@@ -100,6 +113,8 @@ export class ICESelect extends ICEWidget {
     this.placeholder = props.placeholder || '';
     this.disabled = props.disabled === true;
     this.optionHeight = props.optionHeight ?? 34;
+    this.listHeight = Math.max(this.optionHeight, Math.floor(Number(props.listHeight) || this.optionHeight * 6));
+    this.virtualThreshold = Math.max(1, Math.floor(Number(props.virtualThreshold) || 100));
     this.onChange = typeof props.onChange === 'function' ? props.onChange : null;
     // 构造期组件还没入场景（this.ice 为空），浮层管理器延迟到 afterAddHandler / open 再解析
     this.manager = props.manager || null;
@@ -318,6 +333,7 @@ export class ICESelect extends ICEWidget {
       if (!this.visible[index].disabled) {
         this.activeIndex = index;
         this.__buildPanel();
+        this.__ensureActiveVisible();
         return;
       }
     }
@@ -619,65 +635,200 @@ export class ICESelect extends ICEWidget {
       this.optionNodes.set(trimmed, createRow);
     }
 
-    this.visible.forEach((option, index) => {
-      const selected = this.selected.indexOf(option.value) !== -1;
-      const active = index === this.activeIndex;
-      const row = new ICEWidget({
-        left: 4,
-        top: 6 + searchHeight + createOffset + index * this.optionHeight,
-        width: width - 8,
-        height: this.optionHeight,
-        radius: theme.radius.sm,
-        fill: true,
+    // 候选区：比 listHeight 高就自己滚动；条数多到阈值以上只渲染可视窗口
+    const listTop = 6 + searchHeight + createOffset;
+    const contentHeight = this.visible.length * this.optionHeight;
+    const viewportHeight = Math.min(this.listHeight, Math.max(this.optionHeight, contentHeight));
+    const scrollable = contentHeight > this.listHeight;
+    this.virtual = scrollable && this.visible.length >= this.virtualThreshold;
+    this.listPane = null;
+    this.listContent = null;
+    if (scrollable) {
+      // 视口滚的是「一个高等于总条数的空白内容盒」，行按窗口摆进去（与表格虚拟行同一套算法）
+      this.listContent = new ICEWidget({
+        left: 0,
+        top: 0,
+        width: width,
+        height: contentHeight,
+        fill: false,
         stroke: false,
-        style: {
-          fillStyle: selected ? theme.colors.primaryBg : active ? theme.colors.background : 'rgba(0,0,0,0)',
-        },
+        interactive: false,
       });
-      row.setState({ interactive: !option.disabled });
-      const color = option.disabled
-        ? theme.colors.textDisabled
-        : selected
-        ? theme.colors.primary
-        : theme.colors.text;
-      row.addChild(
-        new ICELabel({
-          interactive: false,
-          left: 10,
-          top: 0,
-          height: this.optionHeight,
-          verticalAlign: 'middle',
-          text: option.label,
-          style: { fontSize: 13, fillStyle: color },
-        }),
-        false,
-      );
-      if (selected) {
-        row.addChild(
-          new ICELabel({
-            interactive: false,
-            left: width - 32,
-            top: 0,
-            width: 16,
-            height: this.optionHeight,
-            verticalAlign: 'middle',
-            text: '✓',
-            style: { fontSize: 12, fillStyle: theme.colors.primary },
-          }),
-          false,
-        );
-      }
-      if (!option.disabled) {
-        row.on('click', () => this.__pick(option));
-      }
-      panel.addChild(row, false);
-      this.optionNodes.set(option.value, row);
-    });
-    panel.setState({
-      height: 6 + searchHeight + createOffset + Math.max(1, this.visible.length) * this.optionHeight + 6,
-    });
+      this.listPane = new ICEScrollPane({
+        left: 0,
+        top: listTop,
+        width,
+        height: viewportHeight,
+        scrollbar: true,
+      });
+      this.listPane.setContent(this.listContent);
+      this.listPane.setContentSize(width, contentHeight);
+      this.listPane.on('scroll', (evt: any) => {
+        this.listScrollTop = evt && evt.param ? Number(evt.param.y) || 0 : 0;
+        this.__syncWindow();
+      });
+      panel.addChild(this.listPane, false);
+      this.setListScroll(this.listScrollTop);
+    } else {
+      this.listScrollTop = 0;
+      this.visible.forEach((option, index) => {
+        this.__renderOptionRow(panel, option, index, width, listTop + index * this.optionHeight);
+      });
+    }
+    panel.setState({ height: listTop + viewportHeight + 6 });
     if (this.ice && this.ice.dirty !== undefined) {
       this.ice.dirty = true;
     }
   }
+
+  /** 建一行候选（虚拟窗口与普通列表共用）。 */
+  private __renderOptionRow(parent: any, option: ICESelectOption, index: number, width: number, top: number): void {
+    const theme = iceUIManager.getTheme();
+    const selected = this.selected.indexOf(option.value) !== -1;
+    const active = index === this.activeIndex;
+    const row = new ICEWidget({
+      left: 4,
+      top,
+      width: width - 8,
+      height: this.optionHeight,
+      radius: theme.radius.sm,
+      fill: true,
+      stroke: false,
+      style: {
+        fillStyle: selected ? theme.colors.primaryBg : active ? theme.colors.background : 'rgba(0,0,0,0)',
+      },
+    });
+    row.setState({ interactive: !option.disabled });
+    const color = option.disabled
+      ? theme.colors.textDisabled
+      : selected
+      ? theme.colors.primary
+      : theme.colors.text;
+    row.addChild(
+      new ICELabel({
+        interactive: false,
+        left: 10,
+        top: 0,
+        height: this.optionHeight,
+        verticalAlign: 'middle',
+        text: option.label,
+        style: { fontSize: 13, fillStyle: color },
+      }),
+      false,
+    );
+    if (selected) {
+      row.addChild(
+        new ICELabel({
+          interactive: false,
+          left: width - 32,
+          top: 0,
+          width: 16,
+          height: this.optionHeight,
+          verticalAlign: 'middle',
+          text: '✓',
+          style: { fontSize: 12, fillStyle: theme.colors.primary },
+        }),
+        false,
+      );
+    }
+    if (!option.disabled) {
+      row.on('click', () => this.__pick(option));
+    }
+    parent.addChild(row, false);
+    this.optionNodes.set(option.value, row);
+  }
+
+  /** 按当前滚动位置重算可视窗口（非虚拟时就是全部）。 */
+  private __syncWindow(): void {
+    const content = this.listContent;
+    if (!content || !this.listPane) {
+      return;
+    }
+    const width = Number(this.listPane.state.width) || Number(this.state.width) || 200;
+    const total = this.visible.length;
+    const range = this.virtual
+      ? computeVirtualRange({
+          scrollTop: this.listScrollTop,
+          viewportHeight: this.listPane.getViewportSize()[1],
+          itemHeight: this.optionHeight,
+          itemCount: total,
+          buffer: 2,
+        })
+      : { start: 0, end: total, count: total };
+    this.windowRange = range;
+    content.removeChildren([...content.childNodes]);
+    // 只清掉「属于候选窗口」的那批节点：tags 的「创建」行挂在面板上，不该被滚掉
+    Array.from(this.optionNodes.keys()).forEach((value) => {
+      const node = this.optionNodes.get(value);
+      if (node && node.parentNode === content) {
+        this.optionNodes.delete(value);
+      }
+    });
+    for (let index = range.start; index < range.end; index += 1) {
+      this.__renderOptionRow(content, this.visible[index], index, width, index * this.optionHeight);
+    }
+    if (this.ice && this.ice.dirty !== undefined) {
+      this.ice.dirty = true;
+    }
+  }
+
+  // ---- 大列表：滚动 / 虚拟窗口（测试与 e2e 用） ----
+
+  public isVirtual(): boolean {
+    return this.virtual;
+  }
+
+  public isListScrollable(): boolean {
+    return !!this.listPane;
+  }
+
+  public getListScroll(): number {
+    return this.listScrollTop;
+  }
+
+  public setListScroll(y: number): this {
+    if (this.listPane) {
+      this.listPane.setScroll(0, Number(y) || 0);
+      const [x, actual] = this.listPane.getScroll();
+      this.listScrollTop = actual;
+      this.__syncWindow();
+    }
+    return this;
+  }
+
+  public getListContentHeight(): number {
+    return this.visible.length * this.optionHeight;
+  }
+
+  /** 当前真的画出来的候选值（虚拟时就是那个窗口）。 */
+  public getRenderedOptionValues(): string[] {
+    if (!this.listPane) {
+      return this.visible.map((option) => option.value);
+    }
+    return this.visible.slice(this.windowRange.start, this.windowRange.end).map((option) => option.value);
+  }
+
+  public getSelectedOptionValues(): string[] {
+    return this.selected.slice();
+  }
+
+  public getActiveIndex(): number {
+    return this.activeIndex;
+  }
+
+  /** 把 active 行滚进窗口（键盘走到看不见的地方是最烦人的一类 bug）。 */
+  private __ensureActiveVisible(): void {
+    if (!this.listPane) {
+      return;
+    }
+    const top = this.activeIndex * this.optionHeight;
+    const viewportHeight = this.listPane.getViewportSize()[1];
+    const current = this.listScrollTop;
+    if (top < current) {
+      this.setListScroll(top);
+    } else if (top + this.optionHeight > current + viewportHeight) {
+      this.setListScroll(top + this.optionHeight - viewportHeight);
+    }
+  }
+
 }
