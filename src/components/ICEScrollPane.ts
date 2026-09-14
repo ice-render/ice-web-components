@@ -51,6 +51,8 @@ export class ICEScrollPane extends ICEContainer {
   private explicitContentSize = false;
   private scrollbarMode: 'auto' | 'always' | 'never';
   private wheelStep: number;
+  /** 滑块拖拽态：记住按的是哪条、按下时指针在滑块内的偏移 */
+  private thumbDrag: { axis: 'vertical' | 'horizontal'; offset: number } | null = null;
   private __bound = false;
 
   constructor(props: ICEScrollPaneOptions & Record<string, any> = {}) {
@@ -290,6 +292,104 @@ export class ICEScrollPane extends ICEContainer {
     }
     this.__bound = true;
     this.ice.evtBus.on('wheel', this.__onWheel, this);
+    this.ice.evtBus.on('mousedown', this.__onGlobalMouseDown, this);
+    this.ice.evtBus.on('mousemove', this.__onGlobalMouseMove, this);
+    this.ice.evtBus.on('mouseup', this.__onGlobalMouseUp, this);
+  }
+
+  /** 按住的是哪条滑块（点在轨道空白不算）。 */
+  public isThumbDragging(): boolean {
+    return !!this.thumbDrag;
+  }
+
+  private __onGlobalMouseDown(evt: any): void {
+    if (!evt || !evt.target) {
+      return;
+    }
+    if (evt.target === this.scrollbarThumb && this.isScrollbarVisible()) {
+      const [, wy] = this.ice.screenToWorld(evt.offsetX, evt.offsetY);
+      this.__onThumbMouseDown('vertical', {
+        offsetX: evt.offsetX,
+        offsetY: evt.offsetY,
+        target: evt.target,
+        pointerInThumb: wy - (Number(this.scrollbarThumb.state.top) || 0),
+      });
+      return;
+    }
+    if (evt.target === this.hThumb && this.isHorizontalScrollbarVisible()) {
+      const [wx] = this.ice.screenToWorld(evt.offsetX, evt.offsetY);
+      this.__onThumbMouseDown('horizontal', {
+        offsetX: evt.offsetX,
+        offsetY: evt.offsetY,
+        target: evt.target,
+        pointerInThumb: wx - (Number(this.hThumb.state.left) || 0),
+      });
+    }
+  }
+
+  private __onGlobalMouseMove(evt: any): void {
+    if (!this.thumbDrag) {
+      return;
+    }
+    this.__onThumbMouseMove(evt);
+  }
+
+  private __onGlobalMouseUp(): void {
+    this.__onThumbMouseUp();
+  }
+
+  /**
+   * 按下滑块（真实路径由 `__onGlobalMouseDown` 触发；测试可直接调）。
+   *
+   * `pointerInThumb` 是按下时指针在滑块内的偏移：拖拽时保持它，滑块才不会「跳一下」。
+   */
+  public __onThumbMouseDown(axis: 'vertical' | 'horizontal', evt: any): this {
+    if (!evt || !evt.target || this.thumbDrag) {
+      return this;
+    }
+    const [, maxY] = this.getScrollRange();
+    const [maxX] = this.getScrollRange();
+    if (axis === 'vertical' && maxY <= 0) {
+      return this;
+    }
+    if (axis === 'horizontal' && maxX <= 0) {
+      return this;
+    }
+    this.thumbDrag = { axis, offset: Number(evt.pointerInThumb) || 0 };
+    return this;
+  }
+
+  /** 拖动中：把「指针位置 - 手指偏移」换算成滚动位置。 */
+  public __onThumbMouseMove(evt: any): this {
+    const drag = this.thumbDrag;
+    if (!drag || !evt || typeof evt.offsetX !== 'number') {
+      return this;
+    }
+    if (!this.ice || typeof this.ice.screenToWorld !== 'function') {
+      return this;
+    }
+    const [wx, wy] = this.ice.screenToWorld(evt.offsetX, evt.offsetY);
+    const [maxX, maxY] = this.getScrollRange();
+    if (drag.axis === 'vertical') {
+      const thumbHeight = Number(this.scrollbarThumb.state.height) || SCROLLBAR_MIN_THUMB;
+      const travel = Math.max(1, this.getVerticalTrackHeight() - thumbHeight);
+      const top = Math.min(Math.max(0, wy - drag.offset), travel);
+      return this.setScroll(this.scrollX, (top / travel) * maxY);
+    }
+    const thumbWidth = Number(this.hThumb.state.width) || SCROLLBAR_MIN_THUMB;
+    const travel = Math.max(1, this.getHorizontalTrackWidth() - thumbWidth);
+    const left = Math.min(Math.max(0, wx - drag.offset), travel);
+    return this.setScroll((left / travel) * maxX, this.scrollY);
+  }
+
+  public __onThumbMouseUp(): this {
+    this.thumbDrag = null;
+    return this;
+  }
+
+  /** 竖向轨道的可用高度（拖拽换算用）。 */
+  public getVerticalTrackHeight(): number {
+    return Number(this.scrollbarTrack.state.height) || 0;
   }
 
   private __onWheel(evt: any): void {

@@ -359,6 +359,7 @@
 | `getFileNode(uid: string)` | `ICEWidget \| null` |  |
 | `addFile(file: Partial<ICEUploadFile>)` | `boolean` | 加入一个文件（真实选择结果或调用方构造的数据）；被拒时返回 false。 |
 | `getFileStatus(uid: string)` | `'uploading' \| 'done' \| 'error' \| null` | 上传状态：'uploading' | 'done' | 'error'（没用 customRequest 时是 null）。 |
+| `isDragOver()` | `boolean` | 有文件正悬在拖拽区上方（用于高亮反馈）。 |
 | `retryFile(uid: string)` | `boolean` | 失败重传（只有失败的行能重试）。 |
 | `removeFile(uid: string)` | `this` |  |
 | `getFileRows()` | `any[]` | 文件行节点（`showFileList: false` 时为空）。 |

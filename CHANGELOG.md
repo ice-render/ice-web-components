@@ -199,6 +199,27 @@
   （`display: false` 与 `onClose` 都在动画结束后才发生）；**默认仍是立即关闭**（老行为），
   开了减少动效也会立即关。
 
+- **`ICETable` 单元格编辑**（2026-09-14，S2 第五批第一件）：列上声明 `editable: true` 就能点格子改内容。
+  编辑态是**一个输入框盖在那一格上**（表格本身仍是原来那套渲染，不整体切成另一种模式）：
+  Enter / 失焦提交（写回行数据 + `onCellEdit(row, key, value, previous)`）、Esc 取消，
+  值没变就只是退出编辑态、不回调。配套 `startEdit()` / `commitEdit()` / `cancelEdit()` /
+  `getEditingCell()` / `getEditNode()`；不可编辑的列与越界的行列都进不去。
+
+- **`ICEUpload` 桌面拖放**（2026-09-14，同批）：把文件从桌面直接拖进画布。挂上场景后在画布元素上注册
+  `dragover` / `dragleave` / `drop`：悬在拖拽区上方时区域**高亮**（`isDragOver()`），
+  落下逐个走 `addFile`（accept / maxSize / maxCount 校验照旧生效，被拒的记 `lastRejectReason`）；
+  落在区域外、组件被禁用、没有画布元素（老引擎 / node 环境）都安全跳过。
+
+- **`ICEScrollPane` 滚动条可以拖了**（2026-09-14，同批）：以前滑块只是「指示器」，只有滚轮能滚。
+  现在按住竖向 / 横向滑块拖动都行，换算按「轨道行程 ↔ 滚动行程」比例；按下时记住指针在滑块内的偏移，
+  滑块不会跳一下；拖到两端就是滚到顶 / 底，越界自动夹取。配 `isThumbDragging()` /
+  `getVerticalTrackHeight()`。
+
+- **性能门禁：gallery 预算按实测重新钉住**（2026-09-14）：这一批跑 `qa:perf` 时 gallery 量到 66.6ms
+  （预算 60ms）。**没有直接调预算蒙过去** —— 先把本批改动 `git stash` 掉、只跑上一版的 dist，
+  结果同样量到 66.7ms，证明是**环境基线漂移**而非本批回归；据此把预算改成 90ms，并在脚本里写清
+  来龙去脉与「引擎侧脏矩形修好后收回 20ms」的 TODO。
+
 > 其余待发布的改动在这里累积。
 
 ## [1.5.4] - 2026-09-14
