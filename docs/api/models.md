@@ -331,6 +331,36 @@ DOS 终端（虚拟文件系统 + 命令解释器，纯逻辑，不碰 DOM）。
 | `getDiagnostics()` | `ICEKeyScopeDiagnostics` |  |
 | `addChangeListener(listener: ICEKeyScopeListener)` | `() => void` |  |
 
+## `ICEDateRangeModel`
+
+区间日期模型（纯逻辑，不碰 canvas）。  区间选择的难点全在规则上，所以先把规则钉死，界面（日历面板 + 快捷项）只负责画：
+
+- 用户先点结束再点开始 → **自动交换**（操作顺序不该被惩罚）；
+- 只点了一头 → 「进行中」，`isComplete()` 为假（界面据此不触发「确定」）；
+- 时间部分**归一化到当天零点**（同一天的两个时刻不该被判成非法区间）；
+- 快捷项（今天 / 近 7 天 / 近 30 天 / 本月 / 上月）按注入的 `now` 解析，测试可复现；
+- `matchPreset()` 认出「当前区间正好等于某个快捷项」，页面据此高亮那一条。
+
+源码：[`src/model/ICEDateRangeModel.ts`](../../src/model/ICEDateRangeModel.ts)
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getStart()` | `Date \| null` |  |
+| `getEnd()` | `Date \| null` |  |
+| `getValue()` | `[Date \| null, Date \| null]` |  |
+| `isComplete()` | `boolean` | 两端都有才算「完整区间」。 |
+| `getPresets()` | `Array<{ key: string; label: string }>` |  |
+| `setValue(start: Date \| null, end: Date \| null, options: { silent?: boolean })` | `this` | 设值：自动排序（先点结束再点开始也成立）、归一化到当天零点。 |
+| `applyPreset(key: string)` | `[Date, Date]` | 点快捷项：解析成区间并写回（返回值就是写进去的那一对）。 |
+| `matchPreset()` | `string \| null` | 当前区间正好等于某个快捷项 → 返回它的 key（页面据此高亮）。 |
+| `addChangeListener(listener: ICEDateRangeListener)` | `() => void` |  |
+
+### `ICE_DATE_RANGE_PRESETS` — 常量
+
+源码：`src/model/ICEDateRangeModel.ts`
+
 ## `ICEMinesweeperModel`
 
 扫雷的纯逻辑模型（不碰 canvas）。  规则按 Windows XP 扫雷：
