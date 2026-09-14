@@ -234,6 +234,10 @@ export class ICETable extends ICEWidget {
   private columnDraggable = false;
   private columnDrag: { from: number; to: number } | null = null;
   private onColumnReorder: ((order: string[], from: number, to: number) => void) | null = null;
+  /** 列头拖拽的落点指示线（拖动期间才画） */
+  private columnDropIndicator: any = null;
+  /** 编辑校验失败时的可见提示节点 */
+  private editErrorNode: any = null;
   private summaryNode: any = null;
   private summaryTexts: Record<string, string> = {};
   /** 单元格编辑态：改哪一行哪一列 + 盖在格子上的输入框 */
@@ -784,10 +788,12 @@ export class ICETable extends ICEWidget {
         if (typeof state.node.setValidateStatus === 'function') {
           state.node.setValidateStatus('error');
         }
+        this.__showEditError(String(message), state.rowIndex, state.key);
         return false;
       }
     }
     this.editError = null;
+    this.__clearEditError();
     this.editing = null;
     this.__detachEditNode(state.node);
     const row = this.data[state.rowIndex];
@@ -810,6 +816,7 @@ export class ICETable extends ICEWidget {
     }
     this.editing = null;
     this.editError = null;
+    this.__clearEditError();
     this.__detachEditNode(state.node);
     if (this.ice && this.ice.dirty !== undefined) {
       this.ice.dirty = true;
@@ -818,6 +825,54 @@ export class ICETable extends ICEWidget {
   }
 
   /** 摘掉编辑框：可滚动模式下它挂在 bodyContent 上，得按实际父亲摘。 */
+  /** 把校验错误画在那一格下面（标红只说「有问题」，这里说「有什么问题」）。 */
+  private __showEditError(message: string, rowIndex: number, key: string): void {
+    this.__clearEditError();
+    const theme = iceUIManager.getTheme();
+    const offset = this.selectionMode === 'multiple' ? ICETable.SELECTION_WIDTH : 0;
+    const widths = this.__columnWidths((Number(this.state.width) || 720) - offset);
+    let left = offset;
+    let columnWidth = 120;
+    for (let i = 0; i < this.columns.length; i += 1) {
+      if (this.columns[i].key === key) {
+        columnWidth = widths[i];
+        break;
+      }
+      left += widths[i];
+    }
+    const node = new ICELabel({
+      interactive: false,
+      left,
+      top: this.headerHeight + rowIndex * this.rowHeight + this.rowHeight - 4,
+      width: Math.max(80, columnWidth),
+      height: 18,
+      verticalAlign: 'middle',
+      text: message,
+      style: { fontSize: 11, fillStyle: theme.colors.error },
+    });
+    this.addChild(node, false);
+    this.editErrorNode = node;
+    if (this.ice) {
+      this.ice.dirty = true;
+    }
+  }
+
+  private __clearEditError(): void {
+    if (!this.editErrorNode) {
+      return;
+    }
+    if (this.editErrorNode.parentNode && this.editErrorNode.parentNode !== this) {
+      this.editErrorNode.parentNode.removeChild(this.editErrorNode);
+    } else {
+      this.removeChild(this.editErrorNode);
+    }
+    this.editErrorNode = null;
+  }
+
+  public getEditErrorNode(): any {
+    return this.editErrorNode;
+  }
+
   private __detachEditNode(node: any): void {
     if (!node) {
       return;
@@ -861,9 +916,36 @@ export class ICETable extends ICEWidget {
     }
     const nextKey = this.columns[editableIndexes[nextPosition]].key;
     this.startEdit(nextRow, nextKey);
-    // 目标行可能还在视口外：滚过去，否则用户看不见自己在改什么
-    this.scrollToRow(nextRow);
+    // 目标格可能还在视口外：纵向滚行、横向滚列，否则用户看不见自己在改什么
+    this.__ensureCellVisible(nextRow, nextKey);
     void value;
+  }
+
+  /** 把某一格滚进可视区（纵向用 scrollToRow；横向按列在内容里的位置调 setScrollLeft）。 */
+  private __ensureCellVisible(rowIndex: number, key: string): void {
+    this.scrollToRow(rowIndex);
+    if (!this.scrollable) {
+      return;
+    }
+    const offset = this.selectionMode === 'multiple' ? ICETable.SELECTION_WIDTH : 0;
+    const contentWidth = this.renderedContentWidth || Number(this.state.width) || 720;
+    const widths = this.__columnWidths(contentWidth - offset);
+    let left = offset;
+    let columnWidth = 0;
+    for (let i = 0; i < this.columns.length; i += 1) {
+      if (this.columns[i].key === key) {
+        columnWidth = widths[i];
+        break;
+      }
+      left += widths[i];
+    }
+    const viewportWidth = Number(this.state.width) || 0;
+    const current = this.getScroll().x;
+    if (left < current) {
+      this.setScrollLeft(left);
+    } else if (left + columnWidth > current + viewportWidth) {
+      this.setScrollLeft(left + columnWidth - viewportWidth);
+    }
   }
 
   public getSummaryNode(): any {
@@ -1582,6 +1664,8 @@ export class ICETable extends ICEWidget {
           // 列头可拖拽：按在表头上先记下起点，松手时再决定「换序」还是「排序」
           if (this.columnDraggable) {
             this.columnDrag = { from: i, to: i };
+            this.__ensureColumnDropIndicator();
+            this.__syncColumnDropIndicator();
             return;
           }
           this.toggleSort(column.key);
@@ -2493,6 +2577,20 @@ export class ICETable extends ICEWidget {
     return this.columns.map((column) => column.key);
   }
 
+  /** 列头拖拽的落点指示线位置（没在拖 / 拖回原列时为 null）。 */
+  public getColumnDropIndicatorBox(): any {
+    // 没在拖、或拖回原列（等于没动）都算「没有指示线」
+    if (!this.columnDropIndicator || this.columnDropIndicator.state.display === false) {
+      return null;
+    }
+    return {
+      left: Number(this.columnDropIndicator.state.left) || 0,
+      top: Number(this.columnDropIndicator.state.top) || 0,
+      width: Number(this.columnDropIndicator.state.width) || 0,
+      height: Number(this.columnDropIndicator.state.height) || 0,
+    };
+  }
+
   /** 按 key 列表重排（列表里没提到的列接在后面，新增列不会丢）。 */
   public setColumnOrder(keys: string[]): this {
     if (!Array.isArray(keys) || !keys.length) {
@@ -2512,6 +2610,54 @@ export class ICETable extends ICEWidget {
   }
 
   /** 把第 `from` 列挪到第 `to` 列的位置（拖拽与测试共用这条路径）。 */
+  /** 拖拽开始时建好指示线（一条竖线，跟着落点列走）。 */
+  private __ensureColumnDropIndicator(): void {
+    if (this.columnDropIndicator || !this.columnDraggable) {
+      return;
+    }
+    const theme = iceUIManager.getTheme();
+    this.columnDropIndicator = new ICEWidget({
+      left: 0,
+      top: 0,
+      width: 2,
+      height: this.headerHeight + Math.max(1, this.data.length) * this.rowHeight,
+      fill: true,
+      stroke: false,
+      display: false,
+      interactive: false,
+      style: { fillStyle: theme.colors.primary },
+    });
+    this.addChild(this.columnDropIndicator, false);
+  }
+
+  /** 指示线跟着落点列走；拖回原列时隐藏（等于没动）。 */
+  private __syncColumnDropIndicator(): void {
+    const indicator = this.columnDropIndicator;
+    const drag = this.columnDrag;
+    if (!indicator || !drag) {
+      return;
+    }
+    if (drag.from === drag.to) {
+      indicator.setState({ display: false });
+      return;
+    }
+    const offset = this.selectionMode === 'multiple' ? ICETable.SELECTION_WIDTH : 0;
+    const widths = this.__columnWidths((Number(this.state.width) || 720) - offset);
+    const to = Math.min(Math.max(drag.to, 0), widths.length - 1);
+    // 落点在目标列的哪一侧：往后拖落在它的右边界，往前拖落在左边界
+    let edge = offset;
+    for (let i = 0; i < to; i += 1) {
+      edge += widths[i];
+    }
+    if (drag.to > drag.from) {
+      edge += widths[to];
+    }
+    indicator.setState({ left: Math.max(0, edge - 1), display: true });
+    if (this.ice) {
+      this.ice.dirty = true;
+    }
+  }
+
   public moveColumn(from: number, to: number): this {
     const order = this.getColumnOrder();
     if (from < 0 || from >= order.length || to < 0 || to >= order.length || from === to) {
@@ -2796,6 +2942,7 @@ export class ICETable extends ICEWidget {
       for (let i = 0; i < this.columns.length; i += 1) {
         if (localX >= acc && localX <= acc + widths[i]) {
           this.columnDrag.to = i;
+          this.__syncColumnDropIndicator();
           break;
         }
         acc += widths[i];
@@ -2828,6 +2975,9 @@ export class ICETable extends ICEWidget {
     if (this.columnDrag) {
       const { from, to } = this.columnDrag;
       this.columnDrag = null;
+      if (this.columnDropIndicator) {
+        this.columnDropIndicator.setState({ display: false });
+      }
       if (from !== to) {
         this.moveColumn(from, to);
       } else {
