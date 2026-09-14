@@ -132,17 +132,17 @@ function cloneTree<T extends ICETreeNodeLike>(nodes: T[], childrenKey: string): 
 }
 
 /** 从树里摘掉一个节点，返回 [新树, 被摘下的节点]。 */
-function detachNode(nodes: any[], key: string, childrenKey: string): { nodes: any[]; detached: any | null } {
+function detachNode(nodes: any[], key: string, childrenKey: string, keyField: string = 'key'): { nodes: any[]; detached: any | null } {
   const next: any[] = [];
   let detached: any | null = null;
   (nodes || []).forEach((node) => {
-    if (node.key === key) {
+    if (node[keyField] === key) {
       detached = node;
       return;
     }
     const copy: any = { ...node };
     if (Array.isArray(node[childrenKey])) {
-      const result = detachNode(node[childrenKey], key, childrenKey);
+      const result = detachNode(node[childrenKey], key, childrenKey, keyField);
       copy[childrenKey] = result.nodes;
       if (result.detached) detached = result.detached;
     }
@@ -152,16 +152,20 @@ function detachNode(nodes: any[], key: string, childrenKey: string): { nodes: an
 }
 
 /** key 是否在（子）树里。 */
-function containsKey(nodes: any[], key: string, childrenKey: string): boolean {
-  return (nodes || []).some((node) => node.key === key || (Array.isArray(node[childrenKey]) && containsKey(node[childrenKey], key, childrenKey)));
+function containsKey(nodes: any[], key: string, childrenKey: string, keyField: string = 'key'): boolean {
+  return (nodes || []).some(
+    (node) =>
+      node[keyField] === key ||
+      (Array.isArray(node[childrenKey]) && containsKey(node[childrenKey], key, childrenKey, keyField)),
+  );
 }
 
 /** 在树里按 key 找到节点。 */
-function findNode(nodes: any[], key: string, childrenKey: string): any {
+function findNode(nodes: any[], key: string, childrenKey: string, keyField: string = 'key'): any {
   for (const node of nodes || []) {
-    if (node.key === key) return node;
+    if (node[keyField] === key) return node;
     if (Array.isArray(node[childrenKey])) {
-      const found = findNode(node[childrenKey], key, childrenKey);
+      const found = findNode(node[childrenKey], key, childrenKey, keyField);
       if (found) return found;
     }
   }
@@ -182,30 +186,31 @@ export function moveTreeNode<T extends ICETreeNodeLike>(
   targetKey: string,
   position: ICETreeDropTarget['position'],
   childrenKey: string = 'children',
+  keyField: string = 'key',
 ): ICETreeMoveResult<T> {
   const source = Array.isArray(nodes) ? nodes : [];
   const unchanged = { nodes: source.slice(), moved: false, parentKey: null };
   if (!dragKey || !targetKey || dragKey === targetKey) return unchanged;
-  const dragged = findNode(source, dragKey, childrenKey);
-  const target = findNode(source, targetKey, childrenKey);
+  const dragged = findNode(source, dragKey, childrenKey, keyField);
+  const target = findNode(source, targetKey, childrenKey, keyField);
   if (!dragged || !target) return unchanged;
-  if (Array.isArray(dragged[childrenKey]) && containsKey(dragged[childrenKey], targetKey, childrenKey)) {
+  if (Array.isArray(dragged[childrenKey]) && containsKey(dragged[childrenKey], targetKey, childrenKey, keyField)) {
     return unchanged; // 拖进自己的后代：拒绝
   }
   const work = cloneTree(source, childrenKey);
-  const detached = detachNode(work, dragKey, childrenKey);
+  const detached = detachNode(work, dragKey, childrenKey, keyField);
   if (!detached.detached) return unchanged;
   const moving = detached.detached;
   let inserted = false;
   let parentKey: string | null = null;
   const insertInto = (list: any[], parent: string | null): void => {
-    const index = list.findIndex((node) => node.key === targetKey);
+    const index = list.findIndex((node) => node[keyField] === targetKey);
     if (index >= 0) {
       const at = position === 'after' ? index + 1 : index;
       if (position === 'inside') {
         const host = list[index];
         host[childrenKey] = Array.isArray(host[childrenKey]) ? host[childrenKey].concat([moving]) : [moving];
-        parentKey = host.key;
+        parentKey = host[keyField];
       } else {
         list.splice(at, 0, moving);
         parentKey = parent;
@@ -215,14 +220,14 @@ export function moveTreeNode<T extends ICETreeNodeLike>(
     }
     list.forEach((node) => {
       if (inserted || !Array.isArray(node[childrenKey])) return;
-      insertInto(node[childrenKey], node.key);
+      insertInto(node[childrenKey], node[keyField]);
     });
   };
   insertInto(detached.nodes as any[], null);
   if (!inserted) return unchanged;
   // 位置没变：同级 before/after 落到原位（前后紧邻）时视作没动
-  const beforeOrder = structureSignature(source, childrenKey);
-  const afterOrder = structureSignature(detached.nodes, childrenKey);
+  const beforeOrder = structureSignature(source, childrenKey, keyField);
+  const afterOrder = structureSignature(detached.nodes, childrenKey, keyField);
   if (beforeOrder === afterOrder) return unchanged;
   return { nodes: detached.nodes as T[], moved: true, parentKey };
 }
@@ -233,11 +238,13 @@ export function moveTreeNode<T extends ICETreeNodeLike>(
  * 为什么不是「拉平后的 key 顺序」：把 b 拖进 a 当最后一个子节点，拉平顺序可能一模一样，
  * 但结构已经变了 —— 只看顺序会把这次移动误判成「没动」。
  */
-function structureSignature(nodes: ICETreeNodeLike[], childrenKey: string): string {
+function structureSignature(nodes: ICETreeNodeLike[], childrenKey: string, keyField: string = 'key'): string {
   return (nodes || [])
     .map((node) => {
-      const children = Array.isArray(node[childrenKey]) ? `(${structureSignature(node[childrenKey] as any, childrenKey)})` : '';
-      return `${node.key}${children}`;
+      const children = Array.isArray(node[childrenKey])
+        ? `(${structureSignature(node[childrenKey] as any, childrenKey, keyField)})`
+        : '';
+      return `${(node as any)[keyField]}${children}`;
     })
     .join(',');
 }
