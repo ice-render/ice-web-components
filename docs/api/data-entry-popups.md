@@ -246,6 +246,75 @@
 | `open()` | `this` |  |
 | `close()` | `this` |  |
 
+## `ICEDateRangePicker`
+
+区间日期选择器。
+
+- 字段分成两半（起 / 止），各有自己的占位文案：只选了起，止那一半还留着提示， 用户一眼能看出「还差一下」；
+- 浮层左边是快捷项列（今天 / 近 7 天 / 近 30 天 / 本月 / 上月），右边是单月网格， 两列各占各的横向空间、互不交叠（`getPanelLayout()` 把这份版式暴露出来给测试与几何审计）；
+- 区间要点两次：第一下定起点（进行中，浮层不关、不回调），第二下收口 —— 先点后用**自动排序**， 所以「先点 20 再点 10」得到的是 10 → 20；
+- 网格按区间着色：两端用主色实心，中间整段用主色浅底（区间是连续的一段，不是一个点）；
+- 值统一是 `[起, 止]` 的 `YYYY-MM-DD` 字符串（可直接进表单），只选一头时另一头是 `null`。 规则全在 `ICEDateRangeModel`（纯逻辑）里，本组件只负责「画」与「把点击翻译成模型调用」。
+
+源码：[`src/components/ICEDateRangePicker.ts`](../../src/components/ICEDateRangePicker.ts)
+
+**构造参数** `ICEDateRangePickerOptions`
+
+| 参数 | 类型 | 说明 |
+|---|---|---|
+| `id?` | `string` | 组件 id（引擎用它做唯一标识；e2e/调试时可按 id 定位） |
+| `value?` | `[string \| null, string \| null]` | 初始区间：`[起, 止]`，允许 `null`（只给一头 = 进行中） |
+| `placeholder?` | `[string, string]` | 两半的占位文案，默认取内置词条（开始日期 / 结束日期） |
+| `weekStart?` | `number` | 一周首日（0=周日 … 6=周六）；缺省按 locale 推导 |
+| `disabled?` | `boolean` | 是否禁用（禁用后不响应交互、不可聚焦） |
+| `today?` | `string` | 注入「今天」（快捷项解析与今天高亮都用它），便于测试与演示 |
+| `now?` | `() => Date` | 时间源（快捷项用），默认取系统时间 |
+| `presets?` | `ICEDateRangePreset[]` | 自定义快捷项；不传用内置五项 |
+| `showPresets?` | `boolean` | 是否显示左侧快捷项列（默认 true） |
+| `left?` | `number` | 相对父容器的左边距 |
+| `top?` | `number` | 相对父容器的上边距 |
+| `width?` | `number` | 宽度（不传用组件默认值） |
+| `height?` | `number` | 高度（不传用组件默认值） |
+| `cellSize?` | `number` |  |
+| `placement?` | `ICEDateRangePickerPlacement` |  |
+| `onChange?` | `(value: [string, string]) => void` | 只有区间**完整**时才回调（进行中不回调） |
+| `onClear?` | `() => void` | 清空（两头都抹掉）时回调 |
+| `manager?` | `ICEOverlayManager` | 浮层管理器（一般不用传，组件会取共享实例） |
+
+**方法**
+
+| 方法 | 返回 | 说明 |
+|---|---|---|
+| `getValue()` | `[string \| null, string \| null]` |  |
+| `setValue(start: string \| null, end: string \| null, options: { silent?: boolean })` | `this` |  |
+| `isComplete()` | `boolean` |  |
+| `getFormValue()` | `[string \| null, string \| null]` |  |
+| `setFormValue(value: any)` | `void` |  |
+| `clear()` | `this` |  |
+| `getFieldParts()` | `{ start: string; end: string }` |  |
+| `getFieldText()` | `string` |  |
+| `getPlaceholder()` | `[string, string]` |  |
+| `isOpen()` | `boolean` |  |
+| `getPanel()` | `ICEPanel \| null` |  |
+| `activate()` | `void` |  |
+| `toggle()` | `this` |  |
+| `open()` | `this` |  |
+| `close()` | `this` |  |
+| `getViewMonth()` | `{ year: number; month: number }` |  |
+| `setViewMonth(year: number, month: number)` | `this` |  |
+| `prevMonth()` | `this` |  |
+| `nextMonth()` | `this` |  |
+| `getDayCells()` | `ICEDateRangeCell[]` |  |
+| `getDayNode(date: string)` | `ICEWidget \| null` |  |
+| `getPresetKeys()` | `string[]` |  |
+| `getPresetNode(key: string)` | `ICEWidget \| null` |  |
+| `getActivePresetKey()` | `string \| null` |  |
+| `applyPreset(key: string)` | `this` |  |
+| `getClearNode()` | `ICEWidget \| null` |  |
+| `isClearVisible()` | `boolean` |  |
+| `getPanelLayout()` | `ICEDateRangePanelLayout \| null` |  |
+| `getPresetBoxes()` | `ICEDateRangeBox[]` |  |
+
 ## `ICETimePicker`
 
 时间选择器。

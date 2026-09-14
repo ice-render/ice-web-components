@@ -70,7 +70,7 @@ const GROUPS = [
     file: 'data-entry-popups',
     title: '数据录入（浮层类）',
     intro: '字段 + 浮层的组合。浮层统一走 `ICEOverlayManager`：工具层渲染、点外/Esc 关闭、空间不足自动翻转并夹进可见区。',
-    entries: ['ICESelect', 'ICEAutoComplete', 'ICECascader', 'ICETreeSelect', 'ICEDatePicker', 'ICETimePicker', 'ICEColorPicker', 'ICETransfer'],
+    entries: ['ICESelect', 'ICEAutoComplete', 'ICECascader', 'ICETreeSelect', 'ICEDatePicker', 'ICEDateRangePicker', 'ICETimePicker', 'ICEColorPicker', 'ICETransfer'],
   },
   {
     file: 'data-display',
@@ -229,6 +229,8 @@ const GROUPS = [
       'ICE_MAZE_CELL',
       'ICEDosModel',
       'ICEKeyScopeModel',
+      'ICEDateRangeModel',
+      'ICE_DATE_RANGE_PRESETS',
       'ICEMinesweeperModel',
       'ICE_MINESWEEPER_DIFFICULTIES',
       'ICETetrisModel',

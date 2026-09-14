@@ -1,7 +1,7 @@
 # 组件速查
 
 > 由 `npm run docs:api` 从源码生成。点组件名进入对应 API 页；每条的说明取自源码里的类注释首句。
-> 当前共 **80 个 UI 组件类**（另有 19 个纯逻辑模型、5 个管理器、2 个基类，合计 **106 个导出类**）。
+> 当前共 **81 个 UI 组件类**（另有 20 个纯逻辑模型、5 个管理器、2 个基类，合计 **108 个导出类**）。
 
 | 分组 | 组件 | 说明 |
 |---|---|---|
@@ -38,6 +38,7 @@
 |  | [`ICECascader`](./api/data-entry-popups.md#icecascader) | 级联选择。 |
 |  | [`ICETreeSelect`](./api/data-entry-popups.md#icetreeselect) | 树选择器：下拉里放一棵 ICETree，选中节点后回写值。 |
 |  | [`ICEDatePicker`](./api/data-entry-popups.md#icedatepicker) | 日期选择器。 |
+|  | [`ICEDateRangePicker`](./api/data-entry-popups.md#icedaterangepicker) | 区间日期选择器。 |
 |  | [`ICETimePicker`](./api/data-entry-popups.md#icetimepicker) | 时间选择器。 |
 |  | [`ICEColorPicker`](./api/data-entry-popups.md#icecolorpicker) | 颜色选择器。 |
 |  | [`ICETransfer`](./api/data-entry-popups.md#icetransfer) | 穿梭框。 |
