@@ -42,6 +42,7 @@
 | `isEditing()` | `boolean` |  |
 | `getEditingCell()` | `{ rowIndex: number; key: string } \| null` |  |
 | `getEditNode()` | `any` | 盖在该格子上的输入框（测试 / e2e 用）。 |
+| `getEditError()` | `string \| null` | 上一次提交校验失败的原因（通过 / 未编辑时为 null）。 |
 | `startEdit(rowIndex: number, key: string)` | `this` | 进入编辑态：在这一格上盖一个输入框（表格本身仍是那套渲染，不整体切换）。 |
 | `commitEdit()` | `boolean` | 提交：写回行数据 + 回调（值没变就只是退出编辑态）。 |
 | `cancelEdit()` | `boolean` |  |
@@ -66,6 +67,9 @@
 | `getRowDepth(key: string)` | `number` |  |
 | `getRowIndent(key: string)` | `number` | 首列的缩进像素（树形层级 × 16）。 |
 | `getRowTreeToggle(key: string)` | `any` | 父行首列的 ▸/▾ 三角（叶子行是 null）。 |
+| `getSelectedRowKeys()` | `string[]` | 已选行的 key（树形数据下含被级联选中的后代）。 |
+| `isTreeRowSelected(key: string)` | `boolean` |  |
+| `setTreeRowSelected(key: string, selected: boolean)` | `this` | 设置某一行的选中态（树形级联）。 |
 | `setSelectedRow(index: number)` | `this` |  |
 | `getSelectedIndex()` | `number` |  |
 | `getSelectionMode()` | `ICETableSelectionMode` |  |

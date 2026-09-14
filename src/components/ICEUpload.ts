@@ -65,6 +65,10 @@ export interface ICEUploadOptions extends ICELocalizedProps {
       onError: (message: string) => void;
     },
   ) => void | Promise<any>;
+  /** 文件行可以上下拖拽排序 */
+  draggable?: boolean;
+  /** 排序落下后的回调（顺序变了才触发） */
+  onReorder?: (files: ICEUploadFile[], from: number, to: number) => void;
 }
 
 const DROP_ZONE_HEIGHT = 96;
@@ -99,6 +103,9 @@ export class ICEUpload extends ICEWidget {
   private canvasEl: any = null;
   private boundDrag = false;
   private __dragHandlers: { dragover: any; dragleave: any; drop: any } | null = null;
+  private draggableRows = false;
+  private rowDrag: { from: number; to: number } | null = null;
+  private onReorderCallback: ((files: ICEUploadFile[], from: number, to: number) => void) | null = null;
   private lastRejectReason: string | null = null;
   private dropZone: ICEWidget | null = null;
   private fileNodes = new Map<string, ICEWidget>();
@@ -131,6 +138,8 @@ export class ICEUpload extends ICEWidget {
     this.onRemoveCallback = typeof props.onRemove === 'function' ? props.onRemove : null;
     this.showFileList = props.showFileList !== false;
     this.customRequest = typeof props.customRequest === 'function' ? props.customRequest : null;
+    this.draggableRows = props.draggable === true;
+    this.onReorderCallback = typeof props.onReorder === 'function' ? props.onReorder : null;
     this.focusable = !this.disabled;
     this.__render();
   }
@@ -236,6 +245,46 @@ export class ICEUpload extends ICEWidget {
   /** 有文件正悬在拖拽区上方（用于高亮反馈）。 */
   public isDragOver(): boolean {
     return this.dragOver;
+  }
+
+  // ---- 文件行拖拽排序 ----
+
+  public isRowDragging(): boolean {
+    return !!this.rowDrag;
+  }
+
+  /** 按住某一行（真实路径由全局 mousedown 触发；测试可直接调）。 */
+  public __onRowDragStart(index: number): this {
+    if (!this.draggableRows || index < 0 || index >= this.files.length) {
+      return this;
+    }
+    this.rowDrag = { from: index, to: index };
+    return this;
+  }
+
+  public __onRowDragMove(index: number): this {
+    if (!this.rowDrag) {
+      return this;
+    }
+    this.rowDrag.to = Math.min(Math.max(0, Math.floor(Number(index) || 0)), Math.max(0, this.files.length - 1));
+    return this;
+  }
+
+  public __onRowDragEnd(): this {
+    const drag = this.rowDrag;
+    this.rowDrag = null;
+    if (!drag || drag.from === drag.to) {
+      return this;
+    }
+    const files = this.files.slice();
+    const [moved] = files.splice(drag.from, 1);
+    files.splice(drag.to, 0, moved);
+    this.files = files;
+    this.__render();
+    if (this.onReorderCallback) {
+      this.onReorderCallback(this.getFileList(), drag.from, drag.to);
+    }
+    return this;
   }
 
   /** 把画布元素上的 drag / drop 事件接上（`afterAddHandler` 自动调）。 */

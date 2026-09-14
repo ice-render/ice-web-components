@@ -31,6 +31,8 @@ export type ICETableColumn = {
   filters?: ICETableFilterOption[];
   /** 该列可编辑（点格子进去改；提交时回调表格的 `onCellEdit`） */
   editable?: boolean;
+  /** 编辑提交前的校验：返回字符串 = 不通过（就是错误文案），返回空 = 通过 */
+  validate?: (value: string, row: ICETableRow) => string | null | undefined;
   renderCell?: (
     value: string,
     row: ICETableRow,
@@ -209,6 +211,7 @@ export class ICETable extends ICEWidget {
   private summaryTexts: Record<string, string> = {};
   /** 单元格编辑态：改哪一行哪一列 + 盖在格子上的输入框 */
   private editing: { rowIndex: number; key: string; node: any; original: string } | null = null;
+  private editError: string | null = null;
   private onCellEdit: ((row: ICETableRow, key: string, value: string, previous: string) => void) | null = null;
   /** 树形数据：哪个字段装子行（默认 `children`）；有它的行是父行 */
   private treeChildrenKey = 'children';
@@ -216,6 +219,10 @@ export class ICETable extends ICEWidget {
   private rowDepths = new Map<string, number>();
   private rowParents = new Map<string, string | null>();
   private treeToggleNodes = new Map<string, any>();
+  /** 树形选择：记 key（与「当前展开到第几层」「当前在第几页」都无关） */
+  private treeSelection = new Set<string>();
+  /** 全树索引：key → 直接子行 key（**与展开状态无关**，选择级联靠它） */
+  private treeChildKeys = new Map<string, string[]>();
   private manager: any = null;
   /** 行展开：渲染区 + 状态（按 rowKey 记，默认行下标） */
   private expandable: ICETableExpandable | null = null;
@@ -640,6 +647,11 @@ export class ICETable extends ICEWidget {
     return this.editing ? this.editing.node : null;
   }
 
+  /** 上一次提交校验失败的原因（通过 / 未编辑时为 null）。 */
+  public getEditError(): string | null {
+    return this.editError;
+  }
+
   /**
    * 进入编辑态：在这一格上盖一个输入框（表格本身仍是那套渲染，不整体切换）。
    *
@@ -651,6 +663,7 @@ export class ICETable extends ICEWidget {
       return this;
     }
     this.cancelEdit();
+    this.editError = null;
     const widths = this.__columnWidths((Number(this.state.width) || 720) - (this.selectionMode === 'multiple' ? ICETable.SELECTION_WIDTH : 0));
     let left = this.selectionMode === 'multiple' ? ICETable.SELECTION_WIDTH : 0;
     for (let index = 0; index < this.columns.length; index += 1) {
@@ -692,6 +705,19 @@ export class ICETable extends ICEWidget {
       return false;
     }
     const value = String(state.node.getValue() ?? '');
+    // 提交前校验：不通过就留在编辑态、标红、给文案，**不写回也不回调**
+    const column = this.columns.find((item) => item.key === state.key);
+    if (column && typeof column.validate === 'function') {
+      const message = column.validate(value, this.data[state.rowIndex]);
+      if (message) {
+        this.editError = String(message);
+        if (typeof state.node.setValidateStatus === 'function') {
+          state.node.setValidateStatus('error');
+        }
+        return false;
+      }
+    }
+    this.editError = null;
     this.editing = null;
     this.removeChild(state.node);
     const row = this.data[state.rowIndex];
@@ -713,6 +739,7 @@ export class ICETable extends ICEWidget {
       return false;
     }
     this.editing = null;
+    this.editError = null;
     this.removeChild(state.node);
     if (this.ice && this.ice.dirty !== undefined) {
       this.ice.dirty = true;
@@ -913,6 +940,7 @@ export class ICETable extends ICEWidget {
    */
   private __computeFiltered(): ICETableRow[] {
     // 树形数据：先按「展开到哪一层」拍平，再筛 —— 筛掉父行时它的子行也不该冒出来
+    this.__indexTree();
     const flat = this.__flattenTree(this.sourceData);
     const keys = Object.keys(this.filters).filter((key) => (this.filters[key] || []).length > 0);
     if (!keys.length) {
@@ -930,7 +958,7 @@ export class ICETable extends ICEWidget {
    */
   private __flattenTree(rows: ICETableRow[], depth = 0, parentKey: string | null = null, out: ICETableRow[] = []): ICETableRow[] {
     rows.forEach((row, index) => {
-      const key = this.__keyOf(row, out.length === 0 && depth === 0 ? index : out.length);
+      const key = this.__keyOf(row, index);
       this.rowDepths.set(key, depth);
       this.rowParents.set(key, parentKey);
       out.push(row);
@@ -940,6 +968,30 @@ export class ICETable extends ICEWidget {
       }
     });
     return out;
+  }
+
+  /**
+   * 索引**整棵树**（不只看展开的那部分）：key → 父 key、key → 直接子行 key。
+   *
+   * 选择级联必须在「没展开的子树」上也成立 —— 只靠拍平那条路会漏掉折叠起来的后代。
+   */
+  private __indexTree(rows: ICETableRow[] = this.sourceData, parentKey: string | null = null): void {
+    this.treeChildKeys.clear();
+    const visit = (list: ICETableRow[], parent: string | null) => {
+      list.forEach((row, index) => {
+        const key = this.__keyOf(row, index);
+        this.rowParents.set(key, parent);
+        const children = row[this.treeChildrenKey];
+        if (Array.isArray(children) && children.length) {
+          const childKeys = (children as ICETableRow[]).map((child, childIndex) => this.__keyOf(child, childIndex));
+          this.treeChildKeys.set(key, childKeys);
+          visit(children as ICETableRow[], key);
+        } else {
+          this.treeChildKeys.set(key, []);
+        }
+      });
+    };
+    visit(rows, parentKey);
   }
 
   // ---- 树形数据 API ----
@@ -988,6 +1040,68 @@ export class ICETable extends ICEWidget {
   /** 父行首列的 ▸/▾ 三角（叶子行是 null）。 */
   public getRowTreeToggle(key: string): any {
     return this.treeToggleNodes.get(key) || null;
+  }
+
+  // ---- 树形选择（勾父行带子行） ----
+
+  /** 已选行的 key（树形数据下含被级联选中的后代）。 */
+  public getSelectedRowKeys(): string[] {
+    const keys: string[] = [];
+    this.data.forEach((row, index) => {
+      if (this.selectedIndexes.indexOf(index) !== -1) {
+        keys.push(this.__keyOf(row, index));
+      }
+    });
+    this.treeSelection.forEach((key) => {
+      if (keys.indexOf(key) === -1) {
+        keys.push(key);
+      }
+    });
+    return keys;
+  }
+
+  public isTreeRowSelected(key: string): boolean {
+    return this.treeSelection.has(key);
+  }
+
+  /**
+   * 设置某一行的选中态（树形级联）。
+   *
+   * 勾父行 → 整棵子树都选上（含折叠起来的后代）；勾子行 → 兄弟全选时父行自动选上、
+   * 少一个就把父行取消。选择记在 key 上，所以和「当前展开到第几层」无关。
+   */
+  public setTreeRowSelected(key: string, selected: boolean): this {
+    const apply = (rowKey: string, next: boolean) => {
+      if (next) {
+        this.treeSelection.add(rowKey);
+      } else {
+        this.treeSelection.delete(rowKey);
+      }
+    };
+    const walk = (rowKey: string, next: boolean) => {
+      apply(rowKey, next);
+      const children = this.__childrenOf(rowKey);
+      children.forEach((childKey) => walk(childKey, next));
+    };
+    walk(key, selected);
+    // 自下而上回填：子行全选 → 父行选上；否则父行取消
+    const refreshAncestors = (rowKey: string) => {
+      let parentKey = this.rowParents.get(rowKey) || null;
+      while (parentKey) {
+        const siblings = this.__childrenOf(parentKey);
+        const allSelected = siblings.length > 0 && siblings.every((childKey) => this.treeSelection.has(childKey));
+        apply(parentKey, allSelected);
+        parentKey = this.rowParents.get(parentKey) || null;
+      }
+    };
+    refreshAncestors(key);
+    this.__syncSelection();
+    return this;
+  }
+
+  /** 某一行的直接子行 key（没有就是空数组）。 */
+  private __childrenOf(key: string): string[] {
+    return (this.treeChildKeys.get(key) || []).slice();
   }
 
   private __findRowByKey(key: string): ICETableRow | null {
