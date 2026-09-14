@@ -3,6 +3,7 @@ import { ICELabel } from './ICELabel';
 import { ICEPanel } from './ICEPanel';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../core/ICEOverlayManager';
+import { estimateTextWidth } from '../util/ICEStyle';
 
 /**
  * 选择器：输入框外观 + 下拉选项（单选 / 多选 / 搜索过滤）。
@@ -25,8 +26,14 @@ export interface ICESelectOptions {
   id?: string;
   options: ICESelectOption[];
   value?: string | string[];
-  mode?: 'single' | 'multiple';
+  /**
+   * `single` 单选；`multiple` 多选；`tags` 多选 + 可以**创造**候选里没有的取值
+   * （输入后回车，或点候选列表顶部的「创建」那一行）。
+   */
+  mode?: 'single' | 'multiple' | 'tags';
   showSearch?: boolean;
+  /** 字段区最多画几个标签片，超出的折叠成 `+M`（只影响显示，取值始终是全量） */
+  maxTagCount?: number;
   placeholder?: string;
   disabled?: boolean;
   left?: number;
@@ -42,7 +49,7 @@ export interface ICESelectOptions {
 
 export class ICESelect extends ICEWidget {
   private options: ICESelectOption[];
-  private mode: 'single' | 'multiple';
+  private mode: 'single' | 'multiple' | 'tags';
   private showSearch: boolean;
   private placeholder: string;
   private disabled: boolean;
@@ -57,6 +64,10 @@ export class ICESelect extends ICEWidget {
   private visible: ICESelectOption[] = [];
   private query = '';
   private activeIndex = 0;
+  private maxTagCount: number | null;
+  private fieldText = '';
+  private tagNodes: Array<{ value: string; label: string; node: any; close: any }> = [];
+  private overflowCount = 0;
   private running = false;
 
   constructor(props: ICESelectOptions) {
@@ -80,7 +91,12 @@ export class ICESelect extends ICEWidget {
     });
     this.options = (props.options || []).slice();
     this.mode = props.mode || 'single';
+    this.maxTagCount = Number.isFinite(Number(props.maxTagCount)) ? Math.max(0, Math.floor(Number(props.maxTagCount))) : null;
     this.showSearch = props.showSearch === true;
+    // tags 模式本质是多选 + 可创建：没有搜索行就没法输入，自动补上
+    if (this.mode === 'tags') {
+      this.showSearch = true;
+    }
     this.placeholder = props.placeholder || '';
     this.disabled = props.disabled === true;
     this.optionHeight = props.optionHeight ?? 34;
@@ -126,7 +142,7 @@ export class ICESelect extends ICEWidget {
   }
 
   public getValue(): any {
-    if (this.mode === 'multiple') {
+    if (this.mode === 'multiple' || this.mode === 'tags') {
       return this.selected.slice();
     }
     return this.selected.length ? this.selected[0] : undefined;
@@ -151,7 +167,38 @@ export class ICESelect extends ICEWidget {
   }
 
   public getFieldLabel(): string {
-    return this.fieldLabel ? this.fieldLabel.getText() : '';
+    return this.fieldLabel ? this.fieldLabel.getText() : this.fieldText;
+  }
+
+  /** 字段区画出来的标签片（单选模式为空）。 */
+  public getTagNodes(): Array<{ value: string; label: string; node: any; close: any }> {
+    return this.tagNodes.map((tag) => ({ value: tag.value, label: tag.label, node: tag.node, close: tag.close }));
+  }
+
+  /** 被折叠成 `+M` 的标签数量。 */
+  public getOverflowCount(): number {
+    return this.overflowCount;
+  }
+
+  public getOverflowLabel(): string {
+    return this.overflowCount > 0 ? `+${this.overflowCount}` : '';
+  }
+
+  /** 删掉一个标签（标签片上的 ✕、空查询时按 Backspace 都走这里）。 */
+  public removeTag(value: string): this {
+    const index = this.selected.indexOf(value);
+    if (index === -1) {
+      return this;
+    }
+    this.selected.splice(index, 1);
+    this.__syncField();
+    if (this.isOpen()) {
+      this.__buildPanel();
+    }
+    if (this.onChange) {
+      this.onChange(this.getValue(), null);
+    }
+    return this;
   }
 
   public getQuery(): string {
@@ -239,6 +286,9 @@ export class ICESelect extends ICEWidget {
       const option = this.visible[this.activeIndex];
       if (option) {
         this.__pick(option);
+      } else if (this.mode === 'tags' && this.query.trim()) {
+        // tags：候选里没有就创造一个（这就是 tags 与 multiple 的唯一区别）
+        this.__pick({ value: this.query.trim(), label: this.query.trim() });
       }
       return;
     }
@@ -246,6 +296,11 @@ export class ICESelect extends ICEWidget {
       return;
     }
     if (key === 'Backspace') {
+      // 查询为空时，Backspace 删的是最后一个标签（输入法之外的常见手势）
+      if (!this.query && (this.mode === 'multiple' || this.mode === 'tags') && this.selected.length) {
+        this.removeTag(this.selected[this.selected.length - 1]);
+        return;
+      }
       this.__setQuery(this.query.slice(0, -1));
     } else if (key.length === 1 && !raw.metaKey && !raw.ctrlKey) {
       this.__setQuery(this.query + key);
@@ -278,7 +333,7 @@ export class ICESelect extends ICEWidget {
     if (!option || option.disabled) {
       return;
     }
-    if (this.mode === 'multiple') {
+    if (this.mode === 'multiple' || this.mode === 'tags') {
       const index = this.selected.indexOf(option.value);
       if (index === -1) {
         this.selected.push(option.value);
@@ -287,6 +342,10 @@ export class ICESelect extends ICEWidget {
       }
       this.__syncField();
       this.__buildPanel();
+      // 创建完把查询清掉（否则下一个标签会被上一段文字干扰）
+      if (this.mode === 'tags') {
+        this.__setQuery('');
+      }
       if (this.onChange) {
         this.onChange(this.getValue(), option);
       }
@@ -301,7 +360,7 @@ export class ICESelect extends ICEWidget {
   }
 
   private __normalizeValue(value: any): string[] {
-    if (this.mode === 'multiple') {
+    if (this.mode === 'multiple' || this.mode === 'tags') {
       if (Array.isArray(value)) {
         return value.map(String);
       }
@@ -325,12 +384,23 @@ export class ICESelect extends ICEWidget {
       },
     });
     this.removeChildren([...this.childNodes]);
-    const label = this.selected
-      .map((value) => {
-        const option = this.options.find((item) => item.value === value);
-        return option ? option.label : value;
-      })
-      .join('、');
+    this.tagNodes = [];
+    this.overflowCount = 0;
+    const labels = this.selected.map((value) => {
+      const option = this.options.find((item) => item.value === value);
+      return { value, label: option ? option.label : value };
+    });
+    const label = labels.map((item) => item.label).join('、');
+    this.fieldText = label;
+
+    // 多选 / tags：字段画成一串标签片（放不下或超过 maxTagCount 折叠成 +M）
+    if (this.mode === 'multiple' || this.mode === 'tags') {
+      this.fieldLabel = null;
+      if (labels.length) {
+        this.__renderTags(labels, width, height);
+        return;
+      }
+    }
     this.fieldLabel = new ICELabel({
       interactive: false,
       left: 10,
@@ -354,6 +424,112 @@ export class ICESelect extends ICEWidget {
         height,
         verticalAlign: 'middle',
         align: 'center',
+        text: '▾',
+        style: { fontSize: 12, fillStyle: theme.colors.textTertiary },
+      }),
+      false,
+    );
+  }
+
+  /** 标签片布局：从左往右摆，装不下（或超过 maxTagCount）就折叠成 +M。 */
+  private __renderTags(labels: Array<{ value: string; label: string }>, width: number, height: number): void {
+    const theme = iceUIManager.getTheme();
+    const limit = this.maxTagCount === null ? labels.length : Math.min(this.maxTagCount, labels.length);
+    const available = width - 10 - 24; // 左边距 + 右侧箭头
+    const tagHeight = Math.max(16, height - 10);
+    const gap = 6;
+    let left = 10;
+    let used = 0;
+    for (let index = 0; index < labels.length; index += 1) {
+      const item = labels[index];
+      const textWidth = estimateTextWidth(item.label, 12);
+      const tagWidth = textWidth + 34; // 文字 + 左右内边距 + ✕
+      const remaining = labels.length - index - 1;
+      // 还要给后面的标签留一个 +M 的位置：宁可少画一个，也别把最后一个挤成半截
+      const needOverflow = remaining > 0;
+      const overflowWidth = needOverflow ? estimateTextWidth(`+${remaining + 1}`, 12) + 16 : 0;
+      if (index >= limit || used + tagWidth + (needOverflow ? overflowWidth + gap : 0) > available) {
+        this.overflowCount = labels.length - index;
+        break;
+      }
+      used += tagWidth + gap;
+      const chip = new ICEWidget({
+        left,
+        top: (height - tagHeight) / 2,
+        width: tagWidth,
+        height: tagHeight,
+        radius: theme.radius.sm,
+        fill: true,
+        stroke: false,
+        style: { fillStyle: theme.colors.primaryBg },
+      });
+      chip.addChild(
+        new ICELabel({
+          interactive: false,
+          left: 8,
+          top: 0,
+          width: textWidth,
+          height: tagHeight,
+          verticalAlign: 'middle',
+          text: item.label,
+          style: { fontSize: 12, fillStyle: theme.colors.primary },
+        }),
+        false,
+      );
+      const close = new ICEWidget({
+        left: tagWidth - 20,
+        top: 0,
+        width: 16,
+        height: tagHeight,
+        fill: false,
+        stroke: false,
+        interactive: true,
+      });
+      close.addChild(
+        new ICELabel({
+          interactive: false,
+          left: 0,
+          top: 0,
+          width: 16,
+          height: tagHeight,
+          align: 'center',
+          verticalAlign: 'middle',
+          text: '✕',
+          style: { fontSize: 10, fillStyle: theme.colors.primary },
+        }),
+        false,
+      );
+      close.on('click', () => this.removeTag(item.value), this);
+      chip.addChild(close, false);
+      this.addChild(chip, false);
+      this.tagNodes.push({ value: item.value, label: item.label, node: chip, close });
+      left += tagWidth + gap;
+    }
+    if (this.overflowCount > 0) {
+      const text = this.getOverflowLabel();
+      this.addChild(
+        new ICELabel({
+          interactive: false,
+          left,
+          top: 0,
+          width: 40,
+          height,
+          verticalAlign: 'middle',
+          text,
+          style: { fontSize: 12, fillStyle: theme.colors.textTertiary },
+        }),
+        false,
+      );
+    }
+    this.addChild(
+      new ICELabel({
+        interactive: false,
+        left: width - 22,
+        top: 0,
+        width: 14,
+        height,
+        align: 'center',
+        verticalAlign: 'middle',
         text: '▾',
         style: { fontSize: 12, fillStyle: theme.colors.textTertiary },
       }),
@@ -408,12 +584,47 @@ export class ICESelect extends ICEWidget {
       );
     }
 
+    // tags：查询词在候选里找不到时，给一行「创建」；它不进 `visible`（那一份永远是真实候选）
+    const trimmed = this.query.trim();
+    const canCreate =
+      this.mode === 'tags' &&
+      !!trimmed &&
+      !this.options.some((option) => option.value === trimmed || option.label === trimmed);
+    const createOffset = canCreate ? this.optionHeight : 0;
+    if (canCreate) {
+      const createRow = new ICEWidget({
+        left: 4,
+        top: 6 + searchHeight,
+        width: width - 8,
+        height: this.optionHeight,
+        radius: theme.radius.sm,
+        fill: true,
+        stroke: false,
+        style: { fillStyle: 'rgba(0,0,0,0)' },
+      });
+      createRow.addChild(
+        new ICELabel({
+          interactive: false,
+          left: 10,
+          top: 0,
+          height: this.optionHeight,
+          verticalAlign: 'middle',
+          text: `创建「${trimmed}」`,
+          style: { fontSize: 13, fillStyle: theme.colors.primary },
+        }),
+        false,
+      );
+      createRow.on('click', () => this.__pick({ value: trimmed, label: trimmed }));
+      panel.addChild(createRow, false);
+      this.optionNodes.set(trimmed, createRow);
+    }
+
     this.visible.forEach((option, index) => {
       const selected = this.selected.indexOf(option.value) !== -1;
       const active = index === this.activeIndex;
       const row = new ICEWidget({
         left: 4,
-        top: 6 + searchHeight + index * this.optionHeight,
+        top: 6 + searchHeight + createOffset + index * this.optionHeight,
         width: width - 8,
         height: this.optionHeight,
         radius: theme.radius.sm,
@@ -462,7 +673,9 @@ export class ICESelect extends ICEWidget {
       panel.addChild(row, false);
       this.optionNodes.set(option.value, row);
     });
-    panel.setState({ height: 6 + searchHeight + Math.max(1, this.visible.length) * this.optionHeight + 6 });
+    panel.setState({
+      height: 6 + searchHeight + createOffset + Math.max(1, this.visible.length) * this.optionHeight + 6,
+    });
     if (this.ice && this.ice.dirty !== undefined) {
       this.ice.dirty = true;
     }

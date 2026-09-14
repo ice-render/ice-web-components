@@ -20,8 +20,9 @@
 | `id?` | `string` | 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） |
 | `options` | `ICESelectOption[]` | 候选项 |
 | `value?` | `string \| string[]` | 当前值 |
-| `mode?` | `'single' \| 'multiple'` |  |
+| `mode?` | `'single' \| 'multiple' \| 'tags'` | `single` 单选；`multiple` 多选；`tags` 多选 + 可以**创造**候选里没有的取值 |
 | `showSearch?` | `boolean` |  |
+| `maxTagCount?` | `number` | 字段区最多画几个标签片，超出的折叠成 `+M`（只影响显示，取值始终是全量） |
 | `placeholder?` | `string` | 占位文案 |
 | `disabled?` | `boolean` | 是否禁用（禁用后不响应交互、不可聚焦） |
 | `left?` | `number` | 相对父容器的左边距 |
@@ -44,6 +45,10 @@
 | `setFormValue(value: any)` | `void` |  |
 | `isOpen()` | `boolean` |  |
 | `getFieldLabel()` | `string` |  |
+| `getTagNodes()` | `Array<{ value: string; label: string; node: any; close: any }>` | 字段区画出来的标签片（单选模式为空）。 |
+| `getOverflowCount()` | `number` | 被折叠成 `+M` 的标签数量。 |
+| `getOverflowLabel()` | `string` |  |
+| `removeTag(value: string)` | `this` | 删掉一个标签（标签片上的 ✕、空查询时按 Backspace 都走这里）。 |
 | `getQuery()` | `string` |  |
 | `getVisibleOptions()` | `ICESelectOption[]` |  |
 | `getOptionNode(value: string)` | `ICEWidget \| null` |  |
