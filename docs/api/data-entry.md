@@ -362,6 +362,11 @@
 | `getFileNode(uid: string)` | `ICEWidget \| null` |  |
 | `addFile(file: Partial<ICEUploadFile>)` | `boolean` | 加入一个文件（真实选择结果或调用方构造的数据）；被拒时返回 false。 |
 | `getQueuedCount()` | `number` | 排队中的文件数（不含正在传的）。 |
+| `getConcurrency()` | `number` |  |
+| `setUploadConcurrency(concurrency: number)` | `this` | 运行中调整并发：调大**立刻**补队列；调小只是不再补新的， |
+| `isUploadsPaused()` | `boolean` |  |
+| `pauseUploads()` | `this` | 暂停派发新任务；已经在传的让它跑完。 |
+| `resumeUploads()` | `this` | 继续派发（按当前列表顺序把队列灌满）。 |
 | `getFileStatus(uid: string)` | `'pending' \| 'uploading' \| 'done' \| 'error' \| null` | 上传状态：'uploading' | 'done' | 'error'（没用 customRequest 时是 null）。 |
 | `isDragOver()` | `boolean` | 有文件正悬在拖拽区上方（用于高亮反馈）。 |
 | `isRowDragging()` | `boolean` |  |

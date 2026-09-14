@@ -109,6 +109,7 @@ export class ICEUpload extends ICEWidget {
   private rowDrag: { from: number; to: number } | null = null;
   private onReorderCallback: ((files: ICEUploadFile[], from: number, to: number) => void) | null = null;
   private uploadConcurrency = 1;
+  private uploadsPaused = false;
   private lastRejectReason: string | null = null;
   private dropZone: ICEWidget | null = null;
   private fileNodes = new Map<string, ICEWidget>();
@@ -249,6 +250,15 @@ export class ICEUpload extends ICEWidget {
     if (!this.customRequest) {
       return;
     }
+    // 暂停期间只标记排队，不派发新任务（在跑的让它跑完）
+    if (this.uploadsPaused) {
+      this.files.forEach((file) => {
+        if (!file.status) {
+          file.status = 'pending';
+        }
+      });
+      return;
+    }
     const running = this.files.filter((file) => file.status === 'uploading').length;
     let slots = Math.max(0, this.uploadConcurrency - running);
     for (const file of this.files) {
@@ -273,6 +283,40 @@ export class ICEUpload extends ICEWidget {
   /** 排队中的文件数（不含正在传的）。 */
   public getQueuedCount(): number {
     return this.files.filter((file) => file.status === 'pending').length;
+  }
+
+  public getConcurrency(): number {
+    return this.uploadConcurrency;
+  }
+
+  /**
+   * 运行中调整并发：调大**立刻**补队列；调小只是不再补新的，
+   * 已经跑起来的**不打断**（半途掐断会留下脏数据）。
+   */
+  public setUploadConcurrency(concurrency: number): this {
+    this.uploadConcurrency = Math.max(1, Math.floor(Number(concurrency) || 1));
+    this.__pumpQueue();
+    this.__render();
+    return this;
+  }
+
+  public isUploadsPaused(): boolean {
+    return this.uploadsPaused;
+  }
+
+  /** 暂停派发新任务；已经在传的让它跑完。 */
+  public pauseUploads(): this {
+    this.uploadsPaused = true;
+    this.__render();
+    return this;
+  }
+
+  /** 继续派发（按当前列表顺序把队列灌满）。 */
+  public resumeUploads(): this {
+    this.uploadsPaused = false;
+    this.__pumpQueue();
+    this.__render();
+    return this;
   }
 
   /** 上传状态：'uploading' | 'done' | 'error'（没用 customRequest 时是 null）。 */

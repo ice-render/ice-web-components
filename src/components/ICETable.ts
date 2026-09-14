@@ -240,6 +240,8 @@ export class ICETable extends ICEWidget {
   private editErrorNode: any = null;
   /** 编辑态按回车的行为：`commit` = 提交退出（默认，老行为）；`next` = 提交并往下走同一列 */
   private editEnterBehavior: 'commit' | 'next' = 'commit';
+  /** 空值策略：`clear` = 清空即写空（默认）；`keep` = 空值不算编辑（保留原值） */
+  private emptyEditBehavior: 'clear' | 'keep' = 'clear';
   private summaryNode: any = null;
   private summaryTexts: Record<string, string> = {};
   /** 单元格编辑态：改哪一行哪一列 + 盖在格子上的输入框 */
@@ -343,6 +345,7 @@ export class ICETable extends ICEWidget {
     this.selectAllScope = props.selectAllScope === 'all' ? 'all' : 'visible';
     this.columnDraggable = props.columnDraggable === true;
     this.editEnterBehavior = props.editEnterBehavior === 'next' ? 'next' : 'commit';
+    this.emptyEditBehavior = props.emptyEditBehavior === 'keep' ? 'keep' : 'clear';
     this.onColumnReorder = typeof props.onColumnReorder === 'function' ? props.onColumnReorder : null;
     this.rowKeyProp = typeof props.rowKey === 'function' || typeof props.rowKey === 'string' ? props.rowKey : null;
     if (props.expandable && typeof props.expandable.render === 'function') {
@@ -792,6 +795,15 @@ export class ICETable extends ICEWidget {
     // 自定义编辑器优先读 getFormValue（下拉的值就在那儿），没有就退回 getValue
     const raw = typeof state.node.getFormValue === 'function' ? state.node.getFormValue() : state.node.getValue();
     const value = String(raw ?? '');
+    // 'keep' 策略：清空（含全空白）不算编辑 —— 既不写回也不回调，直接退出编辑态
+    if (this.emptyEditBehavior === 'keep' && !value.trim()) {
+      this.editing = null;
+      this.editError = null;
+      this.__clearEditError();
+      this.__detachEditNode(state.node);
+      this.__render();
+      return true;
+    }
     // 提交前校验：不通过就留在编辑态、标红、给文案，**不写回也不回调**
     const column = this.columns.find((item) => item.key === state.key);
     if (column && typeof column.validate === 'function') {
