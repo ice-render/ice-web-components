@@ -343,9 +343,88 @@ check('级联面板可打开', await page.evaluate(() => window.__qa.overlaysOpe
 await shotOverlay('cascader');
 await closeOverlay();
 await clickFilter('2026-09-07');
-check('日期面板可打开', await page.evaluate(() => window.__qa.overlaysOpen()));
+check('日期区间面板可打开', await page.evaluate(() => window.__qa.overlaysOpen()));
 await shotOverlay('datepicker');
 await closeOverlay();
+
+/* ---------- 筛选区：区间日期的规则（这些是模型层单测之外的「真点」验证） ---------- */
+const openRangePanel = async () => {
+  const b = await page.evaluate(() => {
+    const picker = window.__qa.find('order-date-range');
+    return picker ? window.__qa.box(picker) : null;
+  });
+  if (!b) return false;
+  await page.mouse.click(rect.left + b.l + b.w / 2, rect.top + b.t + b.h / 2);
+  await page.waitForTimeout(480);
+  return true;
+};
+const clickRangePart = async (kind, key) => {
+  const b = await page.evaluate(
+    ({ kind, key }) => {
+      const picker = window.__qa.find('order-date-range');
+      const node = !picker ? null : kind === 'preset' ? picker.getPresetNode(key) : picker.getDayNode(key);
+      return node ? window.__qa.box(node) : null;
+    },
+    { kind, key },
+  );
+  if (!b) return false;
+  await page.mouse.click(rect.left + b.l + b.w / 2, rect.top + b.t + b.h / 2);
+  await page.waitForTimeout(480);
+  return true;
+};
+const orderDates = () =>
+  page.evaluate(() => {
+    const table = window.__qa.find('orders-full');
+    return table && table.data ? table.data.map((row) => row.date) : null;
+  });
+const rangeState = () =>
+  page.evaluate(() => {
+    const picker = window.__qa.find('order-date-range');
+    return { value: picker.getValue(), field: picker.getFieldText(), open: picker.isOpen() };
+  });
+
+// 快捷项：点「近 7 天」应写值 + 关面板 + 真按日期过滤
+await openRangePanel();
+await clickRangePart('preset', 'last7');
+const last7 = await rangeState();
+const last7Rows = await orderDates();
+check(
+  '区间快捷项「近 7 天」：写值 + 关面板',
+  last7.open === false && last7.value.join('~') === '2026-09-06~2026-09-12' && last7.field === '2026-09-06 → 2026-09-12',
+  JSON.stringify(last7),
+);
+check(
+  '区间快捷项真的参与过滤：表格里只剩区间内的日期',
+  Array.isArray(last7Rows) && last7Rows.length > 0 && last7Rows.every((d) => d >= '2026-09-06' && d <= '2026-09-12'),
+  JSON.stringify(last7Rows),
+);
+
+// 反向选择：先点结束再点开始 → 自动排序（用户的操作顺序不该被惩罚）
+await openRangePanel();
+await clickRangePart('day', '2026-09-20');
+await clickRangePart('day', '2026-09-08');
+const reversed = await rangeState();
+check(
+  '区间「先点结束再点开始」自动排序成 起 → 止',
+  reversed.open === false && reversed.value.join('~') === '2026-09-08~2026-09-20',
+  JSON.stringify(reversed),
+);
+
+// 负例：点「今天」（2026-09-12，没有当天订单）→ 表格清空，证明日期真的进了过滤条件
+await openRangePanel();
+await clickRangePart('preset', 'today');
+const todayRows = await orderDates();
+check('区间「今天」筛掉当天没有的订单（表格清空）', Array.isArray(todayRows) && todayRows.length === 0, JSON.stringify(todayRows));
+
+// 重置：把区间与其它筛选一起清掉，表格回到全量（8 条 / 每页 6 条）
+await clickFilter('重置');
+const cleared = await rangeState();
+const resetRows = await orderDates();
+check(
+  '「重置」清空区间与其它筛选，表格回到全量',
+  cleared.value[0] === null && cleared.value[1] === null && Array.isArray(resetRows) && resetRows.length === 6,
+  JSON.stringify({ value: cleared.value, rows: resetRows && resetRows.length }),
+);
 
 // 顶部搜索：自动完成候选（含滚动视口）
 const searchBox = await page.evaluate(() => window.__qa.box(window.__qa.find('search')));

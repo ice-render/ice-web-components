@@ -241,7 +241,7 @@
       ];
       const STATUS_MAP = { Paid: 'success', Pending: 'warning', Shipped: 'info', Refunded: 'error' };
       const money = (value) => '$' + value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-      const orderState = { status: 'all', keyword: '', region: null, page: 1, pageSize: 6 };
+      const orderState = { status: 'all', keyword: '', region: null, dateRange: null, page: 1, pageSize: 6 };
       const customersOf = (row) => ORDERS.filter((o) => o.customer === row);
       /** 跨页共享的少量运行时句柄（筛选器、当前面板切换器等） */
       const state = {};
@@ -804,6 +804,12 @@
         return ORDERS.filter((row) => {
           if (orderState.status !== 'all' && row.status.toLowerCase() !== orderState.status) return false;
           if (orderState.region && row.region !== orderState.region) return false;
+          // 下单日期区间：ISO 字符串可以直接比大小；只选了一头时那一头不参与过滤
+          if (orderState.dateRange) {
+            const [from, to] = orderState.dateRange;
+            if (from && row.date < from) return false;
+            if (to && row.date > to) return false;
+          }
           if (regions.length && regions.indexOf(row.region) === -1) return false;
           if (range && (row.amount < range[0] || row.amount > range[1])) return false;
           if (orderState.onlyAbnormal && row.status !== 'Refunded' && row.status !== 'Pending') return false;
@@ -833,11 +839,11 @@
             applyFilter();
           },
         });
-        const keywordField = new W.ICETextField({ id: 'order-keyword', left: 0, top: 0, width: 200, placeholder: '订单号 / 客户…' });
+        const keywordField = new W.ICETextField({ id: 'order-keyword', left: 0, top: 0, width: 170, placeholder: '订单号 / 客户…' });
         const regionSelect = new W.ICECascader({
           left: 0,
           top: 0,
-          width: 180,
+          width: 160,
           placeholder: '配送区域',
           options: [
             { value: '华东', label: '华东' },
@@ -850,13 +856,20 @@
             applyFilter();
           },
         });
-        const dateRange = new W.ICEDatePicker({
+        const dateRange = new W.ICEDateRangePicker({
+          id: 'order-date-range',
           left: 0,
           top: 0,
-          width: 160,
-          placeholder: '下单日期',
-          value: '2026-09-07',
-          onChange: (value) => toast('按日期筛选：' + value, 'info'),
+          width: 220,
+          // 演示页固定「今天」，快捷项与高亮才是可复现的（不随打开时间漂）
+          today: '2026-09-12',
+          now: () => new Date(2026, 8, 12, 10, 0),
+          value: ['2026-09-07', '2026-09-12'],
+          onChange: (value) => {
+            orderState.dateRange = value;
+            orderState.page = 1;
+            applyFilter();
+          },
         });
         const searchButton = new W.ICEButton({ left: 0, top: 0, width: 76, height: 32, text: '查询' });
         const resetButton = new W.ICEButton({ left: 0, top: 0, width: 76, height: 32, text: '重置', variant: 'default' });
@@ -1086,6 +1099,8 @@
           segmented.setValue('all');
           keywordField.setValue('');
           regionSelect.setValue(undefined);
+          orderState.dateRange = null;
+          dateRange.clear();
           orderState.amountRange = null;
           orderState.regions = [];
           orderState.onlyAbnormal = false;
@@ -1112,10 +1127,9 @@
                 segmented,
                 keywordField,
                 regionSelect,
-                dateRange,
-                searchButton,
-                resetButton,
-                createButton,
+                // 日期区间与三个动作按钮编成**一个**簇（row() 返回数组 = 一个 cluster）：
+                // 放不下时整簇换行，不会出现「查询/重置/新建」被拆散到两行的情况
+                row(16, dateRange, searchButton, resetButton, createButton),
               ),
             ],
           },
