@@ -473,6 +473,55 @@ check(
 const shipTargets = await page.evaluate(() =>
   window.__result.state.orders.table.getSelectedRows().map((row) => row.order),
 );
+
+/**
+ * 交互之后再量一次几何（这一版新增）：选中/清空会改提示文案，文案一变宽窄就变 ——
+ * 之前「盒子按 DOM 兜底的假尺寸（418）留位、文字实际只有 228」，
+ * 结果提示文字被「批量发货」按钮压掉 58px。这里同时守住两件事：
+ *   ① 标签的包装盒 = 内层文字的实测宽度（不是构造期那个假尺寸）；
+ *   ② 提示与按钮不重叠，且按钮左缘真的能点中（不被提示标签的盒子吃掉）。
+ */
+const bulkGeometry = async () =>
+  page.evaluate(() => {
+    const box = (node) => {
+      let l = 0;
+      let t = 0;
+      let cursor = node;
+      while (cursor && cursor.state) {
+        l += Number(cursor.state.left) || 0;
+        t += Number(cursor.state.top) || 0;
+        cursor = cursor.parentNode;
+      }
+      return { l: Math.round(l), t: Math.round(t), w: Math.round(Number(node.state.width) || 0), h: Math.round(Number(node.state.height) || 0) };
+    };
+    const hint = window.__result.state.orders.selectedHint;
+    const ship = window.__result.state.orders.bulkShip;
+    const hb = box(hint);
+    const sb = box(ship);
+    const hit = window.__result.ice.hitTest(sb.l + 4, sb.t + sb.h / 2);
+    return {
+      hint: hb,
+      ship: sb,
+      text: hint.getText(),
+      innerWidth: Math.round(Number((hint.childNodes[0] || {}).state ? hint.childNodes[0].state.width : 0)),
+      overlapX: Math.min(hb.l + hb.w, sb.l + sb.w) - Math.max(hb.l, sb.l),
+      overlapY: Math.min(hb.t + hb.h, sb.t + sb.h) - Math.max(hb.t, sb.t),
+      hitLeft: hit && hit.state ? String(hit.state.text || hit.state.id || hit.constructor.name) : null,
+    };
+  });
+
+const bulkSelected = await bulkGeometry();
+check(
+  '订单多选：提示标签的包装盒 = 文字实测宽度（不再停在构造期的假尺寸）',
+  Math.abs(bulkSelected.hint.w - bulkSelected.innerWidth) <= 1,
+  JSON.stringify({ boxW: bulkSelected.hint.w, textW: bulkSelected.innerWidth, text: bulkSelected.text }),
+);
+check(
+  '订单多选：提示与「批量发货」不重叠，且按钮左缘可点（文案变化后自动重排）',
+  !(bulkSelected.overlapX > 0 && bulkSelected.overlapY > 0) && bulkSelected.hitLeft === '批量发货',
+  JSON.stringify({ overlap: [bulkSelected.overlapX, bulkSelected.overlapY], hitLeft: bulkSelected.hitLeft, hint: bulkSelected.hint, ship: bulkSelected.ship }),
+);
+
 const shipClicked = await clickExpr('window.__result.state.orders.bulkShip');
 // 批量发货后表格会重新筛选/渲染（选择被清空），所以按订单号回查数据源里的状态
 const shipped = await page.evaluate(
@@ -481,6 +530,38 @@ const shipped = await page.evaluate(
 );
 check('订单批量发货：选中行状态改为 Shipped', shipClicked && shipped.length === 2 && shipped.every((s) => s === 'Shipped'), JSON.stringify(shipped));
 await page.evaluate(() => window.__result.state.orders.table.clearSelection());
+await page.waitForTimeout(260);
+const bulkCleared = await bulkGeometry();
+check(
+  '订单多选：清空选择（提示换成更长的文案）之后仍然不重叠',
+  !(bulkCleared.overlapX > 0 && bulkCleared.overlapY > 0) && /未选中任何订单/.test(bulkCleared.text) &&
+    Math.abs(bulkCleared.hint.w - bulkCleared.innerWidth) <= 1,
+  JSON.stringify({ text: bulkCleared.text, hint: bulkCleared.hint, ship: bulkCleared.ship, overlap: [bulkCleared.overlapX, bulkCleared.overlapY] }),
+);
+
+// 顶部搜索：面包屑的盒子以前伸到搜索框底下（重叠 176×12），虽然搜索 z 更高点得到，
+// 但那是颗地雷 —— 现在从「搜索框最左缘 + 最下缘」点下去也必须聚焦到输入框。
+const bulkSearchBox = await page.evaluate(() => window.__qa.box(window.__qa.find('search')));
+if (bulkSearchBox) {
+  await page.mouse.click(rect.left + bulkSearchBox.l + 5, rect.top + bulkSearchBox.t + bulkSearchBox.h - 3);
+  await page.waitForTimeout(260);
+  const searchFocus = await page.evaluate(() => ({
+    nativeInput: !!document.querySelector('input'),
+    focused: (() => {
+      const node = window.__result.ice.getFocusedComponent && window.__result.ice.getFocusedComponent();
+      return node && node.state ? node.state.id || node.constructor.name : null;
+    })(),
+  }));
+  check(
+    '顶部搜索：点输入框左下角也能聚焦（盒子不再被面包屑压住）',
+    searchFocus.nativeInput === true,
+    JSON.stringify({ searchBox: bulkSearchBox, searchFocus }),
+  );
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(200);
+} else {
+  check('顶部搜索：点输入框左下角也能聚焦（盒子不再被面包屑压住）', false, '找不到搜索框');
+}
 
 // 设置页：第四个 Tab（业务偏好）+ 跨字段校验 + 多选上限
 await page.evaluate(() => window.__result.showPage('settings'));
