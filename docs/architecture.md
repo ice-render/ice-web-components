@@ -68,6 +68,84 @@ protected afterAddHandler()  // 组件挂进 ICE 场景后调用：在这里订�
 protected __applyValidateState() // …
 ```
 
+### 继承骨架（classDiagram）
+
+```mermaid
+classDiagram
+  direction TD
+  class ICEGroup["ICEGroup · 引擎基类"]
+  class ICEWidget["ICEWidget"]
+  class ICEContainer["ICEContainer"]
+  class ICEPanel["ICEPanel"]
+  class ICECard["ICECard"]
+  class ICEStatCard["ICEStatCard"]
+  class ICEScrollPane["ICEScrollPane"]
+  class ICETabs["ICETabs"]
+  class ICEForm["ICEForm"]
+  class ICEGrid["ICEGrid"]
+  class ICEGridCol["ICEGridCol"]
+  class ICELayout["ICELayout"]
+  class ICEMenu["ICEMenu"]
+  class ICEPagination["ICEPagination"]
+  class ICESegmented["ICESegmented"]
+  class ICESpace["ICESpace"]
+  class ICETextField["ICETextField"]
+  class ICEPasswordField["ICEPasswordField"]
+  class ICETextArea["ICETextArea"]
+  class ICEPath["ICEPath · 引擎基类"]
+  class ICEProgressRing["ICEProgressRing"]
+  class ICESpinArc["ICESpinArc"]
+  class ICESvgPath["ICESvgPath"]
+  class ICEPopover["ICEPopover · 浮层包装"]
+  class ICEPopconfirm["ICEPopconfirm"]
+
+  ICEGroup <|-- ICEWidget
+  ICEWidget <|-- ICEContainer
+  ICEContainer <|-- ICEPanel
+  ICEPanel <|-- ICECard
+  ICEPanel <|-- ICEStatCard
+  ICEContainer <|-- ICEScrollPane
+  ICEContainer <|-- ICETabs
+  ICEContainer <|-- ICEForm
+  ICEContainer <|-- ICEGrid
+  ICEContainer <|-- ICEGridCol
+  ICEContainer <|-- ICELayout
+  ICEContainer <|-- ICEMenu
+  ICEContainer <|-- ICEPagination
+  ICEContainer <|-- ICESegmented
+  ICEContainer <|-- ICESpace
+  ICEWidget <|-- ICETextField
+  ICETextField <|-- ICEPasswordField
+  ICETextField <|-- ICETextArea
+  ICEPath <|-- ICEProgressRing
+  ICEPath <|-- ICESpinArc
+  ICEPath <|-- ICESvgPath
+  ICEPopover <|-- ICEPopconfirm
+
+  note for ICEWidget "其余约 60 个内置组件直接继承 ICEWidget<br/>（按钮 / 输入 / 标签 / 表格 / 树 / 警示 等，见下表按类分组）"
+  note for ICEPopover "ICEPopover / ICEPopconfirm 不走 ICEWidget 树<br/>它们是包在 ICEOverlayManager 之上的浮层包装类"
+```
+
+> 内置组件分两条技术路线：
+> 1. **画布组件**：`ICEWidget ← ICEContainer ← …` 与 `ICEPath ← …` 两条，最终落在引擎图元（`ICEGroup` / `ICEPath`）上，是真正的画布子树；
+> 2. **浮层包装类**：`ICEPopover` / `ICEPopconfirm` 不是 `ICEWidget`，只负责在 `ICEOverlayManager` 之上编排浮层的定位 / 关闭 / 动画。
+
+### 直接继承 `ICEWidget` 的内置组件（按类分组）
+
+| 类别 | 组件 |
+|---|---|
+| 基础展示 / 排版 / 图标 | ICEAffix · ICEAlert · ICEAvatar · ICEAvatarGroup · ICEBackTop · ICEBadge · ICEBreadcrumb · ICEBreadcrumbItemNode · ICEComment · ICEEmpty · ICEFloatButton · ICEIcon · ICEIconTile · ICEImageView · ICELabel · ICESeparator · ICESkeleton · ICEStatistic · ICESvgIcon · ICETag · ICETypography · ICEWatermark |
+| 按钮 / 开关 / 选择 | ICEButton · ICECheckBox · ICECheckboxGroup · ICERadioButton · ICERadioGroup · ICERate · ICESlider · ICESwitch |
+| 输入 / 数据录入 | ICEAutoComplete · ICECascader · ICEColorPicker · ICEDatePicker · ICEDateRangePicker · ICEFormItem · ICEFormList · ICEInputNumber · ICESelect · ICETreeSelect · ICETimePicker |
+| 数据展示 | ICECalendar · ICECarousel · ICECollapse · ICEDescriptions · ICEKanban · ICETable · ICETileMap · ICETimeline · ICEResult · ICESteps · ICEList · ICETree · ICETransfer · ICEVirtualList |
+| 加载 / 进度 | ICEProgressBar · ICESpin |
+| 窗口 | ICEWindow · ICEWindowButton |
+| 上传 | ICEUpload |
+| 布局 / 分隔（直接 Widget） | ICESplitter · ICESplitterDivider |
+| 导航（直接 Widget） | ICEAnchor |
+
+（上面未列出的 `ICEPanel`/`ICECard`/`ICEStatCard`/`ICEScrollPane`/`ICETabs`/`ICEForm`/`ICEGrid`/`ICEGridCol`/`ICELayout`/`ICEMenu`/`ICEPagination`/`ICESegmented`/`ICESpace` 都是 `ICEContainer` 子类；`ICEPasswordField`/`ICETextArea` 是 `ICETextField` 子类；`ICEProgressRing`/`ICESpinArc`/`ICESvgPath` 是引擎 `ICEPath` 子类——见上方继承骨架图。）
+
 ## 三、渲染与重绘
 
 组件不做任何“每帧重绘”的事。改状态就 `setState()` / `revalidate()`，引擎的 `CanvasRenderer` 负责：
