@@ -92,8 +92,14 @@ export interface ICETableFilterOption {
   value: string;
 }
 
-/** 列 key → 当前选中的取值（空数组 = 该列不筛）。 */
+  /** 列 key → 当前选中的取值（空数组 = 该列不筛）。 */
 export type ICETableFilterState = Record<string, string[]>;
+
+/** 列版式（可存 localStorage / 后端，下次进来还原）：每列宽度 + 列顺序。 */
+export interface ICETableColumnState {
+  widths: Record<string, number>;
+  order: string[];
+}
 
 /** 汇总行：拿**筛选后的全量行**算出「每个列 key 显示什么」。 */
 export type ICETableSummary = (rows: ICETableRow[], columns: ICETableColumn[]) => ICETableRow;
@@ -729,6 +735,14 @@ export class ICETable extends ICEWidget {
         this.commitEdit();
       } else if (pressed === 'Escape' || pressed === 'Esc') {
         this.cancelEdit();
+      } else if (pressed === 'Tab') {
+        // 键盘用户填表的节奏：改完一格 Tab 去下一格（跳过不可编辑的列，行末落到下一行）
+        // 挡掉浏览器的默认 Tab（合成事件没有原生事件可挡，所以只在真有 preventDefault 时调）
+        if (raw && typeof raw.preventDefault === 'function') {
+          raw.preventDefault();
+          evt.preventDefault && evt.preventDefault();
+        }
+        this.__moveEditByTab(raw && raw.shiftKey === true ? -1 : 1);
       }
     });
     this.addChild(node, false);
@@ -788,6 +802,41 @@ export class ICETable extends ICEWidget {
       this.ice.dirty = true;
     }
     return true;
+  }
+
+  /**
+   * Tab / Shift+Tab 在可编辑格之间流转：先提交当前格，再进下一格；到头就退出编辑态。
+   *
+   * 只认 `editable: true` 的列（不可编辑的列直接跳过）；行末落到下一行的第一列。
+   */
+  private __moveEditByTab(step: number): void {
+    const state = this.editing;
+    if (!state) {
+      return;
+    }
+    const editableIndexes = this.columns
+      .map((column, index) => (column.editable === true ? index : -1))
+      .filter((index) => index >= 0);
+    const currentColumn = this.columns.findIndex((column) => column.key === state.key);
+    const position = editableIndexes.indexOf(currentColumn);
+    const rowIndex = state.rowIndex;
+    const value = String(state.node.getValue() ?? '');
+    // 先提交（校验不通过就停在原地，不要把用户送走）
+    if (!this.commitEdit()) {
+      return;
+    }
+    let nextPosition = position + step;
+    let nextRow = rowIndex;
+    if (nextPosition < 0 || nextPosition >= editableIndexes.length) {
+      nextRow += step > 0 ? 1 : -1;
+      if (nextRow < 0 || nextRow >= this.data.length) {
+        return; // 到头：停在「已提交、不在编辑态」
+      }
+      nextPosition = step > 0 ? 0 : editableIndexes.length - 1;
+    }
+    const nextKey = this.columns[editableIndexes[nextPosition]].key;
+    this.startEdit(nextRow, nextKey);
+    void value;
   }
 
   public getSummaryNode(): any {
@@ -2392,6 +2441,45 @@ export class ICETable extends ICEWidget {
       result[column.key] = widths[index];
     });
     return result;
+  }
+
+  /**
+   * 导出列版式（列宽 + 列顺序）。
+   *
+   * 组件不负责存：业务把它塞进 localStorage 或后端即可，下次进来 `setColumnState()` 还原。
+   */
+  public getColumnState(): ICETableColumnState {
+    return {
+      widths: this.getColumnWidths(),
+      order: this.columns.map((column) => column.key),
+    };
+  }
+
+  /** 按版式还原：未知 key 忽略、缺的列保持原样；宽度会按 `minWidth` 夹取（脏数据也压不没列）。 */
+  public setColumnState(state: Partial<ICETableColumnState> | null | undefined): this {
+    if (!state || typeof state !== 'object') {
+      return this;
+    }
+    const widths = state.widths || {};
+    Object.keys(widths).forEach((key) => {
+      if (this.columns.some((column) => column.key === key)) {
+        this.columnWidthOverrides[key] = Number(widths[key]);
+      }
+    });
+    if (Array.isArray(state.order) && state.order.length) {
+      const ordered = state.order
+        .map((key) => this.columns.find((column) => column.key === key))
+        .filter(Boolean) as ICETableColumn[];
+      // 版式里没提到的列保持原顺序接在后面（新增了列也不会丢）
+      this.columns.forEach((column) => {
+        if (ordered.indexOf(column) === -1) {
+          ordered.push(column);
+        }
+      });
+      this.columns = ordered;
+    }
+    this.__render();
+    return this;
   }
 
   /**
