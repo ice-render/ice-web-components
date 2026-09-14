@@ -30,13 +30,15 @@ const items: ICEMenuItem[] = [
 
 function setup() {
   const selected: string[] = [];
+  const expandedLog: Array<[string, boolean]> = [];
   const menu = new ICEMenu({
     items,
     width: 240,
     itemHeight: 40,
     onSelect: (item: ICEMenuItem) => selected.push(item.key),
+    onExpand: (key: string, expanded: boolean) => expandedLog.push([key, expanded]),
   });
-  return { menu, selected };
+  return { menu, selected, expandedLog };
 }
 
 describe('ICEMenu 子菜单', () => {
@@ -56,6 +58,22 @@ describe('ICEMenu 子菜单', () => {
 
     menu.toggleExpand('export');
     expect(menu.getVisibleItems().map((item) => item.key)).toEqual(['new', 'export', 'settings', 'empty']);
+  });
+
+  it('父项展开 / 收起触发 onExpand：点父项只展开，但应用层能拿到这个时机', () => {
+    const { menu, selected, expandedLog } = setup();
+    menu.activateItem('export');
+    expect(expandedLog).toEqual([['export', true]]);
+    expect(selected).toEqual([]); // 仍然不触发 onSelect
+    menu.toggleExpand('export');
+    expect(expandedLog).toEqual([
+      ['export', true],
+      ['export', false],
+    ]);
+    // 子项的选中不影响 onExpand
+    menu.activateItem('new');
+    expect(expandedLog.length).toBe(2);
+    expect(selected).toEqual(['new']);
   });
 
   it('点父节点不回调，点子项才选中并回调', () => {

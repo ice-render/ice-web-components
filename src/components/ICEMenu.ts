@@ -35,6 +35,14 @@ export class ICEMenu extends ICEContainer {
   private selectedKey: string | null;
   private itemHeight: number;
   private onSelect: ((item: ICEMenuItem, index: number) => void) | null;
+  /**
+   * 父项展开 / 收起时的回调。
+   *
+   * 点父项**只展开、不触发 onSelect**（这是设计），于是"点了父项想做点什么"（跳页面、给个提示）
+   * 就缺一个时机 —— 应用层用这个回调补上。（ice-smart-water 的侧栏就靠它在点「运行工况」时
+   * 跳到工艺流程图并提示"请选择具体工况"。）
+   */
+  private onExpand: ((key: string, expanded: boolean) => void) | null;
   private mode: 'vertical' | 'horizontal';
   private collapsed = false;
   private collapsedWidth: number;
@@ -80,6 +88,7 @@ export class ICEMenu extends ICEContainer {
     }
     this.selectedKey = props.selectedKey ?? null;
     this.onSelect = typeof props.onSelect === 'function' ? props.onSelect : null;
+    this.onExpand = typeof props.onExpand === 'function' ? props.onExpand : null;
     if (Array.isArray(props.defaultExpandedKeys)) {
       props.defaultExpandedKeys.forEach((key: string) => this.expanded.add(key));
     }
@@ -116,15 +125,18 @@ export class ICEMenu extends ICEContainer {
       const animated = this.__animateCollapse(key);
       if (animated) {
         this.expanded.delete(key);
+        if (this.onExpand) this.onExpand(key, false);
         return this;
       }
       this.expanded.delete(key);
       this.__render();
+      if (this.onExpand) this.onExpand(key, false);
       return this;
     }
     this.expanded.add(key);
     this.__render();
     this.__animateExpand(key);
+    if (this.onExpand) this.onExpand(key, true);
     return this;
   }
 
