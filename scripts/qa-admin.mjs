@@ -426,6 +426,116 @@ check(
   JSON.stringify({ value: cleared.value, rows: resetRows && resetRows.length }),
 );
 
+/* ---------- 表格分析半边：列筛选 + 汇总行 + 行展开 ---------- */
+const clickBox = async (b) => {
+  await page.mouse.click(rect.left + b.l + b.w / 2, rect.top + b.t + b.h / 2);
+  await page.waitForTimeout(480);
+};
+
+// 看板「最近订单」：表头漏斗筛状态，底部汇总跟着变
+await page.evaluate(() => window.__result.showPage('dashboard'));
+await page.waitForTimeout(700);
+// 「最近订单」在首屏之下：先滚进内容视口，否则按世界坐标点会落到窗口外
+await scrollIntoView(`window.__qa.find('orders-table').getFilterNode('status')`);
+const filterGlyph = await page.evaluate(() => {
+  const table = window.__qa.find('orders-table');
+  const node = table && table.getFilterNode('status');
+  return node
+    ? { box: window.__qa.box(node), header: table.getHeaderLabel('status'), summary: table.getSummaryText('order') }
+    : null;
+});
+check(
+  '列筛选：表头有漏斗标记、底部有汇总行',
+  !!filterGlyph && filterGlyph.header === '状态 ▾' && filterGlyph.summary.indexOf('本页合计') === 0,
+  JSON.stringify(filterGlyph && { header: filterGlyph.header, summary: filterGlyph.summary }),
+);
+await clickBox(filterGlyph.box);
+const filterPanel = await page.evaluate(() => {
+  const table = window.__qa.find('orders-table');
+  return {
+    open: table.isFilterOpen(),
+    option: !!table.getFilterOptionNode('status', 'Paid'),
+    layout: table.getFilterPanelLayout(),
+  };
+});
+check(
+  '列筛选：点漏斗开候选面板（贴着表头列，不跑偏）',
+  filterPanel.open && filterPanel.option && filterPanel.layout && filterPanel.layout.anchorLeft > 0 && filterPanel.layout.panel.width > 0,
+  JSON.stringify(filterPanel.layout),
+);
+await shotOverlay('table-filter');
+const optionBox = await page.evaluate(() =>
+  window.__qa.box(window.__qa.find('orders-table').getFilterOptionNode('status', 'Paid')),
+);
+await clickBox(optionBox);
+const filterApplied = await page.evaluate(() => {
+  const table = window.__qa.find('orders-table');
+  return {
+    header: table.getHeaderLabel('status'),
+    rows: table.getRows().map((row) => row.status),
+    summary: table.getSummaryText('order'),
+  };
+});
+check(
+  '列筛选：勾一个候选后表头转「已激活」、只剩该状态的行',
+  filterApplied.header === '状态 ●' && filterApplied.rows.length > 0 && filterApplied.rows.every((status) => status === 'Paid'),
+  JSON.stringify({ header: filterApplied.header, rows: filterApplied.rows }),
+);
+const summaryCheck = await page.evaluate(() => {
+  const table = window.__qa.find('orders-table');
+  const total = table.getRows().reduce((sum, row) => sum + Number(row.amount || 0), 0);
+  const formatted = '$' + total.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return { text: table.getSummaryText('amount'), formatted, count: table.getSummaryText('order') };
+});
+check(
+  '汇总行：金额与笔数都跟着筛选后的行重算',
+  summaryCheck.text === summaryCheck.formatted && summaryCheck.count === `本页合计 ${filterApplied.rows.length} 笔`,
+  JSON.stringify(summaryCheck),
+);
+await page.evaluate(() => window.__qa.find('orders-table').clearFilters());
+await page.evaluate(() => window.__qa.find('orders-table').closeFilter());
+
+// 订单页：行展开 —— 展开区插在行下面，后面的行整体下移
+await page.evaluate(() => window.__result.showPage('orders'));
+await page.waitForTimeout(700);
+const expandBefore = await page.evaluate(() => {
+  const table = window.__qa.find('orders-full');
+  return {
+    toggle: !!table.getExpandToggleNode('#10321'),
+    secondRowTop: table.getRowNode(1).state.top,
+    height: table.state.height,
+  };
+});
+const toggleBox = await page.evaluate(() =>
+  window.__qa.box(window.__qa.find('orders-full').getExpandToggleNode('#10321')),
+);
+await clickBox(toggleBox);
+const expandAfter = await page.evaluate(() => {
+  const table = window.__qa.find('orders-full');
+  return {
+    keys: table.getExpandedRowKeys(),
+    firstRowTop: table.getRowNode(0).state.top,
+    secondRowTop: table.getRowNode(1).state.top,
+    expandedTop: table.getExpandedRowNode('#10321').state.top,
+    height: table.state.height,
+  };
+});
+check(
+  '行展开：展开区插在行下面，后面的行被真的推下去',
+  expandBefore.toggle &&
+    expandAfter.keys.join(',') === '#10321' &&
+    expandAfter.expandedTop === expandAfter.firstRowTop + 40 &&
+    expandAfter.secondRowTop === expandBefore.secondRowTop + 84,
+  JSON.stringify({ before: expandBefore, after: expandAfter }),
+);
+check(
+  '行展开：表格高度跟着长（不是浮在上面）',
+  expandAfter.height === expandBefore.height + 84,
+  `${expandBefore.height} → ${expandAfter.height}`,
+);
+await page.screenshot({ path: '/tmp/qa-expanded-row.png' });
+await clickBox(toggleBox);
+
 // 顶部搜索：自动完成候选（含滚动视口）
 const searchBox = await page.evaluate(() => window.__qa.box(window.__qa.find('search')));
 await page.mouse.click(rect.left + searchBox.l + 40, rect.top + searchBox.t + searchBox.h / 2);

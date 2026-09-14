@@ -27,6 +27,28 @@
 | `getPaginationNode()` | `ICEPagination \| null` | 分页器节点（不分页 / 空数据时为 null）。 |
 | `getRows()` | `ICETableRow[]` | 当前渲染顺序的数据（排序后）。 |
 | `getSortState()` | `ICETableSortState \| null` |  |
+| `getFilterState()` | `ICETableFilterState` | 当前筛选条件（只包含真的在筛的列）。 |
+| `setFilter(key: string, values: string[], options: { silent?: boolean })` | `this` | 设置某列的筛选取值（空数组 = 该列不筛）。 |
+| `clearFilters()` | `this` | 清空全部列筛选。 |
+| `getFilteredRows()` | `ICETableRow[]` | 筛选后的行（原始顺序，不含排序），用于断言与导出。 |
+| `getFilterNode(key: string)` | `any` | 表头漏斗节点（该列没声明 filters 时为 null）。 |
+| `isFilterOpen()` | `boolean` |  |
+| `toggleFilter(key: string)` | `this` |  |
+| `openFilter(key: string)` | `this` |  |
+| `closeFilter()` | `this` |  |
+| `getFilterOptionNode(key: string, value: string)` | `any` | 候选节点（测试与 e2e 用）。 |
+| `getFilterPanel()` | `any` |  |
+| `getFilterPanelLayout()` | `{ anchorLeft: number; anchorTop: number; panel: { width: number; height: number } } \| null` | 面板与锚点列的位置关系（几何审计 / 测试用）。 |
+| `getSummaryNode()` | `any` |  |
+| `getSummaryText(key: string)` | `string` |  |
+| `getExpandedRowKeys()` | `string[]` | 展开中的行 key（按展开顺序）。 |
+| `isRowExpanded(key: string \| ICETableRow)` | `boolean` |  |
+| `expandRow(key: string \| ICETableRow, options: { silent?: boolean })` | `this` |  |
+| `collapseRow(key: string \| ICETableRow, options: { silent?: boolean })` | `this` |  |
+| `toggleExpand(key: string \| ICETableRow)` | `this` |  |
+| `getExpandToggleNode(key: string \| ICETableRow)` | `any` | 行首的展开三角（该行不可展开 / 没渲染时为 null）。 |
+| `getExpandedRowNode(key: string \| ICETableRow)` | `any` | 展开区节点（该行没展开 / 不在当前页时为 null）。 |
+| `getRowNode(index: number)` | `any` | 当前页第 index 行的行面板（测试与 e2e 断言版式用）。 |
 | `getHeaderLabel(key: string)` | `string` | 表头文案（排序中的列带 ▲/▼ 指示）。 |
 | `toggleSort(key: string)` | `this` | 点表头：升序 → 降序 → 恢复原始顺序。 |
 | `sortBy(key: string, order: 'asc' \| 'desc' \| null)` | `this` | 显式设置排序（`order: null` 恢复原始顺序）。 |
