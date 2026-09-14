@@ -348,6 +348,7 @@
 | `customRequest?` | `( file: ICEUploadFile, hooks: { onProgress: (percent: number) => void; onSuccess: (response?: { url?: string }) => void; onError: (message: string) => void; }, ) => void \| Promise<any>` | 自定义上传实现：给了它，加入文件就自动开始上传。 |
 | `draggable?` | `boolean` | 文件行可以上下拖拽排序 |
 | `onReorder?` | `(files: ICEUploadFile[], from: number, to: number) => void` | 排序落下后的回调（顺序变了才触发） |
+| `uploadConcurrency?` | `number` | 同时上传几个（默认 1）；其余排队，按列表顺序依次启动 |
 
 **方法**
 
@@ -360,7 +361,8 @@
 | `getHintText()` | `string` | 上传区提示文案（测试 / QA 用）。 |
 | `getFileNode(uid: string)` | `ICEWidget \| null` |  |
 | `addFile(file: Partial<ICEUploadFile>)` | `boolean` | 加入一个文件（真实选择结果或调用方构造的数据）；被拒时返回 false。 |
-| `getFileStatus(uid: string)` | `'uploading' \| 'done' \| 'error' \| null` | 上传状态：'uploading' | 'done' | 'error'（没用 customRequest 时是 null）。 |
+| `getQueuedCount()` | `number` | 排队中的文件数（不含正在传的）。 |
+| `getFileStatus(uid: string)` | `'pending' \| 'uploading' \| 'done' \| 'error' \| null` | 上传状态：'uploading' | 'done' | 'error'（没用 customRequest 时是 null）。 |
 | `isDragOver()` | `boolean` | 有文件正悬在拖拽区上方（用于高亮反馈）。 |
 | `isRowDragging()` | `boolean` |  |
 | `retryFile(uid: string)` | `boolean` | 失败重传（只有失败的行能重试）。 |

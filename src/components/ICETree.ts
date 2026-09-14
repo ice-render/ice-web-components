@@ -135,6 +135,11 @@ export class ICETree extends ICEWidget {
     return this.expanded.slice();
   }
 
+  /** 当前树数据（跨父级移动 / 增删之后拿到的就是最新结构）。 */
+  public getNodes(): ICETreeNode[] {
+    return this.nodes;
+  }
+
   public setExpandedKeys(keys: string[]): this {
     this.expanded = (keys || []).slice();
     this.__render();
