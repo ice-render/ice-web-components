@@ -12,6 +12,11 @@
   与 `disabled` 正交（禁用不改 `interactive`：禁用的按钮仍要能悬停看提示）。
   `icon` 只参与绘制，`getText()` 与无障碍名始终保持纯文字，配套 `setIcon()` / `getIcon()` / `isLoading()`。
 
+- **`ICETextField` 的附属物**（2026-09-14，S2 第一批）：`prefix` / `suffix` / `allowClear` / `showCount`。
+  前后缀占用组件内部的内边距（文字不再压到它们上），清除按钮只在「有值且悬停/聚焦」时出现
+  （点了清空并触发 `change`），字数随值更新且受 `maxLength` 截断；配 `clear()` / `getCountText()` /
+  `isClearVisible()` / `getTextNodes()`。以前这些要在每个页面手工贴标签，贴出来的还不跟输入框一起变。
+
 > 其余待发布的改动在这里累积。
 
 ## [1.5.4] - 2026-09-14
