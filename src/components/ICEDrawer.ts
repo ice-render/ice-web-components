@@ -26,8 +26,11 @@ export interface ICEDrawerOptions {
   width?: number;
   /** top/bottom 方向的高度（默认 240） */
   height?: number;
-  /** 尺寸预设：left/right 是宽度（default 360 / large 560），top/bottom 是高度（240 / 360） */
-  size?: 'default' | 'large';
+  /**
+   * 尺寸预设：`default` / `large`，或直接给数字（像素）。
+   * left/right 方向上它管宽度，top/bottom 方向上管高度。
+   */
+  size?: 'default' | 'large' | number;
   /** 标题栏右侧的扩展区（按钮或说明文字）；返回的组件会被摆到关闭按钮左边 */
   extra?: any | (() => any);
   /** 贴底的页脚区（确定/取消这类操作）；给了就把内容区让出这段高度 */
@@ -202,7 +205,9 @@ export class ICEDrawer {
   ): ICEPanel {
     const theme = iceUIManager.getTheme();
     const horizontal = placement === 'left' || placement === 'right';
-    const preset = this.options.size === 'large' ? (horizontal ? 560 : 360) : horizontal ? 360 : 240;
+    const numeric = typeof this.options.size === 'number' ? Math.max(0, Math.floor(this.options.size)) : null;
+    const preset =
+      numeric !== null ? numeric : this.options.size === 'large' ? (horizontal ? 560 : 360) : horizontal ? 360 : 240;
     const width = horizontal ? this.options.width ?? preset : viewport.width;
     const height = horizontal ? viewport.height : this.options.height ?? preset;
     const left = placement === 'right' ? viewport.width - width : 0;

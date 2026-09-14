@@ -358,7 +358,10 @@
 - `ICESvgIcon`：单测 ✅、gallery 演示 ✅、`setPath` / `setStrokeWidth` ✅
 - 全局：密度 ✅ `setDensity('compact')`、减少动效 ✅ `setICEReducedMotion`、高对比主题 ✅ `high-contrast`
 - `ICETree`：虚拟滚动 ✅（默认 200 节点起）；树形拖拽 ✅、搜索 ✅（`ICETreeSelect`）
-- `ICEMenu`：横向 ✅、收起态 ✅、键盘导航待做
+- `ICEMenu`：横向 ✅、收起态 ✅、键盘导航 ✅（跳过 disabled）、disabled 项 ✅
+- `ICETabs`：溢出滚动 ✅（`scrollBy` / `scrollIntoView`）；位置（上下左右）待做
+- `ICEUpload`：文件列表 ✅、进度 ✅、`onRemove` ✅；自定义上传实现待做
+- `ICETree`：虚拟 × 拖拽交叉用例 ✅（`getRowIndexAt`）
 - `ICEAlert`：banner ✅、操作区 ✅；`ICESkeleton`：card / table / list 变体 ✅
 - `ICESegmented`：`block: false` 按文字宽度 ✅；`ICEDrawer`：尺寸预设 ✅
 - `ICEScrollPane`：吸顶 ✅ `ICEAffix`、布局骨架 ✅ `ICELayout`；横向滚动条、平滑滚动待做

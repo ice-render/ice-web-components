@@ -52,6 +52,8 @@
 | `draggable?` | `boolean` | 按住标题栏拖动对话框（默认 false） |
 | `resizable?` | `boolean` | 右下角出现缩放手柄，可拖拽改变对话框尺寸（默认 false） |
 | `size?` | `'sm' \| 'md' \| 'lg' \| 'fullscreen'` | 尺寸预设：`sm` 360 / `md` 420（默认）/ `lg` 640 / `fullscreen` 打开即铺满 |
+| `minWidth?` | `number` | 缩放下限（默认 240×140）；复杂表单可以要求更大 |
+| `minHeight?` | `number` |  |
 | `onConfirm?` | `() => void` |  |
 | `onCancel?` | `() => void` |  |
 | `onClose?` | `(reason: ICEModalCloseReason) => void` | 关闭回调 |
@@ -98,7 +100,7 @@
 | `placement?` | `ICEDrawerPlacement` |  |
 | `width?` | `number` | left/right 方向的宽度（默认 360） |
 | `height?` | `number` | top/bottom 方向的高度（默认 240） |
-| `size?` | `'default' \| 'large'` | 尺寸预设：left/right 是宽度（default 360 / large 560），top/bottom 是高度（240 / 360） |
+| `size?` | `'default' \| 'large' \| number` | 尺寸预设：`default` / `large`，或直接给数字（像素）。 |
 | `extra?` | `any \| (() => any)` | 标题栏右侧的扩展区（按钮或说明文字）；返回的组件会被摆到关闭按钮左边 |
 | `footer?` | `any \| (() => any)` | 贴底的页脚区（确定/取消这类操作）；给了就把内容区让出这段高度 |
 | `footerHeight?` | `number` | 页脚高度（默认 56） |

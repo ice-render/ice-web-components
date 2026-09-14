@@ -1,5 +1,6 @@
 import { ICERect } from 'ice-render';
 import { ICELabel } from './ICELabel';
+import { ICEProgressBar } from './ICEProgressBar';
 import { ICEWidget } from '../core/ICEWidget';
 import { t } from '../i18n/ICEI18n';
 import { iceUIManager } from '../core/ICEManager';
@@ -21,6 +22,8 @@ export interface ICEUploadFile {
   size?: number;
   type?: string;
   url?: string;
+  /** 上传进度 0-100（100 = 已完成；不设 = 未开始/不需要进度） */
+  progress?: number;
 }
 
 export interface ICEUploadOptions extends ICELocalizedProps {
@@ -41,6 +44,10 @@ export interface ICEUploadOptions extends ICELocalizedProps {
   rowHeight?: number;
   beforeUpload?: (file: ICEUploadFile) => boolean | string | undefined;
   onChange?: (files: ICEUploadFile[]) => void;
+  /** 删掉一个文件时回调（✕ 与 `removeFile` 同一条路径） */
+  onRemove?: (file: ICEUploadFile) => void;
+  /** 是否画文件列表（默认 true；只要拖拽区就传 false） */
+  showFileList?: boolean;
 }
 
 const DROP_ZONE_HEIGHT = 96;
@@ -57,6 +64,12 @@ export class ICEUpload extends ICEWidget {
   private rowHeight: number;
   private beforeUpload: ((file: ICEUploadFile) => boolean | string | undefined) | null;
   private onChangeCallback: ((files: ICEUploadFile[]) => void) | null;
+  private onRemoveCallback: ((file: ICEUploadFile) => void) | null;
+  private showFileList: boolean;
+  private fileRows = new Map<string, any>();
+  private fileRemoveButtons = new Map<string, any>();
+  private fileLabels = new Map<string, any>();
+  private fileProgressNodes = new Map<string, any>();
   private lastRejectReason: string | null = null;
   private dropZone: ICEWidget | null = null;
   private fileNodes = new Map<string, ICEWidget>();
@@ -86,6 +99,8 @@ export class ICEUpload extends ICEWidget {
     this.rowHeight = Math.max(20, Number(props.rowHeight) || 28);
     this.beforeUpload = typeof props.beforeUpload === 'function' ? props.beforeUpload : null;
     this.onChangeCallback = typeof props.onChange === 'function' ? props.onChange : null;
+    this.onRemoveCallback = typeof props.onRemove === 'function' ? props.onRemove : null;
+    this.showFileList = props.showFileList !== false;
     this.focusable = !this.disabled;
     this.__render();
   }
@@ -137,14 +152,67 @@ export class ICEUpload extends ICEWidget {
   }
 
   public removeFile(uid: string): this {
-    const next = this.files.filter((file) => file.uid !== uid);
-    if (next.length === this.files.length) {
+    const removed = this.files.find((file) => file.uid === uid);
+    if (!removed) {
       return this;
     }
-    this.files = next;
+    this.files = this.files.filter((file) => file.uid !== uid);
     this.__render();
     this.__emit();
+    if (this.onRemoveCallback) {
+      this.onRemoveCallback({ ...removed });
+    }
     return this;
+  }
+
+  // ---------------------------------------------------------------- 文件列表 / 进度
+
+  /** 文件行节点（`showFileList: false` 时为空）。 */
+  public getFileRows(): any[] {
+    return this.files.map((file) => this.fileRows.get(file.uid)).filter(Boolean);
+  }
+
+  /** 某一行的整行文案（测试 / 无障碍镜像用）。 */
+  public getFileRowText(uid: string): string {
+    const label = this.fileLabels.get(uid);
+    return label ? String(label.getText()) : '';
+  }
+
+  public getFileRemoveButton(uid: string): any {
+    return this.fileRemoveButtons.get(uid) || null;
+  }
+
+  /** 上传中那一行的进度条（没有进度 / 已完成时为 null）。 */
+  public getFileProgressNode(uid: string): any {
+    return this.fileProgressNodes.get(uid) || null;
+  }
+
+  public getFileProgress(uid: string): number | null {
+    const file = this.files.find((item) => item.uid === uid);
+    return file && typeof file.progress === 'number' ? file.progress : null;
+  }
+
+  /** 设置某一行进度（0-100 夹取）；100 表示完成，行里不再显示进度条。 */
+  public setFileProgress(uid: string, progress: number): this {
+    const file = this.files.find((item) => item.uid === uid);
+    if (!file) {
+      return this;
+    }
+    file.progress = Math.min(100, Math.max(0, Math.round(Number(progress) || 0)));
+    this.__render();
+    return this;
+  }
+
+  /** 人类可读的文件大小（512 B / 2.0 KB / 5.0 MB）。 */
+  public formatFileSize(bytes: number): string {
+    const size = Math.max(0, Number(bytes) || 0);
+    if (size < 1024) {
+      return `${Math.round(size)} B`;
+    }
+    if (size < 1024 * 1024) {
+      return `${(size / 1024).toFixed(1)} KB`;
+    }
+    return `${(size / (1024 * 1024)).toFixed(1)} MB`;
   }
 
   public clear(): this {
@@ -271,6 +339,10 @@ export class ICEUpload extends ICEWidget {
     const width = Number(this.state.width) || 320;
     this.removeChildren([...this.childNodes]);
     this.fileNodes = new Map();
+    this.fileRows = new Map();
+    this.fileRemoveButtons = new Map();
+    this.fileLabels = new Map();
+    this.fileProgressNodes = new Map();
     this.setState({ height: DROP_ZONE_HEIGHT + this.files.length * this.rowHeight });
 
     const zone = new ICEWidget({
@@ -347,6 +419,9 @@ export class ICEUpload extends ICEWidget {
     this.dropZone = zone;
 
     this.files.forEach((file, index) => {
+      if (!this.showFileList) {
+        return;
+      }
       const top = DROP_ZONE_HEIGHT + index * this.rowHeight;
       const row = new ICEWidget({
         left: 0,
@@ -357,19 +432,34 @@ export class ICEUpload extends ICEWidget {
         stroke: false,
         style: { fillStyle: index % 2 === 0 ? theme.colors.surface : theme.colors.background },
       });
-      row.addChild(
-        new ICELabel({
+      const sizeText = file.size ? `（${this.formatFileSize(file.size)}）` : '';
+      const progress = typeof file.progress === 'number' ? file.progress : null;
+      const statusText =
+        progress === null ? '' : progress >= 100 ? ' · 已完成' : ` · ${progress}%`;
+      const label = new ICELabel({
           interactive: false,
           left: 8,
           top: 0,
           width: Math.max(0, width - 60),
           height: this.rowHeight,
           verticalAlign: 'middle',
-          text: `${file.name}${file.size ? `（${Math.max(1, Math.round(file.size / 1024))} KB）` : ''}`,
+          text: `${file.name}${sizeText}${statusText}`,
           style: { fontSize: 12, fillStyle: theme.colors.text },
-        }),
-        false,
-      );
+        });
+      row.addChild(label, false);
+      this.fileLabels.set(file.uid, label);
+      // 上传中：行内加一条细进度条，让「传到哪了」看得见
+      if (progress !== null && progress < 100) {
+        const bar = new ICEProgressBar({
+          left: 8,
+          top: this.rowHeight - 8,
+          width: Math.max(40, width - 60),
+          height: 4,
+          value: progress,
+        });
+        row.addChild(bar, false);
+        this.fileProgressNodes.set(file.uid, bar);
+      }
       const remove = new ICEWidget({
         left: width - 32,
         top: Math.round((this.rowHeight - 20) / 2),
@@ -397,6 +487,8 @@ export class ICEUpload extends ICEWidget {
       row.addChild(remove, false);
       this.addChild(row, false);
       this.fileNodes.set(file.uid, row);
+      this.fileRows.set(file.uid, row);
+      this.fileRemoveButtons.set(file.uid, remove);
     });
 
     if (this.ice && this.ice.dirty !== undefined) {
