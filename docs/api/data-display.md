@@ -58,6 +58,14 @@
 | `getHeaderLabel(key: string)` | `string` | 表头文案（排序中的列带 ▲/▼ 指示）。 |
 | `toggleSort(key: string)` | `this` | 点表头：升序 → 降序 → 恢复原始顺序。 |
 | `sortBy(key: string, order: 'asc' \| 'desc' \| null)` | `this` | 显式设置排序（`order: null` 恢复原始顺序）。 |
+| `getTreeExpandedKeys()` | `string[]` |  |
+| `isTreeRowExpanded(key: string)` | `boolean` |  |
+| `isTreeParent(key: string)` | `boolean` |  |
+| `toggleRowExpanded(key: string)` | `this` |  |
+| `setTreeExpandedKeys(keys: string[])` | `this` |  |
+| `getRowDepth(key: string)` | `number` |  |
+| `getRowIndent(key: string)` | `number` | 首列的缩进像素（树形层级 × 16）。 |
+| `getRowTreeToggle(key: string)` | `any` | 父行首列的 ▸/▾ 三角（叶子行是 null）。 |
 | `setSelectedRow(index: number)` | `this` |  |
 | `getSelectedIndex()` | `number` |  |
 | `getSelectionMode()` | `ICETableSelectionMode` |  |

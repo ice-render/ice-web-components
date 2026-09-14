@@ -360,7 +360,7 @@
 - `ICETree`：虚拟滚动 ✅（默认 200 节点起）；树形拖拽 ✅、搜索 ✅（`ICETreeSelect`）
 - `ICEMenu`：横向 ✅、收起态 ✅、键盘导航 ✅（跳过 disabled）、disabled 项 ✅
 - `ICETabs`：溢出滚动 ✅、方位（上下左右）✅、拖动排序 ✅
-- `ICETable`：列筛选 ✅、行展开 ✅、汇总行 ✅、单元格编辑 ✅；树形数据待做
+- `ICETable`：列筛选 ✅、行展开 ✅、汇总行 ✅、单元格编辑 ✅（含失焦提交）、树形数据 ✅
 - `ICEUpload`：文件列表 ✅、进度 ✅、`onRemove` ✅、自定义上传 ✅（含重试）、桌面拖放 ✅
 - `ICEScrollPane`：横向滚动条 ✅、平滑滚动 ✅（自动跟随减少动效）、滑块拖拽 ✅
 - `ICEAlert`：关闭动画 ✅（默认立即关闭，显式 `animation: true` 才淡出）

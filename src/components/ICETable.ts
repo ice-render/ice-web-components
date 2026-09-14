@@ -90,7 +90,7 @@ export type ICETableFilterState = Record<string, string[]>;
 /** 汇总行：拿**筛选后的全量行**算出「每个列 key 显示什么」。 */
 export type ICETableSummary = (rows: ICETableRow[], columns: ICETableColumn[]) => ICETableRow;
 
-/** 行展开：`render` 返回一个画在该行下面的组件（不是弹层）。 */
+  /** 行展开：`render` 返回一个画在该行下面的组件（不是弹层）。 */
 export interface ICETableExpandable {
   render: (
     row: ICETableRow,
@@ -210,6 +210,12 @@ export class ICETable extends ICEWidget {
   /** 单元格编辑态：改哪一行哪一列 + 盖在格子上的输入框 */
   private editing: { rowIndex: number; key: string; node: any; original: string } | null = null;
   private onCellEdit: ((row: ICETableRow, key: string, value: string, previous: string) => void) | null = null;
+  /** 树形数据：哪个字段装子行（默认 `children`）；有它的行是父行 */
+  private treeChildrenKey = 'children';
+  private treeExpanded = new Set<string>();
+  private rowDepths = new Map<string, number>();
+  private rowParents = new Map<string, string | null>();
+  private treeToggleNodes = new Map<string, any>();
   private manager: any = null;
   /** 行展开：渲染区 + 状态（按 rowKey 记，默认行下标） */
   private expandable: ICETableExpandable | null = null;
@@ -283,6 +289,8 @@ export class ICETable extends ICEWidget {
     this.onRowReorder = typeof props.onRowReorder === 'function' ? props.onRowReorder : null;
     this.onFilterChange = typeof props.onFilterChange === 'function' ? props.onFilterChange : null;
     this.onCellEdit = typeof props.onCellEdit === 'function' ? props.onCellEdit : null;
+    this.treeChildrenKey = typeof props.treeChildrenKey === 'string' ? props.treeChildrenKey : 'children';
+    (props.defaultExpandedKeys || []).forEach((key: string) => this.treeExpanded.add(String(key)));
     this.summaryFn = typeof props.summary === 'function' ? props.summary : null;
     this.rowKeyProp = typeof props.rowKey === 'function' || typeof props.rowKey === 'string' ? props.rowKey : null;
     if (props.expandable && typeof props.expandable.render === 'function') {
@@ -904,13 +912,104 @@ export class ICETable extends ICEWidget {
    * 不同列之间是**与**（这是「缩小范围」的直觉）。
    */
   private __computeFiltered(): ICETableRow[] {
+    // 树形数据：先按「展开到哪一层」拍平，再筛 —— 筛掉父行时它的子行也不该冒出来
+    const flat = this.__flattenTree(this.sourceData);
     const keys = Object.keys(this.filters).filter((key) => (this.filters[key] || []).length > 0);
     if (!keys.length) {
-      return this.sourceData.slice();
+      return flat;
     }
-    return this.sourceData.filter((row) =>
+    return flat.filter((row) =>
       keys.every((key) => this.filters[key].indexOf(String(row[key])) !== -1),
     );
+  }
+
+  /**
+   * 把树拍平成「当前可见的行」（深度优先，父在前子在后），同时记下每行的深度与父行。
+   *
+   * 没有子行的普通表格走这一趟也不亏：返回值就是原数组的浅拷贝。
+   */
+  private __flattenTree(rows: ICETableRow[], depth = 0, parentKey: string | null = null, out: ICETableRow[] = []): ICETableRow[] {
+    rows.forEach((row, index) => {
+      const key = this.__keyOf(row, out.length === 0 && depth === 0 ? index : out.length);
+      this.rowDepths.set(key, depth);
+      this.rowParents.set(key, parentKey);
+      out.push(row);
+      const children = row[this.treeChildrenKey];
+      if (Array.isArray(children) && children.length && this.treeExpanded.has(key)) {
+        this.__flattenTree(children as ICETableRow[], depth + 1, key, out);
+      }
+    });
+    return out;
+  }
+
+  // ---- 树形数据 API ----
+
+  public getTreeExpandedKeys(): string[] {
+    return Array.from(this.treeExpanded);
+  }
+
+  public isTreeRowExpanded(key: string): boolean {
+    return this.treeExpanded.has(key);
+  }
+
+  public isTreeParent(key: string): boolean {
+    const row = this.__findRowByKey(key);
+    return !!(row && Array.isArray(row[this.treeChildrenKey]) && (row[this.treeChildrenKey] as any[]).length);
+  }
+
+  public toggleRowExpanded(key: string): this {
+    if (!this.isTreeParent(key)) {
+      return this;
+    }
+    if (this.treeExpanded.has(key)) {
+      this.treeExpanded.delete(key);
+    } else {
+      this.treeExpanded.add(key);
+    }
+    this.__applyPage();
+    return this;
+  }
+
+  public setTreeExpandedKeys(keys: string[]): this {
+    this.treeExpanded = new Set((keys || []).map(String));
+    this.__applyPage();
+    return this;
+  }
+
+  public getRowDepth(key: string): number {
+    return this.rowDepths.has(key) ? (this.rowDepths.get(key) as number) : 0;
+  }
+
+  /** 首列的缩进像素（树形层级 × 16）。 */
+  public getRowIndent(key: string): number {
+    return this.getRowDepth(key) * 16;
+  }
+
+  /** 父行首列的 ▸/▾ 三角（叶子行是 null）。 */
+  public getRowTreeToggle(key: string): any {
+    return this.treeToggleNodes.get(key) || null;
+  }
+
+  private __findRowByKey(key: string): ICETableRow | null {
+    const visit = (rows: ICETableRow[]): ICETableRow | null => {
+      for (let index = 0; index < rows.length; index += 1) {
+        const row = rows[index];
+        if (rows === this.sourceData ? this.__keyOf(row, index) : this.__keyOf(row, index)) {
+          if (this.__keyOf(row, index) === key) {
+            return row;
+          }
+        }
+        const children = row[this.treeChildrenKey];
+        if (Array.isArray(children)) {
+          const found = visit(children as ICETableRow[]);
+          if (found) {
+            return found;
+          }
+        }
+      }
+      return null;
+    };
+    return visit(this.sourceData);
   }
 
   /** 有没有汇总行要画（筛选后 0 行不画：没东西可汇总）。 */
@@ -1037,6 +1136,20 @@ export class ICETable extends ICEWidget {
   private __onGlobalMouseDown(evt: any): void {
     if (!evt || typeof evt.offsetX !== 'number' || typeof evt.offsetY !== 'number') {
       return;
+    }
+    // 正在编辑且点在编辑框外面 → 先提交这一格（失焦提交），再走原来的点击逻辑
+    if (this.editing) {
+      const insideEdit = (() => {
+        let node = evt.target;
+        while (node) {
+          if (node === this.editing.node) return true;
+          node = node.parentNode;
+        }
+        return false;
+      })();
+      if (!insideEdit) {
+        this.commitEdit();
+      }
     }
     // 组件可能已经从场景里摘掉（ice 被置空），此时全局事件不该再处理
     if (!this.ice || typeof this.ice.screenToWorld !== 'function') {
@@ -1249,12 +1362,16 @@ export class ICETable extends ICEWidget {
     header.addChild(divider, false);
 
     this.rowPanels = [];
+    this.treeToggleNodes.clear();
     // 行与展开区依次往下排：展开区不是浮层，后面的行要真的被推下去
     let bodyTop = this.headerHeight;
     this.data.forEach((row, rowIndex) => {
-      this.__createRowPanel(row, rowIndex, this, bodyTop, widths, offset);
-      bodyTop += this.rowHeight;
+      const panel = this.__createRowPanel(row, rowIndex, this, bodyTop, widths, offset);
       const key = this.__keyOf(row, rowIndex);
+      if (this.isTreeParent(key)) {
+        this.__placeTreeToggle(panel, row, rowIndex, offset, this.getRowDepth(key));
+      }
+      bodyTop += this.rowHeight;
       if (this.__canExpand(row) && this.expandedKeys.has(key)) {
         this.__renderExpandedRow(row, rowIndex, key, bodyTop, widths, totalWidth, offset);
         bodyTop += this.expandableHeight;
@@ -1523,7 +1640,8 @@ export class ICETable extends ICEWidget {
     );
     const values = this.columns.map((column) => this.__format(row[column.key]));
     const expandableRow = this.__canExpand(row);
-    this.__placeCells(panel, widths, values, false, this.columns, row, offset, expandableRow ? 20 : 0);
+    const depth = this.getRowDepth(this.__keyOf(row, rowIndex));
+    this.__placeCells(panel, widths, values, false, this.columns, row, offset, (expandableRow ? 20 : 0) + depth * 16);
     if (expandableRow) {
       this.__placeExpandToggle(panel, row, rowIndex, offset);
     }
@@ -1531,6 +1649,52 @@ export class ICETable extends ICEWidget {
   }
 
   /** 行首展开三角：▸ 收起 / ▾ 展开；它是行内的交互控件，点它不会走整行选中。 */
+  /** 树形父行的 ▸/▾ 三角（比展开行的三角更靠里一层，按深度缩进）。 */
+  private __placeTreeToggle(panel: any, row: ICETableRow, rowIndex: number, offset: number, depth: number): void {
+    const theme = iceUIManager.getTheme();
+    const key = this.__keyOf(row, rowIndex);
+    const expanded = this.treeExpanded.has(key);
+    const size = Math.min(18, Math.max(14, this.rowHeight - 20));
+    const toggle = new ICEWidget({
+      left: offset + 2 + depth * 16,
+      top: Math.round((this.rowHeight - size) / 2),
+      width: size,
+      height: size,
+      radius: theme.radius.sm,
+      fill: true,
+      stroke: false,
+      interactive: true,
+      style: { fillStyle: 'rgba(0,0,0,0)' },
+    });
+    toggle.addChild(
+      createTextNode({
+        left: 0,
+        top: 0,
+        width: size,
+        height: size,
+        text: expanded ? '▾' : '▸',
+        fillStyle: theme.colors.textSecondary,
+        fontFamily: theme.font.family,
+        fontSize: 11,
+        align: 'center',
+        verticalAlign: 'middle',
+      }),
+      false,
+    );
+    toggle.on('click', () => this.toggleRowExpanded(key), this);
+    toggle.on(
+      'hoverchange',
+      (evt: any) => {
+        toggle.setState({
+          style: { ...toggle.state.style, fillStyle: readHovered(evt) ? theme.colors.background : 'rgba(0,0,0,0)' },
+        });
+      },
+      this,
+    );
+    panel.addChild(toggle, false);
+    this.treeToggleNodes.set(key, toggle);
+  }
+
   private __placeExpandToggle(panel: any, row: ICETableRow, rowIndex: number, offset: number): void {
     const theme = iceUIManager.getTheme();
     const key = this.__keyOf(row, rowIndex);
