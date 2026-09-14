@@ -25,7 +25,7 @@ import {
 } from '../src';
 
 /** 用按钮模型兜住构造期可能依赖的宿主对象。 */
-const noopModel = () => new ICEButtonModel({ label: 'x' });
+const noopModel = () => new ICEButtonModel({});
 
 /** 组件清单：工厂 + 期望的表单值样本。 */
 const CASES: Array<{ name: string; make: () => any; value?: any }> = [

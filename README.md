@@ -622,6 +622,10 @@ npm run qa:algo
 # redirection, Ctrl+L, exit/reboot and auto-scroll
 npm run qa:dos
 
+# performance gate: per-page node budget, idle self-draw count and frame time
+# (it pins today's numbers so the "single-node canvas" advantage cannot be eaten silently)
+npm run qa:perf
+
 # docs: regenerate the API reference and check relative links
 npm run docs
 ```
