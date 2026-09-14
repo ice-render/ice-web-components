@@ -7,7 +7,7 @@
 > 侧边栏子菜单 + 标签页切界面 + 弹窗/抽屉/气泡确认/消息通知全覆盖）；
 > ① 全库导出统一成 **ICE 前缀**（原 `UI*` 全部改名，文件同名重命名），
 > 且**与引擎零重名**（基类 `ICEWidget`、图片控件 `ICEImageView`；布局类直接再导出引擎实现）；
-> ② 主题从 业界组件库 配色换成 **Bootstrap 5** 语义色（含 `*-text-emphasis` 强调文字色 + Bootstrap 三段阴影 +
+> ② 主题换成 **Bootstrap 5** 语义色（含 `*-text-emphasis` 强调文字色 + Bootstrap 三段阴影 +
 > `focusRing` 聚焦色）；③ `ICETag`/`ICEBadge` 默认改成 Bootstrap 实底 `.text-bg-*`（`variant:'soft'` 保留浅底风格）。
 > 细节见 README 的 Naming / Theme / Colour variants 三节。
 
