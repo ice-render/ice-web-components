@@ -39,6 +39,12 @@
 | `getFilterOptionNode(key: string, value: string)` | `any` | 候选节点（测试与 e2e 用）。 |
 | `getFilterPanel()` | `any` |  |
 | `getFilterPanelLayout()` | `{ anchorLeft: number; anchorTop: number; panel: { width: number; height: number } } \| null` | 面板与锚点列的位置关系（几何审计 / 测试用）。 |
+| `isEditing()` | `boolean` |  |
+| `getEditingCell()` | `{ rowIndex: number; key: string } \| null` |  |
+| `getEditNode()` | `any` | 盖在该格子上的输入框（测试 / e2e 用）。 |
+| `startEdit(rowIndex: number, key: string)` | `this` | 进入编辑态：在这一格上盖一个输入框（表格本身仍是那套渲染，不整体切换）。 |
+| `commitEdit()` | `boolean` | 提交：写回行数据 + 回调（值没变就只是退出编辑态）。 |
+| `cancelEdit()` | `boolean` |  |
 | `getSummaryNode()` | `any` |  |
 | `getSummaryText(key: string)` | `string` |  |
 | `getExpandedRowKeys()` | `string[]` | 展开中的行 key（按展开顺序）。 |

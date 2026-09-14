@@ -8,6 +8,7 @@ import { getICEOverlayManager } from '../core/ICEOverlayManager';
 import { createTextNode, readHovered } from '../util/ICEStyle';
 import { ICERect } from 'ice-render';
 import { ICEScrollPane } from './ICEScrollPane';
+import { ICETextField } from './ICETextField';
 import { t } from '../i18n/ICEI18n';
 import { computeVirtualRange } from './ICEVirtualList';
 import { ICEDropTarget, computeDropTarget, moveItem } from '../util/ICEDragReorder';
@@ -28,6 +29,8 @@ export type ICETableColumn = {
    * 同一列多个取值是**或**，跨列是**与**（和用户对「筛选」的直觉一致）。
    */
   filters?: ICETableFilterOption[];
+  /** 该列可编辑（点格子进去改；提交时回调表格的 `onCellEdit`） */
+  editable?: boolean;
   renderCell?: (
     value: string,
     row: ICETableRow,
@@ -204,6 +207,9 @@ export class ICETable extends ICEWidget {
   private summaryFn: ICETableSummary | null = null;
   private summaryNode: any = null;
   private summaryTexts: Record<string, string> = {};
+  /** 单元格编辑态：改哪一行哪一列 + 盖在格子上的输入框 */
+  private editing: { rowIndex: number; key: string; node: any; original: string } | null = null;
+  private onCellEdit: ((row: ICETableRow, key: string, value: string, previous: string) => void) | null = null;
   private manager: any = null;
   /** 行展开：渲染区 + 状态（按 rowKey 记，默认行下标） */
   private expandable: ICETableExpandable | null = null;
@@ -276,6 +282,7 @@ export class ICETable extends ICEWidget {
     this.rowDraggable = props.rowDraggable === true;
     this.onRowReorder = typeof props.onRowReorder === 'function' ? props.onRowReorder : null;
     this.onFilterChange = typeof props.onFilterChange === 'function' ? props.onFilterChange : null;
+    this.onCellEdit = typeof props.onCellEdit === 'function' ? props.onCellEdit : null;
     this.summaryFn = typeof props.summary === 'function' ? props.summary : null;
     this.rowKeyProp = typeof props.rowKey === 'function' || typeof props.rowKey === 'string' ? props.rowKey : null;
     if (props.expandable && typeof props.expandable.render === 'function') {
@@ -609,6 +616,101 @@ export class ICETable extends ICEWidget {
   }
 
   // ---------------------------------------------------------------- 汇总行 API
+
+  // ---------------------------------------------------------------- 单元格编辑 API
+
+  public isEditing(): boolean {
+    return !!this.editing;
+  }
+
+  public getEditingCell(): { rowIndex: number; key: string } | null {
+    return this.editing ? { rowIndex: this.editing.rowIndex, key: this.editing.key } : null;
+  }
+
+  /** 盖在该格子上的输入框（测试 / e2e 用）。 */
+  public getEditNode(): any {
+    return this.editing ? this.editing.node : null;
+  }
+
+  /**
+   * 进入编辑态：在这一格上盖一个输入框（表格本身仍是那套渲染，不整体切换）。
+   *
+   * 只有声明了 `editable: true` 的列、且行列都在范围内才进得去。
+   */
+  public startEdit(rowIndex: number, key: string): this {
+    const column = this.columns.find((item) => item.key === key);
+    if (!column || column.editable !== true || rowIndex < 0 || rowIndex >= this.data.length) {
+      return this;
+    }
+    this.cancelEdit();
+    const widths = this.__columnWidths((Number(this.state.width) || 720) - (this.selectionMode === 'multiple' ? ICETable.SELECTION_WIDTH : 0));
+    let left = this.selectionMode === 'multiple' ? ICETable.SELECTION_WIDTH : 0;
+    for (let index = 0; index < this.columns.length; index += 1) {
+      if (this.columns[index].key === key) {
+        break;
+      }
+      left += widths[index] || 0;
+    }
+    const columnWidth = widths[this.columns.findIndex((item) => item.key === key)] || 120;
+    const original = this.__format(this.data[rowIndex][key]);
+    const node = new ICETextField({
+      left,
+      top: this.headerHeight + rowIndex * this.rowHeight + 4,
+      width: Math.max(60, columnWidth - 8),
+      height: this.rowHeight - 8,
+      value: original,
+    });
+    node.on('keydown', (evt: any) => {
+      const raw = evt && (evt.originalEvent || evt);
+      const pressed = raw && (raw.key || raw.code);
+      if (pressed === 'Enter') {
+        this.commitEdit();
+      } else if (pressed === 'Escape' || pressed === 'Esc') {
+        this.cancelEdit();
+      }
+    });
+    this.addChild(node, false);
+    this.editing = { rowIndex, key, node, original };
+    if (this.ice && this.ice.dirty !== undefined) {
+      this.ice.dirty = true;
+    }
+    return this;
+  }
+
+  /** 提交：写回行数据 + 回调（值没变就只是退出编辑态）。 */
+  public commitEdit(): boolean {
+    const state = this.editing;
+    if (!state) {
+      return false;
+    }
+    const value = String(state.node.getValue() ?? '');
+    this.editing = null;
+    this.removeChild(state.node);
+    const row = this.data[state.rowIndex];
+    if (!row || value === state.original) {
+      this.__render();
+      return true;
+    }
+    row[state.key] = value;
+    this.__render();
+    if (this.onCellEdit) {
+      this.onCellEdit(row, state.key, value, state.original);
+    }
+    return true;
+  }
+
+  public cancelEdit(): boolean {
+    const state = this.editing;
+    if (!state) {
+      return false;
+    }
+    this.editing = null;
+    this.removeChild(state.node);
+    if (this.ice && this.ice.dirty !== undefined) {
+      this.ice.dirty = true;
+    }
+    return true;
+  }
 
   public getSummaryNode(): any {
     return this.summaryNode;
@@ -985,6 +1087,20 @@ export class ICETable extends ICEWidget {
     }
     const index = Math.floor((localY - this.headerHeight) / this.rowHeight);
     if (index >= 0 && index < this.data.length) {
+      // 点到可编辑的格子 → 进编辑态（不走整行选中，两者语义不同）
+      const offset = this.selectionMode === 'multiple' ? ICETable.SELECTION_WIDTH : 0;
+      const widths = this.__columnWidths((Number(this.state.width) || 720) - offset);
+      let acc = offset;
+      for (let i = 0; i < this.columns.length; i += 1) {
+        if (localX >= acc && localX <= acc + widths[i] && this.columns[i].editable === true) {
+          if (this.editing && (this.editing.rowIndex !== index || this.editing.key !== this.columns[i].key)) {
+            this.commitEdit();
+          }
+          this.startEdit(index, this.columns[i].key);
+          return;
+        }
+        acc += widths[i];
+      }
       // 行拖拽排序：按住行往下拖。多选列那 40px 不参与（那是勾选框的地盘）
       if (this.rowDraggable && !(this.selectionMode === 'multiple' && localX < ICETable.SELECTION_WIDTH)) {
         this.__startRowDrag(index);

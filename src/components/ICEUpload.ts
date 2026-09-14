@@ -94,6 +94,11 @@ export class ICEUpload extends ICEWidget {
         onError: (message: string) => void;
       }) => void | Promise<any>)
     | null = null;
+  /** 桌面拖拽：画布元素上的监听（挂上场景后注册） */
+  private dragOver = false;
+  private canvasEl: any = null;
+  private boundDrag = false;
+  private __dragHandlers: { dragover: any; dragleave: any; drop: any } | null = null;
   private lastRejectReason: string | null = null;
   private dropZone: ICEWidget | null = null;
   private fileNodes = new Map<string, ICEWidget>();
@@ -224,6 +229,85 @@ export class ICEUpload extends ICEWidget {
   public getFileStatus(uid: string): 'uploading' | 'done' | 'error' | null {
     const file = this.files.find((item) => item.uid === uid);
     return file && file.status ? file.status : null;
+  }
+
+  // ---------------------------------------------------------------- 桌面拖拽
+
+  /** 有文件正悬在拖拽区上方（用于高亮反馈）。 */
+  public isDragOver(): boolean {
+    return this.dragOver;
+  }
+
+  /** 把画布元素上的 drag / drop 事件接上（`afterAddHandler` 自动调）。 */
+  private __bindCanvasDrop(): void {
+    if (this.boundDrag) {
+      return;
+    }
+    const canvas = this.ice && ((this.ice as any).canvas || (this.ice as any).canvasEl);
+    if (!canvas || typeof canvas.addEventListener !== 'function') {
+      return;
+    }
+    this.boundDrag = true;
+    this.canvasEl = canvas;
+    const isInsideDropZone = (evt: any): boolean => {
+      if (!this.ice || typeof this.ice.screenToWorld !== 'function' || typeof evt.clientX !== 'number') {
+        return false;
+      }
+      const rect = typeof canvas.getBoundingClientRect === 'function' ? canvas.getBoundingClientRect() : null;
+      if (!rect) {
+        return false;
+      }
+      const [wx, wy] = this.ice.screenToWorld(evt.clientX - rect.left, evt.clientY - rect.top);
+      const box = this.getMinBoundingBox(true);
+      const zoneBottom = box.tl[1] + DROP_ZONE_HEIGHT;
+      return wx >= box.tl[0] && wx <= box.br[0] && wy >= box.tl[1] && wy <= zoneBottom;
+    };
+    const handlers = {
+      dragover: (evt: any) => {
+        if (this.disabled) {
+          return;
+        }
+        const inside = isInsideDropZone(evt);
+        if (inside && evt.preventDefault) {
+          evt.preventDefault();
+        }
+        if (inside !== this.dragOver) {
+          this.dragOver = inside;
+          this.__render();
+        }
+      },
+      dragleave: (evt: any) => {
+        if (this.disabled) {
+          return;
+        }
+        // canvas 级监听：收到 dragleave 就是指针离开了画布（不再落在拖拽区上）
+        if (this.dragOver) {
+          this.dragOver = false;
+          this.__render();
+        }
+      },
+      drop: (evt: any) => {
+        this.dragOver = false;
+        this.__render();
+        if (this.disabled || !isInsideDropZone(evt)) {
+          return;
+        }
+        if (evt.preventDefault) {
+          evt.preventDefault();
+        }
+        const files: any[] = Array.from((evt.dataTransfer && evt.dataTransfer.files) || []);
+        files.forEach((file) => this.addFile({ name: file.name, size: file.size, type: file.type }));
+      },
+    };
+    canvas.addEventListener('dragover', handlers.dragover);
+    canvas.addEventListener('dragleave', handlers.dragleave);
+    canvas.addEventListener('drop', handlers.drop);
+    this.__dragHandlers = handlers;
+  }
+
+  protected afterAddHandler(): void {
+    super.afterAddHandler();
+    this.__bindCanvasDrop();
   }
 
   /** 失败重传（只有失败的行能重试）。 */
@@ -443,8 +527,17 @@ export class ICEUpload extends ICEWidget {
       stroke: true,
       lineDash: [6, 4],
       style: {
-        fillStyle: this.disabled ? theme.colors.disabled : theme.colors.background,
-        strokeStyle: this.disabled ? theme.colors.borderSecondary : theme.colors.border,
+        // 有文件悬在上方时给个明确的高亮：拖放最怕「不知道松手会发生什么」
+        fillStyle: this.disabled
+          ? theme.colors.disabled
+          : this.dragOver
+          ? theme.colors.primaryBg
+          : theme.colors.background,
+        strokeStyle: this.disabled
+          ? theme.colors.borderSecondary
+          : this.dragOver
+          ? theme.colors.primary
+          : theme.colors.border,
       },
     });
     const zoneWidth = Math.max(0, width - 6);

@@ -38,6 +38,8 @@
 | `getHorizontalTrackWidth()` | `number` |  |
 | `getHorizontalThumb()` | `any` |  |
 | `smoothScrollTo(x: number, y: number, options: { duration?: number })` | `this` | 平滑滚动到 (x, y)。 |
+| `isThumbDragging()` | `boolean` | 按住的是哪条滑块（点在轨道空白不算）。 |
+| `getVerticalTrackHeight()` | `number` | 竖向轨道的可用高度（拖拽换算用）。 |
 
 ## `ICEAffix`
 
