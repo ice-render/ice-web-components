@@ -50,6 +50,9 @@ const picker = new ICEDatePicker({ /* … */ });
 
 ## 浏览器 QA（八套 / 284 项）
 
+> 各套的断言数与合计**由脚本统计**：`npm run qa:counts`（写文档用 `npm run qa:counts:write`）。
+> `npm run verify` 末尾会跑 `--check`，手写的数字对不上会直接失败 —— 数字只有这一个来源。
+
 浏览器 QA 是「真开 Chromium 点一遍」的验收：慢，但能抓到单测抓不到的问题
 （布局交叠、命中被挡、浮层外观、焦点环这种纯视觉行为）。
 
@@ -118,3 +121,18 @@ PLAYWRIGHT_PATH=/path/to/playwright npm run qa:dos
 `docs/images/` 里的图由一次性脚本生成（Playwright 打开示例页 → 逐页截图 → 必要时缩放宽度）。
 要更新时照着 `scripts/qa-admin.mjs` 的导航/裁剪逻辑改一版即可；组件总览那张是
 「整页截图 + 0.64 缩放」，商品/后台各页是逐页 1:1 截图。
+
+<!-- qa-counts:start -->
+<!-- 由 scripts/lib/qa-counts.mjs 生成，请勿手改：八套合计 284 项 -->
+| 脚本 | 断言数 |
+|---|---|
+| `qa:admin` | 54 |
+| `qa:algo` | 14 |
+| `qa:arcade` | 71 |
+| `qa:dos` | 17 |
+| `qa:gallery` | 49 |
+| `qa:pixel` | 24 |
+| `qa:workbench` | 15 |
+| `qa:xp` | 40 |
+| **合计** | **284** |
+<!-- qa-counts:end -->

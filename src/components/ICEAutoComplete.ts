@@ -43,6 +43,8 @@ export class ICEAutoComplete extends ICEWidget {
   private onSelectCallback: ((value: string) => void) | null;
   private onChangeCallback: ((text: string) => void) | null;
   private running = false;
+  /** 程序化写值期间置位：让 field 的 change 回调不要展开候选 */
+  private __silentWrite = false;
   private __panelBound = false;
 
   constructor(props: ICEAutoCompleteOptions) {
@@ -71,7 +73,8 @@ export class ICEAutoComplete extends ICEWidget {
     // 这里按指针位置再判一次，保证两种派发都能选中
     this.field.on('click', (evt: any) => this.__onAnchorClick(evt));
     this.field.on('change', () => {
-      this.__refresh(this.field.getValue());
+      // 程序化回填（setFormValue）期间不要展开候选：那是表单在写值，不是用户在打字
+      this.__refresh(this.field.getValue(), !this.__silentWrite);
       if (this.onChangeCallback) {
         this.onChangeCallback(this.field.getValue());
       }
@@ -103,7 +106,8 @@ export class ICEAutoComplete extends ICEWidget {
   public setValue(value: string): this {
     const next = String(value ?? '');
     this.field.setValue(next);
-    this.__refresh(next);
+    // 语义 = 「像用户输入了一样」：过滤候选并展开（既有测试与输入路径都依赖它）
+    this.__refresh(next, true);
     return this;
   }
 
@@ -112,7 +116,16 @@ export class ICEAutoComplete extends ICEWidget {
   }
 
   public setFormValue(value: any): void {
-    this.setValue(String(value ?? ''));
+    const next = String(value ?? '');
+    // 表单回填 / 重置：**不该弹开候选面板**（否则一次 setValues 会弹出一堆下拉），
+    // 而 field.setValue 会同步触发 change → 用一个标志让那次回调闭嘴
+    this.__silentWrite = true;
+    try {
+      this.field.setValue(next);
+    } finally {
+      this.__silentWrite = false;
+    }
+    this.__refresh(next, false);
   }
 
   public getFieldText(): string {
@@ -164,10 +177,14 @@ export class ICEAutoComplete extends ICEWidget {
   }
 
   /** 按当前文本刷新候选与下拉。 */
-  private __refresh(text: string): void {
+  private __refresh(text: string, open: boolean = true): void {
     const query = String(text ?? '').trim().toLowerCase();
     this.visibleOptions = this.allOptions.filter((option) => !query || option.toLowerCase().indexOf(query) !== -1);
     this.activeIndex = 0;
+    if (!open) {
+      this.close();
+      return;
+    }
     if (!this.visibleOptions.length) {
       this.close();
       return;
