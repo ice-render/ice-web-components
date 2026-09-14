@@ -4,7 +4,7 @@ import { iceUIManager } from '../core/ICEManager';
 import { estimateTextWidth } from '../util/ICEStyle';
 
 /**
- * 水印（业界组件库 Watermark）：把一段旋转文字平铺在自己的区域上。
+ * 水印：把一段旋转文字平铺在自己的区域上。
  *
  * - 用于「内部资料 / 草稿 / 不可外传」这类页面级标记；
  * - 不参与交互（`interactive: false`），不会挡住底下的点击；

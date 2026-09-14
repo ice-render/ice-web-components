@@ -2,7 +2,7 @@ import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 
 /**
- * 颜色选择器（业界组件库 ColorPicker 的色板网格最小版）。
+ * 颜色选择器。
  *
  * - 按 `colors` 渲染色块网格（`columns` 控制列数），选中色块带描边环；
  * - 点击色块回写 value 并回调 `onChange`；`disabled` 时忽略交互且不可聚焦；

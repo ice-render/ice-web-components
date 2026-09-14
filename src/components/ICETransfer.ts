@@ -6,7 +6,7 @@ import { iceUIManager } from '../core/ICEManager';
 import type { ICELocalizedProps } from '../i18n/ICEI18n';
 
 /**
- * 穿梭框（业界组件库 Transfer 的最小版）。
+ * 穿梭框。
  *
  * - 按 `targetKeys` 把 `dataSource` 分成「源 / 目标」两栏，栏内各自可滚动；
  * - 点行切换勾选；中间按钮把勾选项整体右移 / 左移，移动后清空勾选并回调；

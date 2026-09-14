@@ -3,7 +3,7 @@ import { iceUIManager } from '../core/ICEManager';
 import { ICEContainer } from '../core/ICEContainer';
 
 /**
- * 分段控制器（业界组件库 Segmented / iOS ICESegmentedControl 的最小版）：
+ * 分段控制器：
  * 一组互斥选项，选中项实心高亮。每个分段是 ICEButton，因此天然可聚焦（Tab/Enter 可操作）。
  */
 export interface ICESegmentedOption {

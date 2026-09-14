@@ -7,7 +7,7 @@ import { iceUIManager } from '../core/ICEManager';
 import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../core/ICEOverlayManager';
 
 /**
- * 自动完成（业界组件库 AutoComplete）：文本输入 + 候选下拉。
+ * 自动完成：文本输入 + 候选下拉。
  *
  * - 组合 `ICETextField`（输入与取值/表单语义）与浮层里的候选列表；
  * - 输入即过滤（label/value 包含匹配，忽略大小写），无候选时下拉收起；

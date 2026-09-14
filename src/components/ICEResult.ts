@@ -4,7 +4,7 @@ import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 
 /**
- * 结果页（业界组件库 Result）：状态图标 + 标题 + 副标题 + 操作按钮组。
+ * 结果页：状态图标 + 标题 + 副标题 + 操作按钮组。
  * 用于提交成功/失败、404、无权限等场景。
  */
 export type ICEResultStatus = 'success' | 'error' | 'info' | 'warning';

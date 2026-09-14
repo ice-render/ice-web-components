@@ -163,7 +163,7 @@ export class ICESlider extends ICEWidget {
    *
    * - 单值模式：直接设置；
    * - 区间模式：`thumb` 省略时取「离哪个滑块近」，拖动过程中由调用方传入锁定的滑块，
-   *   两个滑块互相夹取、不会穿过（与 业界组件库 Range 一致）。
+   *   两个滑块互相夹取、不会穿过（与区间滑块的常规行为一致）。
    */
   public setValueFromRatio(ratio: number, thumb?: 'lower' | 'upper'): this {
     const clamped = Math.max(0, Math.min(1, Number(ratio) || 0));

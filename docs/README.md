@@ -32,7 +32,7 @@ docs/
     overlays.md          三类浮层用法、定位、关闭策略、动画、内容工厂
     layout.md            坐标、zIndex 与创建顺序、簇+货架布局、裁剪与滚动
     testing.md           单测套路（假 ICE + 真组件）、五套浏览器 QA
-    migration.md         UI* → ICE*、业界组件库 → Bootstrap、API 变更
+    migration.md         UI* → ICE*、token 主题、API 变更
     custom-components.md 三档写法、构造约定、交互/表单/浮层/主题接入、注册与踩坑
     examples.md          六个示例页分别演示什么、照着做新场景的清单
   examples/ICEMetric.ts  「写自己的组件」的完整示例（有单测 + 示例页）

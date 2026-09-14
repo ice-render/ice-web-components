@@ -41,10 +41,10 @@ export function formatCountdown(ms: number): string {
 }
 
 /**
- * 统计数值（业界组件库 Statistic）：标题 + 大号数字 + 前缀/后缀，支持千分位与精度。
+ * 统计数值：标题 + 大号数字 + 前缀/后缀，支持千分位与精度。
  *
  * 传 `countdown`（剩余毫秒）时进入倒计时模式：按「N 天 HH:mm:ss」显示剩余时间，
- * 归零触发 `finish` 事件与 `onFinish` 回调（业界组件库 的 `Statistic.Countdown`）。
+ * 归零触发 `finish` 事件与 `onFinish` 回调。
  */
 export interface ICEStatisticOptions {
   /** 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） */

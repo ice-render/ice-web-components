@@ -8,7 +8,7 @@ import type { ICELocalizedProps } from '../i18n/ICEI18n';
 import { ICE_DEFAULT_WEEK_START, resolveWeekStart } from '../i18n/ICEI18n';
 
 /**
- * 日期选择器（业界组件库 DatePicker 的最小版）。
+ * 日期选择器。
  *
  * - 字段区显示所选日期（可自定义 `format`），未选显示 placeholder，错误态边框标红；
  * - 日历浮层：月份标题 + ‹/› 切月 + 周标题（周一开头）+ 6×7 网格（含上下月补位）；

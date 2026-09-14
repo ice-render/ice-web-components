@@ -3,7 +3,7 @@ import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 
 /**
- * 时间线（业界组件库 Timeline）：竖线 + 节点圆点 + 标题/描述/时间。
+ * 时间线：竖线 + 节点圆点 + 标题/描述/时间。
  */
 export interface ICETimelineItem {
   title: string;

@@ -4,7 +4,7 @@ import { iceUIManager } from '../core/ICEManager';
 import { createTextNode, readHovered } from '../util/ICEStyle';
 
 /**
- * 折叠面板（业界组件库 Collapse / Swing 无直接对应物）。
+ * 折叠面板。
  *
  * - 每项 = 标题行（▸/▾ + 标题）+ 展开时的内容区；内容支持纯文本或组件工厂；
  * - `accordion: true` 时同时只展开一个；展开/收起会重排并回调 onExpand(keys)；

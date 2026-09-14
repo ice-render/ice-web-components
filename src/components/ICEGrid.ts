@@ -2,7 +2,7 @@ import { ICEContainer } from '../core/ICEContainer';
 import { iceUIManager } from '../core/ICEManager';
 
 /**
- * 24 栅格列（业界组件库 `Col`）：`span` 占多少格、`offset` 左边空多少格，`content` 是列内容。
+ * 24 栅格列：`span` 占多少格、`offset` 左边空多少格，`content` 是列内容。
  *
  * 一般配合 `ICEGrid`（行）使用，由行统一算宽度与位置，不需要手动设 width。
  */
@@ -55,7 +55,7 @@ export class ICEGridCol extends ICEContainer {
 }
 
 /**
- * 24 栅格行（业界组件库 `Row`）：把若干 `ICEGridCol` 排成一行，放不下自动换行。
+ * 24 栅格行：把若干 `ICEGridCol` 排成一行，放不下自动换行。
  *
  * 规则：先按 `span + offset` 把列分行（每行不超过 24 格），再按
  * `unit = (width - gutter × (列数 - 1)) / 24` 算每格宽度；

@@ -84,7 +84,7 @@ function __parseDate(value: any): Date | null {
 }
 
 /**
- * 日历（业界组件库 Calendar 的最小版）：月视图 + 日期选择。
+ * 日历：月视图 + 日期选择。
  *
  * - 标题「YYYY 年 M 月」+ 上/下月切换（回调 `onChangeMonth`）；
  * - 6×7 网格：相邻月份补齐的格子弱化显示，点击仍然可选；

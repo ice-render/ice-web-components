@@ -4,11 +4,11 @@ import { iceUIManager } from '../core/ICEManager';
 import { estimateTextWidth } from '../util/ICEStyle';
 
 /**
- * 面包屑（业界组件库 Breadcrumb）：一行「路径 + 分隔符」，最后一项是当前页。
+ * 面包屑：一行「路径 + 分隔符」，最后一项是当前页。
  *
  * - 宽度按内容自适应（中文按 1em 估算，不会把文字压出色块外）；
  * - 除最后一项外都可点击，点击触发 `navigate` 事件（载荷 `{ item, index }`）与 `onNavigate`；
- * - `maxItems` 超长时把中间项折叠成「…」，点击省略号展开（业界组件库 的折叠语义：
+ * - `maxItems` 超长时把中间项折叠成「…」，点击省略号展开（折叠语义：
  *   `maxItems` 只数真实项，省略号不占额度）。
  */
 export interface ICEBreadcrumbItem {

@@ -42,7 +42,7 @@ class ICESplitterDivider extends ICEWidget {
 }
 
 /**
- * 分隔面板（业界组件库 Splitter）：两栏 + 可拖动的分隔条。
+ * 分隔面板：两栏 + 可拖动的分隔条。
  *
  * - `direction: 'horizontal'`（默认）左右分栏，`'vertical'` 上下分栏；
  * - `size` 是第一栏的像素尺寸，夹取范围 `[min, 容器尺寸 - dividerSize - min]`；

@@ -23,7 +23,7 @@ class ICESpinArc extends ICEPath {
 }
 
 /**
- * 加载指示器（业界组件库 Spin 的最小版）：一段圆弧绕中心旋转。
+ * 加载指示器：一段圆弧绕中心旋转。
  *
  * - 旋转复用引擎的动画系统（`transform.rotate` 0→360 循环），与流动虚线同一套路；
  * - `spinning: false` 停止旋转（弧线保持显示）；`tip` 可在右侧显示提示文字。

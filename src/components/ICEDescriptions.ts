@@ -4,7 +4,7 @@ import { iceUIManager } from '../core/ICEManager';
 import { truncateTextLines } from './ICETypography';
 
 /**
- * 描述列表（业界组件库 Descriptions）：成对的「标签 / 值」，支持单列与多列。
+ * 描述列表：成对的「标签 / 值」，支持单列与多列。
  * 常用于详情页（订单信息、用户资料）。
  */
 export interface ICEDescriptionsItem {

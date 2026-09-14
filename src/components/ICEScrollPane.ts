@@ -3,7 +3,7 @@ import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 
 /**
- * 滚动视口（Swing 的 JScrollPane / 业界组件库 的 overflow:auto 容器）。
+ * 滚动视口（Swing 的 JScrollPane / CSS 的 overflow:auto 容器）。
  *
  * 依赖引擎的**子树裁剪**（`clipChildren`）：内容超出视口的部分被裁掉，滚出去的子组件
  * 也命不中（命中检测同样尊重裁剪区）。

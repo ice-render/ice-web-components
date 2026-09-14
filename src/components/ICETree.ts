@@ -7,7 +7,7 @@ import { ICESelectionModel, ICESelectionMode } from '../model/ICESelectionModel'
 import { readHovered } from '../util/ICEStyle';
 
 /**
- * 树（Swing JTree / 业界组件库 Tree 的最小可用版）。
+ * 树（Swing JTree 的最小可用版）。
  *
  * - 可见行 = 深度优先遍历、只展开 expandedKeys 里的节点；
  * - 每层缩进 16px，有子节点的行显示 ▸ / ▾（点箭头只切换展开，不改选择）；

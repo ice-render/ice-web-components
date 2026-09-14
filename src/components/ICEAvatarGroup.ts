@@ -3,7 +3,7 @@ import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 
 /**
- * 头像组（业界组件库 Avatar.Group 的最小版）。
+ * 头像组。
  *
  * - 头像横向**重叠**排布（每个左移 `overlap`），靠 ICEAvatar 自带的描边把相邻头像分开；
  * - 超过 `max` 个时折叠：只显示前 max 个，末尾补一个 `+N` 头像；

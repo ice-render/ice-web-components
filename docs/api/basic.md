@@ -59,7 +59,7 @@
 
 ## `ICESpace`
 
-间距容器（业界组件库 Space / Flex 的最小版）：按固定间距排列一组子组件。
+间距容器：按固定间距排列一组子组件。
 
 - `direction: 'horizontal'`（默认）横向排列，`'vertical'` 纵向排列；
 - `size` 是子项间距（默认 8）；
@@ -69,7 +69,7 @@
 
 源码：[`src/components/ICESpace.ts`](../../src/components/ICESpace.ts)
 
-**构造参数** `ICESpaceOptions` — 间距容器（业界组件库 Space / Flex 的最小版）：按固定间距排列一组子组件。
+**构造参数** `ICESpaceOptions` — 间距容器：按固定间距排列一组子组件。
 
 | 参数 | 类型 | 说明 |
 |---|---|---|
@@ -97,11 +97,11 @@
 
 ## `ICEGrid`
 
-24 栅格列（业界组件库 `Col`）：`span` 占多少格、`offset` 左边空多少格，`content` 是列内容。  一般配合 `ICEGrid`（行）使用，由行统一算宽度与位置，不需要手动设 width。
+24 栅格列：`span` 占多少格、`offset` 左边空多少格，`content` 是列内容。  一般配合 `ICEGrid`（行）使用，由行统一算宽度与位置，不需要手动设 width。
 
 源码：[`src/components/ICEGrid.ts`](../../src/components/ICEGrid.ts)
 
-**构造参数** `ICEGridOptions` — 24 栅格行（业界组件库 `Row`）：把若干 `ICEGridCol` 排成一行，放不下自动换行。  规则：先按 `span + offset` 把列分行（每行不超过 24 格），再按 `unit = (width - gutter × (列数 - 1)) / 24` 算每格宽度； 行高取该行最高列，行间距离是 `gutterY`。
+**构造参数** `ICEGridOptions` — 24 栅格行：把若干 `ICEGridCol` 排成一行，放不下自动换行。  规则：先按 `span + offset` 把列分行（每行不超过 24 格），再按 `unit = (width - gutter × (列数 - 1)) / 24` 算每格宽度； 行高取该行最高列，行间距离是 `gutterY`。
 
 | 参数 | 类型 | 说明 |
 |---|---|---|
@@ -123,11 +123,11 @@
 
 ## `ICEGridCol`
 
-24 栅格列（业界组件库 `Col`）：`span` 占多少格、`offset` 左边空多少格，`content` 是列内容。  一般配合 `ICEGrid`（行）使用，由行统一算宽度与位置，不需要手动设 width。
+24 栅格列：`span` 占多少格、`offset` 左边空多少格，`content` 是列内容。  一般配合 `ICEGrid`（行）使用，由行统一算宽度与位置，不需要手动设 width。
 
 源码：[`src/components/ICEGrid.ts`](../../src/components/ICEGrid.ts)
 
-**构造参数** `ICEGridColOptions` — 24 栅格列（业界组件库 `Col`）：`span` 占多少格、`offset` 左边空多少格，`content` 是列内容。  一般配合 `ICEGrid`（行）使用，由行统一算宽度与位置，不需要手动设 width。
+**构造参数** `ICEGridColOptions` — 24 栅格列：`span` 占多少格、`offset` 左边空多少格，`content` 是列内容。  一般配合 `ICEGrid`（行）使用，由行统一算宽度与位置，不需要手动设 width。
 
 | 参数 | 类型 | 说明 |
 |---|---|---|
@@ -177,7 +177,7 @@
 
 ## `ICETypography`
 
-排版文本（业界组件库 Typography）：标题层级 / 正文 / 链接，自带省略与折行。
+排版文本：标题层级 / 正文 / 链接，自带省略与折行。
 
 - `variant: 'title'` + `level: 1..5`：五级标题，字号递减；
 - `variant: 'paragraph'`：正文，配合 `rows` 做多行折行（末行补 `…`）；
@@ -187,7 +187,7 @@
 
 源码：[`src/components/ICETypography.ts`](../../src/components/ICETypography.ts)
 
-**构造参数** `ICETypographyOptions` — 排版文本（业界组件库 Typography）：标题层级 / 正文 / 链接，自带省略与折行。
+**构造参数** `ICETypographyOptions` — 排版文本：标题层级 / 正文 / 链接，自带省略与折行。
 
 | 参数 | 类型 | 说明 |
 |---|---|---|

@@ -7,7 +7,7 @@ import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../co
 import { ICEFocusManager, getICEFocusManager } from '../core/ICEFocusManager';
 
 /**
- * 图片预览（业界组件库 `Image.PreviewGroup`）：全屏遮罩 + 居中图片 + 底部工具栏。
+ * 图片预览：全屏遮罩 + 居中图片 + 底部工具栏。
  *
  * - 上一张 / 下一张循环切换（`change` 事件 + `onIndexChange`）；
  * - 缩放（步进 + 上下限）与 90° 旋转，`reset()` 复位；

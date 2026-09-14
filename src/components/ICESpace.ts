@@ -1,7 +1,7 @@
 import { ICEContainer } from '../core/ICEContainer';
 
 /**
- * 间距容器（业界组件库 Space / Flex 的最小版）：按固定间距排列一组子组件。
+ * 间距容器：按固定间距排列一组子组件。
  *
  * - `direction: 'horizontal'`（默认）横向排列，`'vertical'` 纵向排列；
  * - `size` 是子项间距（默认 8）；

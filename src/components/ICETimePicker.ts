@@ -6,7 +6,7 @@ import { iceUIManager } from '../core/ICEManager';
 import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../core/ICEOverlayManager';
 
 /**
- * 时间选择器（业界组件库 TimePicker 的最小版）。
+ * 时间选择器。
  *
  * - 字段区显示所选时间，未选显示 placeholder，错误态边框标红；
  * - 浮层是「时/分/秒」三列（`format: 'HH:mm'` 时只有两列），列内用 `ICEScrollPane` 滚动，
