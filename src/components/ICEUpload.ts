@@ -258,6 +258,10 @@ export class ICEUpload extends ICEWidget {
     if (!this.draggableRows || index < 0 || index >= this.files.length) {
       return this;
     }
+    // 上传中的行不许拖：进度条跟着谁走会变含糊，而且拖到一半上传完成行会自己跳走
+    if (this.files[index].status === 'uploading') {
+      return this;
+    }
     this.rowDrag = { from: index, to: index };
     return this;
   }
@@ -274,6 +278,11 @@ export class ICEUpload extends ICEWidget {
     const drag = this.rowDrag;
     this.rowDrag = null;
     if (!drag || drag.from === drag.to) {
+      return this;
+    }
+    // 拖的过程中这一行转入上传中 → 放弃这次排序
+    const dragged = this.files[drag.from];
+    if (!dragged || dragged.status === 'uploading') {
       return this;
     }
     const files = this.files.slice();

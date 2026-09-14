@@ -32,6 +32,7 @@
 | `getItemBoxes()` | `Array<{ key: string; left: number; top: number; width: number; height: number }>` | 每个可见项的盒子（形态断言 / 几何审计用）。 |
 | `isSubmenuOpen()` | `boolean` |  |
 | `getSubmenuKey()` | `string \| null` |  |
+| `getSubmenuIndicator(key: string)` | `string` | 横向模式下父项上的指示符：收起 ⌄ / 展开 ⌃（没子菜单的项返回空串）。 |
 | `getSubmenuItemNode(key: string)` | `any` |  |
 | `closeSubmenu()` | `this` |  |
 | `openSubmenu(key: string)` | `this` | 打开某一项的子菜单浮层（横向模式的父项）。 |
