@@ -2,7 +2,9 @@ import { ICEWidget } from '../core/ICEWidget';
 import { ICECheckBox } from './ICECheckBox';
 import { ICEEmpty } from './ICEEmpty';
 import { ICEPagination } from './ICEPagination';
+import { ICEPanel } from './ICEPanel';
 import { iceUIManager } from '../core/ICEManager';
+import { getICEOverlayManager } from '../core/ICEOverlayManager';
 import { createTextNode, readHovered } from '../util/ICEStyle';
 import { ICERect } from 'ice-render';
 import { ICEScrollPane } from './ICEScrollPane';
@@ -21,6 +23,11 @@ export type ICETableColumn = {
   align?: 'left' | 'center' | 'right';
   /** 表头可排序：`true` 用默认比较（数值按数值、其余按字典序），或传自定义比较函数 */
   sorter?: boolean | ((a: ICETableRow, b: ICETableRow) => number);
+  /**
+   * 列筛选候选：声明后表头出现漏斗标记（未激活 ▾ / 已激活 ●），点开是一列候选。
+   * 同一列多个取值是**或**，跨列是**与**（和用户对「筛选」的直觉一致）。
+   */
+  filters?: ICETableFilterOption[];
   renderCell?: (
     value: string,
     row: ICETableRow,
@@ -69,6 +76,33 @@ export interface ICETableSortState {
   order: 'asc' | 'desc';
 }
 
+export interface ICETableFilterOption {
+  text: string;
+  value: string;
+}
+
+/** 列 key → 当前选中的取值（空数组 = 该列不筛）。 */
+export type ICETableFilterState = Record<string, string[]>;
+
+/** 汇总行：拿**筛选后的全量行**算出「每个列 key 显示什么」。 */
+export type ICETableSummary = (rows: ICETableRow[], columns: ICETableColumn[]) => ICETableRow;
+
+/** 行展开：`render` 返回一个画在该行下面的组件（不是弹层）。 */
+export interface ICETableExpandable {
+  render: (
+    row: ICETableRow,
+    ctx: { width: number; columns: ICETableColumn[]; widths: Record<string, number>; rowIndex: number },
+  ) => any;
+  /** 该行能不能展开（默认都能）；返回 false 的行不画三角 */
+  rowExpandable?: (row: ICETableRow) => boolean;
+  /** 展开区高度，默认 2 行高 */
+  expandedRowHeight?: number;
+  /** 初始就展开的行 key */
+  defaultExpandedKeys?: string[];
+  onExpand?: (expanded: boolean, row: ICETableRow) => void;
+}
+
+
 export interface ICETablePaginationOptions {
   pageSize?: number;
   /** 初始页码（从 1 开始） */
@@ -94,6 +128,8 @@ export class ICETable extends ICEWidget {
   private columns: ICETableColumn[];
   /** 原始数据（排序前的顺序，用于第三次点击恢复） */
   private sourceData: ICETableRow[];
+  /** 按筛选条件过滤后的数据（排序与分页都从这份开始） */
+  private filteredData: ICETableRow[];
   /** 排序后的全量数据（分页从这里切片） */
   private sortedData: ICETableRow[];
   /** 当前页要渲染的行（不分页时等于 sortedData） */
@@ -111,6 +147,8 @@ export class ICETable extends ICEWidget {
     cellWidth: number;
     cellHeight: number;
     align: 'left' | 'center' | 'right';
+    /** 首列给展开三角留出的缩进（右/居中列不用） */
+    indent?: number;
   }> = [];
   private selectedIndex = -1;
   /** 多选模式下的选中行（当前页内的下标，按行序） */
@@ -157,6 +195,23 @@ export class ICETable extends ICEWidget {
   private onRowReorder: ((from: number, to: number, rows: ICETableRow[]) => void) | null = null;
   /** 拖拽状态：源行下标 + 当前落点 + 指示线节点 */
   private dragRow: { from: number; target: ICEDropTarget | null; indicator: any } | null = null;
+  /** 列筛选：列 key → 选中的取值 */
+  private filters: ICETableFilterState = {};
+  private filterNodes = new Map<string, any>();
+  private filterPanel: { key: string; panel: any; handle: any; options: Map<string, any> } | null = null;
+  private onFilterChange: ((key: string, values: string[]) => void) | null = null;
+  /** 汇总行：算出来的一行文案 + 渲染出来的节点 */
+  private summaryFn: ICETableSummary | null = null;
+  private summaryNode: any = null;
+  private summaryTexts: Record<string, string> = {};
+  private manager: any = null;
+  /** 行展开：渲染区 + 状态（按 rowKey 记，默认行下标） */
+  private expandable: ICETableExpandable | null = null;
+  private expandableHeight = 0;
+  private rowKeyProp: string | ((row: ICETableRow, index: number) => string) | null = null;
+  private expandedKeys = new Set<string>();
+  private expandToggleNodes = new Map<string, any>();
+  private expandedRowNodes = new Map<string, any>();
   private __bound = false;
 
   constructor(props: any = {}) {
@@ -167,7 +222,26 @@ export class ICETable extends ICEWidget {
     const fixedColumns = (props.columns || []).some((column: ICETableColumn) => column.fixed === true);
     // 可滚动模式（虚拟行 / 固定列）高度必须由调用方给：按行数算高度会和「只渲染可视区」自相矛盾
     const scrollable = props.virtual === true || fixedColumns;
-    const height = scrollable ? props.height || 400 : headerHeight + rowHeight * (props.data ? props.data.length : 0);
+    // 高度从构造期就要算对：行数按初始筛选条件算，汇总行也算一行
+    const initialFilterKeys =
+      props.filters && typeof props.filters === 'object'
+        ? Object.keys(props.filters).filter((key) => Array.isArray(props.filters[key]) && props.filters[key].length)
+        : [];
+    const initialRows = props.data ? props.data.length : 0;
+    const initialVisibleRows = initialFilterKeys.length
+      ? (props.data || []).filter((row: ICETableRow) =>
+          initialFilterKeys.every((key) => props.filters[key].map((value: any) => String(value)).indexOf(String(row[key])) !== -1),
+        ).length
+      : initialRows;
+    const summaryHeight = typeof props.summary === 'function' && initialVisibleRows > 0 ? rowHeight : 0;
+    const expandHeight =
+      props.expandable && typeof props.expandable.render === 'function'
+        ? Math.max(20, Math.floor(Number(props.expandable.expandedRowHeight) || rowHeight * 2)) *
+          (props.expandable.defaultExpandedKeys || []).length
+        : 0;
+    const height = scrollable
+      ? props.height || 400
+      : headerHeight + rowHeight * initialVisibleRows + summaryHeight + expandHeight;
 
     super({
       ...props,
@@ -187,6 +261,7 @@ export class ICETable extends ICEWidget {
 
     this.columns = props.columns || [];
     this.sourceData = props.data || [];
+    this.filteredData = (props.data || []).slice();
     this.sortedData = (props.data || []).slice();
     this.data = this.sortedData;
     this.rowHeight = rowHeight;
@@ -200,6 +275,20 @@ export class ICETable extends ICEWidget {
     this.scrollable = this.virtual || (this.columns || []).some((column: ICETableColumn) => column.fixed === true);
     this.rowDraggable = props.rowDraggable === true;
     this.onRowReorder = typeof props.onRowReorder === 'function' ? props.onRowReorder : null;
+    this.onFilterChange = typeof props.onFilterChange === 'function' ? props.onFilterChange : null;
+    this.summaryFn = typeof props.summary === 'function' ? props.summary : null;
+    this.rowKeyProp = typeof props.rowKey === 'function' || typeof props.rowKey === 'string' ? props.rowKey : null;
+    if (props.expandable && typeof props.expandable.render === 'function') {
+      this.expandable = props.expandable;
+      this.expandableHeight = Math.max(20, Math.floor(Number(props.expandable.expandedRowHeight) || rowHeight * 2));
+      (props.expandable.defaultExpandedKeys || []).forEach((key: string) => this.expandedKeys.add(String(key)));
+    }
+    if (props.filters && typeof props.filters === 'object') {
+      Object.keys(props.filters).forEach((key) => {
+        const values = Array.isArray(props.filters[key]) ? props.filters[key].map((value: any) => String(value)) : [];
+        if (values.length) this.filters[key] = values;
+      });
+    }
     this.selectionMode =
       props.rowSelection === 'multiple' ? 'multiple' : props.rowSelection === 'none' ? 'none' : 'single';
     this.onSelectionChange = typeof props.onSelectionChange === 'function' ? props.onSelectionChange : null;
@@ -210,12 +299,14 @@ export class ICETable extends ICEWidget {
       this.__applyPage();
       return;
     }
+    this.filteredData = this.__computeFiltered();
+    this.sortedData = this.__applySortTo(this.filteredData);
+    this.data = this.sortedData;
     this.__render();
   }
 
   public setData(data: ICETableRow[]): this {
     this.sourceData = data || [];
-    this.sortedData = this.sourceData.slice();
     this.sortKey = null;
     this.sortOrder = null;
     this.selectedIndex = -1;
@@ -293,16 +384,371 @@ export class ICETable extends ICEWidget {
     return { key: this.sortKey, order: this.sortOrder };
   }
 
+  // ---------------------------------------------------------------- 列筛选 API
+
+  /** 当前筛选条件（只包含真的在筛的列）。 */
+  public getFilterState(): ICETableFilterState {
+    const state: ICETableFilterState = {};
+    Object.keys(this.filters).forEach((key) => {
+      const values = this.filters[key];
+      if (values && values.length) state[key] = values.slice();
+    });
+    return state;
+  }
+
+  /**
+   * 设置某列的筛选取值（空数组 = 该列不筛）。
+   *
+   * 会重算「筛选后的行」、回到第 1 页并重绘；`onFilterChange` 与 `filterchange` 事件同步发出。
+   */
+  public setFilter(key: string, values: string[], options: { silent?: boolean } = {}): this {
+    const column = this.columns.find((item) => item.key === key);
+    if (!column) {
+      return this;
+    }
+    const next = Array.from(new Set((values || []).map((value) => String(value))));
+    const current = this.filters[key] || [];
+    if (next.length === current.length && next.every((value, index) => value === current[index])) {
+      return this;
+    }
+    if (next.length) {
+      this.filters[key] = next;
+    } else {
+      delete this.filters[key];
+    }
+    this.page = 1;
+    this.selectedIndex = -1;
+    this.__applyPage();
+    if (!options.silent) {
+      this.trigger('filterchange', null, { key, values: next, filters: this.getFilterState() });
+      if (this.onFilterChange) {
+        this.onFilterChange(key, next);
+      }
+    }
+    return this;
+  }
+
+  /** 清空全部列筛选。 */
+  public clearFilters(): this {
+    if (!Object.keys(this.filters).length) {
+      return this;
+    }
+    this.filters = {};
+    this.page = 1;
+    this.selectedIndex = -1;
+    this.__applyPage();
+    this.trigger('filterchange', null, { key: null, values: [], filters: {} });
+    return this;
+  }
+
+  /** 筛选后的行（原始顺序，不含排序），用于断言与导出。 */
+  public getFilteredRows(): ICETableRow[] {
+    return this.filteredData.slice();
+  }
+
+  /** 表头漏斗节点（该列没声明 filters 时为 null）。 */
+  public getFilterNode(key: string): any {
+    return this.filterNodes.get(key) || null;
+  }
+
+  public isFilterOpen(): boolean {
+    return !!this.filterPanel && this.filterPanel.handle.isOpen();
+  }
+
+  public toggleFilter(key: string): this {
+    if (this.isFilterOpen() && this.filterPanel && this.filterPanel.key === key) {
+      return this.closeFilter();
+    }
+    return this.openFilter(key);
+  }
+
+  public openFilter(key: string): this {
+    const column = this.columns.find((item) => item.key === key);
+    if (!column || !column.filters || !column.filters.length) {
+      return this;
+    }
+    this.closeFilter();
+    if (!this.manager) {
+      if (!this.ice) {
+        throw new Error('ICETable 的列筛选面板需要先加入 ICE 场景');
+      }
+      this.manager = getICEOverlayManager(this.ice);
+    }
+    const theme = iceUIManager.getTheme();
+    const optionHeight = 26;
+    const width = Math.max(
+      140,
+      column.filters.reduce((max, option) => Math.max(max, option.text.length * 13 + 56), 0),
+    );
+    const height = column.filters.length * optionHeight + 16;
+    const panel = new ICEPanel({
+      width,
+      height,
+      radius: theme.radius.md,
+      style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border, shadow: 'md' },
+    });
+    const options = new Map<string, any>();
+    const active = this.filters[key] || [];
+    column.filters.forEach((option, index) => {
+      const row = new ICEWidget({
+        left: 8,
+        top: 8 + index * optionHeight,
+        width: width - 16,
+        height: optionHeight,
+        radius: theme.radius.sm,
+        fill: true,
+        stroke: false,
+        interactive: true,
+        style: { fillStyle: 'rgba(0,0,0,0)' },
+      });
+      const box = new ICECheckBox({
+        left: 4,
+        top: (optionHeight - 18) / 2,
+        width: 18,
+        height: 18,
+        selected: active.indexOf(option.value) !== -1,
+      });
+      row.addChild(box, false);
+      row.addChild(
+        createTextNode({
+          left: 34,
+          top: 0,
+          width: width - 50,
+          height: optionHeight,
+          text: option.text,
+          fillStyle: theme.colors.text,
+          fontFamily: theme.font.family,
+          fontSize: theme.font.size,
+          align: 'left',
+          verticalAlign: 'middle',
+        }),
+        false,
+      );
+      const toggle = () => {
+        const current = this.filters[key] || [];
+        const next = current.indexOf(option.value) === -1
+          ? current.concat(option.value)
+          : current.filter((value) => value !== option.value);
+        box.setSelected(next.indexOf(option.value) !== -1);
+        this.setFilter(key, next);
+      };
+      row.on('click', toggle, this);
+      row.on(
+        'hoverchange',
+        (evt: any) => {
+          row.setState({
+            style: { ...row.state.style, fillStyle: readHovered(evt) ? theme.colors.background : 'rgba(0,0,0,0)' },
+          });
+        },
+        this,
+      );
+      panel.addChild(row, false);
+      options.set(option.value, row);
+    });
+    const anchor = this.filterNodes.get(key) || this;
+    const handle = this.manager.open({
+      anchor,
+      content: panel,
+      placement: 'bottomLeft',
+      offset: 4,
+      enterAnimation: 'scale',
+      exitAnimation: 'fade',
+      keyboardCaptured: true,
+      closeOnOutsideClick: false,
+      onClose: () => {
+        if (this.filterPanel && this.filterPanel.panel === panel) {
+          this.filterPanel = null;
+        }
+      },
+    });
+    this.filterPanel = { key, panel, handle, options };
+    return this;
+  }
+
+  public closeFilter(): this {
+    if (this.filterPanel) {
+      this.filterPanel.handle.close();
+      this.filterPanel = null;
+    }
+    return this;
+  }
+
+  /** 候选节点（测试与 e2e 用）。 */
+  public getFilterOptionNode(key: string, value: string): any {
+    if (!this.filterPanel || this.filterPanel.key !== key) {
+      return null;
+    }
+    return this.filterPanel.options.get(value) || null;
+  }
+
+  public getFilterPanel(): any {
+    return this.filterPanel ? this.filterPanel.panel : null;
+  }
+
+  /** 面板与锚点列的位置关系（几何审计 / 测试用）。 */
+  public getFilterPanelLayout(): { anchorLeft: number; anchorTop: number; panel: { width: number; height: number } } | null {
+    if (!this.filterPanel) {
+      return null;
+    }
+    let anchorLeft = 0;
+    let anchorTop = 0;
+    let current = this.filterNodes.get(this.filterPanel.key);
+    while (current && current.state) {
+      anchorLeft += Number(current.state.left) || 0;
+      anchorTop += Number(current.state.top) || 0;
+      current = current.parentNode;
+    }
+    return {
+      anchorLeft,
+      anchorTop,
+      panel: {
+        width: Number(this.filterPanel.panel.state.width) || 0,
+        height: Number(this.filterPanel.panel.state.height) || 0,
+      },
+    };
+  }
+
+  // ---------------------------------------------------------------- 汇总行 API
+
+  public getSummaryNode(): any {
+    return this.summaryNode;
+  }
+
+  public getSummaryText(key: string): string {
+    return this.summaryTexts[key] === undefined ? '' : this.summaryTexts[key];
+  }
+
+  // ---------------------------------------------------------------- 行展开 API
+
+  /** 展开中的行 key（按展开顺序）。 */
+  public getExpandedRowKeys(): string[] {
+    return Array.from(this.expandedKeys);
+  }
+
+  public isRowExpanded(key: string | ICETableRow): boolean {
+    return this.expandedKeys.has(this.__normalizeKey(key));
+  }
+
+  public expandRow(key: string | ICETableRow, options: { silent?: boolean } = {}): this {
+    const row = this.__rowOf(key);
+    if (!this.__canExpand(row)) {
+      return this;
+    }
+    const normalized = this.__normalizeKey(key);
+    if (this.expandedKeys.has(normalized)) {
+      return this;
+    }
+    this.expandedKeys.add(normalized);
+    this.__afterExpandChange(row, true, options);
+    return this;
+  }
+
+  public collapseRow(key: string | ICETableRow, options: { silent?: boolean } = {}): this {
+    const normalized = this.__normalizeKey(key);
+    if (!this.expandedKeys.has(normalized)) {
+      return this;
+    }
+    this.expandedKeys.delete(normalized);
+    this.__afterExpandChange(this.__rowOf(key), false, options);
+    return this;
+  }
+
+  public toggleExpand(key: string | ICETableRow): this {
+    return this.isRowExpanded(key) ? this.collapseRow(key) : this.expandRow(key);
+  }
+
+  /** 行首的展开三角（该行不可展开 / 没渲染时为 null）。 */
+  public getExpandToggleNode(key: string | ICETableRow): any {
+    return this.expandToggleNodes.get(this.__normalizeKey(key)) || null;
+  }
+
+  /** 展开区节点（该行没展开 / 不在当前页时为 null）。 */
+  public getExpandedRowNode(key: string | ICETableRow): any {
+    return this.expandedRowNodes.get(this.__normalizeKey(key)) || null;
+  }
+
+  /** 当前页第 index 行的行面板（测试与 e2e 断言版式用）。 */
+  public getRowNode(index: number): any {
+    return this.rowPanels[index] || null;
+  }
+
+  private __afterExpandChange(row: ICETableRow | null, expanded: boolean, options: { silent?: boolean }): void {
+    this.__applyPage();
+    if (!options.silent) {
+      this.trigger('expand', null, { expanded, row });
+      if (this.expandable && typeof this.expandable.onExpand === 'function' && row) {
+        this.expandable.onExpand(expanded, row);
+      }
+    }
+  }
+
+  private __normalizeKey(key: string | ICETableRow): string {
+    if (typeof key !== 'string') {
+      const index = this.data.indexOf(key);
+      return this.__keyOf(key, index < 0 ? 0 : index);
+    }
+    return key;
+  }
+
+  private __rowOf(key: string | ICETableRow): ICETableRow | null {
+    if (typeof key !== 'string') {
+      return key;
+    }
+    for (let index = 0; index < this.data.length; index += 1) {
+      if (this.__keyOf(this.data[index], index) === key) {
+        return this.data[index];
+      }
+    }
+    return null;
+  }
+
+  private __keyOf(row: ICETableRow, index: number): string {
+    if (typeof this.rowKeyProp === 'function') {
+      return String(this.rowKeyProp(row, index));
+    }
+    if (this.rowKeyProp) {
+      return String(row[this.rowKeyProp]);
+    }
+    return String(index);
+  }
+
+  /** 这一行现在能不能展开（虚拟化路径不支持展开，见类注释）。 */
+  private __canExpand(row: ICETableRow | null): boolean {
+    if (!this.expandable || this.scrollable || !row) {
+      return false;
+    }
+    const test = this.expandable.rowExpandable;
+    return typeof test === 'function' ? test(row) !== false : true;
+  }
+
+  /** 当前页里展开区总共占的高度。 */
+  private __expandedHeightOf(rows: ICETableRow[]): number {
+    if (!this.expandable || this.scrollable) {
+      return 0;
+    }
+    let count = 0;
+    rows.forEach((row, index) => {
+      if (this.__canExpand(row) && this.expandedKeys.has(this.__keyOf(row, index))) {
+        count += 1;
+      }
+    });
+    return count * this.expandableHeight;
+  }
+
   /** 表头文案（排序中的列带 ▲/▼ 指示）。 */
   public getHeaderLabel(key: string): string {
     const column = this.columns.find((item) => item.key === key);
     if (!column) {
       return '';
     }
+    let label = column.title;
     if (this.sortKey === key && this.sortOrder) {
-      return `${column.title} ${this.sortOrder === 'asc' ? '▲' : '▼'}`;
+      label += ` ${this.sortOrder === 'asc' ? '▲' : '▼'}`;
     }
-    return column.title;
+    if (column.filters && column.filters.length) {
+      label += ` ${(this.filters[key] || []).length ? '●' : '▾'}`;
+    }
+    return label;
   }
 
   /** 点表头：升序 → 降序 → 恢复原始顺序。 */
@@ -328,22 +774,53 @@ export class ICETable extends ICEWidget {
     if (!column || !column.sorter || !order) {
       this.sortKey = null;
       this.sortOrder = null;
-      this.sortedData = this.sourceData.slice();
+      this.sortedData = this.filteredData.slice();
       this.__applyPage();
       return this;
     }
     this.sortKey = key;
     this.sortOrder = order;
-    const direction = order === 'asc' ? 1 : -1;
-    this.sortedData = this.sourceData
-      .slice()
-      .sort((a, b) => direction * this.__compareRows(a, b, column));
+    this.sortedData = this.__applySortTo(this.filteredData);
     this.__applyPage();
     return this;
   }
 
+  /** 按当前 sortKey / sortOrder 排一份数据（没在排序就原样返回）。 */
+  private __applySortTo(rows: ICETableRow[]): ICETableRow[] {
+    const column = this.columns.find((item) => item.key === this.sortKey);
+    if (!column || !this.sortOrder || !column.sorter) {
+      return rows.slice();
+    }
+    const direction = this.sortOrder === 'asc' ? 1 : -1;
+    return rows.slice().sort((a, b) => direction * this.__compareRows(a, b, column));
+  }
+
+  /**
+   * 按 `filters` 过滤原始数据。
+   *
+   * 同一列多个取值是**或**（用户勾了「已支付」和「待处理」想看的是两类），
+   * 不同列之间是**与**（这是「缩小范围」的直觉）。
+   */
+  private __computeFiltered(): ICETableRow[] {
+    const keys = Object.keys(this.filters).filter((key) => (this.filters[key] || []).length > 0);
+    if (!keys.length) {
+      return this.sourceData.slice();
+    }
+    return this.sourceData.filter((row) =>
+      keys.every((key) => this.filters[key].indexOf(String(row[key])) !== -1),
+    );
+  }
+
+  /** 有没有汇总行要画（筛选后 0 行不画：没东西可汇总）。 */
+  private __hasSummary(): boolean {
+    return !!this.summaryFn && this.data.length > 0;
+  }
+
   /** 按当前页/每页条数切出要渲染的行，并把高度（含分页器 / 空态）算好。 */
   private __applyPage(): void {
+    // 管线是「筛选 → 排序 → 分页」：入口处统一重算前两步，后面的切片逻辑不用改
+    this.filteredData = this.__computeFiltered();
+    this.sortedData = this.__applySortTo(this.filteredData);
     const total = this.sortedData.length;
     this.page = Math.min(this.getPageCount(), Math.max(1, this.page));
     if (!this.pageSize) {
@@ -354,9 +831,18 @@ export class ICETable extends ICEWidget {
     }
     const showPagination = this.pageSize > 0 && total > 0;
     const bodyHeight = this.data.length > 0 ? this.rowHeight * this.data.length : 120;
-    this.setState({
-      height: this.headerHeight + bodyHeight + (showPagination ? this.__footerHeight() : 0),
-    });
+    // 可滚动模式（虚拟行 / 固定列）的高度由调用方给：按行数算高度会和「只渲染可视区」自相矛盾
+    if (!this.scrollable) {
+      const expandedHeight = this.data.length > 0 ? this.__expandedHeightOf(this.data) : 0;
+      this.setState({
+        height:
+          this.headerHeight +
+          bodyHeight +
+          expandedHeight +
+          (showPagination ? this.__footerHeight() : 0) +
+          (this.__hasSummary() ? this.rowHeight : 0),
+      });
+    }
     this.__render();
   }
 
@@ -459,6 +945,23 @@ export class ICETable extends ICEWidget {
     if (wx < box.tl[0] || wx > box.br[0] || wy < box.tl[1] || wy > box.br[1]) {
       return;
     }
+    // 筛选候选面板：面板内的点击归面板；点到别处就把面板收起来
+    if (this.filterPanel) {
+      const insideOf = (node: any, root: any) => {
+        let current = node;
+        while (current) {
+          if (current === root) return true;
+          current = current.parentNode;
+        }
+        return false;
+      };
+      if (insideOf(evt.target, this.filterPanel.panel)) {
+        return;
+      }
+      if (!insideOf(evt.target, this.filterNodes.get(this.filterPanel.key))) {
+        this.closeFilter();
+      }
+    }
     const localX = wx - box.tl[0];
     const localY = wy - box.tl[1];
     // 表头：命中列 → 排序
@@ -468,7 +971,12 @@ export class ICETable extends ICEWidget {
       let acc = offset;
       for (let i = 0; i < this.columns.length; i++) {
         if (localX >= acc && localX <= acc + widths[i]) {
-          this.toggleSort(this.columns[i].key);
+          const column = this.columns[i];
+          // 漏斗所在的一小块区域交给漏斗自己的 click（否则点开候选会顺带切一次排序）
+          if (column.filters && column.filters.length && localX >= acc + widths[i] - 26) {
+            return;
+          }
+          this.toggleSort(column.key);
           return;
         }
         acc += widths[i];
@@ -558,6 +1066,11 @@ export class ICETable extends ICEWidget {
     this.cellNodes = [];
     this.selectionNodes = [];
     this.headerCheckbox = null;
+    this.filterNodes.clear();
+    this.summaryNode = null;
+    this.summaryTexts = {};
+    this.expandToggleNodes.clear();
+    this.expandedRowNodes.clear();
 
     // 可滚动模式（虚拟行 / 固定列）：表头与表体各自成滚动视口，走另一条渲染路径
     if (this.scrollable) {
@@ -620,9 +1133,23 @@ export class ICETable extends ICEWidget {
     header.addChild(divider, false);
 
     this.rowPanels = [];
+    // 行与展开区依次往下排：展开区不是浮层，后面的行要真的被推下去
+    let bodyTop = this.headerHeight;
     this.data.forEach((row, rowIndex) => {
-    this.__createRowPanel(row, rowIndex, this, this.headerHeight + rowIndex * this.rowHeight, widths, offset);
+      this.__createRowPanel(row, rowIndex, this, bodyTop, widths, offset);
+      bodyTop += this.rowHeight;
+      const key = this.__keyOf(row, rowIndex);
+      if (this.__canExpand(row) && this.expandedKeys.has(key)) {
+        this.__renderExpandedRow(row, rowIndex, key, bodyTop, widths, totalWidth, offset);
+        bodyTop += this.expandableHeight;
+      }
     });
+
+    // 汇总行：压在数据行下面（分页时也在它上面，因为算的是筛选后的全量）
+    const summaryHeight = this.__hasSummary() ? this.rowHeight : 0;
+    if (summaryHeight) {
+      this.__renderSummary(this, widths, bodyTop, offset, totalWidth);
+    }
 
     // 空态：没有数据时给一块 ICEEmpty，而不是留一片空白
     if (!this.data.length) {
@@ -643,7 +1170,7 @@ export class ICETable extends ICEWidget {
     if (this.pageSize > 0 && this.data.length > 0) {
       const pagination = new ICEPagination({
         left: 0,
-        top: this.headerHeight + this.data.length * this.rowHeight + 8,
+        top: bodyTop + summaryHeight + 8,
         width: totalWidth,
         total: this.sortedData.length,
         pageSize: this.pageSize,
@@ -879,8 +1406,109 @@ export class ICETable extends ICEWidget {
       this,
     );
     const values = this.columns.map((column) => this.__format(row[column.key]));
-    this.__placeCells(panel, widths, values, false, this.columns, row, offset);
+    const expandableRow = this.__canExpand(row);
+    this.__placeCells(panel, widths, values, false, this.columns, row, offset, expandableRow ? 20 : 0);
+    if (expandableRow) {
+      this.__placeExpandToggle(panel, row, rowIndex, offset);
+    }
     return panel;
+  }
+
+  /** 行首展开三角：▸ 收起 / ▾ 展开；它是行内的交互控件，点它不会走整行选中。 */
+  private __placeExpandToggle(panel: any, row: ICETableRow, rowIndex: number, offset: number): void {
+    const theme = iceUIManager.getTheme();
+    const key = this.__keyOf(row, rowIndex);
+    const expanded = this.expandedKeys.has(key);
+    const size = Math.min(20, Math.max(14, this.rowHeight - 18));
+    const toggle = new ICEWidget({
+      left: offset + 2,
+      top: (this.rowHeight - size) / 2,
+      width: size,
+      height: size,
+      radius: theme.radius.sm,
+      fill: true,
+      stroke: false,
+      interactive: true,
+      style: { fillStyle: 'rgba(0,0,0,0)' },
+    });
+    toggle.addChild(
+      createTextNode({
+        left: 0,
+        top: 0,
+        width: size,
+        height: size,
+        text: expanded ? '▾' : '▸',
+        fillStyle: theme.colors.textSecondary,
+        fontFamily: theme.font.family,
+        fontSize: 11,
+        align: 'center',
+        verticalAlign: 'middle',
+      }),
+      false,
+    );
+    toggle.on('click', () => this.toggleExpand(key), this);
+    toggle.on(
+      'hoverchange',
+      (evt: any) => {
+        toggle.setState({
+          style: { ...toggle.state.style, fillStyle: readHovered(evt) ? theme.colors.background : 'rgba(0,0,0,0)' },
+        });
+      },
+      this,
+    );
+    panel.addChild(toggle, false);
+    this.expandToggleNodes.set(key, toggle);
+  }
+
+  /** 展开区：一整块贴着行下面，内容由 `expandable.render` 提供。 */
+  private __renderExpandedRow(
+    row: ICETableRow,
+    rowIndex: number,
+    key: string,
+    top: number,
+    widths: number[],
+    panelWidth: number,
+    offset: number,
+  ): void {
+    const theme = iceUIManager.getTheme();
+    const panel = new ICEWidget({
+      left: 0,
+      top,
+      width: panelWidth,
+      height: this.expandableHeight,
+      fill: true,
+      stroke: false,
+      style: { fillStyle: theme.colors.background },
+    });
+    panel.addChild(
+      new ICERect({
+        left: 0,
+        top: 0,
+        width: panelWidth,
+        height: 1,
+        fill: true,
+        stroke: false,
+        style: { fillStyle: theme.colors.border },
+      }),
+      false,
+    );
+    const widthMap: Record<string, number> = {};
+    this.columns.forEach((column, index) => {
+      widthMap[column.key] = widths[index];
+    });
+    const content = this.expandable
+      ? this.expandable.render(row, {
+          width: panelWidth - offset,
+          columns: this.columns,
+          widths: widthMap,
+          rowIndex,
+        })
+      : null;
+    if (content) {
+      panel.addChild(content, false);
+    }
+    this.addChild(panel, false);
+    this.expandedRowNodes.set(key, panel);
   }
 
   private __placeCells(
@@ -891,6 +1519,7 @@ export class ICETable extends ICEWidget {
     columns?: ICETableColumn[],
     row?: ICETableRow,
     offset: number = 0,
+    firstCellIndent: number = 0,
   ): void {
     const theme = iceUIManager.getTheme();
     const padX = theme.spacing.sm;
@@ -918,7 +1547,7 @@ export class ICETable extends ICEWidget {
       }
 
       const node = createTextNode({
-        left: left,
+        left: left + (index === 0 && !header ? firstCellIndent : 0),
         top: 0,
         width: 1,
         height: cellHeight,
@@ -937,9 +1566,123 @@ export class ICETable extends ICEWidget {
         cellWidth: colW,
         cellHeight,
         align,
+        indent: index === 0 && !header ? firstCellIndent : 0,
+      });
+      if (header && column && column.filters && column.filters.length) {
+        this.__placeFilterGlyph(parent, column, left, colW, cellHeight);
+      }
+      left += colW;
+    });
+  }
+
+  /**
+   * 表头漏斗：贴在该列右缘的小方块（▾）。它自己处理点击 —— 全局 mousedown 里
+   * 会把这块区域从「点表头排序」中排除掉，否则点漏斗会顺带把排序也切了。
+   */
+  private __placeFilterGlyph(parent: any, column: ICETableColumn, left: number, width: number, height: number): void {
+    const theme = iceUIManager.getTheme();
+    const size = Math.min(20, Math.max(16, height - 12));
+    const glyph = new ICEWidget({
+      left: left + width - size - 6,
+      top: (height - size) / 2,
+      width: size,
+      height: size,
+      radius: theme.radius.sm,
+      fill: true,
+      stroke: false,
+      interactive: true,
+      style: { fillStyle: 'rgba(0,0,0,0)' },
+    });
+    const active = (this.filters[column.key] || []).length > 0;
+    glyph.addChild(
+      createTextNode({
+        left: 0,
+        top: 0,
+        width: size,
+        height: size,
+        text: active ? '●' : '▾',
+        fillStyle: active ? theme.colors.primary : theme.colors.textTertiary,
+        fontFamily: theme.font.family,
+        fontSize: 11,
+        align: 'center',
+        verticalAlign: 'middle',
+      }),
+      false,
+    );
+    glyph.on('click', () => this.toggleFilter(column.key), this);
+    glyph.on(
+      'hoverchange',
+      (evt: any) => {
+        glyph.setState({
+          style: { ...glyph.state.style, fillStyle: readHovered(evt) ? theme.colors.background : 'rgba(0,0,0,0)' },
+        });
+      },
+      this,
+    );
+    parent.addChild(glyph, false);
+    this.filterNodes.set(column.key, glyph);
+  }
+
+  /**
+   * 汇总行：拿筛选后的全量行算一行文案，画在表尾。
+   *
+   * 单元格的排版复用 `cellNodes`（对齐规则与数据行完全一致，右对齐的数字列不会错位）。
+   */
+  private __renderSummary(parent: any, widths: number[], top: number, offset: number, panelWidth: number): void {
+    const theme = iceUIManager.getTheme();
+    const values = this.summaryFn ? this.summaryFn(this.sortedData.slice(), this.columns) || {} : {};
+    const node = new ICEWidget({
+      left: 0,
+      top,
+      width: panelWidth,
+      height: this.rowHeight,
+      fill: true,
+      stroke: false,
+      interactive: false,
+      style: { fillStyle: theme.colors.background },
+    });
+    node.addChild(
+      new ICERect({
+        left: 0,
+        top: 0,
+        width: panelWidth,
+        height: 1,
+        fill: true,
+        stroke: false,
+        style: { fillStyle: theme.colors.border },
+      }),
+      false,
+    );
+    let left = offset;
+    this.columns.forEach((column, index) => {
+      const text = values[column.key] === undefined || values[column.key] === null ? '' : String(values[column.key]);
+      this.summaryTexts[column.key] = text;
+      const colW = widths[index];
+      const textNode = createTextNode({
+        left,
+        top: 0,
+        width: 1,
+        height: this.rowHeight,
+        text,
+        fillStyle: theme.colors.text,
+        fontFamily: theme.font.family,
+        fontSize: theme.font.size,
+        fontWeight: theme.font.weightSemibold,
+        align: 'left',
+        verticalAlign: 'middle',
+      });
+      node.addChild(textNode, false);
+      this.cellNodes.push({
+        node: textNode,
+        cellLeft: left,
+        cellWidth: colW,
+        cellHeight: this.rowHeight,
+        align: column.align || 'left',
       });
       left += colW;
     });
+    parent.addChild(node, false);
+    this.summaryNode = node;
   }
 
   private __layoutCells(): void {
@@ -955,7 +1698,7 @@ export class ICETable extends ICEWidget {
       const font = style.font || `${style.fontWeight || 'normal'} ${style.fontSize || 14}px ${style.fontFamily || 'Arial'}`;
       ctx.font = font;
       const textWidth = ctx.measureText(String(cell.node.state.text || '')).width || 0;
-      let left = cell.cellLeft + padX;
+      let left = cell.cellLeft + padX + (cell.indent || 0);
       if (cell.align === 'right') {
         left = cell.cellLeft + cell.cellWidth - padX - textWidth;
       } else if (cell.align === 'center') {

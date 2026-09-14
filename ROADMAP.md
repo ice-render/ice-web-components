@@ -272,7 +272,7 @@
 | 数据录入 | Cascader | ✅ `ICECascader`（多列级联 + 路径回显；暂不支持同级多选） |
 | 数据录入 | Checkbox | ✅ `ICECheckBox` + `ICECheckboxGroup`（多选 / `max` / 键盘；无不确定态） |
 | 数据录入 | ColorPicker | ✅ `ICEColorPicker`（色板网格 + 选中环 + 键盘导航；无取色轮/透明度） |
-| 数据录入 | DatePicker | ✅ `ICEDatePicker`（日历浮层，周一开头） |
+| 数据录入 | DatePicker | ✅ `ICEDatePicker`（日历浮层，周一开头）+ `ICEDateRangePicker`（区间：快捷预设、区间高亮、自动排序） |
 | 数据录入 | TimePicker | ✅ `ICETimePicker`（时/分/秒滚动列 + 步进 + HH:mm 两列模式；无 12 小时制/范围选择） |
 | 数据录入 | Form | ✅ `ICEForm` + `ICEFormItem` + `ICEFormModel`（异步校验 / submitAsync / **跨字段依赖 `dependencies`**） |
 | 数据录入 | Input | ✅ `ICETextField`（部分：无多行 / 密码 / 前后缀 / 清空） |
@@ -299,7 +299,7 @@
 | 数据展示 | QRCode | ⊘ 需要编码器，收益低 |
 | 数据展示 | Segmented | ✅ `ICESegmented` |
 | 数据展示 | Statistic | ✅ `ICEStatistic`（精度 / 千分位 / 前缀后缀 / 倒计时）+ `ICEStatCard`（卡片态） |
-| 数据展示 | Table | ✅ `ICETable`（列排序 + ▲▼ 指示 + 分页 + 空态；无滚动 / 列宽拖拽 / 展开行） |
+| 数据展示 | Table | ✅ `ICETable`（排序 / 分页 / 空态 / 虚拟滚动 / 列宽拖拽 / **列筛选 / 行展开 / 汇总行**；无树形数据 / 单元格编辑） |
 | 数据展示 | Tabs | ✅ `ICETabs`（部分：无溢出滚动 / 关闭 / 卡片态） |
 | 数据展示 | Tag | ✅ `ICETag`（部分：无可关闭 / 多彩） |
 | 数据展示 | Timeline | ✅ `ICETimeline` |
@@ -338,20 +338,20 @@
    引擎已有 `ICEGridLayout`，缺 UI 封装；定位更接近「模板」，**下一批第一顺位**；
 9. ~~FloatButton 完整形态~~ ✅ `ICEFloatButton`（展开菜单 / 自动收起）
 10. ~~Form 跨字段依赖重校验~~ ✅ `dependencies` + 空值上也跑自定义 validator；
-11. **Table 的剩余部分**（滚动 / 列宽拖拽 / 展开行）、**QRCode**（需自带编码器）、
-    **FloatButton 的「速度仪表盘」形态** —— **下一批第一顺位是 Table 的滚动与列宽拖拽**。
+11. ~~Table 的滚动 / 列宽拖拽 / 展开行~~ ✅；**Table 的剩余部分**（树形数据 / 单元格编辑）、
+    **QRCode**（需自带编码器）、**FloatButton 的「速度仪表盘」形态**。
 
 ## 现有组件的「做满」清单
 
 新组件之外，下面这些缺口同样影响观感，按需插空做：
 
-- `ICETable`：分页、滚动、列宽拖拽、空态（排序 ✅ 已做）
-- `ICETextField`：多行（TextArea）、密码、前后缀、清除按钮、错误态
+- `ICETable`：分页、滚动、列宽拖拽、空态、列筛选、行展开、汇总行 ✅ 已做
+- `ICETextField`：多行（TextArea ✅）、密码（✅）、前后缀 ✅、清除按钮 ✅、错误态 ✅
 - `ICEMenu`：键盘操作（子菜单 / 折叠 ✅ 已做）
-- `ICETabs`：溢出滚动、关闭、位置（上下左右）
+- `ICETabs`：卡片式 ✅、关闭 ✅、extra ✅；溢出滚动、位置（上下左右）待做
 - `ICEAlert`：banner 形态（关闭按钮 / 图标 ✅ 已做）
 - `ICEProgressBar`：仪表盘形态（环形 + 状态色 ✅ 已做）
-- `ICESlider`：区间选择、刻度、拖拽 tooltip
+- `ICESlider`：区间选择 ✅、刻度、拖拽 tooltip
 - `ICECard`：操作区、封面、底部（右上角 extra ✅ 已做）
 - `ICEBadge`：红点 / 计数封顶 ✅ 已做
 - `ICEAvatar`：图片头像（头像组 ✅ `ICEAvatarGroup`）
