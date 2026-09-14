@@ -78,6 +78,14 @@
   `isVirtual()` / `isListScrollable()` / `getListScroll()` / `setListScroll()` /
   `getListContentHeight()` / `getRenderedOptionValues()` / `getActiveIndex()`。
 
+- **`ICETreeSelect` 的搜索与多选**（2026-09-14，S2 第一批第九件）：组织架构选人这类场景以前只能
+  单选、也不能搜，几十个部门的树只能一层层点开找。现在：
+  - `mode: 'multiple'`：点一行切换（面板不关），值是 `string[]`，字段显示标签列表，
+    `maxTagCount` 超出折叠成 `+N`（只影响显示）；配套 `clear()` / `removeValue()` / `getSelectedLabels()`；
+  - `showSearch`：按 label **或 key** 过滤（大小写不敏感），**保留命中节点的祖先链**并把命中路径
+    自动展开 —— 层级路径不能丢，否则用户不知道选的是哪一支；搜不到时树是空的，不留一棵
+    「看着能点、其实没命中」的树；空查询恢复整棵树；空查询时按 Backspace 删最后一个已选。
+
 > 其余待发布的改动在这里累积。
 
 ## [1.5.4] - 2026-09-14

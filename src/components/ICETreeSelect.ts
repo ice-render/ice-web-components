@@ -19,7 +19,13 @@ export interface ICETreeSelectOptions {
   /** 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） */
   id?: string;
   nodes: ICETreeNode[];
-  value?: string;
+  value?: string | string[];
+  /** `single`（默认）或 `multiple`（多选：值是 `string[]`，选中不关面板） */
+  mode?: 'single' | 'multiple';
+  /** 是否可搜索（按 label 过滤，命中节点的祖先链会保留并自动展开） */
+  showSearch?: boolean;
+  /** 字段最多显示几个标签，超出折叠成 `+N`（只影响显示） */
+  maxTagCount?: number;
   placeholder?: string;
   disabled?: boolean;
   left?: number;
@@ -28,13 +34,19 @@ export interface ICETreeSelectOptions {
   height?: number;
   treeHeight?: number;
   defaultExpandAll?: boolean;
-  onChange?: (key: string, node: ICETreeNode) => void;
+  onChange?: (key: any, node: ICETreeNode | null) => void;
   manager?: ICEOverlayManager;
 }
 
 export class ICETreeSelect extends ICEWidget {
   private nodes: ICETreeNode[];
-  private value: string | null;
+  private value: string[];
+  private mode: 'single' | 'multiple';
+  private showSearch: boolean;
+  private maxTagCount: number | null;
+  private query = '';
+  private filteredNodes: ICETreeNode[] | null = null;
+  private searchRow: ICELabel | null = null;
   private placeholder: string;
   private disabled: boolean;
   private treeHeight: number;
@@ -44,7 +56,7 @@ export class ICETreeSelect extends ICEWidget {
   private panel: ICEPanel | null = null;
   private tree: ICETree | null = null;
   private fieldLabel: ICELabel | null = null;
-  private onChangeCallback: ((key: string, node: ICETreeNode) => void) | null;
+  private onChangeCallback: ((key: any, node: ICETreeNode | null) => void) | null;
   private running = false;
 
   constructor(props: ICETreeSelectOptions) {
@@ -67,7 +79,17 @@ export class ICETreeSelect extends ICEWidget {
       },
     });
     this.nodes = props.nodes || [];
-    this.value = props.value ?? null;
+    this.mode = props.mode === 'multiple' ? 'multiple' : 'single';
+    this.showSearch = props.showSearch === true;
+    this.maxTagCount = Number.isFinite(Number(props.maxTagCount)) ? Math.max(0, Math.floor(Number(props.maxTagCount))) : null;
+    this.value = props.value === undefined || props.value === null
+      ? []
+      : Array.isArray(props.value)
+      ? props.value.map(String)
+      : [String(props.value)];
+    if (this.mode === 'single') {
+      this.value = this.value.slice(0, 1);
+    }
     this.placeholder = props.placeholder || '';
     this.disabled = props.disabled === true;
     this.treeHeight = props.treeHeight ?? 160;
@@ -95,29 +117,104 @@ export class ICETreeSelect extends ICEWidget {
     }
   }
 
-  public getValue(): string | null {
-    return this.value;
+  public getValue(): any {
+    return this.mode === 'multiple' ? this.value.slice() : this.value.length ? this.value[0] : null;
   }
 
-  public setValue(key: string | null): this {
-    this.value = key;
+  public setValue(value: any): this {
+    if (Array.isArray(value)) {
+      this.value = value.map(String);
+    } else if (value === undefined || value === null || value === '') {
+      this.value = [];
+    } else {
+      this.value = [String(value)];
+    }
+    if (this.mode === 'single') {
+      this.value = this.value.slice(0, 1);
+    }
     this.__syncField();
     if (this.isOpen() && this.tree) {
-      this.tree.setSelectedKeys(key ? [key] : []);
+      this.tree.setSelectedKeys(this.value.slice());
     }
     return this;
   }
 
   public getFormValue(): any {
-    return this.value;
+    return this.getValue();
   }
 
   public setFormValue(value: any): void {
-    this.setValue(value === undefined || value === null ? null : String(value));
+    this.setValue(value);
   }
 
   public getFieldLabel(): string {
     return this.fieldLabel ? this.fieldLabel.getText() : '';
+  }
+
+  public getMode(): 'single' | 'multiple' {
+    return this.mode;
+  }
+
+  /** 选中的标签（按选中顺序）。 */
+  public getSelectedLabels(): string[] {
+    return this.value.map((key) => {
+      const node = this.__findNode(key);
+      return node ? node.label : key;
+    });
+  }
+
+  /** 清空选择。 */
+  public clear(): this {
+    return this.setValue(this.mode === 'multiple' ? [] : null);
+  }
+
+  /** 删掉一个取值（多选时用）。 */
+  public removeValue(key: string): this {
+    if (this.value.indexOf(key) === -1) {
+      return this;
+    }
+    const node = this.__findNode(key);
+    this.setValue(this.value.filter((item) => item !== key));
+    if (this.onChangeCallback) {
+      this.onChangeCallback(this.getValue(), node);
+    }
+    return this;
+  }
+
+  // ---- 搜索 ----
+
+  public getQuery(): string {
+    return this.query;
+  }
+
+  /** 设置搜索词：过滤树（保留祖先链）并重画；空串恢复整棵树。 */
+  public setQuery(query: string): this {
+    this.query = String(query || '');
+    if (this.isOpen()) {
+      this.__rebuildTree();
+    }
+    return this;
+  }
+
+  /** 命中的节点 key（不含为了保留层级而带上的祖先）。 */
+  public getMatchedKeys(): string[] {
+    const query = this.query.trim().toLowerCase();
+    const out: string[] = [];
+    const visit = (list: ICETreeNode[]) => {
+      list.forEach((node) => {
+        if (!query || this.__matches(node, query)) {
+          out.push(node.key);
+        }
+        if (node.children) visit(node.children);
+      });
+    };
+    visit(this.nodes);
+    return out;
+  }
+
+  /** 搜索时真正喂给树的那份（null = 没在搜索）。 */
+  public getFilteredNodes(): ICETreeNode[] | null {
+    return this.filteredNodes;
   }
 
   public isOpen(): boolean {
@@ -148,29 +245,15 @@ export class ICETreeSelect extends ICEWidget {
     }
     const theme = iceUIManager.getTheme();
     const width = Number(this.state.width) || 220;
+    const searchHeight = this.showSearch ? 30 : 0;
     const panel = new ICEPanel({
       width,
-      height: this.treeHeight + 8,
+      height: searchHeight + this.treeHeight + 8,
       radius: theme.radius.md,
       style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border, shadow: 'md' },
     });
-    const tree = new ICETree({
-      nodes: this.nodes,
-      left: 4,
-      top: 4,
-      width: width - 8,
-      height: this.treeHeight,
-      defaultExpandAll: this.defaultExpandAll,
-      value: this.value ? [this.value] : [],
-      onSelect: (keys: string[], node?: ICETreeNode) => {
-        if (node) {
-          this.__pick(node);
-        }
-      },
-    });
-    panel.addChild(tree, false);
     this.panel = panel;
-    this.tree = tree;
+    this.__rebuildTree();
     this.handle = this.manager.open({
       anchor: this,
       content: panel,
@@ -195,12 +278,109 @@ export class ICETreeSelect extends ICEWidget {
   }
 
   private __pick(node: ICETreeNode): void {
-    this.value = node.key;
+    if (this.mode === 'multiple') {
+      const index = this.value.indexOf(node.key);
+      if (index === -1) {
+        this.value.push(node.key);
+      } else {
+        this.value.splice(index, 1);
+      }
+      this.__syncField();
+      if (this.tree) {
+        this.tree.setSelectedKeys(this.value.slice());
+      }
+      if (this.onChangeCallback) {
+        this.onChangeCallback(this.getValue(), node);
+      }
+      return;
+    }
+    this.value = [node.key];
     this.__syncField();
     this.close();
     if (this.onChangeCallback) {
-      this.onChangeCallback(node.key, node);
+      this.onChangeCallback(this.getValue(), node);
     }
+  }
+
+  /** 建/重建下拉内容：搜索行（可选）+ 树（搜索时只留命中路径并全展开）。 */
+  private __rebuildTree(): void {
+    const panel = this.panel;
+    if (!panel) {
+      return;
+    }
+    const theme = iceUIManager.getTheme();
+    const width = Number(panel.state.width) || Number(this.state.width) || 220;
+    const searchHeight = this.showSearch ? 30 : 0;
+    panel.removeChildren([...panel.childNodes]);
+    const query = this.query.trim().toLowerCase();
+    this.filteredNodes = query
+      ? this.__filterTree(this.nodes, (node) => node.label.toLowerCase().indexOf(query) !== -1 || node.key.toLowerCase().indexOf(query) !== -1)
+      : null;
+    const nodes = this.filteredNodes || this.nodes;
+    if (this.showSearch) {
+      this.searchRow = new ICELabel({
+        interactive: false,
+        left: 10,
+        top: 0,
+        width: width - 20,
+        height: searchHeight,
+        verticalAlign: 'middle',
+        text: this.query ? this.query + '|' : '搜索部门…',
+        style: { fontSize: 12, fillStyle: this.query ? theme.colors.text : theme.colors.textTertiary },
+      });
+      panel.addChild(this.searchRow, false);
+    }
+    // 搜索时把命中路径全展开，否则用户还得自己一层层点开
+    const expandedKeys = query ? this.__collectKeys(nodes) : undefined;
+    this.tree = new ICETree({
+      nodes,
+      left: 4,
+      top: 4 + searchHeight,
+      width: width - 8,
+      height: this.treeHeight,
+      mode: this.mode === 'multiple' ? 'multiple' : 'single',
+      defaultExpandAll: this.defaultExpandAll,
+      expandedKeys,
+      value: this.value.slice(),
+      onSelect: (_keys: string[], node?: ICETreeNode) => {
+        if (node) {
+          this.__pick(node);
+        }
+      },
+    });
+    panel.addChild(this.tree, false);
+    if (this.ice && this.ice.dirty !== undefined) {
+      this.ice.dirty = true;
+    }
+  }
+
+  /** 过滤树：命中节点留下，**并保留它的祖先链**（否则不知道选的是哪一支）。 */
+  private __filterTree(nodes: ICETreeNode[], match: (node: ICETreeNode) => boolean): ICETreeNode[] {
+    const out: ICETreeNode[] = [];
+    nodes.forEach((node) => {
+      const children = node.children ? this.__filterTree(node.children, match) : [];
+      if (match(node) || children.length) {
+        out.push(children.length ? { ...node, children } : { ...node, children: node.children ? [] : undefined });
+      }
+    });
+    return out;
+  }
+
+  /** 搜索命中口径：label 或 key 任一包含查询词（两种都有人用）。 */
+  private __matches(node: ICETreeNode, query: string): boolean {
+    return node.label.toLowerCase().indexOf(query) !== -1 || node.key.toLowerCase().indexOf(query) !== -1;
+  }
+
+  private __collectKeys(nodes: ICETreeNode[]): string[] {
+    const out: string[] = [];
+    const visit = (list: ICETreeNode[]) => {
+      list.forEach((node) => {
+        out.push(node.key);
+        if (node.children) visit(node.children);
+      });
+    };
+    visit(nodes);
+    return out;
   }
 
   private __onClick(): void {
@@ -218,6 +398,20 @@ export class ICETreeSelect extends ICEWidget {
     const key = raw && (raw.key || raw.code);
     if (key === 'Escape' || key === 'Esc') {
       this.close();
+      return;
+    }
+    if (!this.showSearch || typeof key !== 'string' || raw.metaKey || raw.ctrlKey) {
+      return;
+    }
+    if (key === 'Backspace') {
+      // 查询为空时按 Backspace 删最后一个已选（多选场景的常见手势）
+      if (!this.query && this.mode === 'multiple' && this.value.length) {
+        this.removeValue(this.value[this.value.length - 1]);
+        return;
+      }
+      this.setQuery(this.query.slice(0, -1));
+    } else if (key.length === 1) {
+      this.setQuery(this.query + key);
     }
   }
 
@@ -267,8 +461,12 @@ export class ICETreeSelect extends ICEWidget {
       },
     });
     this.removeChildren([...this.childNodes]);
-    const selected = this.value ? this.__findNode(this.value) : null;
-    const label = selected ? selected.label : this.placeholder;
+    const labels = this.getSelectedLabels();
+    const limit = this.maxTagCount === null ? labels.length : Math.min(this.maxTagCount, labels.length);
+    const overflow = labels.length - limit;
+    const label = labels.length
+      ? labels.slice(0, limit).join('、') + (overflow > 0 ? ` +${overflow}` : '')
+      : this.placeholder;
     this.fieldLabel = new ICELabel({
       interactive: false,
       left: 10,
@@ -277,7 +475,7 @@ export class ICETreeSelect extends ICEWidget {
       height,
       verticalAlign: 'middle',
       text: label,
-      style: { fontSize: 13, fillStyle: selected ? theme.colors.text : theme.colors.textTertiary },
+      style: { fontSize: 13, fillStyle: labels.length ? theme.colors.text : theme.colors.textTertiary },
     });
     this.addChild(this.fieldLabel, false);
     this.addChild(
