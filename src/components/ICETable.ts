@@ -9,9 +9,10 @@ import { createTextNode, readHovered } from '../util/ICEStyle';
 import { ICERect } from 'ice-render';
 import { ICEScrollPane } from './ICEScrollPane';
 import { ICETextField } from './ICETextField';
+import { ICELabel } from './ICELabel';
 import { t } from '../i18n/ICEI18n';
 import { computeVirtualRange } from './ICEVirtualList';
-import { ICEDropTarget, computeDropTarget, moveItem } from '../util/ICEDragReorder';
+import { ICEDropTarget, computeDropTarget, moveItem, moveTreeNode } from '../util/ICEDragReorder';
 
 export type ICETableColumn = {
   key: string;
@@ -209,6 +210,11 @@ export class ICETable extends ICEWidget {
   private summaryFn: ICETableSummary | null = null;
   /** 汇总口径：`all` = 当前可见行（默认）；`leaves` = 只要叶子行（树形数据算总额不重复） */
   private summaryRowsMode: 'all' | 'leaves' = 'all';
+  /** 汇总口径：`all` = 全量（默认）；`page` = 只算当前页 */
+  private summaryScope: 'all' | 'page' = 'all';
+  /** 表头「已选 N 行」提示 */
+  private selectionSummary = false;
+  private selectionHintNode: any = null;
   private summaryNode: any = null;
   private summaryTexts: Record<string, string> = {};
   /** 单元格编辑态：改哪一行哪一列 + 盖在格子上的输入框 */
@@ -306,6 +312,8 @@ export class ICETable extends ICEWidget {
     (props.defaultExpandedKeys || []).forEach((key: string) => this.treeExpanded.add(String(key)));
     this.summaryFn = typeof props.summary === 'function' ? props.summary : null;
     this.summaryRowsMode = props.summaryRowsMode === 'leaves' ? 'leaves' : 'all';
+    this.summaryScope = props.summaryScope === 'page' ? 'page' : 'all';
+    this.selectionSummary = props.selectionSummary === true;
     this.rowKeyProp = typeof props.rowKey === 'function' || typeof props.rowKey === 'string' ? props.rowKey : null;
     if (props.expandable && typeof props.expandable.render === 'function') {
       this.expandable = props.expandable;
@@ -1106,12 +1114,53 @@ export class ICETable extends ICEWidget {
     };
     refreshAncestors(key);
     this.__syncSelection();
+    if (this.selectionSummary) {
+      this.__applyPage();
+    }
     return this;
   }
 
   /** 某一行的直接子行 key（没有就是空数组）。 */
   private __childrenOf(key: string): string[] {
     return (this.treeChildKeys.get(key) || []).slice();
+  }
+
+  // ---- 树形行拖拽 ----
+
+  /**
+   * 树形数据的行拖拽：把 `dragKey` 那一行**连同它的后代**挪到目标位置。
+   *
+   * - 放进自己的后代会被拒绝（否则整棵子树凭空消失）；
+   * - 子行的相对顺序不变；展开状态按 key 记，所以挪完还展开着。
+   */
+  public moveTreeRow(dragKey: string, targetKey: string, position: 'before' | 'inside' | 'after'): boolean {
+    if (!this.hasTreeData) {
+      return false;
+    }
+    // 表格用 rowKey 指定字段（默认 'key' 之外的名字），而 util 默认按 'key' 找 —— 字段名要透传
+    const keyField = typeof this.rowKeyProp === 'string' && this.rowKeyProp ? this.rowKeyProp : 'key';
+    const result = moveTreeNode(this.sourceData as any, dragKey, targetKey, position, this.treeChildrenKey, keyField);
+    if (!result.moved) {
+      return false;
+    }
+    this.sourceData = result.nodes as ICETableRow[];
+    if (position === 'inside' && !this.treeExpanded.has(targetKey)) {
+      this.treeExpanded.add(targetKey); // 放进去就展开，能立刻看见
+    }
+    this.__applyPage();
+    this.trigger('rowreorder', null, { key: dragKey, targetKey, position, rows: this.sourceData });
+    return true;
+  }
+
+  // ---- 表头「已选 N 行」提示 ----
+
+  public getSelectionHintText(): string {
+    const count = this.getSelectedRowKeys().length;
+    return this.selectionSummary && count > 0 ? `已选 ${count} 行` : '';
+  }
+
+  public getSelectionHintNode(): any {
+    return this.selectionHintNode;
   }
 
   /** 把当前页的复选框刷成「树形选择的真实状态」（级联选中的子行也要是勾上的）。 */
@@ -1187,6 +1236,28 @@ export class ICETable extends ICEWidget {
       return leaves;
     }
     return leaves.filter((row) => keys.every((key) => this.filters[key].indexOf(String(row[key])) !== -1));
+  }
+
+  /** 汇总要用的行（按口径取：全量 / 当前页，再按 all / leaves 收口）。 */
+  private __summaryRows(): ICETableRow[] {
+    const leafPredicate = (row: ICETableRow) => {
+      const children = row[this.treeChildrenKey];
+      return !(Array.isArray(children) && children.length);
+    };
+    if (this.summaryRowsMode === 'leaves') {
+      // leaves 口径：摊平整棵树（不受展开影响）→ 需要页口径时再按「当前页里出现过的行」收口
+      const leaves = this.__leafRows();
+      if (this.summaryScope === 'page') {
+        const pageRows = new Set(this.data);
+        return leaves.filter((row) => pageRows.has(row));
+      }
+      return leaves;
+    }
+    if (this.summaryScope === 'page') {
+      // 页口径 + all：当前页里那些在全树中不是父行的行（父行的子行翻页时不重复计）
+      return this.data.filter(leafPredicate);
+    }
+    return this.sortedData.slice();
   }
 
   /** 按当前页/每页条数切出要渲染的行，并把高度（含分页器 / 空态）算好。 */
@@ -1519,6 +1590,25 @@ export class ICETable extends ICEWidget {
       });
       header.addChild(selectAllBox, false);
       this.headerCheckbox = selectAllBox;
+    }
+    // 表头右侧的「已选 N 行」提示（含级联）：勾一个父行会带上好几个子行，用户要看得见
+    this.selectionHintNode = null;
+    if (this.selectionSummary) {
+      const text = this.getSelectionHintText();
+      if (text) {
+        this.selectionHintNode = new ICELabel({
+          interactive: false,
+          left: Math.max(0, totalWidth - 220),
+          top: 0,
+          width: 200,
+          height: this.headerHeight,
+          align: 'right',
+          verticalAlign: 'middle',
+          text,
+          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+        });
+        header.addChild(this.selectionHintNode, false);
+      }
     }
     this.__placeCells(
       header,
@@ -2107,10 +2197,7 @@ export class ICETable extends ICEWidget {
    */
   private __renderSummary(parent: any, widths: number[], top: number, offset: number, panelWidth: number): void {
     const theme = iceUIManager.getTheme();
-    const rows =
-      this.summaryRowsMode === 'leaves'
-        ? this.__leafRows()
-        : this.sortedData.slice();
+    const rows = this.__summaryRows();
     const values = this.summaryFn ? this.summaryFn(rows, this.columns) || {} : {};
     const node = new ICEWidget({
       left: 0,

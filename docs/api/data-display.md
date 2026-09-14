@@ -70,6 +70,9 @@
 | `getSelectedRowKeys()` | `string[]` | 已选行的 key（树形数据下含被级联选中的后代）。 |
 | `isTreeRowSelected(key: string)` | `boolean` |  |
 | `setTreeRowSelected(key: string, selected: boolean)` | `this` | 设置某一行的选中态（树形级联）。 |
+| `moveTreeRow(dragKey: string, targetKey: string, position: 'before' \| 'inside' \| 'after')` | `boolean` | 树形数据的行拖拽：把 `dragKey` 那一行**连同它的后代**挪到目标位置。 |
+| `getSelectionHintText()` | `string` |  |
+| `getSelectionHintNode()` | `any` |  |
 | `setSelectedRow(index: number)` | `this` |  |
 | `getSelectedIndex()` | `number` |  |
 | `getSelectionMode()` | `ICETableSelectionMode` |  |
