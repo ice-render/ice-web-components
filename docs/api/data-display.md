@@ -85,6 +85,9 @@
 | `getHeaderCheckbox()` | `ICECheckBox \| null` |  |
 | `getColumnWidths()` | `Record<string, number>` | 当前各列实际宽度（按列 key 给，方便断言与持久化）。 |
 | `getColumnState()` | `ICETableColumnState` | 导出列版式（列宽 + 列顺序）。 |
+| `getColumnOrder()` | `string[]` |  |
+| `setColumnOrder(keys: string[])` | `this` | 按 key 列表重排（列表里没提到的列接在后面，新增列不会丢）。 |
+| `moveColumn(from: number, to: number)` | `this` | 把第 `from` 列挪到第 `to` 列的位置（拖拽与测试共用这条路径）。 |
 | `setColumnState(state: Partial<ICETableColumnState> \| null \| undefined)` | `this` | 按版式还原：未知 key 忽略、缺的列保持原样；宽度会按 `minWidth` 夹取（脏数据也压不没列）。 |
 | `setColumnWidth(key: string, width: number)` | `boolean` | 手动设置某列宽度（拖拽缩列走的就是它）：宽度按 `minWidth` 夹取，改完重排整张表。 |
 | `isResizable()` | `boolean` |  |

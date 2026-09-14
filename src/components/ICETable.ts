@@ -230,6 +230,10 @@ export class ICETable extends ICEWidget {
   private treeFilterMode: 'flat' | 'ancestors' = 'flat';
   /** 表头全选范围：`visible` = 眼前这些行（默认）；`all` = 整棵树（含折叠的后代） */
   private selectAllScope: 'visible' | 'all' = 'visible';
+  /** 列头可拖拽换序（需要重排时**在 mouseup** 判定：没挪动就仍然算点表头排序） */
+  private columnDraggable = false;
+  private columnDrag: { from: number; to: number } | null = null;
+  private onColumnReorder: ((order: string[], from: number, to: number) => void) | null = null;
   private summaryNode: any = null;
   private summaryTexts: Record<string, string> = {};
   /** 单元格编辑态：改哪一行哪一列 + 盖在格子上的输入框 */
@@ -331,6 +335,8 @@ export class ICETable extends ICEWidget {
     this.selectionSummary = props.selectionSummary === true;
     this.treeFilterMode = props.treeFilterMode === 'ancestors' ? 'ancestors' : 'flat';
     this.selectAllScope = props.selectAllScope === 'all' ? 'all' : 'visible';
+    this.columnDraggable = props.columnDraggable === true;
+    this.onColumnReorder = typeof props.onColumnReorder === 'function' ? props.onColumnReorder : null;
     this.rowKeyProp = typeof props.rowKey === 'function' || typeof props.rowKey === 'string' ? props.rowKey : null;
     if (props.expandable && typeof props.expandable.render === 'function') {
       this.expandable = props.expandable;
@@ -714,7 +720,9 @@ export class ICETable extends ICEWidget {
       custom ||
       new ICETextField({
         left,
-        top: this.headerHeight + rowIndex * this.rowHeight + 4,
+        // 可滚动模式里行挂在 bodyContent 上（top 是内容坐标，不含表头也不含滚动量）；
+        // 普通模式行挂在表格自身（top 要加上表头高度）
+        top: (this.scrollable ? 0 : this.headerHeight) + rowIndex * this.rowHeight + 4,
         width: Math.max(60, columnWidth - 8),
         height: this.rowHeight - 8,
         value: original,
@@ -723,7 +731,7 @@ export class ICETable extends ICEWidget {
       // 位置与尺寸仍由表格按格子算（编辑器自己只关心内容）
       custom.setState({
         left,
-        top: this.headerHeight + rowIndex * this.rowHeight + 4,
+        top: (this.scrollable ? 0 : this.headerHeight) + rowIndex * this.rowHeight + 4,
         width: Math.max(60, columnWidth - 8),
         height: this.rowHeight - 8,
       });
@@ -745,7 +753,12 @@ export class ICETable extends ICEWidget {
         this.__moveEditByTab(raw && raw.shiftKey === true ? -1 : 1);
       }
     });
-    this.addChild(node, false);
+    // 可滚动模式：编辑框要和行一起滚，所以挂进 bodyContent
+    if (this.scrollable && this.bodyContent) {
+      this.bodyContent.addChild(node, false);
+    } else {
+      this.addChild(node, false);
+    }
     this.editing = { rowIndex, key, node, original };
     if (this.ice && this.ice.dirty !== undefined) {
       this.ice.dirty = true;
@@ -776,7 +789,7 @@ export class ICETable extends ICEWidget {
     }
     this.editError = null;
     this.editing = null;
-    this.removeChild(state.node);
+    this.__detachEditNode(state.node);
     const row = this.data[state.rowIndex];
     if (!row || value === state.original) {
       this.__render();
@@ -797,11 +810,23 @@ export class ICETable extends ICEWidget {
     }
     this.editing = null;
     this.editError = null;
-    this.removeChild(state.node);
+    this.__detachEditNode(state.node);
     if (this.ice && this.ice.dirty !== undefined) {
       this.ice.dirty = true;
     }
     return true;
+  }
+
+  /** 摘掉编辑框：可滚动模式下它挂在 bodyContent 上，得按实际父亲摘。 */
+  private __detachEditNode(node: any): void {
+    if (!node) {
+      return;
+    }
+    if (node.parentNode && node.parentNode !== this) {
+      node.parentNode.removeChild(node);
+    } else {
+      this.removeChild(node);
+    }
   }
 
   /**
@@ -836,6 +861,8 @@ export class ICETable extends ICEWidget {
     }
     const nextKey = this.columns[editableIndexes[nextPosition]].key;
     this.startEdit(nextRow, nextKey);
+    // 目标行可能还在视口外：滚过去，否则用户看不见自己在改什么
+    this.scrollToRow(nextRow);
     void value;
   }
 
@@ -1550,6 +1577,11 @@ export class ICETable extends ICEWidget {
           const column = this.columns[i];
           // 漏斗所在的一小块区域交给漏斗自己的 click（否则点开候选会顺带切一次排序）
           if (column.filters && column.filters.length && localX >= acc + widths[i] - 26) {
+            return;
+          }
+          // 列头可拖拽：按在表头上先记下起点，松手时再决定「换序」还是「排序」
+          if (this.columnDraggable) {
+            this.columnDrag = { from: i, to: i };
             return;
           }
           this.toggleSort(column.key);
@@ -2455,6 +2487,46 @@ export class ICETable extends ICEWidget {
     };
   }
 
+  // ---- 列顺序 ----
+
+  public getColumnOrder(): string[] {
+    return this.columns.map((column) => column.key);
+  }
+
+  /** 按 key 列表重排（列表里没提到的列接在后面，新增列不会丢）。 */
+  public setColumnOrder(keys: string[]): this {
+    if (!Array.isArray(keys) || !keys.length) {
+      return this;
+    }
+    const ordered = keys
+      .map((key) => this.columns.find((column) => column.key === key))
+      .filter(Boolean) as ICETableColumn[];
+    this.columns.forEach((column) => {
+      if (ordered.indexOf(column) === -1) {
+        ordered.push(column);
+      }
+    });
+    this.columns = ordered;
+    this.__render();
+    return this;
+  }
+
+  /** 把第 `from` 列挪到第 `to` 列的位置（拖拽与测试共用这条路径）。 */
+  public moveColumn(from: number, to: number): this {
+    const order = this.getColumnOrder();
+    if (from < 0 || from >= order.length || to < 0 || to >= order.length || from === to) {
+      return this;
+    }
+    const next = order.slice();
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    this.setColumnOrder(next);
+    if (this.onColumnReorder) {
+      this.onColumnReorder(next, from, to);
+    }
+    return this;
+  }
+
   /** 按版式还原：未知 key 忽略、缺的列保持原样；宽度会按 `minWidth` 夹取（脏数据也压不没列）。 */
   public setColumnState(state: Partial<ICETableColumnState> | null | undefined): this {
     if (!state || typeof state !== 'object') {
@@ -2713,6 +2785,23 @@ export class ICETable extends ICEWidget {
   }
 
   private __onGlobalMouseMove(evt: any): void {
+    // 列头拖拽：只更新落点，松手时才真的换序
+    if (this.columnDrag && evt && typeof evt.offsetX === 'number' && this.ice && typeof this.ice.screenToWorld === 'function') {
+      const [wx] = this.ice.screenToWorld(evt.offsetX, evt.offsetY);
+      const box = this.getMinBoundingBox(true);
+      const offset = this.selectionMode === 'multiple' ? ICETable.SELECTION_WIDTH : 0;
+      const widths = this.__columnWidths((Number(this.state.width) || 720) - offset);
+      let acc = offset;
+      const localX = wx - box.tl[0];
+      for (let i = 0; i < this.columns.length; i += 1) {
+        if (localX >= acc && localX <= acc + widths[i]) {
+          this.columnDrag.to = i;
+          break;
+        }
+        acc += widths[i];
+      }
+      return;
+    }
     if (!this.ice || typeof this.ice.screenToWorld !== 'function') return;
     const [wx, wy] = this.ice.screenToWorld(evt.offsetX, evt.offsetY);
     if (this.resizeState) {
@@ -2734,6 +2823,16 @@ export class ICETable extends ICEWidget {
     }
     if (this.dragRow) {
       this.__endRowDrag(true);
+    }
+    // 列头拖拽收口：挪到别的列 → 换序；原地 → 当成「点表头排序」
+    if (this.columnDrag) {
+      const { from, to } = this.columnDrag;
+      this.columnDrag = null;
+      if (from !== to) {
+        this.moveColumn(from, to);
+      } else {
+        this.toggleSort(this.columns[from].key);
+      }
     }
   }
 
