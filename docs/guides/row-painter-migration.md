@@ -44,6 +44,37 @@
 
 ## 建议顺序与验收
 
+## ⚠️ 复核后的重要修正：先分清"无界节点"与"有界节点"（2026-09-15 追加）
+
+把 `ICETable` / `ICEList` / `ICEVirtualList` 逐个读完（不是抽样）后，结论要修正：
+
+**painter 化会破坏两个公开契约**：
+
+* `ICEVirtualList.renderItem(index, item, node)`：`node` 是**交给调用方填内容的行节点** ——
+  调用方 `node.addChild(...)` 是文档化用法（`ICESelect.virtual` / `ICETree.virtual` /
+  `ICETableVirtual` 三处用例与示例都在用）。改成 painter 就要把这套 API 换成"绘制回调"，
+  属于**破坏性变更**，下游要跟着改。
+* `ICEList.getRowNode(key)`：测试与调用方用它拿行节点、`trigger('click')` 驱动交互。
+
+**真正的痛点不是"有节点"，而是"节点随数据量无界增长"**：
+
+| 组件 | 可见节点数 | 结论 |
+|---|---|---|
+| `ICEVirtualList` | 视口 + buffer ≈ 10~20（有界） | 已经是对的：行节点只建可见的那些（Swing 的 `JList` 连这些都不建，但**有界**就没问题） |
+| `ICEList` | = 数据条数（**无界**） | 缺的是**虚拟化**（拿 `computeVirtualRange` 填上），不是 painter |
+| `ICETable` | 可见行 × 列数（取决于是否虚拟化） | 先确认没有虚拟化路径 → 补虚拟化；painter 是第二步 |
+| `ICETree` | = 展开的节点数（可无界） | 同上，先虚拟化 |
+
+**所以建议把顺序改成"先界，再画"**：
+
+1. **补虚拟化**（`ICEList` 用现成的 `computeVirtualRange`；`ICETable`/`ICETree` 加窗口渲染）——
+   **不破坏任何 API**，节点数立刻有界，收益最大、风险最低；
+2. **再谈 painter**：那时剩下的只是"行内的底色/文字要不要自绘"，
+   而且可以**保留 `renderItem` 兼容层**（旧回调照常拿到节点；想用 painter 的走新回调），
+   不必一次性破坏下游。
+
+上表与这两条就是"painter 线"的完整前置判断；下面的逐组件落点仍有效，只是执行顺序按上面这条走。
+
 `ICETable`（收益最大：37 节点 → 1）→ `ICETree` → `ICEList` / `ICEVirtualList` →
 `ICECarousel` → `ICEMenu` → `ICEGrid`/`ICEGridCol`（这条是"引擎加跨度分栏"或自持策略，见
 `tests/layoutConvention.test.ts` 的豁免清单）。
