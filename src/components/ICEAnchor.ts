@@ -2,6 +2,7 @@ import { ICEWidget } from '../core/ICEWidget';
 import { ICELabel } from './ICELabel';
 import { iceUIManager } from '../core/ICEManager';
 import { estimateTextWidth } from '../util/ICEStyle';
+import { ICEBoxLayout } from 'ice-render';
 
 /**
  * 锚点导航：一列锚点，点击滚到目标位置，滚动时自动高亮当前项。
@@ -72,6 +73,8 @@ export class ICEAnchor extends ICEWidget {
     this.fontSize = props.fontSize ?? theme.font.size;
     this.onChange = typeof props.onChange === 'function' ? props.onChange : null;
     this.activeKey = props.activeKey ?? (this.items[0] ? this.items[0].key : null);
+    // 条目是一列等距行（行距 = itemHeight，无额外缝）→ 纵向 BoxLayout
+    this.setLayout(new ICEBoxLayout({ axis: 'y', gap: 0 }));
     this.__render();
     if (this.target && typeof this.target.on === 'function') {
       this.target.on('scroll', () => this.__syncFromScroll(), this);
@@ -232,8 +235,6 @@ export class ICEAnchor extends ICEWidget {
 
     this.items.forEach((item, index) => {
       const row = new ICEWidget({
-        left: 0,
-        top: index * this.itemHeight,
         width,
         height: this.itemHeight,
         fill: false,

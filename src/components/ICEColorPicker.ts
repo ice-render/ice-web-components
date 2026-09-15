@@ -1,5 +1,6 @@
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
+import { ICEGridLayout } from 'ice-render';
 
 /**
  * 颜色选择器。
@@ -76,6 +77,9 @@ export class ICEColorPicker extends ICEWidget {
     if (this.disabled) {
       this.setEnabled(false);
     }
+    // 色板是 `columns` 列的派生网格（格 = swatchSize，缝 = gap）→ 网格布局器 + 容器内距
+    this.setState({ padding: { left: padding, top: padding } });
+    this.setLayout(new ICEGridLayout({ cols: columns, gapX: gap, gapY: gap }));
     this.__render();
   }
 
@@ -178,15 +182,9 @@ export class ICEColorPicker extends ICEWidget {
     });
 
     this.colors.forEach((color, index) => {
-      const col = index % this.columns;
-      const row = Math.floor(index / this.columns);
       const selected = this.value === color;
-      const left = this.padding + col * (this.swatchSize + this.gap);
-      const top = this.padding + row * (this.swatchSize + this.gap);
       // 外层色块即命中区：选中时用主色描边成环，未选中保留细边框。
       const cell = new ICEWidget({
-        left,
-        top,
         width: this.swatchSize,
         height: this.swatchSize,
         radius: theme.radius.sm,

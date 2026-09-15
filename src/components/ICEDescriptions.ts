@@ -2,6 +2,7 @@ import { ICELabel } from './ICELabel';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { truncateTextLines } from './ICETypography';
+import { ICEGridLayout } from 'ice-render';
 
 /**
  * 描述列表：成对的「标签 / 值」，支持单列与多列。
@@ -51,6 +52,12 @@ export class ICEDescriptions extends ICEWidget {
     this.column = column;
     this.itemHeight = itemHeight;
     this.labelWidth = props.labelWidth ?? 72;
+    /**
+     * 「标签 / 值」格子是按 `column` 列铺的派生网格：格宽 = 容器宽 / 列数 − 24（左右各留 12），
+     * 行距 = itemHeight（无缝）→ 交给网格布局器 + 容器内距。
+     */
+    this.setState({ padding: { left: 12, right: 12, top: 4 } });
+    this.setLayout(new ICEGridLayout({ cols: column, gapX: 24, gapY: 0 }));
     this.__render();
   }
 
@@ -89,17 +96,11 @@ export class ICEDescriptions extends ICEWidget {
     const columnWidth = width / this.column;
     this.rowNodes = [];
     this.items.forEach((item, index) => {
-      const row = index % this.column;
-      const line = Math.floor(index / this.column);
-      const left = row * columnWidth + 12;
-      const top = 4 + line * this.itemHeight;
       const cellWidth = columnWidth - 24;
       const labelWidth = Math.max(0, this.labelWidth - 6);
       // 值列再留 4px，避免文字紧贴下一列的标签
       const valueWidth = Math.max(0, cellWidth - this.labelWidth - 4);
       const cell = new ICEWidget({
-        left,
-        top,
         width: cellWidth,
         height: this.itemHeight,
         fill: false,

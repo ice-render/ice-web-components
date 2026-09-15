@@ -3,6 +3,7 @@ import { ICEPanel } from './ICEPanel';
 import { ICELabel } from './ICELabel';
 import { ICEButton } from './ICEButton';
 import { iceUIManager } from '../core/ICEManager';
+import { ICEBoxLayout } from 'ice-render';
 
 /**
  * 可增删的重复表单项（多联系人 / 多地址 / 明细行）。
@@ -91,6 +92,8 @@ export class ICEFormList extends ICEWidget {
     this.width = width;
     this.rowHeight = Math.max(20, Math.floor(Number(props.rowHeight) || 36));
     this.gap = Math.max(0, Math.floor(Number(props.gap) || 8));
+    // 行 + 底部「添加」按钮都是纵向等距子项（缝 = gap）→ 纵向 BoxLayout
+    this.setLayout(new ICEBoxLayout({ axis: 'y', gap: this.gap }));
     this.minRows = Math.max(0, Math.floor(Number(props.minRows) || 0));
     this.maxRows = Number.isFinite(Number(props.maxRows)) ? Math.max(0, Math.floor(Number(props.maxRows))) : null;
     this.addText = props.addText || '+ 添加一行';
@@ -213,10 +216,7 @@ export class ICEFormList extends ICEWidget {
     const actionWidth = 64;
     const contentWidth = Math.max(40, width - actionWidth - 8);
     this.rows.forEach((row, index) => {
-      const top = index * (this.rowHeight + this.gap);
       const panel = new ICEPanel({
-        left: 0,
-        top,
         width,
         height: this.rowHeight,
         radius: theme.radius.sm,
@@ -246,8 +246,6 @@ export class ICEFormList extends ICEWidget {
     });
     const addTop = this.rows.length * this.rowHeight + Math.max(0, this.rows.length - 1) * this.gap + this.gap;
     const add = new ICEButton({
-      left: 0,
-      top: addTop,
       width: 120,
       height: 32,
       text: this.addText,

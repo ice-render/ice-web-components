@@ -2,6 +2,7 @@ import { ICEWidget } from '../core/ICEWidget';
 import { ICELabel } from './ICELabel';
 import { iceUIManager } from '../core/ICEManager';
 import { estimateTextWidth } from '../util/ICEStyle';
+import { ICEFlowLayout } from 'ice-render';
 
 /**
  * 面包屑：一行「路径 + 分隔符」，最后一项是当前页。
@@ -47,8 +48,9 @@ class ICEBreadcrumbItemNode extends ICEWidget {
   private hoverColor: string;
 
   constructor(props: {
-    left: number;
-    top: number;
+    /** 位置由父级（面包屑的流式布局）给；单独使用时可以显式传 */
+    left?: number;
+    top?: number;
     width: number;
     height: number;
     text: string;
@@ -140,6 +142,8 @@ export class ICEBreadcrumb extends ICEWidget {
     this.maxItems = Number(props.maxItems) || 0;
     this.fontSize = props.fontSize ?? theme.font.size;
     this.onNavigate = typeof props.onNavigate === 'function' ? props.onNavigate : null;
+    // 一行「项 + 分隔符」按顺序排、间距 = theme.spacing.xs → 流式布局（行对齐 left）
+    this.setLayout(new ICEFlowLayout({ gap: theme.spacing.xs, align: 'left', crossAlign: 'center' }));
     this.__render(props.width !== undefined);
   }
 
@@ -210,7 +214,7 @@ export class ICEBreadcrumb extends ICEWidget {
     const height = Number(this.state.height) || 24;
     const gap = theme.spacing.xs;
     const separatorWidth = estimateTextWidth(this.separator, this.fontSize);
-    let cursor = 0;
+    let cursor = 0; // 只用于「内容总宽」这条组件级策略（宽度自适应），位置由布局器算
 
     displayed.forEach((entry, order) => {
       const isLastDisplayed = order === displayed.length - 1;
@@ -219,8 +223,6 @@ export class ICEBreadcrumb extends ICEWidget {
       const text = String(entry.item.label ?? '');
       const width = estimateTextWidth(text, this.fontSize);
       const node = new ICEBreadcrumbItemNode({
-        left: cursor,
-        top: 0,
         width,
         height,
         text,
@@ -247,8 +249,6 @@ export class ICEBreadcrumb extends ICEWidget {
       if (!isLastDisplayed) {
         const separatorNode = new ICELabel({
           interactive: false,
-          left: cursor + gap,
-          top: 0,
           width: separatorWidth,
           height,
           text: this.separator,
@@ -267,6 +267,9 @@ export class ICEBreadcrumb extends ICEWidget {
 
     // 宽度自适应：调用方给了 width 时取「内容宽 vs 给定宽」的较大值，文字永不压出色块
     this.state.width = adoptWidth ? Math.max(Number(this.state.width) || 0, cursor) : cursor;
+    // 宽度是**这一趟算出来的**：上面的 addChild 已经按旧宽度排过一遍（宽度不够会把项折行），
+    // 所以这里必须**立刻**再排一次；交给 `revalidate()`（下一帧）会先看到一帧错版。
+    this.doLayout();
     this.revalidate();
     if (this.ice) {
       this.ice.dirty = true;

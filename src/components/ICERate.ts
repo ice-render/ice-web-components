@@ -1,6 +1,7 @@
 import { ICELabel } from './ICELabel';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
+import { ICEBoxLayout } from 'ice-render';
 
 /**
  * 评分：N 颗星，点击设置分值、悬停预览、键盘 ←/→ 调整。
@@ -50,6 +51,8 @@ export class ICERate extends ICEWidget {
     this.color = props.color || theme.colors.warning;
     this.onChange = typeof props.onChange === 'function' ? props.onChange : null;
     this.focusable = !this.disabled;
+    // 星星是一行等距子项（size + 4）→ 横向 BoxLayout；命中仍按 `(size + 4)` 的节距反查序号
+    this.setLayout(new ICEBoxLayout({ axis: 'x', gap: 4 }));
     this.__render();
   }
 
@@ -178,8 +181,6 @@ export class ICERate extends ICEWidget {
     for (let i = 0; i < this.count; i++) {
       const on = i < active;
       const star = new ICEWidget({
-        left: i * (this.size + 4),
-        top: 0,
         width: this.size,
         height: this.size,
         fill: false,

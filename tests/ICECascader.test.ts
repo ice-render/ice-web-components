@@ -169,4 +169,21 @@ describe('ICECascader', () => {
     expect(cascader.getValidateStatus()).toBe('error');
     expect(cascader.isFocusable()).toBe(true);
   });
+
+  it('浮层几何走布局器后仍与历史一致：列 = `6 + level × 104`，列内选项行距 = 30', () => {
+    const { cascader } = setup();
+    cascader.open();
+    const columns = cascader.getColumnNodes();
+    expect(columns.length).toBe(1);
+    // 列行宿主（横向 BoxLayout）：起点 = PANEL_PADDING
+    const host = columns[0].parentNode as any;
+    expect([host.state.left, host.state.top]).toEqual([6, 6]);
+    // 每一列都是滚动面板，宽 = COLUMN_WIDTH
+    expect(columns[0].state.width).toBe(104);
+    // 选项行在列内容里按 ROW_HEIGHT 逐行排
+    const rows = options.map((option) => cascader.getOptionNode(0, option.value)!);
+    expect(rows.map((row) => row.state.top)).toEqual([0, 30, 60]);
+    expect(rows.every((row) => row.state.left === 0 && row.state.height === 30)).toBe(true);
+    cascader.close();
+  });
 });

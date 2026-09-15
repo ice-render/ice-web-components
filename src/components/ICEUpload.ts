@@ -1,4 +1,5 @@
 import { ICERect } from 'ice-render';
+import { ICEBoxLayout } from 'ice-render';
 import { ICELabel } from './ICELabel';
 import { ICEProgressBar } from './ICEProgressBar';
 import { ICEWidget } from '../core/ICEWidget';
@@ -112,6 +113,8 @@ export class ICEUpload extends ICEWidget {
   private uploadsPaused = false;
   private lastRejectReason: string | null = null;
   private dropZone: ICEWidget | null = null;
+  /** 文件行宿主（行由 BoxLayout 排，见 `__render`） */
+  private fileListHost: ICEWidget | null = null;
   private fileNodes = new Map<string, ICEWidget>();
   private inputEl: any = null;
   private seq = 0;
@@ -741,14 +744,30 @@ export class ICEUpload extends ICEWidget {
     this.addChild(zone, false);
     this.dropZone = zone;
 
+    /**
+     * 文件行宿主：行是「一条一行、行距 = rowHeight（无缝）」的派生排列 → 纵向 BoxLayout。
+     *
+     * 为什么用**宿主**而不是给 `ICEUpload` 自己挂布局：上传区是固定内缩 3px 的单体构件，
+     * 行列表从 `DROP_ZONE_HEIGHT` 起且行间无缝 —— 两段间距不是同一个数，塞进一个布局会互相搅。
+     */
+    const fileListHost = new ICEWidget({
+      left: 0,
+      top: DROP_ZONE_HEIGHT,
+      width,
+      height: this.files.length * this.rowHeight,
+      fill: false,
+      stroke: false,
+      interactive: false,
+    });
+    fileListHost.setLayout(new ICEBoxLayout({ axis: 'y', gap: 0 }));
+    this.addChild(fileListHost, false);
+    this.fileListHost = fileListHost;
+
     this.files.forEach((file, index) => {
       if (!this.showFileList) {
         return;
       }
-      const top = DROP_ZONE_HEIGHT + index * this.rowHeight;
       const row = new ICEWidget({
-        left: 0,
-        top,
         width,
         height: this.rowHeight,
         fill: true,
@@ -815,7 +834,7 @@ export class ICEUpload extends ICEWidget {
       );
       remove.on('click', () => this.removeFile(file.uid));
       row.addChild(remove, false);
-      this.addChild(row, false);
+      fileListHost.addChild(row, false);
       this.fileNodes.set(file.uid, row);
       this.fileRows.set(file.uid, row);
       this.fileRemoveButtons.set(file.uid, remove);

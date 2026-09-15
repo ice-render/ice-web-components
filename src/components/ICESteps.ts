@@ -1,6 +1,7 @@
 import { ICELabel } from './ICELabel';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
+import { ICEBoxLayout } from 'ice-render';
 
 /**
  * 步骤条：横向序号 + 标题/描述 + 连接线，当前步骤高亮、已完成打勾。
@@ -45,6 +46,8 @@ export class ICESteps extends ICEWidget {
     this.current = Math.min(Math.max(0, Number(props.current) || 0), Math.max(0, this.items.length - 1));
     this.circleSize = circleSize;
     this.onChange = typeof props.onChange === 'function' ? props.onChange : null;
+    // 步骤槽是一行等距（槽宽 = width / 步数，槽与槽之间留 8px 缝）→ 横向 BoxLayout
+    this.setLayout(new ICEBoxLayout({ axis: 'x', gap: 8 }));
     this.__render();
   }
 
@@ -80,10 +83,7 @@ export class ICESteps extends ICEWidget {
     this.items.forEach((item, index) => {
       const finished = index < this.current;
       const active = index === this.current;
-      const left = index * slot;
       const step = new ICEWidget({
-        left,
-        top: 0,
         width: slot - 8,
         height: Number(this.state.height) || 62,
         fill: true,

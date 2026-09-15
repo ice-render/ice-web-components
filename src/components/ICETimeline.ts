@@ -1,6 +1,7 @@
 import { ICELabel } from './ICELabel';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
+import { ICEBoxLayout } from 'ice-render';
 
 /**
  * 时间线：竖线 + 节点圆点 + 标题/描述/时间。
@@ -43,6 +44,8 @@ export class ICETimeline extends ICEWidget {
     });
     this.items = (props.items || []).slice();
     this.itemHeight = itemHeight;
+    // 条目槽是一列等距（行距 = itemHeight，无缝）→ 纵向 BoxLayout
+    this.setLayout(new ICEBoxLayout({ axis: 'y', gap: 0 }));
     this.__render();
   }
 
@@ -75,16 +78,32 @@ export class ICETimeline extends ICEWidget {
     const theme = iceUIManager.getTheme();
     // 重排前先清空（否则 setItems / 宽度变化会把新行叠在旧行上）
     this.removeChildren([...this.childNodes]);
+    // 数组同样要清：`getItemNodes()` / `getDotColor()` 读的是它们，
+    // 不清就会一直返回**上一次渲染**的节点（旧节点的坐标已经过期）。
+    this.itemNodes = [];
+    this.dots = [];
     const width = Number(this.state.width) || 320;
     const lineX = 6;
     this.items.forEach((item, index) => {
-      const top = index * this.itemHeight;
+      /**
+       * 条目自己就是「槽」：竖线 / 圆点是**行内装饰**（相对本行算：`top 16` / `top 6`），
+       * 行与行的间距交给 BoxLayout —— 装饰与排布各归各的。
+       *
+       * 注意装饰要建在行**之前**、行内的文字之后：z 序与历史一致（竖线压在行底、圆点压竖线、
+       * 文字在最上），否则相邻行之间会互相盖住。
+       */
+      const row = new ICEWidget({
+        width,
+        height: this.itemHeight,
+        fill: false,
+        stroke: false,
+      });
       // 竖线（相邻节点之间）
       if (index < this.items.length - 1) {
-        this.addChild(
+        row.addChild(
           new ICEWidget({
             left: lineX,
-            top: top + 16,
+            top: 16,
             width: 1,
             height: this.itemHeight - 8,
             fill: true,
@@ -97,7 +116,7 @@ export class ICETimeline extends ICEWidget {
       }
       const dot = new ICEWidget({
         left: lineX - 3,
-        top: top + 6,
+        top: 6,
         width: 7,
         height: 7,
         radius: 4,
@@ -106,17 +125,9 @@ export class ICETimeline extends ICEWidget {
         interactive: false,
         style: { fillStyle: item.color || theme.colors.primary },
       });
-      this.addChild(dot, false);
+      row.addChild(dot, false);
       this.dots.push(dot);
 
-      const row = new ICEWidget({
-        left: 0,
-        top,
-        width,
-        height: this.itemHeight,
-        fill: false,
-        stroke: false,
-      });
       row.addChild(
         new ICELabel({
           interactive: false,

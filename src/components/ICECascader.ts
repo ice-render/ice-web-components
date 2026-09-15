@@ -4,6 +4,7 @@ import { ICEWidget } from '../core/ICEWidget';
 import { ICEScrollPane } from './ICEScrollPane';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../core/ICEOverlayManager';
+import { ICEBoxLayout } from 'ice-render';
 
 /**
  * 级联选择。
@@ -401,10 +402,21 @@ export class ICECascader extends ICEWidget {
       }
     }
 
+    /** 各级选项列是一行等距面板（列宽 = COLUMN_WIDTH，无缝）→ 横向 BoxLayout。 */
+    const columnRow = new ICEWidget({
+      left: PANEL_PADDING,
+      top: PANEL_PADDING,
+      width: levels.length * COLUMN_WIDTH,
+      height: viewportHeight,
+      fill: false,
+      stroke: false,
+      interactive: false,
+    });
+    columnRow.setLayout(new ICEBoxLayout({ axis: 'x', gap: 0 }));
+    panel.addChild(columnRow, false);
+
     levels.forEach((nodes, level) => {
       const pane = new ICEScrollPane({
-        left: PANEL_PADDING + level * COLUMN_WIDTH,
-        top: PANEL_PADDING,
         width: COLUMN_WIDTH,
         height: viewportHeight,
         fill: false,
@@ -417,12 +429,12 @@ export class ICECascader extends ICEWidget {
         fill: false,
         stroke: false,
       });
+      // 选项行是「一行一项、行距 = ROW_HEIGHT（无缝）」→ 纵向 BoxLayout
+      content.setLayout(new ICEBoxLayout({ axis: 'y', gap: 0 }));
       const selectedAtLevel = this.activePath[level];
-      nodes.forEach((node, rowIndex) => {
+      nodes.forEach((node) => {
         const selected = !!selectedAtLevel && selectedAtLevel.value === node.value;
         const row = new ICEWidget({
-          left: 0,
-          top: rowIndex * ROW_HEIGHT,
           width: COLUMN_WIDTH,
           height: ROW_HEIGHT,
           radius: theme.radius.sm,
@@ -471,7 +483,7 @@ export class ICECascader extends ICEWidget {
         this.optionNodes.set(`${level}:${node.value}`, row);
       });
       pane.setContent(content);
-      panel.addChild(pane, false);
+      columnRow.addChild(pane, false);
       this.columns.push(pane);
     });
   }

@@ -2,6 +2,7 @@ import { ICEButton } from './ICEButton';
 import { ICELabel } from './ICELabel';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
+import { ICEFlowLayout } from 'ice-render';
 
 /**
  * 结果页：状态图标 + 标题 + 副标题 + 操作按钮组。
@@ -101,12 +102,20 @@ export class ICEResult extends ICEWidget {
     if (actions.length) {
       const buttonWidth = 110;
       const gap = 12;
-      const totalWidth = actions.length * buttonWidth + (actions.length - 1) * gap;
-      const startLeft = (width - totalWidth) / 2;
-      actions.forEach((action, index) => {
+      /** 动作按钮是一行居中的等宽按钮 → 流式布局（`align:'center'` 就是整行居中） */
+      const actionRow = new ICEWidget({
+        left: 0,
+        top: Math.max(110, height / 2 + 26),
+        width,
+        height: 32,
+        fill: false,
+        stroke: false,
+        interactive: false,
+      });
+      actionRow.setLayout(new ICEFlowLayout({ gap, align: 'center', crossAlign: 'center' }));
+      this.addChild(actionRow, false);
+      actions.forEach((action) => {
         const button = new ICEButton({
-          left: startLeft + index * (buttonWidth + gap),
-          top: Math.max(110, height / 2 + 26),
           width: buttonWidth,
           height: 32,
           text: action.text,
@@ -118,7 +127,7 @@ export class ICEResult extends ICEWidget {
             props.onAction(action.key);
           }
         });
-        this.addChild(button, false);
+        actionRow.addChild(button, false);
         this.buttons.set(action.key, button);
       });
     }

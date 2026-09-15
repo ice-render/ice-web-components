@@ -103,19 +103,19 @@ const COMPOUND_DECIDED = new Map<string, string>([
   ['ICEAvatarGroup', 'anatomy：头像叠放（index × step 就是叠放深度）'],
   ['ICETypography', 'anatomy：多行文本的行盒（行号 × lineHeight），不是子项排布'],
 
-  // —— 派生排列仍手写：待迁（按收益排序）——
-  ['ICEAnchor', 'derived：条目是"一行一项"的等距列表（index × itemHeight），可交纵向 BoxLayout；当前还叠着独立的高亮块，迁移时一并收进内容宿主'],
-  ['ICESteps', 'derived：横向步骤（index × slot）——进度连线与圆圈直径绑定，迁移要连"连接线宽度"一起算，排在中优先级'],
-  ['ICETimeline', 'derived：纵向条目（index × itemHeight），条目内还有节点与内容两列'],
-  ['ICERate', 'derived：一行星星（i × (size + 4)），与 RadioGroup 同形，迁移成本最低'],
-  ['ICEResult', 'derived：底部按钮行（宽度不一 + 固定缝），与 RadioGroup 的行同理'],
-  ['ICEBreadcrumb', 'derived：横向项 + 分隔符靠 `cursor` 累计，项宽随文本变 —— 正是 FlowLayout 的位置'],
-  ['ICEBreadcrumbItemNode', 'derived：同上（`ICEBreadcrumb.ts` 里先声明的项节点类，摆位由上层 cursor 推导）'],
-  ['ICEDescriptions', 'derived：两列表格（row × columnWidth / line × itemHeight），是"行 × 列"的派生网格'],
-  ['ICEFormList', 'derived：动态行列表（index × (rowHeight + gap)），行内还有删除按钮'],
-  ['ICEUpload', 'derived：文件行列表（index × rowHeight）'],
-  ['ICECascader', 'derived：级联列（level × COLUMN_WIDTH）+ 列内选项行'],
-  ['ICEColorPicker', 'derived：色板是「色相带 + 色块格子」的派生网格，可交引擎网格布局器'],
+  // —— 第二轮把上面这批 `derived` 全迁完了（2026-09-15 第二批）——
+  ['ICEAnchor', 'engine：条目列改纵向 BoxLayout（行距 = itemHeight）；行内竖条与文字是行自己的解剖几何'],
+  ['ICESteps', 'engine：步骤槽改横向 BoxLayout（槽宽 = width / 步数、缝 8）；圆圈与连接线留作槽内装饰'],
+  ['ICETimeline', 'engine：条目行改纵向 BoxLayout（行距 = itemHeight），竖线与圆点收进行内装饰（z 序与历史一致）'],
+  ['ICERate', 'engine：一行星星改横向 BoxLayout（gap 4）；命中仍按 `(size + 4)` 节距反查序号'],
+  ['ICEResult', 'engine：底部按钮行改 `ICEFlowLayout({ align: "center" })`（原来是手算 `(width - total) / 2` 居中）'],
+  ['ICEBreadcrumb', 'engine：项 + 分隔符改 `ICEFlowLayout`（缝 = theme.spacing.xs），宽度自适应仍按累计内容宽'],
+  ['ICEBreadcrumbItemNode', 'engine：同上（`ICEBreadcrumb.ts` 里先声明的项节点类，位置由父级流式布局给）'],
+  ['ICEDescriptions', 'engine：格子改 `ICEGridLayout({ cols, gapX: 24 })` + 容器 padding（12 / 4），列宽与历史手算一致'],
+  ['ICEFormList', 'engine：行与底部「添加」按钮改纵向 BoxLayout（缝 = gap）'],
+  ['ICEUpload', 'engine：文件行收进「行宿主」+ 纵向 BoxLayout；上传区是固定内缩 3px 的单体构件，保留自身坐标'],
+  ['ICECascader', 'engine：列行（横向）与列内选项行（纵向）两层 BoxLayout；滚动仍由 ICEScrollPane 管'],
+  ['ICEColorPicker', 'engine：色板改 `ICEGridLayout({ cols })` + 容器 padding；格子的选中环仍由格子自身画'],
 ]);
 
 /**
