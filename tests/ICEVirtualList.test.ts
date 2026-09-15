@@ -77,16 +77,30 @@ describe('ICEVirtualList（组件）', () => {
     expect(list.getRange().end).toBe(10000);
   });
 
-  it('渲染回调拿到的是「数据下标」，位置按下标算', () => {
-    const seen: number[] = [];
-    const list = makeList({ buffer: 0 });
+  it('renderItem 拿到「数据下标 + 行矩形」（自己画，不再给节点）', () => {
+    const painted: Array<{ index: number; y: number; width: number; height: number }> = [];
+    const list = makeList({
+      buffer: 0,
+      renderItem: (context: any) =>
+        painted.push({ index: context.index, y: context.y, width: context.width, height: context.height }),
+    });
     list.setItems(Array.from({ length: 100 }, (_, i) => '第' + i + '条'));
     list.setScrollTop(300);
-    list.getRenderedNodes().forEach((entry: any) => {
-      seen.push(entry.index);
-      expect(entry.node.state.top).toBe(entry.index * 30);
-    });
-    expect(seen).toEqual([10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
+    painted.length = 0; // 只看这一次绘制
+    list.paintItems({}, [0, 0]); // 单测直接调绘制；装配期不碰 ctx，只把行矩形交出去
+    expect(painted.map((entry) => entry.index)).toEqual([10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
+    expect(painted[0].y).toBe(10 * 30); // 位置按下标 × 行高（已含滚动偏移的坐标系）
+    expect(painted[0].height).toBe(30);
+    expect(painted[0].width).toBe(320);
+  });
+
+  it('行不再建节点：一万条数据也是 0 个行节点（内容盒永远是空的）', () => {
+    const list = makeList({ buffer: 2 });
+    list.setItems(Array.from({ length: 10000 }, (_, i) => i));
+    expect(list.childNodes).toHaveLength(1); // 只有滚动视口
+    expect((list.getScrollPane().getContent() as any).childNodes).toHaveLength(0);
+    list.setScrollTop(3000);
+    expect((list.getScrollPane().getContent() as any).childNodes).toHaveLength(0);
   });
 
   it('scrollToIndex 把目标滚进视口（贴顶），并夹在范围内', () => {

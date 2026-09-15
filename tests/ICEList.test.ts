@@ -22,25 +22,25 @@ describe('ICEList', () => {
   it('渲染行 + 单选：点击替换选中，onChange 回调', () => {
     const changes: string[][] = [];
     const list = new ICEList({ left: 0, top: 0, width: 200, height: 160, items, onChange: (keys) => changes.push(keys) });
-    expect(list.getRowNode('a')).toBeTruthy();
+    expect(list.getRowBox('a')).toEqual({ left: 4, top: 0, width: 190, height: 34 });
     expect(list.getSelectedKeys()).toEqual([]);
 
-    list.getRowNode('a')!.trigger('click', null, {});
+    list.clickRow('a'); // 行是画出来的：程序式点击走数据级入口
     expect(list.getSelectedKeys()).toEqual(['a']);
-    list.getRowNode('b')!.trigger('click', null, {});
+    list.clickRow('b');
     expect(list.getSelectedKeys()).toEqual(['b']);
     expect(changes).toEqual([['a'], ['b']]);
   });
 
   it('多选：点击切换；disabled 行忽略', () => {
     const list = new ICEList({ width: 200, height: 160, mode: 'multiple', items, value: [] });
-    list.getRowNode('a')!.trigger('click', null, {});
-    list.getRowNode('d')!.trigger('click', null, {});
+    list.clickRow('a');
+    list.clickRow('d');
     expect(list.getSelectedKeys()).toEqual(['a', 'd']);
-    list.getRowNode('a')!.trigger('click', null, {});
+    list.clickRow('a');
     expect(list.getSelectedKeys()).toEqual(['d']);
 
-    list.getRowNode('c')!.trigger('click', null, {});
+    list.clickRow('c'); // disabled 行忽略
     expect(list.getSelectedKeys()).toEqual(['d']);
   });
 
@@ -83,7 +83,7 @@ describe('ICEList', () => {
     list.setSelectedKeys(['a', 'b']);
     expect(list.getSelectedKeys()).toEqual(['a', 'b']);
     list.setItems([{ key: 'x', label: 'X' }, { key: 'y', label: 'Y' }]);
-    expect(list.getRowNode('x')).toBeTruthy();
+    expect(list.getRowBox('x')).toBeTruthy();
     expect(list.getSelectedKeys()).toEqual([]); // 数据换了，选择清空
   });
 });

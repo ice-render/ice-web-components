@@ -115,7 +115,7 @@
 
 - 选择逻辑在 `ICESelectionModel` 里（single 替换 / multiple 切换），组件只负责渲染与交互；
 - 内容高于可视高度时自动套一层 `ICEScrollPane`（复用 A2 的滚动底座与子树裁剪）；
-- 交互：点击行选中（disabled 行忽略）；焦点在列表上时 ↑/↓ 移动激活行（跳过 disabled）、 Enter/Space 选中激活行。
+- 交互：点击行选中（disabled 行忽略）；焦点在列表上时 ↑/↓ 移动激活行（跳过 disabled）、 Enter/Space 选中激活行。 **行由 painter 画**（2026-09-15，Swing 的 `JList` + `ListCellRenderer` 位）：行不再是子节点， 点击用几何反查行下标（`__indexAtPoint`）。程序式点击/断言用 `clickRow(key)`（旧的 `getRowNode(key).trigger('click')` 已删除）；行矩形用 `getRowBox(key)` 查。
 
 源码：[`src/components/ICEList.ts`](../../src/components/ICEList.ts)
 
@@ -142,10 +142,13 @@
 | `setSelectedKeys(keys: string[])` | `this` |  |
 | `getSelectionModel()` | `ICESelectionModel` |  |
 | `getActiveIndex()` | `number` |  |
-| `getRowNode(key: string)` | `ICEWidget \| null` |  |
+| `clickRow(key: string)` | `this` | 程序式点击某一行（等价于用户点中那一行；disabled 行无效）。 |
+| `getRowBox(key: string)` | `{ left: number; top: number; width: number; height: number } \| null` | 某一行的矩形（内容盒坐标系；`null` = 没有这一行）。几何审计 / e2e 定位用。 |
 | `getScrollPane()` | `ICEScrollPane \| null` |  |
 | `getItems()` | `ICEListItem[]` |  |
 | `setItems(items: ICEListItem[])` | `this` |  |
+| `paintRows(ctx: any, theme: any, origin: [number, number])` | `void` | 画所有行（浏览器里由 content 的 painter 每帧自动调用；单测可直接调它断言行矩形/颜色）。 |
+| `initEvents()` | `void` |  |
 
 ## `ICETree`
 
@@ -486,7 +489,7 @@
 
 ## `ICEAvatar`
 
-文字头像：取首字母/汉字，背景色可配，自带描边把相邻头像分开。
+文字头像：取首字母/汉字，背景色可配，自带描边把相邻头像分开。  装饰（圆底 + 首字）由 painter 画，组件自己只保存文本、宽高与背景色。
 
 源码：[`src/components/ICEAvatar.ts`](../../src/components/ICEAvatar.ts)
 
@@ -785,7 +788,7 @@
 | `itemHeight` | `number` | 每行高度（固定行高才谈得上虚拟滚动） |
 | `buffer?` | `number` | 上下缓冲条数，默认 2 |
 | `items?` | `any[]` | 数据项 |
-| `renderItem?` | `(index: number, item: any, node: any) => void` | 渲染一条：拿到的是**数据下标**（不是节点下标），可以复用传入的 node |
+| `renderItem?` | `(context: ICEVirtualItemPaintContext) => void` | 画一条：**直接往 ctx 上画**（不再给节点）。 |
 | `scrollbar?` | `boolean` | 是否显示滚动条，默认 true |
 
 **方法**
@@ -799,12 +802,12 @@
 | `getContentHeight()` | `number` | 内容总高度（撑开滚动条用）。 |
 | `getScrollTop()` | `number` |  |
 | `getRange()` | `ICEVirtualRange` | 当前窗口（查询前会先同步一次，保证拿到的是最新状态）。 |
-| `getRenderedNodes()` | `Array<{ index: number; node: any }>` | 当前真正渲染出来的节点（按下标升序）。 |
-| `getRenderedCount()` | `number` |  |
+| `getRenderedCount()` | `number` | 当前窗口会画几条（= `getRange().count`）。 |
 | `getScrollPane()` | `ICEScrollPane` | 对外暴露滚动视口（需要挂滚动监听时用）。 |
 | `setItems(items: any[])` | `this` |  |
 | `setScrollTop(scrollTop: number)` | `this` |  |
 | `scrollToIndex(index: number)` | `this` | 把某一条滚进视口（贴顶对齐），下标会被夹进合法范围。 |
+| `paintItems(ctx: any, origin: [number, number])` | `void` | 画当前窗口的每一行（浏览器里由 content 的 painter 每帧自动调用； |
 
 ## `ICEKanban`
 

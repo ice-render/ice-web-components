@@ -7,6 +7,118 @@
 
 > 下一个版本发布前，改动在这里累积。
 
+### 变更
+
+- **容器家族的「手写坐标」清零（2026-09-15 收尾批）**：
+  - `ICESplitter` → 自持 `ICESplitterLayout`（`JSplitPane` + `BasicSplitPaneUI` 位）：两栏 + 分隔条位置
+    归策略，拖拽只改 `requestedSize`（夹取/回调整字搬移）；删掉手写 `__layout` 与重入标志。
+  - `ICEWindow` → 自持 `ICEWindowLayout`（`JInternalFrame` 位）：底板 / 标题栏 / 标题带 / 图标与标题 /
+    三个按钮 / 客户区 / 缩放角全归策略；客户区是调用方内容只跟随尺寸。
+  - `ICEGrid` / `ICEGridCol` → 自持 24 栅格策略（等列宽 + 行高按内容 + 自动高度 + `offset` 列偏移，
+    逐字保留原语义）；组件只留 `autoHeight` 高度策略。
+  - `ICEMenu` → 自持 `ICEMenuLayout`（树形竖排带缩进 / 收起态竖排 / 顶栏横排）；为让它成立，
+    **展开/收起动画从写 `top` 改成写 `transform.translate`**（动画-safe，布局重排不会再弹回动画），
+    `getItemBox()` 改为汇报**视觉盒子**（含位移）以免断言语义变化。
+  - 棘轮现状：容器家族 **13 个已迁移、0 个豁免**；复合叶子 7 个已迁移（`ICEImageView` 明确排除，它
+    的 cover/contain 是自绘落墨矩形、不是子节点布局）。
+- **（破坏性）`ICEList` 行改由 painter 画，点击改几何反查**：删除 `getRowNode(key)`
+  （行不再是节点），新增 `clickRow(key)` 与 `getRowBox(key)`；真实点击按
+  「事件坐标 → 世界坐标 → 列表世界盒 + 滚动偏移 → 行下标」反查；绘制走 `paintRows()`。
+  行数不再影响节点数（内容盒永远是空的）。迁移：
+  `list.getRowNode(key).trigger('click')` → `list.clickRow(key)`。
+- **（破坏性）`ICEVirtualList.renderItem` 从"给节点"改成"给行矩形直接画"**（家族早期，趁早改）：
+  签名 `(index, item, node) => void` → `(context: { ctx, index, item, x, y, width, height }) => void`。
+  行不再建节点 —— 一万条数据也是 **0 个行节点**（旧实现是"可见区 + buffer"个节点），
+  绘制走 `painter`（Swing 的 `ListCellRenderer` + UI delegate 位）。配套：
+  - 删除 `getRenderedNodes()`（返回节点列表的 API 没有意义了）；`getRenderedCount()` 保留，
+    语义变成"这一帧画几行"，值仍等于 `getRange().count`；
+  - 新增 `paintItems(ctx, origin?)`：浏览器里由 painter 每帧自动调用，单测可直接调它断言
+    "画了哪几行、画在哪个矩形"；
+  - 迁移：`renderItem: (index, item, node) => { node.addChild(...) }` 改成
+    `renderItem: ({ ctx, item, x, y, width, height }) => { ctx.fillRect(...); ctx.fillText(...) }`
+    （示例页 `examples/gallery.html` 已按新写法改）。
+- **按"内容与装饰混排 → 组件自持策略"把四个容器收口了**（Swing 对应实现写在括号里）：
+  - `ICEScrollPane` → 自持 `ICEScrollPaneLayout`（`JScrollPane` + `ScrollPaneLayout`）：
+    内容盒（负滚动偏移）+ 两条轨道 + 两个滑块的几何全归策略；删掉手写的
+    `__syncScrollbar` / `__syncHorizontalScrollbar`，滚动/改内容尺寸一律走 `doLayout()`。
+  - `ICETabs` → 自持 `ICETabsLayout`（`JTabbedPane` + `BasicTabbedPaneUI`）：
+    上/下/左/右四方位 + overflow（两端箭头 + 可滚动条带）都在策略里；删掉
+    `__applyVerticalLayout` / `__applyBottomLayout`，`__applyOverflowLayout` 拆成"只建结构"
+    的 `__ensureOverflowStructure`（布局策略只摆位置、不重建树）。
+  - `ICEPagination` → `ICEBoxLayout(axis x)`：顺手收敛了老实现里 **76px** 的文案占位魔数。
+  - `ICEFormItem`（复合叶子）→ 自持 `ICEFormItemLayout`：水平/垂直两形态都在策略里，删掉 `__layoutChildren`。
+- **棘轮清单同步收口**：`tests/layoutConvention.test.ts` 的"已迁移"从 7 个涨到 11 个；
+  剩余豁免 3 个（`ICEGrid`/`ICEGridCol` 分数列宽栅格、`ICEMenu` 子菜单需先迁成浮层），
+  每条都写清了原因与下一步。
+- **布局约定变成可执行的棘轮**：`AGENTS.md` 新增「布局铁律」（容器排布走引擎布局器 / 装饰走 painter /
+  内容与装饰混合时自持策略 / 布局要能序列化），并由 `tests/layoutConvention.test.ts` 守住 ——
+  `src/components` 里每个容器类必须在「已迁移」或「豁免清单（带原因）」里，新增容器必须二选一，
+  不能再默默抄一套手写坐标。当前豁免：`ICEGrid`/`ICEGridCol`（分数列宽栅格）、
+  `ICETabs`（页签 + 箭头 + extra 混排）、`ICEScrollPane`（视口 + 滚动条）、
+  `ICEPagination`（页码混排 + 魔数）、`ICEMenu`（菜单项 + 浮层）。
+- **`ICESegmented` 改用引擎布局器**：`block` 形态 → `ICEGridLayout({ cellSizing: 'equal' })`
+  （等宽铺满，就是 Swing `GridLayout` 的口径；内缩 2 改由容器 `padding` 承担），
+  非 block → `ICEBoxLayout({ axis: 'x', gap: 2 })`。几何与老实现逐像素一致（宽度 97.33、起点 2/101.33/200.67），
+  组件不再手算分段坐标。
+- **容器型组件现在也参与快照往返**：引擎这轮把布局策略序列化补齐（`layout: { type, props }`），
+  `ICELayout` / `ICEForm` / `ICESpace` / `ICESegmented` / `ICEPanel` 等的版式存盘再打开不会散。
+- **painter（Swing 的 UI delegate 位）真正可用，并开始承接内部装饰**：
+  - 引擎管线的缺口补上：`ICEWidget.doRender()` 现在会把画笔交给 `painter.paint({ ctx, theme, component, origin })`
+    （在 `super.doRender()` 之后取回组件本地 CTM，与 `ICETileMap` 自绘同一套口径），`origin` 是本地原点
+    （默认盒子中心），单测可直接调 `paintDecoration()`。此前 `setPainter` 只影响 `getPreferredSize()`，
+    **`paint()` 从来没有被调用过** —— 挂上去的 painter 画不出任何东西。
+  - `ICEAvatar`：圆底 + 首字的两个子节点迁到 painter，`childNodes` 从 2 → 0；
+    文本改成组件自己的状态（`setText` 不再同步子节点）。
+  - `ICESkeleton`：占位条全部迁到 painter（N 个 `ICEWidget` 子节点 → 0），颜色改为每帧读主题
+    （原来构造期写死，换主题不跟着变）。
+  - 圆角矩形路径提取成公共工具 `roundRectPath`（`util/ICEStyle`），painter 与 `ICETileMap` 共用。
+  - 回归：`tests/ICEPainter.test.ts`（8 例：paint 上下文/坐标、install-uninstall、首选尺寸协商、
+    painter 自己挂事件、装饰不参与布局）+ 真机 `e2e/painter.spec.ts`（采样像素：圆内是主题主色、圆外透明）。
+  - 文档：`docs/guides/custom-components.md`（装饰 vs 内容、painter 契约）、`docs/guides/layout.md`。
+
+- **容器型组件改用引擎布局器**（2026-09-15，承接引擎「布局不继承 / 尺寸协商」改造）：
+  - `ICELayout`：四区版式交给 `ICEBorderLayout`（顶栏 north / 侧栏 west|east / 内容 center / 页脚 south），
+    本组件只声明「哪个节点是哪个区」和区高/区宽；**侧栏收起 = 把节点 `display` 关掉**，
+    布局器按 Swing 口径跳过不可见子项，内容自动占满（不再手算剩余宽度）。`getRegionBox()` 改成
+    直接读布局器摆好的盒子，公开 API 与几何口径不变。
+  - `ICEForm`：纵向堆叠交给 `ICEBoxLayout({ axis: 'y', gap, align: 'stretch' })`（表单项自动拉满表单宽度），
+    组件自己只保留「高度 = 内容高度」一条策略。
+  - `ICESpace`：按形态选引擎布局器（横向/纵向 → `ICEBoxLayout`，换行 → `ICEFlowLayout`），
+    组件自己只保留「没给宽/高的那一轴按内容自适应」。
+  回归：`tests/engineLayout.integration.test.ts`（含「确实挂的是引擎布局器」的断言）。
+  这三个组件的既有单测（ICELayout 9 例 / ICEForm 39 例 / ICESpace 5 例）全部原样通过。
+- **引擎布局不再继承父层策略（对齐 Java Swing）**：引擎侧删掉了「子容器默认继承父层布局」的
+  传播逻辑，`setLayout()` 只影响容器自己怎么摆子项。本库因此不再需要「用 `setLayout(null)` 退出
+  继承」这类规避手段，`ICETabs` 里那处 `null` 现在只剩「清掉自己的策略」一个语义（注释已更新）。
+  推论：**子容器要自动排布就自己 `setLayout()`**；给面板挂布局不会再重排它内部组件的零件。
+- **`docs/guides/layout.md` 补「引擎布局不继承」、尺寸协商口径与「哪些容器在用引擎布局器」对照表**
+  （`getPreferredSize()` / `setPreferredSize()`；构造期 `width/height` 只算边界）。
+  `ICEGrid`（需要分数列宽跨列）与 `ICESplitter`（尺寸由拖拽驱动）继续自己算坐标。
+
+### 修复
+
+- **给容器挂引擎布局会破坏子组件内部几何**：引擎 2.7 及以前会把布局策略递归灌给所有后代容器，
+  而本库每个组件都是 `ICEGroup` 子类、内部零件（按钮文字、输入框前后缀 / 清除按钮）都在同一个
+  `childNodes` 里，于是一次 `setLayout()` 等于把整个界面的内部零件按同一策略重摆一遍
+  （实测 `ICETextField(prefix, allowClear)` 的文本 `12 → 0`、清除按钮 `(170,6) → (316,0)`）。
+  引擎修掉继承后不再发生，本库加回归用例守住：`tests/engineLayout.integration.test.ts`。
+
+### 说明（"格子类"重构的收尾判定）
+
+- 逐组件核实后确认：**真正"节点随数据无界"的只有 `ICEList`**（已改成 painter + 几何反查）。
+  `ICETree`/`ICETable` 早已虚拟化（`ICETable` 在 `virtual: true` 下 `getRenderedRowCount() <= 12`），
+  `ICECarousel`/`ICEMenu` 的节点数由调用方给的规模决定（幻灯片是内容、菜单项是个位数~几十）。
+  因此**不为了自绘而做破坏性改造**；结论与判定表见
+  [`docs/guides/row-painter-migration.md`](./docs/guides/row-painter-migration.md) 的「最终结论」。
+
+### 注意（依赖）
+
+- 上述修复依赖 **ice-render 当前 `dev` 分支**（`feat/layout-swing-alignment`，见该仓 CHANGELOG
+  `[Unreleased]`），尚未发版；本仓 `devDependencies`/`peerDependencies` 的 `ice-render` 范围
+  待引擎发版后再对齐（本地验证是把引擎构建产物同步进 `node_modules/ice-render` 跑的）。
+- 本轮还依赖引擎新增的 `ICEBoxLayout.align`（含 `stretch`）与 `ICEFlowLayout.crossAlign`
+  —— 旧引擎上这些选项会被静默忽略（表现为表单项不拉满宽度、Space 的 align 只在非换行时生效）。
+
 ## [1.6.0] - 2026-09-14
 
 ### 新增

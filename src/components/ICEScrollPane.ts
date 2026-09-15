@@ -2,6 +2,7 @@ import { ICEContainer } from '../core/ICEContainer';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { tween, resolveICEAnimationDuration } from '../util/ICEAnimation';
+import { ICELayoutManager } from 'ice-render';
 
 /**
  * 滚动视口（Swing 的 JScrollPane / CSS 的 overflow:auto 容器）。
@@ -34,6 +35,90 @@ export interface ICEScrollPaneOptions {
 const SCROLLBAR_WIDTH = 6;
 const SCROLLBAR_INSET = 4;
 const SCROLLBAR_MIN_THUMB = 12;
+
+/**
+ * 视口 + 滚动条的自持策略（Swing 的 `JScrollPane` + `ScrollPaneLayout` 位）。
+ *
+ * 这里同时摆"内容"（内容盒 = 负的滚动偏移）与"装饰"（两条轨道 + 两个滑块）——
+ * 正是 Swing 用 `ScrollPaneLayout` 解决的那类版式：容器里既有内容又有可交互装饰，
+ * 用引擎的通用布局器表达不了，于是**组件自己实现一个 `ICELayoutManager`**。
+ *
+ * 组件侧只留策略：内容多大、能不能滚、滚动条显不显示（`isScrollbarVisible()` 等），
+ * 坐标一律由本策略算（`setScroll` / `setContentSize` / 尺寸变化都只是触发一次 `doLayout()`）。
+ */
+class ICEScrollPaneLayout extends ICELayoutManager {
+  layoutContainer(container: any): void {
+    const pane = container as unknown as ICEScrollPane;
+    const [vw, vh] = pane.getViewportSize();
+    const [contentWidth, contentHeight] = pane.getContentSize();
+    const [scrollX, scrollY] = pane.getScroll();
+    const { content, vTrack, vThumb, hTrack, hThumb } = pane.__getScrollNodes();
+
+    // ① 内容盒：位置 = 负的滚动偏移（-0 要写成 0，断言/序列化都敏感）
+    content.setState({
+      left: scrollX === 0 ? 0 : -scrollX,
+      top: scrollY === 0 ? 0 : -scrollY,
+      width: contentWidth,
+      height: contentHeight,
+    });
+
+    // ② 竖向滚动条
+    const trackHeight = Math.max(0, vh - SCROLLBAR_INSET * 2);
+    const vVisible = pane.isScrollbarVisible() && contentHeight > vh && trackHeight > 0;
+    vTrack.setState({
+      left: vw - SCROLLBAR_WIDTH - SCROLLBAR_INSET,
+      top: SCROLLBAR_INSET,
+      width: SCROLLBAR_WIDTH,
+      height: trackHeight,
+      display: vVisible,
+    });
+    if (!vVisible) {
+      vThumb.setState({ display: false });
+    } else {
+      const thumbHeight = Math.max(SCROLLBAR_MIN_THUMB, Math.round(trackHeight * (vh / contentHeight)));
+      const maxY = Math.max(0, contentHeight - vh);
+      const progress = maxY > 0 ? scrollY / maxY : 0;
+      vThumb.setState({
+        display: true,
+        left: 0,
+        top: Math.round((trackHeight - thumbHeight) * progress),
+        width: SCROLLBAR_WIDTH,
+        height: thumbHeight,
+      });
+    }
+
+    // ③ 横向滚动条（比例与竖向一致）
+    const trackWidth = Math.max(0, vw - SCROLLBAR_INSET * 2);
+    const hVisible =
+      pane.isHorizontalScrollbarVisible() && contentWidth > vw && trackWidth > 0 && vh > SCROLLBAR_WIDTH * 3;
+    hTrack.setState({
+      left: SCROLLBAR_INSET,
+      top: vh - SCROLLBAR_WIDTH - SCROLLBAR_INSET,
+      width: trackWidth,
+      height: SCROLLBAR_WIDTH,
+      display: hVisible,
+    });
+    if (!hVisible) {
+      hThumb.setState({ display: false });
+    } else {
+      const thumbWidth = Math.max(SCROLLBAR_MIN_THUMB, Math.round(trackWidth * (vw / contentWidth)));
+      const maxX = Math.max(0, contentWidth - vw);
+      const progress = maxX > 0 ? scrollX / maxX : 0;
+      hThumb.setState({
+        display: true,
+        left: Math.round((trackWidth - thumbWidth) * progress),
+        top: 0,
+        width: thumbWidth,
+        height: SCROLLBAR_WIDTH,
+      });
+    }
+  }
+
+  /** 序列化参数：滚动条几何由尺寸/内容决定，没有可调的构造参数。 */
+  public toJSON(): any {
+    return {};
+  }
+}
 
 export class ICEScrollPane extends ICEContainer {
   private contentBox: ICEWidget;
@@ -132,6 +217,8 @@ export class ICEScrollPane extends ICEContainer {
     this.addChild(this.hTrack, false);
     this.hTrack.setState({ display: false });
 
+    // 排布交给自持策略（Swing ScrollPaneLayout 位）：内容盒 + 两条滚动条都归它摆
+    this.setLayout(new ICEScrollPaneLayout());
     this.setScroll(this.scrollX, this.scrollY);
   }
 
@@ -195,10 +282,8 @@ export class ICEScrollPane extends ICEContainer {
     const changed = nextX !== this.scrollX || nextY !== this.scrollY;
     this.scrollX = nextX;
     this.scrollY = nextY;
-    // 注意：0 要写成 0 而不是 -0（-0 在 Object.is 语义下不等于 0，断言/序列化都容易踩）
-    this.contentBox.setState({ left: nextX === 0 ? 0 : -nextX, top: nextY === 0 ? 0 : -nextY });
-    this.__syncScrollbar();
-    this.__syncHorizontalScrollbar();
+    // 位置不再自己算：策略会按新的滚动偏移重摆内容盒与两条滚动条
+    this.doLayout();
     if (changed && this.ice) {
       this.ice.dirty = true;
     }
@@ -435,7 +520,7 @@ export class ICEScrollPane extends ICEContainer {
     const height = Number(node && node.state && node.state.height) || 0;
     this.contentWidth = width;
     this.contentHeight = height;
-    this.contentBox.setState({ width, height });
+    this.doLayout();
   }
 
   /**
@@ -460,63 +545,6 @@ export class ICEScrollPane extends ICEContainer {
     visit(node);
   }
 
-  private __syncScrollbar(): void {
-    const [vw, vh] = this.getViewportSize();
-    const trackHeight = Math.max(0, vh - SCROLLBAR_INSET * 2);
-    const visible = this.isScrollbarVisible() && this.contentHeight > vh && trackHeight > 0;
-    this.scrollbarTrack.setState({
-      left: vw - SCROLLBAR_WIDTH - SCROLLBAR_INSET,
-      top: SCROLLBAR_INSET,
-      width: SCROLLBAR_WIDTH,
-      height: trackHeight,
-      display: visible,
-    });
-    if (!visible) {
-      this.scrollbarThumb.setState({ display: false });
-      return;
-    }
-    const ratio = vh / this.contentHeight;
-    const thumbHeight = Math.max(SCROLLBAR_MIN_THUMB, Math.round(trackHeight * ratio));
-    const [maxX, maxY] = this.getScrollRange();
-    const progress = maxY > 0 ? this.scrollY / maxY : 0;
-    this.scrollbarThumb.setState({
-      display: true,
-      left: 0,
-      top: Math.round((trackHeight - thumbHeight) * progress),
-      width: SCROLLBAR_WIDTH,
-      height: thumbHeight,
-    });
-  }
-
-  /** 横向滚动条：轨道宽 - 滑块宽 = 可拖行程（比例与竖向一致）。 */
-  private __syncHorizontalScrollbar(): void {
-    const [vw, vh] = this.getViewportSize();
-    const trackWidth = Math.max(0, vw - SCROLLBAR_INSET * 2);
-    const visible = this.isHorizontalScrollbarVisible() && this.contentWidth > vw && trackWidth > 0 && vh > SCROLLBAR_WIDTH * 3;
-    this.hTrack.setState({
-      left: SCROLLBAR_INSET,
-      top: vh - SCROLLBAR_WIDTH - SCROLLBAR_INSET,
-      width: trackWidth,
-      height: SCROLLBAR_WIDTH,
-      display: visible,
-    });
-    if (!visible) {
-      this.hThumb.setState({ display: false });
-      return;
-    }
-    const ratio = vw / this.contentWidth;
-    const thumbWidth = Math.max(SCROLLBAR_MIN_THUMB, Math.round(trackWidth * ratio));
-    const [maxX] = this.getScrollRange();
-    const progress = maxX > 0 ? this.scrollX / maxX : 0;
-    this.hThumb.setState({
-      display: true,
-      left: Math.round((trackWidth - thumbWidth) * progress),
-      top: 0,
-      width: thumbWidth,
-      height: SCROLLBAR_WIDTH,
-    });
-  }
-
   /** 拖横向滑块：入口给 0-1 的进度（真实拖拽与测试用同一条路径）。 */
   public __onHorizontalThumbDrag(progress: number): this {
     const [maxX] = this.getScrollRange();
@@ -527,8 +555,25 @@ export class ICEScrollPane extends ICEContainer {
   protected __afterStateMerge(sizeChanged: boolean): void {
     super.__afterStateMerge(sizeChanged);
     if (sizeChanged) {
-      this.__syncScrollbar();
-      this.__syncHorizontalScrollbar();
+      // 视口尺寸变了：策略要按新尺寸重摆内容盒与两条滚动条
+      this.doLayout();
     }
+  }
+
+  /** 策略要摆的五个节点（内容盒 + 两条轨道 + 两个滑块）：内部 API，供 ICEScrollPaneLayout 使用。 */
+  public __getScrollNodes(): {
+    content: ICEWidget;
+    vTrack: ICEWidget;
+    vThumb: ICEWidget;
+    hTrack: ICEWidget;
+    hThumb: ICEWidget;
+  } {
+    return {
+      content: this.contentBox,
+      vTrack: this.scrollbarTrack,
+      vThumb: this.scrollbarThumb,
+      hTrack: this.hTrack,
+      hThumb: this.hThumb,
+    };
   }
 }

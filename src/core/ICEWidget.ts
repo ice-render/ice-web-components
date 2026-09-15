@@ -36,8 +36,6 @@ export class ICEWidget extends ICEGroup {
   private __t: ICETranslate | null = null;
 
   protected painter: ICEPainter | null = null;
-  protected preferredWidth: number = 0;
-  protected preferredHeight: number = 0;
   protected enabled: boolean = true;
   protected hovered: boolean = false;
   /**
@@ -212,18 +210,25 @@ export class ICEWidget extends ICEGroup {
     return this;
   }
 
-  public setPreferredSize(width: number, height: number): this {
-    this.preferredWidth = Math.max(0, width || 0);
-    this.preferredHeight = Math.max(0, height || 0);
-    this.revalidate();
-    return this;
-  }
-
+  /**
+   * 组件**想要多大**（布局用）。
+   *
+   * 优先级与 Swing 的 `JComponent.getPreferredSize()` 一致：
+   * ① 调用方 `setPreferredSize([w, h])` 声明过（引擎基类提供）→ 用声明值；
+   * ② 组件挂了自己的 `painter` 且它能报尺寸 → 问 painter（对应 Swing 的 UI delegate）；
+   * ③ 否则回到引擎基类（容器有布局时报内容尺寸，叶子报自己的盒子）。
+   *
+   * 注：本类原来自己实现过 `setPreferredSize(width, height)` + `preferredWidth/Height` 字段，
+   * 与引擎 2026-09-15 新增的同名 Swing API 撞了签名，已合并到引擎那一份（调用方改传数组）。
+   */
   public getPreferredSize(): [number, number] {
+    if (this.isPreferredSizeSet()) {
+      return super.getPreferredSize();
+    }
     if (this.painter && typeof this.painter.getPreferredSize === 'function') {
       return this.painter.getPreferredSize(this);
     }
-    return [this.preferredWidth, this.preferredHeight];
+    return super.getPreferredSize();
   }
 
   public setPainter(painter: ICEPainter | null): this {
@@ -240,6 +245,52 @@ export class ICEWidget extends ICEGroup {
 
   public getPainter(): ICEPainter | null {
     return this.painter;
+  }
+
+  /**
+   * 渲染钩子：先画自己的盒子（背景 / 描边 / 圆角），再把**组件内部装饰**交给 painter。
+   *
+   * painter 是 Swing `ComponentUI`（UI delegate）在本库的对应物：组件内部那些
+   * "不是内容、也不该参与父容器布局"的装饰（头像的圆与文字、骨架屏的占位条…）
+   * 由它直接画在组件自己的坐标系里，因而**不占 `childNodes`** —— 于是给组件挂布局
+   * 也不会把内部装饰一起排掉（见 `docs/guides/layout.md`）。
+   *
+   * 契约：
+   * - `paint({ ctx, theme, component })` 在组件**本地坐标系**里调用（引擎已经应用了
+   *   该组件的 CTM），画的东西要落在 `0,0 - state.width/height` 之内；
+   * - painter 自己负责 ctx 状态（引擎会在组件渲染结束后归位"泄漏属性"，但别依赖它）；
+   * - 需要交互的内部装饰（例如下拉箭头的点击区）在 `install(component)` 里挂事件监听、
+   *   自己算本地坐标 —— 与 Swing 的 UI delegate 装监听器同构；
+   * - 要声明组件想要多大，实现 `getPreferredSize(component)`（布局会问它）。
+   */
+  protected doRender(): void {
+    super.doRender();
+    // `ICEComponent.doRender()` 内部会把 CTM 换成「世界 → 设备」去画调试包围盒，
+    // super 之后必须把本渲染通道的变换取回来，painter 才能按组件本地坐标画
+    // （与 ICETileMap 自绘时调它的原因相同）。
+    this.applyActiveTransform();
+    this.paintDecoration();
+  }
+
+  /**
+   * 让 painter 画一次内部装饰。`doRender()` 每帧自动调用；单测可以直接调它来断言画笔行为
+   * （与 `ICETileMap.paintBoard()` 的用法一致）。组件没挂到 ICE 实例 / 没挂 painter 时是空操作。
+   */
+  public paintDecoration(): void {
+    if (!this.painter || typeof this.painter.paint !== 'function') {
+      return;
+    }
+    const ctx = this.ctx;
+    if (!ctx) {
+      return; // headless（单测里没 init 过画布）没有 ctx 可画
+    }
+    const origin = Array.isArray(this.state.localOrigin) ? this.state.localOrigin : [0, 0];
+    this.painter.paint({
+      ctx,
+      theme: this.theme(),
+      component: this,
+      origin: [Number(origin[0]) || 0, Number(origin[1]) || 0],
+    });
   }
 
   protected __applyHoverState(): void {

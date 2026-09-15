@@ -31,6 +31,38 @@ export function readHovered(evt: any): boolean {
   return !!(evt.param ? evt.param.hovered : evt.hovered);
 }
 
+/**
+ * 圆角矩形路径（手写 `arcTo`，不依赖较新的 `ctx.roundRect`，老环境也能跑）。
+ *
+ * 谁在用：自绘组件的 painter（`ICESkeleton` 的占位条）与引擎 `ctx` 自绘的 `ICETileMap`
+ * —— 之前是 TileMap 里的私有函数，painter 也要画圆角后提取到公共工具。
+ */
+export function roundRectPath(
+  ctx: any,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+): void {
+  const r = Math.max(0, Math.min(radius, width / 2, height / 2));
+  ctx.beginPath();
+  if (r <= 0) {
+    ctx.rect(x, y, width, height);
+    return;
+  }
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + width - r, y);
+  ctx.arcTo(x + width, y, x + width, y + r, r);
+  ctx.lineTo(x + width, y + height - r);
+  ctx.arcTo(x + width, y + height, x + width - r, y + height, r);
+  ctx.lineTo(x + r, y + height);
+  ctx.arcTo(x, y + height, x, y + height - r, r);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
+
 export type ICEStatusColors = {
   background: string;
   border: string;

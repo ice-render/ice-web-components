@@ -1,17 +1,20 @@
 import { ICEContainer } from '../core/ICEContainer';
 import { iceUIManager } from '../core/ICEManager';
+import { ICEBorderLayout } from 'ice-render';
 
 /**
  * 布局骨架：顶栏 / 侧栏 / 内容 / 页脚。
  *
  * 后台外壳每个示例都在手搭（算坐标、算剩余宽度、侧栏收起时手动把内容挪过去），
- * 这里把它沉淀成一个件：
+ * 这里把它沉淀成一个件。版式本身**交给引擎的五区布局**（`ICEBorderLayout`）：
+ * 顶栏 north / 侧栏 west（右置时 east）/ 内容 center / 页脚 south，本组件只负责
+ * 「哪个节点是哪个区」和「各区声明多大」——
  *
  * - 四个区域都是可选的，**没给的不占空间**（没页脚时内容直接到底）；
  * - 侧栏可在左 / 在右，可收起（`setSiderVisible(false)` / `setSiderWidth(0)`）；
- * - 容器尺寸变化会自动重排（`__afterStateMerge` 里补一次），不是一次性算完就固定；
- * - 区域节点被真的摆到对应盒子里（改它们的 left/top/width/height），
- *   `getRegionBox(name)` 把版式暴露出来给测试与几何审计。
+ *   收起 = 把侧栏节点 `display` 关掉：布局器按 Swing 口径跳过不可见子项，内容自动占满；
+ * - 容器尺寸变化自动重排（走引擎的失效/校验链路，`__afterStateMerge` 里补一次立即排）；
+ * - `getRegionBox(name)` 直接读区域节点被布局器摆好的盒子，暴露给测试与几何审计。
  *
  * 用在需要「整页骨架」的场景；只是想给一段内容加个壳的话，`ICEPanel` / `ICECard` 更轻。
  */
@@ -70,6 +73,9 @@ export class ICELayout extends ICEContainer {
     this.siderWidth = Math.max(0, Math.floor(Number(props.siderWidth) || 220));
     this.siderPosition = props.siderPosition === 'right' ? 'right' : 'left';
     this.background = props.background || theme.colors.background;
+    // 版式交给引擎：五区布局按 Swing 的 BorderLayout 口径摆位置（north/south 先在竖直方向切，
+    // west/east 再在中间带切，center 吃剩下的），本组件只声明"哪个节点是哪个区"。
+    this.setLayout(new ICEBorderLayout({ gap: 0 }));
     if (props.header) this.setHeader(props.header);
     if (props.sider) this.setSider(props.sider);
     if (props.content) this.setContent(props.content);
@@ -85,22 +91,22 @@ export class ICELayout extends ICEContainer {
   }
 
   public setHeader(node: any): this {
-    this.headerNode = this.__swap(this.headerNode, node);
+    this.headerNode = this.__swap(this.headerNode, node, 'north');
     return this.layout();
   }
 
   public setSider(node: any): this {
-    this.siderNode = this.__swap(this.siderNode, node);
+    this.siderNode = this.__swap(this.siderNode, node, this.siderPosition === 'right' ? 'east' : 'west');
     return this.layout();
   }
 
   public setContent(node: any): this {
-    this.contentNode = this.__swap(this.contentNode, node);
+    this.contentNode = this.__swap(this.contentNode, node, 'center');
     return this.layout();
   }
 
   public setFooter(node: any): this {
-    this.footerNode = this.__swap(this.footerNode, node);
+    this.footerNode = this.__swap(this.footerNode, node, 'south');
     return this.layout();
   }
 
@@ -131,9 +137,6 @@ export class ICELayout extends ICEContainer {
 
   public setSiderVisible(visible: boolean): this {
     this.siderVisible = visible !== false;
-    if (this.siderNode) {
-      this.siderNode.setState({ display: this.siderVisible && this.siderWidth > 0 });
-    }
     return this.layout();
   }
 
@@ -151,68 +154,65 @@ export class ICELayout extends ICEContainer {
     return this.layout();
   }
 
-  /** 区域盒子（没给该区域时是零尺寸的盒子，位置按「不占空间」算）。 */
+  /** 区域盒子：直接读布局器摆好的实际位置（没给该区域 / 该区域被收起时是零盒子）。 */
   public getRegionBox(name: ICELayoutRegion): ICELayoutBox {
-    const width = Number(this.state.width) || 0;
-    const height = Number(this.state.height) || 0;
-    const top = this.headerNode ? this.headerHeight : 0;
-    const bottom = this.footerNode ? Math.max(0, height - this.footerHeight) : height;
-    const bodyHeight = Math.max(0, bottom - top);
-    const siderActive = !!this.siderNode && this.siderVisible && this.siderWidth > 0;
-    const sideWidth = siderActive ? Math.min(this.siderWidth, width) : 0;
-    const footerTop = this.footerNode ? Math.max(0, height - this.footerHeight) : height;
-    switch (name) {
-      case 'header':
-        return { left: 0, top: 0, width, height: this.headerNode ? this.headerHeight : 0 };
-      case 'footer':
-        return { left: 0, top: footerTop, width, height: this.footerNode ? this.footerHeight : 0 };
-      case 'sider':
-        return {
-          left: this.siderPosition === 'right' ? Math.max(0, width - sideWidth) : 0,
-          top,
-          width: sideWidth,
-          height: bodyHeight,
-        };
-      case 'content':
-        return {
-          left: siderActive && this.siderPosition === 'left' ? sideWidth : 0,
-          top,
-          width: Math.max(0, width - sideWidth),
-          height: bodyHeight,
-        };
-      default:
-        return { left: 0, top: 0, width: 0, height: 0 };
+    const node =
+      name === 'header'
+        ? this.headerNode
+        : name === 'sider'
+        ? this.siderNode
+        : name === 'content'
+        ? this.contentNode
+        : name === 'footer'
+        ? this.footerNode
+        : null;
+    // 没有该区域、或该区域被收起（display:false，布局器会跳过它）→ 零盒子
+    if (!node || !node.state || !node.isEffectivelyVisible()) {
+      return { left: 0, top: 0, width: 0, height: 0 };
     }
+    return {
+      left: Number(node.state.left) || 0,
+      top: Number(node.state.top) || 0,
+      width: Number(node.state.width) || 0,
+      height: Number(node.state.height) || 0,
+    };
   }
 
-  /** 按当前尺寸把各区域摆好（尺寸变化后由 `__afterStateMerge` 自动调）。 */
+  /**
+   * 把"声明尺寸"同步到区域节点，再让引擎布局摆位。
+   *
+   * 五区布局读的是各区域**自己的尺寸**（north/south 用自身高度、west/east 用自身宽度），
+   * 所以 `headerHeight` / `footerHeight` / `siderWidth` 这些声明先落到节点上；
+   * 侧栏收起也走这里（`display: false` → 布局器跳过它）。
+   */
   public layout(): this {
-    const place = (node: any, box: ICELayoutBox, visible = true) => {
-      if (!node) {
-        return;
-      }
-      node.setState({
-        left: box.left,
-        top: box.top,
-        width: box.width,
-        height: box.height,
-        display: visible && box.width > 0 && box.height > 0,
+    if (this.headerNode) {
+      this.headerNode.setState({ height: this.headerHeight });
+    }
+    if (this.footerNode) {
+      this.footerNode.setState({ height: this.footerHeight });
+    }
+    if (this.siderNode) {
+      this.siderNode.setState({
+        width: this.siderWidth,
+        display: this.siderVisible && this.siderWidth > 0,
       });
-    };
-    place(this.headerNode, this.getRegionBox('header'));
-    place(this.footerNode, this.getRegionBox('footer'));
-    place(this.siderNode, this.getRegionBox('sider'), this.siderVisible);
-    place(this.contentNode, this.getRegionBox('content'));
+    }
+    this.doLayout();
     return this;
   }
 
   /** 换区域节点：旧的从子节点摘掉，新的接上（传 null 就是清空）。 */
-  private __swap(previous: any, next: any): any {
+  private __swap(previous: any, next: any, constraint: 'north' | 'south' | 'east' | 'west' | 'center'): any {
     if (previous && previous !== next) {
       this.removeChild(previous);
     }
     if (next && next.parentNode !== this) {
       this.addChild(next, false);
+    }
+    // 五区布局从子节点 state 上读方位（engine 2026-09-14 起的约定）
+    if (next && next.state) {
+      next.setState({ layoutConstraint: constraint });
     }
     return next || null;
   }

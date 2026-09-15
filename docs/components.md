@@ -28,11 +28,11 @@
 |  | [`ICECheckboxGroup`](./api/data-entry.md#icecheckboxgroup) | 多选组：一组可多选的选项，值是 `string[]`（按选项顺序）。 |
 |  | [`ICESwitch`](./api/data-entry.md#iceswitch) | 开关：点击或 Enter/Space 切换，滑块带过渡动画，触发 `change`。 |
 |  | [`ICESlider`](./api/data-entry.md#iceslider) | 滑块：单值 / 区间双滑块，支持 `step` 量化与方向键微调。 |
-|  | [`ICESegmented`](./api/data-entry.md#icesegmented) | 分段控制器： 一组互斥选项，选中项实心高亮。每个分段是 ICEButton，因此天然可聚焦（Tab/Enter 可操作）。 |
+|  | [`ICESegmented`](./api/data-entry.md#icesegmented) | 分段控制器： 一组互斥选项，选中项实心高亮。每个分段是 ICEButton，因此天然可聚焦（Tab/Enter 可操作）。  排列交给**引擎布局器**（2026-09-15 起），组件不再手算坐标： |
 |  | [`ICERate`](./api/data-entry.md#icerate) | 评分：N 颗星，点击设置分值、悬停预览、键盘 ←/→ 调整。 |
 |  | [`ICEUpload`](./api/data-entry.md#iceupload) | 上传选择器。 |
 |  | [`ICEFormItem`](./api/data-entry.md#iceformitem) | 表单项：标签 + 控件 + 错误文案。  只负责「摆位置 + 显示错误」；值的读写与校验规则由 ICEForm / ICEFormModel 管。 控件必须实现取值约定（`getFormValue` / `setFormValue`）。  布局： |
-|  | [`ICEForm`](./api/data-entry.md#iceform) | 表单容器：把若干 ICEFormItem 纵向堆叠，绑上校验模型。 |
+|  | [`ICEForm`](./api/data-entry.md#iceform) | 表单容器：把若干 ICEFormItem 纵向堆叠，绑上校验模型。  纵向堆叠 + 每个表单项拉满宽度交给**引擎的箱式布局**（`ICEBoxLayout({ axis: 'y', align: 'stretch' })`， `stretch` 就是 Swing BoxLayout 的默认口径）；本组件只保留一条自己的策略： **高度等于内容高度**（`doLayout()` 之后同步一次）。 |
 |  | [`ICEFormList`](./api/data-entry.md#iceformlist) | 可增删的重复表单项（多联系人 / 多地址 / 明细行）。  这类结构的难点不在「画一行」，而在**行身份**：用下标当 key，删掉第一行之后， 第二行的控件就会显示第一行的数据（重复行最经典的 bug）。所以每一行都有稳定的 `rowKey`， 增删只动那一行，`onChange(rows)` 给的是最新全量。  用法： ```ts const list = new ICEFormList({   renderRow: (row, ctx) => textFieldFor(row),   // 返回这一行的内容组件   initialRows: [{}],   minRows: 1, maxRows: 5,   onChange: (rows) => console.log(rows), }); ``` 行内的控件由调用方创建；改完值调 `list.updateRow(index, patch)` 把数据写回去。 |
 | [数据录入（浮层类）](./api/data-entry-popups.md) | [`ICESelect`](./api/data-entry-popups.md#iceselect) | 选择器：输入框外观 + 下拉选项（单选 / 多选 / 搜索过滤）。 |
 |  | [`ICEAutoComplete`](./api/data-entry-popups.md#iceautocomplete) | 自动完成：文本输入 + 候选下拉。 |
@@ -55,7 +55,7 @@
 |  | [`ICEImageView`](./api/data-display.md#iceimageview) | 图片视图（基于引擎原语 `ICEImage`）。  名字带 `View` 后缀是为了避开引擎自己的 `ICEImage`（图片原语）——两个包同名不同物， 同时 import 会撞名，所以本库的控件一律叫 `ICEImageView`。 |
 |  | [`ICEImagePreview`](./api/data-display.md#iceimagepreview) | 图片预览：全屏遮罩 + 居中图片 + 底部工具栏。 |
 |  | [`ICECalendar`](./api/data-display.md#icecalendar) | 日历：月视图 + 日期选择。 |
-|  | [`ICEAvatar`](./api/data-display.md#iceavatar) | 文字头像：取首字母/汉字，背景色可配，自带描边把相邻头像分开。 |
+|  | [`ICEAvatar`](./api/data-display.md#iceavatar) | 文字头像：取首字母/汉字，背景色可配，自带描边把相邻头像分开。  装饰（圆底 + 首字）由 painter 画，组件自己只保存文本、宽高与背景色。 |
 |  | [`ICEAvatarGroup`](./api/data-display.md#iceavatargroup) | 头像组。 |
 |  | [`ICETag`](./api/data-display.md#icetag) | 标签：默认 Bootstrap 实底（`.text-bg-*`），`variant: 'soft'` 切浅底 + 强调文字。 |
 |  | [`ICEBadge`](./api/data-display.md#icebadge) | 徽标：数字/文字胶囊；`dot` 是红点模式，`count` 超过阈值自动显示 `99+`。 |
@@ -79,16 +79,16 @@
 |  | [`ICESteps`](./api/feedback.md#icesteps) | 步骤条：横向序号 + 标题/描述 + 连接线，当前步骤高亮、已完成打勾。 |
 |  | [`ICETour`](./api/feedback.md#icetour) | 漫游式引导：一步一步把用户带过关键界面。 |
 |  | [`ICEFloatButton`](./api/feedback.md#icefloatbutton) | 悬浮操作按钮：一个圆形主按钮，点击展开一组子按钮。 |
-| [导航](./api/navigation.md) | [`ICEMenu`](./api/navigation.md#icemenu) | 菜单：菜单项 +（可选）子菜单内联展开；选中态与悬停态分离，父项在子项选中时只做“当前分组”提示。 |
+| [导航](./api/navigation.md) | [`ICEMenu`](./api/navigation.md#icemenu) |  |
 |  | [`ICEBreadcrumb`](./api/navigation.md#icebreadcrumb) | 面包屑：一行「路径 + 分隔符」，最后一项是当前页。 |
 |  | [`ICEAnchor`](./api/navigation.md#iceanchor) | 锚点导航：一列锚点，点击滚到目标位置，滚动时自动高亮当前项。  与 `ICEScrollPane` 配合使用：`target` 传滚动容器，`items[].top` 是该段落在 **内容坐标系**里的纵向位置。滚动事件由 `ICEScrollPane` 的 `scroll` 事件驱动。 |
 |  | [`ICEBackTop`](./api/navigation.md#icebacktop) | 回到顶部：一个小圆按钮，滚动超过阈值才出现。  用法是把滚动容器交给它：`new ICEBackTop({ target: scrollPane })`。 依赖 `ICEScrollPane` 的 `scroll` 事件（滚动位置变化时派发）， 点击后把目标滚回 `(0, 0)` 并回调 `onClick`。 |
 |  | [`ICEDropdown`](./api/navigation.md#icedropdown) | 下拉菜单：点击触发组件弹出选项列表。 |
 |  | [`ICEPagination`](./api/navigation.md#icepagination) | 分页器：页码 + 上一页/下一页 + 可选「共 N 条」与每页条数切换。 |
-|  | [`ICETabs`](./api/navigation.md#icetabs) | 标签页：一组互斥按钮，`onChange` 通知切换（程序式 `setActiveIndex` 不触发回调）。 |
+|  | [`ICETabs`](./api/navigation.md#icetabs) |  |
 | [核心与布局](./api/core.md) | [`ICEScrollPane`](./api/core.md#icescrollpane) | 滚动视口（Swing 的 JScrollPane / CSS 的 overflow:auto 容器）。  依赖引擎的**子树裁剪**（`clipChildren`）：内容超出视口的部分被裁掉，滚出去的子组件 也命不中（命中检测同样尊重裁剪区）。  结构： ``` ICEScrollPane (clipChildren: true)   ├── contentBox   位置 = (-scrollX, -scrollY)，尺寸 = 内容尺寸   │     └── 调用方的内容组件   └── scrollbarTrack + scrollbarThumb   滚动条（内容超出时才显示） ``` 内容盒与滚动条都在构造期创建，保证滚动条的 zIndex 恒高于内容（引擎按 zIndex 排序渲染）。 |
 |  | [`ICEAffix`](./api/core.md#iceaffix) | 吸顶容器（CSS `position: sticky` 的画布版本）。  长页面里「筛选条 / 表头 / 批量操作栏」跟着滚走是后台最常见的抱怨；DOM 里一行 `position: sticky` 就解决，画布里没有这回事，于是这里把它补上： |
-|  | [`ICELayout`](./api/core.md#icelayout) | 布局骨架：顶栏 / 侧栏 / 内容 / 页脚。  后台外壳每个示例都在手搭（算坐标、算剩余宽度、侧栏收起时手动把内容挪过去）， 这里把它沉淀成一个件： |
+|  | [`ICELayout`](./api/core.md#icelayout) | 布局骨架：顶栏 / 侧栏 / 内容 / 页脚。  后台外壳每个示例都在手搭（算坐标、算剩余宽度、侧栏收起时手动把内容挪过去）， 这里把它沉淀成一个件。版式本身**交给引擎的五区布局**（`ICEBorderLayout`）： 顶栏 north / 侧栏 west（右置时 east）/ 内容 center / 页脚 south，本组件只负责 「哪个节点是哪个区」和「各区声明多大」—— |
 |  | [`ICESplitter`](./api/core.md#icesplitter) | 分隔面板：两栏 + 可拖动的分隔条。 |
 |  | [`ICEWindow`](./api/core.md#icewindow) | 通用窗口外壳（桌面 / 多窗口场景的底座）：标题栏 + 按钮 + 客户端区域 + 缩放手柄。 |
 |  | [`ICEOverlayManager`](./api/core.md#iceoverlaymanager) | 弹层/浮层底座。  所有需要「浮在其它组件之上」的组件（Modal、Dropdown、Select、Tooltip、Popover、 右键菜单…）都走这一层，避免每个组件各自实现锚点定位、z 序、点外关闭、Esc 关闭。  实现要点： |

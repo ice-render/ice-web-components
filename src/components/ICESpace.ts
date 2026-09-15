@@ -1,3 +1,4 @@
+import { ICEBoxLayout, ICEFlowLayout } from 'ice-render';
 import { ICEContainer } from '../core/ICEContainer';
 
 /**
@@ -9,8 +10,12 @@ import { ICEContainer } from '../core/ICEContainer';
  * - `wrap: true` 时横向超出容器宽度换行；
  * - 不传 width / height 时按内容自适应，加了子项就自动重排。
  *
- * 注：布局本身由本组件完成（不是引擎的 `ICEFlowLayout`）——因为 Space 需要同时处理
- * 交叉轴对齐与「按内容回写自身尺寸」，这两件事引擎布局器不管。
+ * 排列本身交给**引擎的布局器**（2026-09-15 起）：
+ * - 纵向、以及横向不换行 → `ICEBoxLayout`（交叉轴 `align` 就是它的 `align`）；
+ * - 横向且 `wrap: true` → `ICEFlowLayout`（`crossAlign` 是引擎补的行内交叉轴对齐）。
+ *
+ * 本组件自己只保留一条策略：**没给宽/高的那一轴按内容自适应**（布局器不管这件事，
+ * 它只按容器当前的盒子排版）。做法是先问布局器「内容想要多大」，写回自身后再让它排。
  */
 export interface ICESpaceOptions {
   /** 组件 id（引擎会用它做唯一标识，e2e/调试时可按 id 定位） */
@@ -53,6 +58,18 @@ export class ICESpace extends ICEContainer {
     this.wrap = props.wrap === true;
     this.autoWidth = props.width === undefined;
     this.autoHeight = props.height === undefined;
+    this.__applyLayout();
+  }
+
+  /** 按当前 direction / wrap 挂上对应的引擎布局（方向或换行形态变了要重挂）。 */
+  private __applyLayout(): void {
+    if (this.direction === 'vertical') {
+      this.setLayout(new ICEBoxLayout({ axis: 'y', gap: this.gap, align: this.align }));
+    } else if (this.wrap) {
+      this.setLayout(new ICEFlowLayout({ gap: this.gap, crossAlign: this.align }));
+    } else {
+      this.setLayout(new ICEBoxLayout({ axis: 'x', gap: this.gap, align: this.align }));
+    }
   }
 
   /** 子项列表（按加入顺序）。 */
@@ -62,7 +79,7 @@ export class ICESpace extends ICEContainer {
 
   public setSize(size: number): this {
     this.gap = Number(size) || 0;
-    this.__layout();
+    this.__applyLayout();
     return this;
   }
 
@@ -72,7 +89,7 @@ export class ICESpace extends ICEContainer {
 
   public setAlign(align: 'start' | 'center' | 'end'): this {
     this.align = align;
-    this.__layout();
+    this.__applyLayout();
     return this;
   }
 
@@ -80,7 +97,7 @@ export class ICESpace extends ICEContainer {
   public addItem(child: any): this {
     super.addChild(child);
     this.items.push(child);
-    this.__layout();
+    this.doLayout();
     return this;
   }
 
@@ -89,7 +106,7 @@ export class ICESpace extends ICEContainer {
     super.addChild(child, markDirty);
     if (this.items.indexOf(child) === -1) {
       this.items.push(child);
-      this.__layout();
+      this.doLayout();
     }
   }
 
@@ -98,102 +115,35 @@ export class ICESpace extends ICEContainer {
     if (index !== -1) {
       this.items.splice(index, 1);
       this.removeChild(child);
-      this.__layout();
+      this.doLayout();
     }
     return this;
   }
 
   public revalidate(): this {
     super.revalidate();
-    this.__layout();
+    this.doLayout();
     return this;
   }
 
-  /** 交叉轴偏移。 */
-  private __crossOffset(childSize: number, containerSize: number): number {
-    if (this.align === 'center') {
-      return Math.max(0, (containerSize - childSize) / 2);
-    }
-    if (this.align === 'end') {
-      return Math.max(0, containerSize - childSize);
-    }
-    return 0;
-  }
-
-  private __layout(): void {
-    if (!this.items.length) {
-      return;
-    }
-    const width = Number(this.state.width) || 0;
-    const height = Number(this.state.height) || 0;
-
-    if (this.direction === 'vertical') {
-      const contentWidth = this.items.reduce((max, item) => Math.max(max, Number(item.state.width) || 0), 0);
-      const containerWidth = this.autoWidth ? contentWidth : width;
-      let top = 0;
-      this.items.forEach((item) => {
-        item.setState({
-          left: this.__crossOffset(Number(item.state.width) || 0, containerWidth),
-          top,
-        });
-        top += (Number(item.state.height) || 0) + this.gap;
-      });
-      const contentHeight = Math.max(0, top - this.gap);
-      this.state.width = containerWidth;
+  /**
+   * 排布 = 「按内容自适应自身尺寸」+ 引擎布局摆子项。
+   *
+   * 顺序很重要：布局器是按**容器当前的盒子**排的（换行宽度、交叉轴对齐都要用到它），
+   * 所以先把没给宽/高的那一轴写成引擎算出的内容尺寸，再让布局器落位。
+   */
+  public doLayout(): void {
+    if (this.autoWidth || this.autoHeight) {
+      const [contentWidth, contentHeight] = this.getPreferredSize();
+      if (this.autoWidth) {
+        this.state.width = contentWidth;
+      }
       if (this.autoHeight) {
         this.state.height = contentHeight;
       }
-      this.__markDirty();
-      return;
     }
-
-    // 横向：先按 wrap 分行（不 wrap 时永远单行）
-    const containerWidth = width;
-    const rows: any[][] = [[]];
-    let rowWidth = 0;
-    let rowHeight = 0;
-    this.items.forEach((item) => {
-      const itemWidth = Number(item.state.width) || 0;
-      const needWrap =
-        this.wrap && containerWidth > 0 && rows[rows.length - 1].length > 0 && rowWidth + this.gap + itemWidth > containerWidth;
-      if (needWrap) {
-        rows.push([]);
-        rowWidth = 0;
-        rowHeight = 0;
-      }
-      rows[rows.length - 1].push(item);
-      rowWidth += (rows[rows.length - 1].length > 1 ? this.gap : 0) + itemWidth;
-      rowHeight = Math.max(rowHeight, Number(item.state.height) || 0);
-    });
-
-    let top = 0;
-    let contentWidth = 0;
-    rows.forEach((row) => {
-      const lineHeight = row.reduce((max, item) => Math.max(max, Number(item.state.height) || 0), 0);
-      let left = 0;
-      row.forEach((item) => {
-        item.setState({
-          left,
-          top: top + this.__crossOffset(Number(item.state.height) || 0, lineHeight),
-        });
-        left += (Number(item.state.width) || 0) + this.gap;
-        contentWidth = Math.max(contentWidth, left - this.gap);
-      });
-      top += lineHeight + this.gap;
-    });
-    const contentHeight = Math.max(0, top - this.gap);
-    if (this.autoWidth) {
-      this.state.width = contentWidth;
-    }
-    if (this.autoHeight) {
-      this.state.height = contentHeight;
-    }
-    void rowHeight;
-    void height;
-    this.__markDirty();
-  }
-
-  private __markDirty(): void {
+    super.doLayout();
+    this.dirty = true;
     if (this.ice) {
       this.ice.dirty = true;
     }

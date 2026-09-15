@@ -1,5 +1,6 @@
 import { ICEWidget } from '../core/ICEWidget';
 import { ICEFrameDriver, tween, ICETweenHandle } from '../util/ICEAnimation';
+import { roundRectPath } from '../util/ICEStyle';
 
 /**
  * 格子图（tile map）：**一个节点画完整块网格**。
@@ -74,26 +75,6 @@ export interface ICETileMapOptions {
   labelFontSize?: number;
   labelColor?: string;
   [key: string]: any;
-}
-
-/** 圆角矩形路径：手写 arcTo（不依赖较新的 roundRect，老环境也能跑）。 */
-function roundRectPath(ctx: any, x: number, y: number, width: number, height: number, radius: number): void {
-  const r = Math.max(0, Math.min(radius, width / 2, height / 2));
-  ctx.beginPath();
-  if (r <= 0) {
-    ctx.rect(x, y, width, height);
-    return;
-  }
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + width - r, y);
-  ctx.arcTo(x + width, y, x + width, y + r, r);
-  ctx.lineTo(x + width, y + height - r);
-  ctx.arcTo(x + width, y + height, x + width - r, y + height, r);
-  ctx.lineTo(x + r, y + height);
-  ctx.arcTo(x, y + height, x, y + height - r, r);
-  ctx.lineTo(x, y + r);
-  ctx.arcTo(x, y, x + r, y, r);
-  ctx.closePath();
 }
 
 export class ICETileMap extends ICEWidget {

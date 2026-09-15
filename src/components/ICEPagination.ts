@@ -1,5 +1,6 @@
 import { ICEButton } from './ICEButton';
 import { ICELabel } from './ICELabel';
+import { ICEBoxLayout } from 'ice-render';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEContainer } from '../core/ICEContainer';
 import type { ICELocalizedProps } from '../i18n/ICEI18n';
@@ -145,11 +146,12 @@ export class ICEPagination extends ICEContainer {
     const theme = iceUIManager.getTheme();
     const height = this.size === 'small' ? 28 : 32;
     const gap = this.size === 'small' ? 6 : GAP;
-    let left = 0;
+    // 页码行 = 一串定宽按钮 + 文案，横向依次排 → 直接交给引擎的盒式布局。
+    // 老实现自己累加 left（文案处还写死 76px 的占位），现在按各节点自己的宽度排（魔数收敛）。
+    this.setLayout(new ICEBoxLayout({ axis: 'x', gap }));
 
     if (this.showTotal) {
       const totalLabel = new ICELabel({
-        left,
         top: 0,
         height,
         verticalAlign: 'middle',
@@ -157,13 +159,11 @@ export class ICEPagination extends ICEContainer {
         style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
       });
       this.addChild(totalLabel, false);
-      left += 76;
     }
 
     const makeButton = (text: string, options: { width?: number; primary?: boolean; enabled?: boolean; onClick?: () => void }) => {
       const width = options.width ?? height;
       const button = new ICEButton({
-        left,
         top: 0,
         width,
         height,
@@ -178,7 +178,6 @@ export class ICEPagination extends ICEContainer {
         button.on('click', options.onClick);
       }
       this.addChild(button, false);
-      left += width + gap;
       return button;
     };
 
@@ -191,7 +190,6 @@ export class ICEPagination extends ICEContainer {
     this.__pageWindow(pageCount).forEach((page) => {
       if (page === -1) {
         const ellipsis = new ICELabel({
-          left,
           top: 0,
           width: 24,
           height,
@@ -200,7 +198,6 @@ export class ICEPagination extends ICEContainer {
           style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
         });
         this.addChild(ellipsis, false);
-        left += 24 + gap;
         return;
       }
       const button = makeButton(String(page), {
@@ -228,8 +225,10 @@ export class ICEPagination extends ICEContainer {
       this.sizeChanger = null;
     }
 
-    this.setState({ width: Math.max(Number(this.state.width) || 0, left - gap), height: height + 8 });
-    this.revalidate();
+    // 组件级策略：高度固定留 8px 下边距；宽度不小于内容宽度（内容宽由布局算出的首选尺寸给出）
+    const contentWidth = this.getPreferredSize()[0];
+    this.setState({ width: Math.max(Number(this.state.width) || 0, contentWidth), height: height + 8 });
+    this.doLayout();
   }
 
   /** 页码窗口：1 … n-1 [n n+1 n+2] … last（-1 表示省略号） */

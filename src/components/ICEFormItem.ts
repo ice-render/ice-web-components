@@ -4,6 +4,41 @@ import { ICELabel } from './ICELabel';
 import { iceUIManager } from '../core/ICEManager';
 import type { ICEFormRule } from '../model/ICEFormModel';
 import type { ICELocalizedProps } from '../i18n/ICEI18n';
+import { ICELayoutManager } from 'ice-render';
+
+/**
+ * 表单项的自持策略（Swing 里 `JLabel` + 编辑器的复合版式，由各 Look&Feel 自己摆）。
+ *
+ * 两个形态都在这里摆位：
+ * - `horizontal`：标签占左侧 `labelWidth`（右留 8px），控件与错误文案在右侧；
+ * - `vertical`：标签一行、控件一行、错误文案一行（高度预留，校验时不抖动）。
+ *
+ * 组件只留策略：控件多大、标签多宽、间距多少。
+ */
+class ICEFormItemLayout extends ICELayoutManager {
+  layoutContainer(container: any): void {
+    const input = container.__getFormItemLayoutInput();
+    const { itemLayout, gap, labelWidth, labelHeight, labelNode, control, errorNode } = input;
+    const controlWidth = Number(control.state && control.state.width) || 200;
+    const controlHeight = Number(control.state && control.state.height) || 32;
+
+    if (itemLayout === 'horizontal') {
+      labelNode.setState({ left: 0, top: Math.max(0, (controlHeight - labelHeight) / 2), width: labelWidth - 8 });
+      control.setState({ left: labelWidth, top: 0 });
+      errorNode.setState({ left: labelWidth, top: controlHeight + gap, width: controlWidth });
+      return;
+    }
+
+    labelNode.setState({ left: 0, top: 0, width: Math.max(0, controlWidth) });
+    control.setState({ left: 0, top: labelHeight + gap });
+    errorNode.setState({ left: 0, top: labelHeight + gap + controlHeight + gap });
+  }
+
+  /** 序列化参数：形态与尺寸都是组件级策略（在 state 里），策略本身无参。 */
+  public toJSON(): any {
+    return {};
+  }
+}
 
 /**
  * 表单项：标签 + 控件 + 错误文案。
@@ -116,7 +151,30 @@ export class ICEFormItem extends ICEWidget {
     this.addChild(this.labelNode, false);
     this.addChild(this.control, false);
     this.addChild(this.errorNode, false);
-    this.__layoutChildren();
+    // 摆位交给自持策略；组件只把"形态与尺寸"喂给它
+    this.setLayout(new ICEFormItemLayout());
+    this.doLayout();
+  }
+
+  /** 自持策略需要的输入（形态 / 尺寸 / 三个节点）。 */
+  public __getFormItemLayoutInput(): {
+    itemLayout: 'vertical' | 'horizontal';
+    gap: number;
+    labelWidth: number;
+    labelHeight: number;
+    labelNode: ICELabel;
+    control: any;
+    errorNode: ICELabel;
+  } {
+    return {
+      itemLayout: this.itemLayout,
+      gap: this.itemGap,
+      labelWidth: this.labelWidth,
+      labelHeight: this.labelHeight,
+      labelNode: this.labelNode,
+      control: this.control,
+      errorNode: this.errorNode,
+    };
   }
 
   public getName(): string {
@@ -187,17 +245,4 @@ export class ICEFormItem extends ICEWidget {
     return this;
   }
 
-  private __layoutChildren(): void {
-    const controlWidth = Number(this.control.state && this.control.state.width) || 200;
-    const controlHeight = Number(this.control.state && this.control.state.height) || 32;
-    if (this.itemLayout === 'horizontal') {
-      this.labelNode.setState({ left: 0, top: Math.max(0, (controlHeight - this.labelHeight) / 2), width: this.labelWidth - 8 });
-      this.control.setState({ left: this.labelWidth, top: 0 });
-      this.errorNode.setState({ left: this.labelWidth, top: controlHeight + this.itemGap, width: controlWidth });
-      return;
-    }
-    this.labelNode.setState({ left: 0, top: 0, width: Math.max(0, controlWidth) });
-    this.control.setState({ left: 0, top: this.labelHeight + this.itemGap });
-    this.errorNode.setState({ left: 0, top: this.labelHeight + this.itemGap + controlHeight + this.itemGap });
-  }
 }

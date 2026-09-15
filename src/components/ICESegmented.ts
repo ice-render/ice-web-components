@@ -2,10 +2,16 @@ import { ICEButton } from './ICEButton';
 import { iceUIManager } from '../core/ICEManager';
 import { estimateTextWidth } from '../util/ICEStyle';
 import { ICEContainer } from '../core/ICEContainer';
+import { ICEBoxLayout, ICEGridLayout } from 'ice-render';
 
 /**
  * 分段控制器：
  * 一组互斥选项，选中项实心高亮。每个分段是 ICEButton，因此天然可聚焦（Tab/Enter 可操作）。
+ *
+ * 排列交给**引擎布局器**（2026-09-15 起），组件不再手算坐标：
+ * - `block: true`（默认）→ `ICEGridLayout({ cols, gapX: 2, cellSizing: 'equal' })`：
+ *   各段等分铺满（`equal` 就是 Swing `GridLayout` 的等宽等高口径），内缩 2 由容器 `padding` 承担；
+ * - `block: false` → `ICEBoxLayout({ axis: 'x', gap: 2 })`：按各段自己的宽度依次排。
  */
 export interface ICESegmentedOption {
   value: string;
@@ -51,6 +57,8 @@ export class ICESegmented extends ICEContainer {
       top: props.top,
       width: props.width ?? 240,
       height,
+      // 内缩 2：等分/盒式的"内容盒"从 2px 开始（老实现是写死在 left/top 里的 2）
+      padding: 2,
       radius: theme.radius.md,
       style: { fillStyle: theme.colors.background, strokeStyle: theme.colors.border },
     });
@@ -82,20 +90,12 @@ export class ICESegmented extends ICEContainer {
   private __render(): void {
     this.removeChildren([...this.childNodes]);
     this.nodes.clear();
-    const width = Number(this.state.width) || 240;
-    const count = Math.max(1, this.options.length);
-    const gap = 2;
-    const blockWidth = (width - 4 - gap * (count - 1)) / count;
+    this.__applyLayout();
     this.options.forEach((option, index) => {
       const selected = option.value === this.value;
-      const segmentWidth = this.block
-        ? blockWidth
-        : Math.max(48, estimateTextWidth(String(option.label ?? ''), 13) + 24);
-      const segmentLeft = this.__segmentLeft(index, blockWidth, gap);
       const button = new ICEButton({
-        left: segmentLeft,
-        top: 2,
-        width: segmentWidth,
+        // 位置与尺寸交给布局器；非等分模式（BoxLayout 主轴不写尺寸）需要自己给宽度
+        width: this.block ? undefined : this.__segmentWidth(option),
         height: this.heightValue - 4,
         text: option.label,
         size: 'small',
@@ -124,6 +124,21 @@ export class ICESegmented extends ICEContainer {
     }
   }
 
+  /** 挂上当前形态对应的引擎布局（形态在构造期确定，`__render` 重建时重挂一次）。 */
+  private __applyLayout(): void {
+    const count = Math.max(1, this.options.length);
+    if (this.block) {
+      this.setLayout(new ICEGridLayout({ cols: count, gapX: 2, gapY: 0, cellSizing: 'equal' }));
+    } else {
+      this.setLayout(new ICEBoxLayout({ axis: 'x', gap: 2 }));
+    }
+  }
+
+  /** 非等分模式下单个分段的宽度（按文字宽度估算，保底 48）。 */
+  private __segmentWidth(option: ICESegmentedOption): number {
+    return Math.max(48, estimateTextWidth(String(option.label ?? ''), 13) + 24);
+  }
+
   /** 段起点：block 等宽推进；非 block 按各自宽度累加。 */
   private __segmentLeft(index: number, blockWidth: number, gap: number): number {
     if (this.block) {
@@ -131,7 +146,7 @@ export class ICESegmented extends ICEContainer {
     }
     let left = 2;
     for (let i = 0; i < index; i += 1) {
-      left += Math.max(48, estimateTextWidth(String(this.options[i].label ?? ''), 13) + 24) + gap;
+      left += this.__segmentWidth(this.options[i]) + gap;
     }
     return left;
   }
@@ -142,9 +157,9 @@ export class ICESegmented extends ICEContainer {
 
   /** 各段的实际盒子（测试与几何审计用）。 */
   public getSegmentBoxes(): Array<{ value: string; left: number; top: number; width: number; height: number }> {
+    const gap = 2;
     const width = Number(this.state.width) || 240;
     const count = Math.max(1, this.options.length);
-    const gap = 2;
     const blockWidth = (width - 4 - gap * (count - 1)) / count;
     return this.options.map((option, index) => {
       const node = this.nodes.get(option.value);

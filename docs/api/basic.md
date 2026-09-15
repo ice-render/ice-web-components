@@ -32,10 +32,10 @@
 | `getFormValue()` | `any` | 表单取值约定：控件覆盖这两个方法即可被 ICEForm 直接读写。 |
 | `setFormValue(value: any)` | `void` |  |
 | `setHovered(hovered: boolean)` | `this` |  |
-| `setPreferredSize(width: number, height: number)` | `this` |  |
-| `getPreferredSize()` | `[number, number]` |  |
+| `getPreferredSize()` | `[number, number]` | 组件**想要多大**（布局用）。 |
 | `setPainter(painter: ICEPainter \| null)` | `this` |  |
 | `getPainter()` | `ICEPainter \| null` |  |
+| `paintDecoration()` | `void` | 让 painter 画一次内部装饰。`doRender()` 每帧自动调用；单测可以直接调它来断言画笔行为 |
 | `addChild(child: any, markDirty: boolean)` | `void` | UI 组件内部的图元只负责外观，不参与画布级拖拽、变换、连线。 |
 | `theme()` |  |  |
 
@@ -65,7 +65,9 @@
 - `size` 是子项间距（默认 8）；
 - 交叉轴对齐 `align: 'start' | 'center' | 'end'`；
 - `wrap: true` 时横向超出容器宽度换行；
-- 不传 width / height 时按内容自适应，加了子项就自动重排。 注：布局本身由本组件完成（不是引擎的 `ICEFlowLayout`）——因为 Space 需要同时处理 交叉轴对齐与「按内容回写自身尺寸」，这两件事引擎布局器不管。
+- 不传 width / height 时按内容自适应，加了子项就自动重排。 排列本身交给**引擎的布局器**（2026-09-15 起）：
+- 纵向、以及横向不换行 → `ICEBoxLayout`（交叉轴 `align` 就是它的 `align`）；
+- 横向且 `wrap: true` → `ICEFlowLayout`（`crossAlign` 是引擎补的行内交叉轴对齐）。 本组件自己只保留一条策略：**没给宽/高的那一轴按内容自适应**（布局器不管这件事， 它只按容器当前的盒子排版）。做法是先问布局器「内容想要多大」，写回自身后再让它排。
 
 源码：[`src/components/ICESpace.ts`](../../src/components/ICESpace.ts)
 
@@ -94,6 +96,7 @@
 | `addItem(child: any)` | `this` | 加入一个子项并立即重排。 |
 | `addChild(child: any, markDirty: boolean)` | `void` | 直接 `addChild` 也当作子项处理（保持容器语义）。 |
 | `removeItem(child: any)` | `this` |  |
+| `doLayout()` | `void` | 排布 = 「按内容自适应自身尺寸」+ 引擎布局摆子项。 |
 
 ## `ICEGrid`
 
@@ -120,6 +123,9 @@
 | `getCols()` | `ICEGridCol[]` |  |
 | `addCol(col: ICEGridCol)` | `this` |  |
 | `setGutter(gutter: number, gutterY?: number)` | `this` |  |
+| `getGutter()` | `number` |  |
+| `getGutterY()` | `number` |  |
+| `doLayout()` | `void` | 排布 = 自持策略摆列 + 组件自己的高度策略（`autoHeight` 时高度 = 内容高度）。 |
 
 ## `ICEGridCol`
 
