@@ -9,6 +9,12 @@
 
 ### 变更
 
+- **`ICESegmented` 改用引擎布局器**：`block` 形态 → `ICEGridLayout({ cellSizing: 'equal' })`
+  （等宽铺满，就是 Swing `GridLayout` 的口径；内缩 2 改由容器 `padding` 承担），
+  非 block → `ICEBoxLayout({ axis: 'x', gap: 2 })`。几何与老实现逐像素一致（宽度 97.33、起点 2/101.33/200.67），
+  组件不再手算分段坐标。
+- **容器型组件现在也参与快照往返**：引擎这轮把布局策略序列化补齐（`layout: { type, props }`），
+  `ICELayout` / `ICEForm` / `ICESpace` / `ICESegmented` / `ICEPanel` 等的版式存盘再打开不会散。
 - **painter（Swing 的 UI delegate 位）真正可用，并开始承接内部装饰**：
   - 引擎管线的缺口补上：`ICEWidget.doRender()` 现在会把画笔交给 `painter.paint({ ctx, theme, component, origin })`
     （在 `super.doRender()` 之后取回组件本地 CTM，与 `ICETileMap` 自绘同一套口径），`origin` 是本地原点

@@ -254,7 +254,10 @@
 
 ## `ICESegmented`
 
-分段控制器： 一组互斥选项，选中项实心高亮。每个分段是 ICEButton，因此天然可聚焦（Tab/Enter 可操作）。
+分段控制器： 一组互斥选项，选中项实心高亮。每个分段是 ICEButton，因此天然可聚焦（Tab/Enter 可操作）。  排列交给**引擎布局器**（2026-09-15 起），组件不再手算坐标：
+
+- `block: true`（默认）→ `ICEGridLayout({ cols, gapX: 2, cellSizing: 'equal' })`： 各段等分铺满（`equal` 就是 Swing `GridLayout` 的等宽等高口径），内缩 2 由容器 `padding` 承担；
+- `block: false` → `ICEBoxLayout({ axis: 'x', gap: 2 })`：按各段自己的宽度依次排。
 
 源码：[`src/components/ICESegmented.ts`](../../src/components/ICESegmented.ts)
 

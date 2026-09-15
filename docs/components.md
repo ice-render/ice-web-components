@@ -28,7 +28,7 @@
 |  | [`ICECheckboxGroup`](./api/data-entry.md#icecheckboxgroup) | 多选组：一组可多选的选项，值是 `string[]`（按选项顺序）。 |
 |  | [`ICESwitch`](./api/data-entry.md#iceswitch) | 开关：点击或 Enter/Space 切换，滑块带过渡动画，触发 `change`。 |
 |  | [`ICESlider`](./api/data-entry.md#iceslider) | 滑块：单值 / 区间双滑块，支持 `step` 量化与方向键微调。 |
-|  | [`ICESegmented`](./api/data-entry.md#icesegmented) | 分段控制器： 一组互斥选项，选中项实心高亮。每个分段是 ICEButton，因此天然可聚焦（Tab/Enter 可操作）。 |
+|  | [`ICESegmented`](./api/data-entry.md#icesegmented) | 分段控制器： 一组互斥选项，选中项实心高亮。每个分段是 ICEButton，因此天然可聚焦（Tab/Enter 可操作）。  排列交给**引擎布局器**（2026-09-15 起），组件不再手算坐标： |
 |  | [`ICERate`](./api/data-entry.md#icerate) | 评分：N 颗星，点击设置分值、悬停预览、键盘 ←/→ 调整。 |
 |  | [`ICEUpload`](./api/data-entry.md#iceupload) | 上传选择器。 |
 |  | [`ICEFormItem`](./api/data-entry.md#iceformitem) | 表单项：标签 + 控件 + 错误文案。  只负责「摆位置 + 显示错误」；值的读写与校验规则由 ICEForm / ICEFormModel 管。 控件必须实现取值约定（`getFormValue` / `setFormValue`）。  布局： |
