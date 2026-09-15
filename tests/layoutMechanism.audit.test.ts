@@ -14,6 +14,10 @@ import { ICESegmented } from '../src/components/ICESegmented';
 import { ICETabs } from '../src/components/ICETabs';
 import { ICEScrollPane } from '../src/components/ICEScrollPane';
 import { ICEPagination } from '../src/components/ICEPagination';
+import { ICEGrid } from '../src/components/ICEGrid';
+import { ICESplitter } from '../src/components/ICESplitter';
+import { ICEWindow } from '../src/components/ICEWindow';
+import { ICEMenu } from '../src/components/ICEMenu';
 import { ICEPanel } from '../src/components/ICEPanel';
 import { ICETextField } from '../src/components/ICETextField';
 import { ICEWidget } from '../src/core/ICEWidget';
@@ -30,6 +34,10 @@ describe('审计：布局机制是否真的在跑', () => {
     const pane = new ICEScrollPane({ width: 200, height: 100 });
     const page = new ICEPagination({ total: 100, pageSize: 10 });
     const item = new ICEFormItem({ name: 'a', label: 'A', control: new ICETextField({ width: 200, height: 32 }) });
+    const grid = new ICEGrid({ width: 480 });
+    const splitter = new ICESplitter({ width: 320, height: 200 });
+    const win = new ICEWindow({ width: 400, height: 300 });
+    const menu = new ICEMenu({ items: [{ key: 'a', label: 'A' }], width: 240 });
     const names: Array<[string, any]> = [
       ['ICELayout', layout],
       ['ICEForm', form],
@@ -39,6 +47,10 @@ describe('审计：布局机制是否真的在跑', () => {
       ['ICEScrollPane', pane],
       ['ICEPagination', page],
       ['ICEFormItem', item],
+      ['ICEGrid', grid],
+      ['ICESplitter', splitter],
+      ['ICEWindow', win],
+      ['ICEMenu', menu],
     ];
     names.forEach(([name, node]) => {
       expect(`${name}:${lm(node) ? lm(node).constructor.name : 'null'}`).not.toBe(`${name}:null`);
@@ -84,7 +96,41 @@ describe('审计：布局机制是否真的在跑', () => {
     const tabs = new ICETabs({ tabs: ['A', 'B'], width: 320, height: 34, placement: 'bottom' });
     tabs.getTabBoxes().forEach((box) => expect(box.top).toBe(6));
 
-    // ⑤ ICEScrollPane：滚动后内容盒左移 = -scrollX
+    // ⑤ ICESplitter：两栏 + 分隔条由策略摆（改尺寸后第二栏跟着变）
+    const splitter = new ICESplitter({
+      width: 320,
+      height: 200,
+      size: 120,
+      first: new ICEWidget({ width: 100, height: 100 }),
+      second: new ICEWidget({ width: 100, height: 100 }),
+    });
+    expect(splitter.getDividerNode().state.left).toBe(120);
+    splitter.setState({ width: 400 });
+    splitter.doLayout();
+    expect(splitter.getDividerNode().state.left).toBe(120); // 分隔位置不变，第二栏变宽
+    expect((splitter.getSecondNode() as any).state.width).toBe(400 - 120 - splitter.getDividerSize());
+
+    // ⑥ ICEWindow：客户区跟着窗口尺寸（外壳由策略摆）
+    const win = new ICEWindow({ width: 400, height: 300 });
+    expect(win.getClientBox().width).toBe(394);
+    win.setState({ width: 500 });
+    win.doLayout();
+    expect(win.getClientBox().width).toBe(494);
+
+    // ⑦ ICEMenu：三种形态都由策略摆（树形缩进 / 横排）
+    const menu = new ICEMenu({
+      items: [
+        { key: 'a', label: 'A' },
+        { key: 'b', label: 'B', children: [{ key: 'b1', label: 'B1' }] },
+      ],
+      width: 240,
+    });
+    menu.setExpandedKeys(['b']);
+    const childBox = menu.getItemBox('b1')!;
+    expect(childBox.left).toBeGreaterThan(menu.getItemBox('b')!.left); // 子行有缩进
+    expect(menu.getItemBox('b1')!.top).toBe(menu.getItemBox('b')!.top + 40);
+
+    // ⑧ ICEScrollPane：滚动后内容盒左移 = -scrollX
     const pane = new ICEScrollPane({ width: 100, height: 60 });
     pane.setContentSize(300, 300);
     pane.setScroll(40, 0);
