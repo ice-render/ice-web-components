@@ -9,6 +9,12 @@
 
 ### 变更
 
+- **布局约定变成可执行的棘轮**：`AGENTS.md` 新增「布局铁律」（容器排布走引擎布局器 / 装饰走 painter /
+  内容与装饰混合时自持策略 / 布局要能序列化），并由 `tests/layoutConvention.test.ts` 守住 ——
+  `src/components` 里每个容器类必须在「已迁移」或「豁免清单（带原因）」里，新增容器必须二选一，
+  不能再默默抄一套手写坐标。当前豁免：`ICEGrid`/`ICEGridCol`（分数列宽栅格）、
+  `ICETabs`（页签 + 箭头 + extra 混排）、`ICEScrollPane`（视口 + 滚动条）、
+  `ICEPagination`（页码混排 + 魔数）、`ICEMenu`（菜单项 + 浮层）。
 - **`ICESegmented` 改用引擎布局器**：`block` 形态 → `ICEGridLayout({ cellSizing: 'equal' })`
   （等宽铺满，就是 Swing `GridLayout` 的口径；内缩 2 改由容器 `padding` 承担），
   非 block → `ICEBoxLayout({ axis: 'x', gap: 2 })`。几何与老实现逐像素一致（宽度 97.33、起点 2/101.33/200.67），
