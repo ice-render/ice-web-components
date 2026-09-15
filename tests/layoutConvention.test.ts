@@ -26,6 +26,7 @@ const MIGRATED = new Set([
   'ICEForm', // → ICEBoxLayout(axis y, stretch)
   'ICESpace', // → ICEBoxLayout / ICEFlowLayout（按形态）
   'ICESegmented', // → ICEGridLayout(equal) / ICEBoxLayout
+  'ICEScrollPane', // → 自持 ICEScrollPaneLayout（Swing ScrollPaneLayout 位：内容盒 + 两条滚动条）
 ]);
 
 /** 待迁：豁免清单（每条必须写原因；迁完从这张表挪进 MIGRATED）。 */
@@ -33,7 +34,6 @@ const PENDING = new Map<string, string>([
   ['ICEGrid', '24 栅格：按 span 的分数列宽 + 跨行自动换行，引擎 GridLayout 表达不了（track 见 ROADMAP）'],
   ['ICEGridCol', '同上（栅格的一列）'],
   ['ICETabs', '页签与 overflow 箭头 / extra 节点混在一层 list 里：应按 Swing JTabbedPane 的做法让组件自持策略'],
-  ['ICEScrollPane', '视口 + 滚动条：应按 Swing JScrollPane + ScrollPaneLayout 自持策略'],
   ['ICEPagination', '页码按钮 + 省略号 + 文案混排，且位置用了 76px 这类魔数：自持策略时要一并收敛'],
   ['ICEMenu', '菜单项 + 子菜单浮层 + 选中/hover 语义：自持策略时要处理浮层节点不参与流式排布'],
 ]);
