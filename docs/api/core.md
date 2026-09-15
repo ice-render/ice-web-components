@@ -82,12 +82,12 @@
 
 ## `ICELayout`
 
-布局骨架：顶栏 / 侧栏 / 内容 / 页脚。  后台外壳每个示例都在手搭（算坐标、算剩余宽度、侧栏收起时手动把内容挪过去）， 这里把它沉淀成一个件：
+布局骨架：顶栏 / 侧栏 / 内容 / 页脚。  后台外壳每个示例都在手搭（算坐标、算剩余宽度、侧栏收起时手动把内容挪过去）， 这里把它沉淀成一个件。版式本身**交给引擎的五区布局**（`ICEBorderLayout`）： 顶栏 north / 侧栏 west（右置时 east）/ 内容 center / 页脚 south，本组件只负责 「哪个节点是哪个区」和「各区声明多大」——
 
 - 四个区域都是可选的，**没给的不占空间**（没页脚时内容直接到底）；
-- 侧栏可在左 / 在右，可收起（`setSiderVisible(false)` / `setSiderWidth(0)`）；
-- 容器尺寸变化会自动重排（`__afterStateMerge` 里补一次），不是一次性算完就固定；
-- 区域节点被真的摆到对应盒子里（改它们的 left/top/width/height）， `getRegionBox(name)` 把版式暴露出来给测试与几何审计。 用在需要「整页骨架」的场景；只是想给一段内容加个壳的话，`ICEPanel` / `ICECard` 更轻。
+- 侧栏可在左 / 在右，可收起（`setSiderVisible(false)` / `setSiderWidth(0)`）； 收起 = 把侧栏节点 `display` 关掉：布局器按 Swing 口径跳过不可见子项，内容自动占满；
+- 容器尺寸变化自动重排（走引擎的失效/校验链路，`__afterStateMerge` 里补一次立即排）；
+- `getRegionBox(name)` 直接读区域节点被布局器摆好的盒子，暴露给测试与几何审计。 用在需要「整页骨架」的场景；只是想给一段内容加个壳的话，`ICEPanel` / `ICECard` 更轻。
 
 源码：[`src/components/ICELayout.ts`](../../src/components/ICELayout.ts)
 
@@ -129,8 +129,8 @@
 | `isSiderVisible()` | `boolean` |  |
 | `setHeaderHeight(height: number)` | `this` |  |
 | `setFooterHeight(height: number)` | `this` |  |
-| `getRegionBox(name: ICELayoutRegion)` | `ICELayoutBox` | 区域盒子（没给该区域时是零尺寸的盒子，位置按「不占空间」算）。 |
-| `layout()` | `this` | 按当前尺寸把各区域摆好（尺寸变化后由 `__afterStateMerge` 自动调）。 |
+| `getRegionBox(name: ICELayoutRegion)` | `ICELayoutBox` | 区域盒子：直接读布局器摆好的实际位置（没给该区域 / 该区域被收起时是零盒子）。 |
+| `layout()` | `this` | 把"声明尺寸"同步到区域节点，再让引擎布局摆位。 |
 
 ## `ICESplitter`
 

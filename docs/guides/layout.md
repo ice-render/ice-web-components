@@ -10,29 +10,44 @@
 ```ts
 import { ICEFlowLayout, ICEBoxLayout } from 'ice-render';   // 属于引擎，不在本库导出
 
-panel.setLayout(new ICEFlowLayout({ gap: 8, align: 'left' }));   // 流式
-panel.setLayout(new ICEBoxLayout({ axis: 'y', gap: 12 }));       // 盒式
+panel.setLayout(new ICEFlowLayout({ gap: 8, align: 'left' }));              // 流式（可换行）
+panel.setLayout(new ICEBoxLayout({ axis: 'y', gap: 12, align: 'stretch' })); // 盒式（交叉轴拉满）
 ```
 
-本库在引擎布局器之上又封了三个**组件级**的排布工具（它们自己算位置，不用 `setLayout`）：
+引擎侧本轮补上的两项能力（2026-09-15）：
+
+* `ICEBoxLayout.align`：`start`（默认）/ `center` / `end` / **`stretch`**（交叉轴撑满，
+  就是 Swing BoxLayout 的默认口径）；
+* `ICEFlowLayout.crossAlign`：行内交叉轴对齐（一行里矮的项居中/贴底）；
+  它的 `getPreferredSize()` 也按 Swing `preferredLayoutSize` 口径**计入换行**。
+
+本库的**容器型组件**里，这三个把排列交给了引擎布局器（自己只保留组件级策略）：
+
+| 组件 | 用的布局 | 组件自己保留的策略 |
+|---|---|---|
+| `ICELayout`（顶栏/侧栏/内容/页脚） | `ICEBorderLayout`（north / west\|east / center / south） | 区高/区宽声明；侧栏收起 = `display:false` |
+| `ICEForm` | `ICEBoxLayout({ axis: 'y', align: 'stretch' })` | 高度 = 内容高度 |
+| `ICESpace` | 横向 → `ICEBoxLayout`；换行 → `ICEFlowLayout`；纵向 → `ICEBoxLayout` | 没给宽/高的那一轴按内容自适应 |
+
+其余三个**组件级**排布工具仍是各自的语义（引擎布局器没有对应能力）：
 
 ```ts
-// 1) 间距容器：横/纵排列 + 交叉轴对齐 + 换行，尺寸按内容自适应
+// 1) 间距容器：横/纵排列 + 交叉轴对齐 + 换行，尺寸按内容自适应（内部走引擎布局器）
 const space = new ICESpace({ direction: 'horizontal', size: 8, align: 'center' });
 space.addItem(saveButton).addItem(cancelButton).addItem(tag);
 
-// 2) 24 栅格：一行放不下 24 格自动换行，gutter 计在列之间
+// 2) 24 栅格：一行放不下 24 格自动换行，gutter 计在列之间（需要跨列的分数列宽，引擎 GridLayout 表达不了）
 const grid = new ICEGrid({ width: 480, gutter: 16 });
 grid.addCol(new ICEGridCol({ span: 12, content: leftCard }));
 grid.addCol(new ICEGridCol({ span: 12, content: rightCard }));
 
-// 3) 分栏：可拖的分隔条，size 是第一栏像素宽，min 夹取
+// 3) 分栏：可拖的分隔条，size 是第一栏像素宽，min 夹取（尺寸由拖拽驱动，不是布局算出来的）
 const splitter = new ICESplitter({ width: 900, height: 460, size: 300, first: queue, second: detail });
 ```
 
 选型建议：**同一行/列的等距排列用 `ICESpace`**；**页面骨架（12/12、8/8/8）用 `ICEGrid`**；
-**两块内容要手动分配空间用 `ICESplitter`**；`ICEFlowLayout` / `ICEBoxLayout` 留给
-「子组件尺寸由布局决定」的场景（它们直接写子节点的 left/top）。
+**两块内容要手动分配空间用 `ICESplitter`**；整页外壳用 `ICELayout`；表单纵向堆叠用 `ICEForm`。
+要自己拼版式时直接用引擎的 `ICEFlowLayout` / `ICEBoxLayout` / `ICEBorderLayout`（它们直接写子节点的 left/top）。
 
 > ⚠️ 这三个都是**纯布局容器**，构造时 `interactive: false`。自己写布局容器时也要这样：
 > 容器如果晚于内部控件创建（zIndex 更高）又参与命中，会把内部控件的点击整个吃掉

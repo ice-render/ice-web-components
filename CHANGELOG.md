@@ -9,13 +9,24 @@
 
 ### 变更
 
+- **容器型组件改用引擎布局器**（2026-09-15，承接引擎「布局不继承 / 尺寸协商」改造）：
+  - `ICELayout`：四区版式交给 `ICEBorderLayout`（顶栏 north / 侧栏 west|east / 内容 center / 页脚 south），
+    本组件只声明「哪个节点是哪个区」和区高/区宽；**侧栏收起 = 把节点 `display` 关掉**，
+    布局器按 Swing 口径跳过不可见子项，内容自动占满（不再手算剩余宽度）。`getRegionBox()` 改成
+    直接读布局器摆好的盒子，公开 API 与几何口径不变。
+  - `ICEForm`：纵向堆叠交给 `ICEBoxLayout({ axis: 'y', gap, align: 'stretch' })`（表单项自动拉满表单宽度），
+    组件自己只保留「高度 = 内容高度」一条策略。
+  - `ICESpace`：按形态选引擎布局器（横向/纵向 → `ICEBoxLayout`，换行 → `ICEFlowLayout`），
+    组件自己只保留「没给宽/高的那一轴按内容自适应」。
+  回归：`tests/engineLayout.integration.test.ts`（含「确实挂的是引擎布局器」的断言）。
+  这三个组件的既有单测（ICELayout 9 例 / ICEForm 39 例 / ICESpace 5 例）全部原样通过。
 - **引擎布局不再继承父层策略（对齐 Java Swing）**：引擎侧删掉了「子容器默认继承父层布局」的
   传播逻辑，`setLayout()` 只影响容器自己怎么摆子项。本库因此不再需要「用 `setLayout(null)` 退出
   继承」这类规避手段，`ICETabs` 里那处 `null` 现在只剩「清掉自己的策略」一个语义（注释已更新）。
   推论：**子容器要自动排布就自己 `setLayout()`**；给面板挂布局不会再重排它内部组件的零件。
-- **`docs/guides/layout.md` 补「引擎布局不继承」与尺寸协商口径**（`getPreferredSize()` /
-  `setPreferredSize()`；构造期 `width/height` 只算边界）。组件级三件套（`ICESpace` / `ICEGrid` /
-  `ICESplitter`）继续自己算坐标 —— 它们要的交叉轴对齐与按内容回写自身尺寸，引擎布局器还没有。
+- **`docs/guides/layout.md` 补「引擎布局不继承」、尺寸协商口径与「哪些容器在用引擎布局器」对照表**
+  （`getPreferredSize()` / `setPreferredSize()`；构造期 `width/height` 只算边界）。
+  `ICEGrid`（需要分数列宽跨列）与 `ICESplitter`（尺寸由拖拽驱动）继续自己算坐标。
 
 ### 修复
 
@@ -30,6 +41,8 @@
 - 上述修复依赖 **ice-render 当前 `dev` 分支**（`feat/layout-swing-alignment`，见该仓 CHANGELOG
   `[Unreleased]`），尚未发版；本仓 `devDependencies`/`peerDependencies` 的 `ice-render` 范围
   待引擎发版后再对齐（本地验证是把引擎构建产物同步进 `node_modules/ice-render` 跑的）。
+- 本轮还依赖引擎新增的 `ICEBoxLayout.align`（含 `stretch`）与 `ICEFlowLayout.crossAlign`
+  —— 旧引擎上这些选项会被静默忽略（表现为表单项不拉满宽度、Space 的 align 只在非换行时生效）。
 
 ## [1.6.0] - 2026-09-14
 

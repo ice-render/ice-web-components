@@ -1,9 +1,14 @@
 import { ICEContainer } from '../core/ICEContainer';
 import { ICEFormItem } from './ICEFormItem';
 import { ICEFormModel, ICEFormRule } from '../model/ICEFormModel';
+import { ICEBoxLayout } from 'ice-render';
 
 /**
  * 表单容器：把若干 ICEFormItem 纵向堆叠，绑上校验模型。
+ *
+ * 纵向堆叠 + 每个表单项拉满宽度交给**引擎的箱式布局**（`ICEBoxLayout({ axis: 'y', align: 'stretch' })`，
+ * `stretch` 就是 Swing BoxLayout 的默认口径）；本组件只保留一条自己的策略：
+ * **高度等于内容高度**（`doLayout()` 之后同步一次）。
  *
  * - 值与校验都在 `ICEFormModel` 里（纯逻辑），ICEForm 负责「控件 ⇄ 模型」同步与错误渲染；
  * - 控件触发 `change` → 写回模型并按 validateTrigger 校验 → 模型通知 → 表单项更新错误显示；
@@ -55,6 +60,8 @@ export class ICEForm extends ICEContainer {
       height: 0,
     });
     this.itemGap = props.gap ?? 16;
+    // 纵向堆叠交给引擎布局：交叉轴 stretch = 每个表单项拉满表单宽度（Swing BoxLayout 的默认行为）
+    this.setLayout(new ICEBoxLayout({ axis: 'y', gap: this.itemGap, align: 'stretch' }));
     this.validateDebounce = Math.max(0, Math.floor(Number(props.validateDebounce) || 0));
     this.model = props.model || new ICEFormModel();
     this.model.addChangeListener(() => this.__syncErrors());
@@ -131,7 +138,6 @@ export class ICEForm extends ICEContainer {
       });
     }
     this.addChild(item, false);
-    this.__layout();
     this.__syncErrors();
     return this;
   }
@@ -222,12 +228,32 @@ export class ICEForm extends ICEContainer {
     });
   }
 
-  private __layout(): void {
-    let top = 0;
-    this.items.forEach((item) => {
-      item.setState({ left: 0, top, width: Number(this.state.width) || undefined });
-      top += (Number(item.state.height) || 0) + this.itemGap;
+  /**
+   * 排布 = 引擎箱式布局摆位置，然后同步一次自身高度。
+   *
+   * 覆盖 `doLayout()` 而不是自己写一套堆叠：位置完全由布局器决定（含 `stretch` 的拉满宽度），
+   * 本组件只保留"高度等于内容高度"这一条策略。
+   */
+  public doLayout(): void {
+    super.doLayout();
+    this.__syncHeight();
+  }
+
+  /** 高度 = 所有表单项高度 + 间距（宽度由调用方决定，跟着 `stretch` 走）。 */
+  private __syncHeight(): void {
+    let total = 0;
+    this.items.forEach((item, index) => {
+      total += (Number(item.state.height) || 0) + (index > 0 ? this.itemGap : 0);
     });
-    this.setState({ height: Math.max(0, top - this.itemGap) });
+    total = Math.max(0, total);
+    if (Math.abs((Number(this.state.height) || 0) - total) <= 0.5) {
+      return;
+    }
+    // 直接写 state：这是本组件自己的高度策略，不该再触发一轮「尺寸变了 → 请求重排」
+    this.state.height = total;
+    this.dirty = true;
+    if (this.ice) {
+      this.ice.dirty = true;
+    }
   }
 }

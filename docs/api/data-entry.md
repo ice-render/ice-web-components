@@ -428,7 +428,7 @@
 
 ## `ICEForm`
 
-表单容器：把若干 ICEFormItem 纵向堆叠，绑上校验模型。
+表单容器：把若干 ICEFormItem 纵向堆叠，绑上校验模型。  纵向堆叠 + 每个表单项拉满宽度交给**引擎的箱式布局**（`ICEBoxLayout({ axis: 'y', align: 'stretch' })`， `stretch` 就是 Swing BoxLayout 的默认口径）；本组件只保留一条自己的策略： **高度等于内容高度**（`doLayout()` 之后同步一次）。
 
 - 值与校验都在 `ICEFormModel` 里（纯逻辑），ICEForm 负责「控件 ⇄ 模型」同步与错误渲染；
 - 控件触发 `change` → 写回模型并按 validateTrigger 校验 → 模型通知 → 表单项更新错误显示；
@@ -436,7 +436,7 @@
 
 源码：[`src/components/ICEForm.ts`](../../src/components/ICEForm.ts)
 
-**构造参数** `ICEFormOptions` — 表单容器：把若干 ICEFormItem 纵向堆叠，绑上校验模型。
+**构造参数** `ICEFormOptions` — 表单容器：把若干 ICEFormItem 纵向堆叠，绑上校验模型。  纵向堆叠 + 每个表单项拉满宽度交给**引擎的箱式布局**（`ICEBoxLayout({ axis: 'y', align: 'stretch' })`， `stretch` 就是 Swing BoxLayout 的默认口径）；本组件只保留一条自己的策略： **高度等于内容高度**（`doLayout()` 之后同步一次）。
 
 | 参数 | 类型 | 说明 |
 |---|---|---|
@@ -466,6 +466,7 @@
 | `onSubmit(handler: ICEFormSubmitHandler)` | `this` |  |
 | `submit()` | `boolean` | 校验通过才回调 onSubmit。 |
 | `submitAsync()` | `Promise<boolean>` | 异步版提交：等异步校验通过才回调 onSubmit。 |
+| `doLayout()` | `void` | 排布 = 引擎箱式布局摆位置，然后同步一次自身高度。 |
 
 ## `ICEFormList`
 

@@ -32,7 +32,7 @@
 |  | [`ICERate`](./api/data-entry.md#icerate) | 评分：N 颗星，点击设置分值、悬停预览、键盘 ←/→ 调整。 |
 |  | [`ICEUpload`](./api/data-entry.md#iceupload) | 上传选择器。 |
 |  | [`ICEFormItem`](./api/data-entry.md#iceformitem) | 表单项：标签 + 控件 + 错误文案。  只负责「摆位置 + 显示错误」；值的读写与校验规则由 ICEForm / ICEFormModel 管。 控件必须实现取值约定（`getFormValue` / `setFormValue`）。  布局： |
-|  | [`ICEForm`](./api/data-entry.md#iceform) | 表单容器：把若干 ICEFormItem 纵向堆叠，绑上校验模型。 |
+|  | [`ICEForm`](./api/data-entry.md#iceform) | 表单容器：把若干 ICEFormItem 纵向堆叠，绑上校验模型。  纵向堆叠 + 每个表单项拉满宽度交给**引擎的箱式布局**（`ICEBoxLayout({ axis: 'y', align: 'stretch' })`， `stretch` 就是 Swing BoxLayout 的默认口径）；本组件只保留一条自己的策略： **高度等于内容高度**（`doLayout()` 之后同步一次）。 |
 |  | [`ICEFormList`](./api/data-entry.md#iceformlist) | 可增删的重复表单项（多联系人 / 多地址 / 明细行）。  这类结构的难点不在「画一行」，而在**行身份**：用下标当 key，删掉第一行之后， 第二行的控件就会显示第一行的数据（重复行最经典的 bug）。所以每一行都有稳定的 `rowKey`， 增删只动那一行，`onChange(rows)` 给的是最新全量。  用法： ```ts const list = new ICEFormList({   renderRow: (row, ctx) => textFieldFor(row),   // 返回这一行的内容组件   initialRows: [{}],   minRows: 1, maxRows: 5,   onChange: (rows) => console.log(rows), }); ``` 行内的控件由调用方创建；改完值调 `list.updateRow(index, patch)` 把数据写回去。 |
 | [数据录入（浮层类）](./api/data-entry-popups.md) | [`ICESelect`](./api/data-entry-popups.md#iceselect) | 选择器：输入框外观 + 下拉选项（单选 / 多选 / 搜索过滤）。 |
 |  | [`ICEAutoComplete`](./api/data-entry-popups.md#iceautocomplete) | 自动完成：文本输入 + 候选下拉。 |
@@ -88,7 +88,7 @@
 |  | [`ICETabs`](./api/navigation.md#icetabs) | 标签页：一组互斥按钮，`onChange` 通知切换（程序式 `setActiveIndex` 不触发回调）。 |
 | [核心与布局](./api/core.md) | [`ICEScrollPane`](./api/core.md#icescrollpane) | 滚动视口（Swing 的 JScrollPane / CSS 的 overflow:auto 容器）。  依赖引擎的**子树裁剪**（`clipChildren`）：内容超出视口的部分被裁掉，滚出去的子组件 也命不中（命中检测同样尊重裁剪区）。  结构： ``` ICEScrollPane (clipChildren: true)   ├── contentBox   位置 = (-scrollX, -scrollY)，尺寸 = 内容尺寸   │     └── 调用方的内容组件   └── scrollbarTrack + scrollbarThumb   滚动条（内容超出时才显示） ``` 内容盒与滚动条都在构造期创建，保证滚动条的 zIndex 恒高于内容（引擎按 zIndex 排序渲染）。 |
 |  | [`ICEAffix`](./api/core.md#iceaffix) | 吸顶容器（CSS `position: sticky` 的画布版本）。  长页面里「筛选条 / 表头 / 批量操作栏」跟着滚走是后台最常见的抱怨；DOM 里一行 `position: sticky` 就解决，画布里没有这回事，于是这里把它补上： |
-|  | [`ICELayout`](./api/core.md#icelayout) | 布局骨架：顶栏 / 侧栏 / 内容 / 页脚。  后台外壳每个示例都在手搭（算坐标、算剩余宽度、侧栏收起时手动把内容挪过去）， 这里把它沉淀成一个件： |
+|  | [`ICELayout`](./api/core.md#icelayout) | 布局骨架：顶栏 / 侧栏 / 内容 / 页脚。  后台外壳每个示例都在手搭（算坐标、算剩余宽度、侧栏收起时手动把内容挪过去）， 这里把它沉淀成一个件。版式本身**交给引擎的五区布局**（`ICEBorderLayout`）： 顶栏 north / 侧栏 west（右置时 east）/ 内容 center / 页脚 south，本组件只负责 「哪个节点是哪个区」和「各区声明多大」—— |
 |  | [`ICESplitter`](./api/core.md#icesplitter) | 分隔面板：两栏 + 可拖动的分隔条。 |
 |  | [`ICEWindow`](./api/core.md#icewindow) | 通用窗口外壳（桌面 / 多窗口场景的底座）：标题栏 + 按钮 + 客户端区域 + 缩放手柄。 |
 |  | [`ICEOverlayManager`](./api/core.md#iceoverlaymanager) | 弹层/浮层底座。  所有需要「浮在其它组件之上」的组件（Modal、Dropdown、Select、Tooltip、Popover、 右键菜单…）都走这一层，避免每个组件各自实现锚点定位、z 序、点外关闭、Esc 关闭。  实现要点： |
