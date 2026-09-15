@@ -24,7 +24,7 @@ graph TD
     end
     subgraph wc["ice-web-components"]
         M["Managers<br/>Overlay · Focus · Hover · Message"]
-        C["80 UI components<br/>(ICEWidget base)"]
+        C["84 UI components<br/>(ICEWidget base)"]
         D["Pure models<br/>Tetris · Snake · 2048 · CHIP-8 · BIOS<br/>Pixel · Sort · Maze · DOS · …"]
     end
     E1 --> M
@@ -35,8 +35,8 @@ graph TD
 
 ## 2. Highlights
 
-- **80 UI components** (+18 pure models, 5 managers, 2 base classes → 105 exported
-  classes, 186 exported names in total; the count in
+- **84 UI components** (+20 pure models, 5 managers, 2 base classes → 111 exported
+  classes; the count in
   [`docs/components.md`](./docs/components.md) is generated from the source, so it
   cannot drift) — buttons, inputs, selects, tables, trees, menus, modals, drawers,
   notifications, uploads, date/time pickers, cascader, transfer, carousel, colour
@@ -53,12 +53,12 @@ graph TD
 - **Bootstrap 5 token theme** (plus a dark theme) — swap with one call.
 - **No name collisions with the engine** — the package’s runtime exports are
   disjoint from `ice-render`’s (there is a regression test for it).
-- **Actually tested** — 840 unit tests (108 suites: form validation, overlay
+- **Actually tested** — 1348 unit tests (190 suites: form validation, overlay
   positioning, keyboard navigation, sort/hover/focus edge cases, the Minesweeper,
   Tetris, Snake, 2048 and CHIP-8 rule/machine models, the pixel canvas and the undo
   stack, the console BIOS, the trace player + sorting/pathfinding and the DOS terminal)
   plus eight browser QA suites (`qa:admin`, `qa:gallery`, `qa:workbench`, `qa:xp`,
-  `qa:arcade`, `qa:pixel`, `qa:algo`, `qa:dos` — 284 assertions) that drive the demo pages with
+  `qa:arcade`, `qa:pixel`, `qa:algo`, `qa:dos` — 303 assertions) that drive the demo pages with
   real mouse and keyboard events and fail on any console error.
 
 ## 3. Core systems
