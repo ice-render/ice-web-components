@@ -7,6 +7,11 @@
 
 > 下一个版本发布前，改动在这里累积。
 
+## [1.9.0] - 2026-09-15
+
+本轮主题：**把布局机制用到位** —— 容器手写坐标清零、painter 管线打通、两个列表改自绘，
+并同步引擎 2.8.0 的破坏性布局变更。
+
 ### 变更
 
 - **容器家族的「手写坐标」清零（2026-09-15 收尾批）**：
@@ -113,9 +118,9 @@
 
 ### 注意（依赖）
 
-- 上述修复依赖 **ice-render 当前 `dev` 分支**（`feat/layout-swing-alignment`，见该仓 CHANGELOG
-  `[Unreleased]`），尚未发版；本仓 `devDependencies`/`peerDependencies` 的 `ice-render` 范围
-  待引擎发版后再对齐（本地验证是把引擎构建产物同步进 `node_modules/ice-render` 跑的）。
+- 依赖已对齐 **ice-render `^2.8.0`**（2026-09-15 发布）：本轮用到的 `ICEBoxLayout.align`、
+  `ICEFlowLayout.crossAlign`、`ICEVirtualList` 所需能力、`display` 变化触发重排、布局快照往返
+  都在 2.8.0 里；对着**已发布包**重跑了全部门禁与 e2e。
 - 本轮还依赖引擎新增的 `ICEBoxLayout.align`（含 `stretch`）与 `ICEFlowLayout.crossAlign`
   —— 旧引擎上这些选项会被静默忽略（表现为表单项不拉满宽度、Space 的 align 只在非换行时生效）。
 
