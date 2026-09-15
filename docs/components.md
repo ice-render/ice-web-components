@@ -55,7 +55,7 @@
 |  | [`ICEImageView`](./api/data-display.md#iceimageview) | 图片视图（基于引擎原语 `ICEImage`）。  名字带 `View` 后缀是为了避开引擎自己的 `ICEImage`（图片原语）——两个包同名不同物， 同时 import 会撞名，所以本库的控件一律叫 `ICEImageView`。 |
 |  | [`ICEImagePreview`](./api/data-display.md#iceimagepreview) | 图片预览：全屏遮罩 + 居中图片 + 底部工具栏。 |
 |  | [`ICECalendar`](./api/data-display.md#icecalendar) | 日历：月视图 + 日期选择。 |
-|  | [`ICEAvatar`](./api/data-display.md#iceavatar) | 文字头像：取首字母/汉字，背景色可配，自带描边把相邻头像分开。 |
+|  | [`ICEAvatar`](./api/data-display.md#iceavatar) | 文字头像：取首字母/汉字，背景色可配，自带描边把相邻头像分开。  装饰（圆底 + 首字）由 painter 画，组件自己只保存文本、宽高与背景色。 |
 |  | [`ICEAvatarGroup`](./api/data-display.md#iceavatargroup) | 头像组。 |
 |  | [`ICETag`](./api/data-display.md#icetag) | 标签：默认 Bootstrap 实底（`.text-bg-*`），`variant: 'soft'` 切浅底 + 强调文字。 |
 |  | [`ICEBadge`](./api/data-display.md#icebadge) | 徽标：数字/文字胶囊；`dot` 是红点模式，`count` 超过阈值自动显示 `99+`。 |

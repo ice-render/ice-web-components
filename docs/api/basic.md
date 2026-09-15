@@ -35,6 +35,7 @@
 | `getPreferredSize()` | `[number, number]` | 组件**想要多大**（布局用）。 |
 | `setPainter(painter: ICEPainter \| null)` | `this` |  |
 | `getPainter()` | `ICEPainter \| null` |  |
+| `paintDecoration()` | `void` | 让 painter 画一次内部装饰。`doRender()` 每帧自动调用；单测可以直接调它来断言画笔行为 |
 | `addChild(child: any, markDirty: boolean)` | `void` | UI 组件内部的图元只负责外观，不参与画布级拖拽、变换、连线。 |
 | `theme()` |  |  |
 

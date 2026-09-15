@@ -19,7 +19,47 @@ flowchart TD
     W --> O["浮层<br/>getICEOverlayManager"]
     W --> T["主题 token<br/>iceUIManager.getTheme"]
     W --> R["焦点环<br/>focusRing: keyboard/always/never"]
+    W --> P["内部装饰<br/>painter（UI delegate）"]
 ```
+
+### 内部装饰不要做成子节点：用 painter
+
+「标题 + 图标 + 底纹」这类**装饰**既不是内容、也不该参与父容器的布局。做成子节点会有两个后果：
+给组件挂布局会把装饰一起排掉；每个装饰还要吃一次渲染/命中/队列遍历。
+
+Swing 的答案也是这个：`JLabel` 的文字/图标不是子组件，而是 `ComponentUI`（UI delegate）画出来的。
+本库对应 `ICEPainter`（`setPainter(painter)`），约定与 Swing 同构：
+
+```ts
+import type { ICEPainter } from 'ice-web-components';
+
+class MyPainter implements ICEPainter {
+  // ① 画：本地坐标；origin 是本地原点（默认盒子中心），按"左上角"画就减掉它
+  paint({ ctx, theme, component, origin }) {
+    const [ox, oy] = origin;
+    ctx.fillStyle = theme.colors.primary;
+    ctx.fillRect(0 - ox, 0 - oy, component.state.width, 8);
+  }
+  // ② 想让布局按内容留位就报首选尺寸（布局会问它，见 ICEBoxLayout/ICEFlowLayout）
+  getPreferredSize(component) {
+    return [120, 32];
+  }
+  // ③ 需要交互的装饰在 install 里挂监听、自己算局部坐标；uninstall 里拆掉
+  install(component) {
+    component.on('click', this.onClick);
+  }
+}
+```
+
+两条实践口径：
+
+* **装饰 vs 内容**：调用方传进来的节点（`extra`、`first` / `second`、幻灯片）是**内容**，必须留在
+  `childNodes`；组件自己画的造型（头像的圆与首字、骨架屏的占位条、进度条的轨道与填充）是**装饰**，
+  适合 painter。
+* painter 每帧读 `theme`（构造期就把颜色写死的话，换主题不跟着变）。
+
+已迁到 painter 的组件：`ICEAvatar`（圆底 + 首字）、`ICESkeleton`（占位条）。
+真机回归见 `e2e/painter.spec.ts`（采样像素：圆内是主题主色、圆外透明）；单测见 `tests/ICEPainter.test.ts`。
 
 ---
 

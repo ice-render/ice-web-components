@@ -68,6 +68,18 @@ const splitter = new ICESplitter({ width: 900, height: 460, size: 300, first: qu
 报布局算出的内容尺寸，声明过 `setPreferredSize([w, h])` 就报声明值。**构造期给的 `width/height`
 只算边界**（Swing 的 `setBounds`），要让父布局按你给的尺寸留位请用 `setPreferredSize()`。
 
+### 组件的内部装饰走 painter，不进 `childNodes`
+
+「给组件挂布局」能不能安心的另一半，取决于组件的 `childNodes` 里装了什么：
+
+* **装内容**（调用方传进来的节点、自己的子控件）→ 正确，布局就该排它们；
+* **装装饰**（组件自己画的造型）→ 布局会把装饰也当成内容排一遍。
+
+装饰一律交给 `painter`（Swing 的 `ComponentUI` 位，见
+[写一个自己的组件](./custom-components.md#内部装饰不要做成子节点用-painter)）：
+`ICEAvatar` 的圆底与首字、`ICESkeleton` 的占位条已经迁过去，它们的 `childNodes` 现在是空的，
+怎么挂布局都不会碰到装饰。
+
 ## 二、zIndex 与创建顺序（最常见的坑）
 
 引擎按 `zIndex` **全局**排序渲染，而 `zIndex` 默认取**创建顺序**。所以：

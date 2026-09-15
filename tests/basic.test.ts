@@ -56,7 +56,8 @@ describe('ice-web-components core', () => {
   it('creates common display components', () => {
     expect(new ICEBadge({ text: '9' }).childNodes.length).toBe(1);
     expect(new ICETag({ text: 'Tag' }).childNodes.length).toBe(1);
-    expect(new ICEAvatar({ text: 'A' }).childNodes.length).toBe(2);
+    // 头像的圆底 + 首字由 painter 画（Swing 的 UI delegate 位），不进 childNodes
+    expect(new ICEAvatar({ text: 'A' }).childNodes.length).toBe(0);
     expect(new ICEIcon({ icon: '★' }).childNodes.length).toBe(1);
     expect(new ICESeparator({ width: 100 }).childNodes.length).toBe(1);
   });

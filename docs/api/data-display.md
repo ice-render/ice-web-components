@@ -486,7 +486,7 @@
 
 ## `ICEAvatar`
 
-文字头像：取首字母/汉字，背景色可配，自带描边把相邻头像分开。
+文字头像：取首字母/汉字，背景色可配，自带描边把相邻头像分开。  装饰（圆底 + 首字）由 painter 画，组件自己只保存文本、宽高与背景色。
 
 源码：[`src/components/ICEAvatar.ts`](../../src/components/ICEAvatar.ts)
 

@@ -134,9 +134,10 @@ describe('ice-web-components component behavior', () => {
 
     it('creates avatar and icon text nodes', () => {
       const avatar = new ICEAvatar({ text: 'A', size: 48 });
-      expect(avatar.childNodes).toHaveLength(2);
+      // 头像的圆底 + 首字由 painter 画（Swing 的 UI delegate 位）：节点数为 0，文本存在组件自己身上
+      expect(avatar.childNodes).toHaveLength(0);
       avatar.setText('B');
-      expect(avatar.childNodes[1].state.text).toBe('B');
+      expect(avatar.getText()).toBe('B');
 
       const icon = new ICEIcon({ icon: '★' });
       icon.setIcon('✓');

@@ -1,6 +1,48 @@
 import { ICEWidget } from '../core/ICEWidget';
-import { iceUIManager } from '../core/ICEManager';
 import { tween, ICETweenHandle } from '../util/ICEAnimation';
+import { roundRectPath } from '../util/ICEStyle';
+import type { ICEPaintContext, ICEPainter } from '../core/ICEPainter';
+
+/** 占位条（纯几何数据，绘制交给 painter）。 */
+interface ICESkeletonBar {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  radius: number;
+}
+
+/**
+ * 占位条的绘制：读组件当前的**几何数据**画圆角矩形。
+ *
+ * 颜色每帧从主题取（原来是构造期写死进节点 style，换主题后不跟着变）。
+ */
+class ICESkeletonPainter implements ICEPainter {
+  private bars: ICESkeletonBar[];
+
+  constructor(bars: ICESkeletonBar[]) {
+    this.bars = bars;
+  }
+
+  paint({ ctx, theme, component, origin }: ICEPaintContext): void {
+    if (!ctx || !this.bars.length) {
+      return;
+    }
+    const [ox, oy] = origin;
+    const canSave = typeof ctx.save === 'function' && typeof ctx.restore === 'function';
+    if (canSave) {
+      ctx.save();
+    }
+    ctx.fillStyle = theme.colors.disabled;
+    this.bars.forEach((bar) => {
+      roundRectPath(ctx, bar.left - ox, bar.top - oy, bar.width, bar.height, bar.radius);
+      ctx.fill();
+    });
+    if (canSave) {
+      ctx.restore();
+    }
+  }
+}
 
 /**
  * 骨架屏：内容加载前的灰色占位。
@@ -23,7 +65,11 @@ export interface ICESkeletonOptions {
 }
 
 export class ICESkeleton extends ICEWidget {
-  private placeholders: ICEWidget[] = [];
+  /**
+   * 占位条的几何数据。**不是子节点** —— 绘制由 `ICESkeletonPainter` 完成（Swing 的 UI delegate 位），
+   * 所以给骨架屏挂布局不会把这些条排掉，节点数也从「每条一个」降到 0。
+   */
+  private placeholders: ICESkeletonBar[] = [];
   private active: boolean;
   private pulse: ICETweenHandle | null = null;
   private variant: 'text' | 'card' | 'table' | 'list';
@@ -31,7 +77,6 @@ export class ICESkeleton extends ICEWidget {
   private columnCount = 0;
 
   constructor(props: ICESkeletonOptions) {
-    const theme = iceUIManager.getTheme();
     const width = props.width ?? 240;
     const variant = props.variant || 'text';
     const rows = Math.max(0, props.rows ?? 3);
@@ -58,21 +103,11 @@ export class ICESkeleton extends ICEWidget {
     });
     this.active = props.active === true;
     this.variant = variant;
+    // 装饰走 painter（不是子节点）：占位条在下面按变体填进 placeholders，painter 按引用读同一份数据
+    this.setPainter(new ICESkeletonPainter(this.placeholders));
 
     const bar = (left: number, top: number, w: number, h: number) => {
-      const node = new ICEWidget({
-        left,
-        top,
-        width: w,
-        height: h,
-        radius: 4,
-        fill: true,
-        stroke: false,
-        interactive: false,
-        style: { fillStyle: theme.colors.disabled },
-      });
-      this.addChild(node, false);
-      this.placeholders.push(node);
+      this.placeholders.push({ left, top, width: w, height: h, radius: 4 });
     };
 
     if (variant === 'card') {
@@ -121,19 +156,13 @@ export class ICESkeleton extends ICEWidget {
       for (let i = 0; i < items; i += 1) {
         const top = i * itemHeight;
         if (top + avatarSizeValue > height) break;
-        const avatarNode = new ICEWidget({
+        this.placeholders.push({
           left: 0,
           top,
           width: avatarSizeValue,
           height: avatarSizeValue,
           radius: avatarSizeValue / 2,
-          fill: true,
-          stroke: false,
-          interactive: false,
-          style: { fillStyle: theme.colors.disabled },
         });
-        this.addChild(avatarNode, false);
-        this.placeholders.push(avatarNode);
         bar(avatarSizeValue + 12, top + 2, Math.round(width * 0.5), 14);
         bar(avatarSizeValue + 12, top + 24, Math.round(width * 0.7), 12);
       }
@@ -146,19 +175,13 @@ export class ICESkeleton extends ICEWidget {
     }
 
     if (avatar) {
-      const avatarNode = new ICEWidget({
+      this.placeholders.push({
         left: 0,
         top: 0,
         width: avatarSize,
         height: avatarSize,
         radius: avatarSize / 2,
-        fill: true,
-        stroke: false,
-        interactive: false,
-        style: { fillStyle: theme.colors.disabled },
       });
-      this.addChild(avatarNode, false);
-      this.placeholders.push(avatarNode);
     }
     if (title) {
       bar(contentLeft, 0, Math.min(width - contentLeft, Math.round(width * 0.4)), titleHeight);

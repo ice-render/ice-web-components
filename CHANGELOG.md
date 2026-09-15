@@ -9,6 +9,20 @@
 
 ### 变更
 
+- **painter（Swing 的 UI delegate 位）真正可用，并开始承接内部装饰**：
+  - 引擎管线的缺口补上：`ICEWidget.doRender()` 现在会把画笔交给 `painter.paint({ ctx, theme, component, origin })`
+    （在 `super.doRender()` 之后取回组件本地 CTM，与 `ICETileMap` 自绘同一套口径），`origin` 是本地原点
+    （默认盒子中心），单测可直接调 `paintDecoration()`。此前 `setPainter` 只影响 `getPreferredSize()`，
+    **`paint()` 从来没有被调用过** —— 挂上去的 painter 画不出任何东西。
+  - `ICEAvatar`：圆底 + 首字的两个子节点迁到 painter，`childNodes` 从 2 → 0；
+    文本改成组件自己的状态（`setText` 不再同步子节点）。
+  - `ICESkeleton`：占位条全部迁到 painter（N 个 `ICEWidget` 子节点 → 0），颜色改为每帧读主题
+    （原来构造期写死，换主题不跟着变）。
+  - 圆角矩形路径提取成公共工具 `roundRectPath`（`util/ICEStyle`），painter 与 `ICETileMap` 共用。
+  - 回归：`tests/ICEPainter.test.ts`（8 例：paint 上下文/坐标、install-uninstall、首选尺寸协商、
+    painter 自己挂事件、装饰不参与布局）+ 真机 `e2e/painter.spec.ts`（采样像素：圆内是主题主色、圆外透明）。
+  - 文档：`docs/guides/custom-components.md`（装饰 vs 内容、painter 契约）、`docs/guides/layout.md`。
+
 - **容器型组件改用引擎布局器**（2026-09-15，承接引擎「布局不继承 / 尺寸协商」改造）：
   - `ICELayout`：四区版式交给 `ICEBorderLayout`（顶栏 north / 侧栏 west|east / 内容 center / 页脚 south），
     本组件只声明「哪个节点是哪个区」和区高/区宽；**侧栏收起 = 把节点 `display` 关掉**，
