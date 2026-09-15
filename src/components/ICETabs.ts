@@ -1,11 +1,90 @@
 import { ICEButton } from './ICEButton';
 import { ICEContainer } from '../core/ICEContainer';
-import { ICEFlowLayout } from 'ice-render';
+import { ICELayoutManager } from 'ice-render';
 import { iceUIManager } from '../core/ICEManager';
 
 /**
  * 标签页：一组互斥按钮，`onChange` 通知切换（程序式 `setActiveIndex` 不触发回调）。
  */
+
+/**
+ * 页签条的自持策略（Swing 的 `JTabbedPane` + `BasicTabbedPaneUI` 位）。
+ *
+ * 四种方位（上/下/左/右）与 overflow 形态（两端箭头 + 可滚动的条带）都在这里摆位；
+ * 组件只保留策略：有哪些页签、要不要溢出、滚到哪。**结构**（条带 / 箭头 / 把按钮塞进条带）
+ * 仍归组件 —— 布局策略只摆位置，不重建树（引擎的约定）。
+ */
+class ICETabsLayout extends ICELayoutManager {
+  layoutContainer(container: any): void {
+    const input = container.__getTabsLayoutInput();
+    const { placement, overflow, width, height, gap, rowHeight, tabWidth, scrollOffset, buttons, extraNodes } = input;
+
+    if (overflow) {
+      // 顶部横向滚动形态：箭头贴两侧、条带居中并带负偏移（偏移量 = 滚动量）
+      const arrowWidth = 24;
+      if (input.prevButton) {
+        input.prevButton.setState({ left: 0, top: 1, width: arrowWidth, height: height - 2 });
+      }
+      if (input.nextButton) {
+        input.nextButton.setState({ left: width - arrowWidth, top: 1, width: arrowWidth, height: height - 2 });
+      }
+      if (input.strip) {
+        input.strip.setState({
+          left: arrowWidth - scrollOffset,
+          top: 0,
+          width: Math.max(0, width - arrowWidth * 2),
+          height,
+        });
+      }
+      const boxes: Array<{ left: number; width: number }> = [];
+      let left = 0;
+      buttons.forEach((button: any) => {
+        button.setState({ left, top: 0, width: tabWidth, height });
+        boxes.push({ left, width: tabWidth });
+        left += tabWidth + 8;
+      });
+      container.__setTabBoxes(boxes);
+      return;
+    }
+
+    container.__setTabBoxes([]);
+
+    if (placement === 'left' || placement === 'right') {
+      // 竖向：一列排下来，整条宽度 = 容器宽（保持既有几何）
+      buttons.forEach((button: any, index: number) => {
+        button.setState({ left: 0, top: index * rowHeight, width, height: rowHeight - gap });
+      });
+      return;
+    }
+
+    // 横向（上 / 下）：页签 + extra 依次排
+    //  - 上方：行高就是页签行高（老行为是流式布局，按钮高度不动）
+    //  - 下方：整体贴底、按钮高度收到「容器高 - 6」（老行为的口径）
+    const isBottom = placement === 'bottom';
+    const itemsHeight = isBottom ? Math.max(20, height - 6) : rowHeight;
+    const rowTop = isBottom ? Math.max(0, height - itemsHeight) : 0;
+    let cursor = 0;
+    const place = (node: any, stretchHeight: boolean) => {
+      const nodeHeight = stretchHeight ? itemsHeight : Number(node.state.height) || itemsHeight;
+      node.setState({
+        left: cursor,
+        top: rowTop + Math.max(0, (itemsHeight - nodeHeight) / 2),
+        ...(stretchHeight ? { height: itemsHeight } : {}),
+      });
+      cursor += (Number(node.state.width) || 0) + gap;
+    };
+    buttons.forEach((button: any) => place(button, isBottom));
+    if (placement === 'top') {
+      // 顶部形态下 extra 跟着页签一起流式排（老行为就是流式布局把它们排在一行）
+      extraNodes.forEach((node: any) => place(node, false));
+    }
+  }
+
+  /** 序列化参数：页签条几何由页签数/尺寸决定，没有可调的构造参数。 */
+  public toJSON(): any {
+    return {};
+  }
+}
 export class ICETabs extends ICEContainer {
   private buttons: ICEButton[] = [];
   private activeIndex = 0;
@@ -62,6 +141,8 @@ export class ICETabs extends ICEContainer {
     this.minTabWidth = Math.max(40, Math.floor(Number(props.minTabWidth) || 64));
     this.scrollableProp = props.scrollable;
     this.extraSource = props.extra === undefined || props.extra === null ? [] : Array.isArray(props.extra) ? props.extra : [props.extra];
+    // 排布交给自持策略（四种方位 + overflow 都在里面），组件只决定"结构"
+    this.setLayout(new ICETabsLayout());
     this.__render();
   }
 
@@ -81,11 +162,6 @@ export class ICETabs extends ICEContainer {
     // 页签多到装不下才出现箭头（默认 64 是「还能看清文字」的底线）
     const fitWidth = (this.declaredWidth - totalGap) / Math.max(1, this.tabs.length);
     this.overflow = this.scrollableProp === true || (this.scrollableProp !== false && fitWidth < this.minTabWidth);
-    // 只有「顶部横向条且不溢出」才交给引擎的流式布局；其它方位由本组件自己摆
-    // （overflow 形态有箭头、贴底/竖排有各自的基线，挂了策略会和手摆的位置打架）。
-    // 注：传 null 以前还有第二个用途 —— 阻断引擎把**父层**布局继承进来。引擎 2026-09-15 起
-    // 「布局不继承」（对齐 Swing `Container.setLayout`），所以 null 现在只剩「清掉自己的策略」。
-    this.setLayout(this.placement === 'top' && !this.overflow ? new ICEFlowLayout({ gap, align: 'left' }) : (null as any));
     this.tabs.forEach((text, index) => {
       const button = new ICEButton({
         text,
@@ -98,7 +174,7 @@ export class ICETabs extends ICEContainer {
       if (this.closable) this.__attachCloseButton(button, index);
     });
     if (this.overflow) {
-      this.__applyOverflowLayout();
+      this.__ensureOverflowStructure();
     }
     this.extraSource.forEach((node: any) => {
       if (!node) return;
@@ -110,14 +186,11 @@ export class ICETabs extends ICEContainer {
     });
     // 拖动排序后重建时保留原来的选中项（构造期本来就是 0）
     this.setActiveIndex(Math.min(Math.max(0, this.activeIndex), Math.max(0, this.tabs.length - 1)));
-    this.doLayout();
     if (this.placement === 'left' || this.placement === 'right') {
+      // 竖向形态的高度 = 页签数 × 行高（组件级策略），再统一排一次
       this.setState({ height: this.tabs.length * this.heightValue });
-      this.__applyVerticalLayout();
     }
-    if (this.placement === 'bottom') {
-      this.__applyBottomLayout();
-    }
+    this.doLayout();
   }
 
   public getPlacement(): 'top' | 'bottom' | 'left' | 'right' {
@@ -132,25 +205,43 @@ export class ICETabs extends ICEContainer {
     return this.tabs[this.activeIndex] || '';
   }
 
-  /** 竖向条（left / right）：一列排下去，宽度 = 页签宽。 */
-  private __applyVerticalLayout(): void {
-    const itemHeight = this.heightValue;
-    const width = Number(this.state.width) || 96;
-    this.buttons.forEach((button, index) => {
-      button.setState({
-        left: 0,
-        top: index * itemHeight,
-        width,
-        height: itemHeight - this.itemGap,
-      });
-    });
+  /** 自持策略需要的输入（节点 + 当前策略值）。 */
+  public __getTabsLayoutInput(): {
+    placement: 'top' | 'bottom' | 'left' | 'right';
+    overflow: boolean;
+    width: number;
+    height: number;
+    gap: number;
+    /** 单个页签的行高（竖向排列与上方形态都用它）。 */
+    rowHeight: number;
+    tabWidth: number;
+    scrollOffset: number;
+    buttons: ICEButton[];
+    extraNodes: any[];
+    strip: any;
+    prevButton: ICEButton | null;
+    nextButton: ICEButton | null;
+  } {
+    return {
+      placement: this.placement,
+      overflow: this.overflow,
+      width: Number(this.state.width) || 300,
+      height: Number(this.state.height) || 32,
+      gap: this.itemGap,
+      rowHeight: this.heightValue,
+      tabWidth: this.tabWidthValue,
+      scrollOffset: this.scrollOffset,
+      buttons: this.buttons,
+      extraNodes: this.extraNodes,
+      strip: this.strip,
+      prevButton: this.prevButton,
+      nextButton: this.nextButton,
+    };
   }
 
-  /** 贴底：横向条整体下移。 */
-  private __applyBottomLayout(): void {
-    const height = Number(this.state.height) || 34;
-    const itemHeight = Math.max(20, height - 6);
-    this.buttons.forEach((button) => button.setState({ top: height - itemHeight, height: itemHeight }));
+  /** overflow 形态下由策略回填的"页签逻辑盒子"（不含滚动偏移）。 */
+  public __setTabBoxes(boxes: Array<{ left: number; width: number }>): void {
+    this.tabBoxes = boxes;
   }
 
   protected afterAddHandler(): void {
@@ -287,7 +378,8 @@ export class ICETabs extends ICEContainer {
       return this;
     }
     this.scrollOffset = next;
-    this.__applyOverflowLayout();
+    // 滚动位置变了：让策略重摆条带（不自己算 left）
+    this.doLayout();
     return this;
   }
 
@@ -340,8 +432,12 @@ export class ICETabs extends ICEContainer {
     }));
   }
 
-  /** 溢出时：页签放进可裁剪的条带里，两端各一个箭头。 */
-  private __applyOverflowLayout(): void {
+  /**
+   * 溢出形态的**结构**：页签放进可裁剪的条带里，两端各一个箭头。
+   *
+   * 只建结构、不摆位置 —— 位置由 `ICETabsLayout`（本组件的自持策略）算。
+   */
+  private __ensureOverflowStructure(): void {
     const theme = iceUIManager.getTheme();
     const width = Number(this.state.width) || 300;
     const height = Number(this.state.height) || 32;
@@ -384,20 +480,6 @@ export class ICETabs extends ICEContainer {
       arrow('›', width - arrowWidth, this.tabWidthValue, 'next');
       this.strip.setState({ style: { ...this.strip.state.style, fillStyle: theme.colors.background } });
     }
-    // 页签按自然宽度排；条的 left 是「内容盒的负偏移」，等于滚动量
-    this.tabBoxes = [];
-    let left = 0;
-    this.buttons.forEach((button, index) => {
-      button.setState({
-        left,
-        top: 0,
-        width: this.tabWidthValue,
-        height,
-      });
-      this.tabBoxes.push({ left, width: this.tabWidthValue });
-      left += this.tabWidthValue + 8;
-    });
-    this.strip.setState({ left: arrowWidth - this.scrollOffset });
     if (this.ice) {
       this.ice.dirty = true;
     }
