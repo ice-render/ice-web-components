@@ -7,6 +7,47 @@
 
 > 下一个版本发布前，改动在这里累积。
 
+## [1.10.1] - 2026-09-15
+
+### 修复
+
+- **`ICEList` 真实鼠标点行没反应**：行是画在内部内容盒上的，而那个内容盒 `interactive: true`，
+  会先被命中检测选中并把 click 吃掉 —— 列表自己的几何反查（`__indexAtPoint`）永远收不到事件。
+  内容盒改 `interactive: false`（与 `ICEVirtualList` 同口径）。旧 QA 用
+  `getRowNode(key).trigger('click')`（该 API 已随后续画家化删除），正好绕开命中路径，所以一直没暴露；
+  回归见 `tests/ICEList.test.ts`。
+
+### 变更
+
+- **`ICERadioGroup` / `ICECheckboxGroup` 的选项排布改用引擎 `ICEBoxLayout`**：组件里不再手写
+  `left = cursor` / `top = index * itemHeight`（行内"圈 + 缝 + 文字"同样走布局器）。
+  **坐标与历史手写版逐项一致**（含"纵向行距 = itemHeight、`itemGap` 不参与纵向"这条既有口径，
+  未擅自改版式），回归见新增 `tests/ICEOptionGroupLayout.test.ts`。
+- 示例页的派生排列改用引擎布局器：`pixel-editor`（工具列 / 快捷键列 / 状态两列表 / 动作行 / 尺寸行）、
+  `algorithm-sandbox`（模式切换 / 算法列 / 数据列 / 状态表 / 回放行 / 速度行）、
+  `arcade`（卡带行 / 机壳按钮行 / 操作说明两列表 / NEXT 预览槽 / 侧栏项名·值行）、
+  `windows-xp`（桌面图标列 / 开始菜单左右两列 / 难度行 / 调色板网格 / 卡带列 / 登录磁贴列）。
+  屏幕内容（棋盘、显存、画布、迷宫、BIOS 文本屏）**保持坐标** —— 那是画布几何，不是版式。
+
+### 工程
+
+- **复合控件决策表（棘轮）**：`tests/layoutConvention.test.ts` 新增 `COMPOUND_DECIDED` ——
+  源码里"会自建子节点 + 按序号/游标推导位置"的类必须逐条登记口径
+  （`engine` / `canvas` / `anatomy` / `derived：待迁`），**新增漏做决定即红**。
+  当前 4 个 engine、15 个 canvas、5 个 anatomy、11 个 derived（待迁清单与理由见该文件与
+  `docs/guides/layout.md` 第四节）。
+- 三个 QA 脚本修复（它们此前**一直失败**，因为不在 `npm run verify` 里）：
+  `qa-workbench` / `qa-admin` 改用真实鼠标点行（`getRowBox(key)` 算行中心，替代已删除的
+  `getRowNode`），`qa-gallery` 的控件查找改递归（布局改造后控件被包进内容宿主）。
+
+### 验证
+
+- `npm run verify` 全绿（单测 1330+）；`npm run test:e2e` 10/10；
+- 六个 QA 脚本（gallery / admin / workbench / dos / pixel / algo / xp / arcade）全绿；
+- 改动示例页逐张截图人工复核；`windows-xp` / `arcade` 与改造前截图做像素比对：
+  windows-xp 仅 48 像素差异（全部是任务栏时钟，两次运行时间不同），arcade 的差异低于
+  自身的动画噪声底线（0.67% vs 0.73%）—— 即版式逐像素未变。
+
 ## [1.10.0] - 2026-09-15
 
 ### 变更
