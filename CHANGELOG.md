@@ -91,6 +91,14 @@
   （实测 `ICETextField(prefix, allowClear)` 的文本 `12 → 0`、清除按钮 `(170,6) → (316,0)`）。
   引擎修掉继承后不再发生，本库加回归用例守住：`tests/engineLayout.integration.test.ts`。
 
+### 说明（"格子类"重构的收尾判定）
+
+- 逐组件核实后确认：**真正"节点随数据无界"的只有 `ICEList`**（已改成 painter + 几何反查）。
+  `ICETree`/`ICETable` 早已虚拟化（`ICETable` 在 `virtual: true` 下 `getRenderedRowCount() <= 12`），
+  `ICECarousel`/`ICEMenu` 的节点数由调用方给的规模决定（幻灯片是内容、菜单项是个位数~几十）。
+  因此**不为了自绘而做破坏性改造**；结论与判定表见
+  [`docs/guides/row-painter-migration.md`](./docs/guides/row-painter-migration.md) 的「最终结论」。
+
 ### 注意（依赖）
 
 - 上述修复依赖 **ice-render 当前 `dev` 分支**（`feat/layout-swing-alignment`，见该仓 CHANGELOG

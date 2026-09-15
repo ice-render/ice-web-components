@@ -1,6 +1,9 @@
 # 「格子类」组件的 painter 迁移计划（2026-09-15）
 
-> 状态：**已开工** —— `ICEVirtualList` 已完成（见文末「已完成」），其余按顺序推进。
+> 状态：**已完成（2026-09-15）** —— 结论见文末「最终结论」：
+> 真正"节点随数据无界"的只有 `ICEList`（已修）与 `ICEVirtualList`（顺手也画家化）；
+> `ICETree` / `ICETable` / `ICECarousel` / `ICEMenu` **本来就有界**（虚拟化或取决于调用方给的规模），
+> 不需要为此做破坏性改造。
 > 本文是 2026-09-15 那轮布局收口时逐组件复核出来的结论，
 > 供下一轮直接照着做 —— 这些组件**不属于**"把坐标搬进策略"那一类，
 > 而是要把"一项一个子节点"改成 **UI delegate 直接画**（Swing 的 `JTable` / `JList` / `JTree` /
@@ -121,3 +124,25 @@ renderItem: ({ ctx, index, item, x, y, width, height }) => {
 
 **给后续 `ICETable` / `ICETree` 的模板**：数据+几何留在组件里 → painter 画窗口内的行
 → 命中改几何反查 → 只改数据置脏（不建/拆节点）。
+
+
+---
+
+## 最终结论（2026-09-15，逐组件核实后）
+
+按"先界，再画"的原则逐个核实（不是抽样）后的判定表：
+
+| 组件 | 节点数上界 | 判定 |
+|---|---|---|
+| `ICEVirtualList` | 可视区 + buffer（≈10~20） | ✅ 本就有界；顺手改成 painter（`39ad6f2`），一万条 = 0 行节点 |
+| `ICEList` | ~~= 数据条数（无界）~~ → **0** | ✅ 已修（`5d59a32`）：行改 painter + 点击几何反查 |
+| `ICETree` | 可视窗口 + 缓冲（`ICETree.virtual` 用例断言"节点数有上界"） | 本就有界 → **不需要** painter 改造 |
+| `ICETable` | `virtual: true` 时 `getRenderedRowCount() <= 12`（`tests/ICETableVirtual.test.ts` 断言） | 本就有界（大数据请用 virtual）；非 virtual 是调用方选择的小数据场景 |
+| `ICECarousel` | 5 + 幻灯片数（幻灯片是调用方内容，必须留节点） | 有界 → 不动（圆点/箭头还需要真实命中区，Swing 的 `JScrollPane` 箭头同样是真组件） |
+| `ICEMenu` | 菜单项数量（个位数~几十，由调用方定义） | 有界 → 不动 |
+
+**所以 "painter 线" 到此结束**：它要解决的是"节点随数据无界增长"，
+而库里真正有这个问题的是 `ICEList`（已修）与 `ICEVirtualList`（已画家化）；
+其余组件要么本来虚拟化、要么规模由调用方决定。**不为"自绘而自绘"做破坏性变更** ——
+自绘只在"装饰"场景（`ICEAvatar` / `ICESkeleton` / 已完成的两个列表）用，
+新组件的规则见 `AGENTS.md`「布局铁律」第 2 条。
