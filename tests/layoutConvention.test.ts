@@ -29,12 +29,12 @@ const MIGRATED = new Set([
   'ICEScrollPane', // → 自持 ICEScrollPaneLayout（Swing ScrollPaneLayout 位：内容盒 + 两条滚动条）
   'ICETabs', // → 自持 ICETabsLayout（Swing JTabbedPane 位：四方位 + overflow 箭头/条带）
   'ICEPagination', // → ICEBoxLayout(axis x)（页码行；顺手收敛了 76px 文案占位魔数）
+  'ICEGrid', // → 自持 ICEGridLayout（24 栅格：等列宽 + 行高按内容 + 自动高度 + offset）
+  'ICEGridCol', // 同上（栅格的一列，由行策略调用 applyLayout 摆位/撑宽）
 ]);
 
 /** 待迁：豁免清单（每条必须写原因；迁完从这张表挪进 MIGRATED）。 */
 const PENDING = new Map<string, string>([
-  ['ICEGrid', '24 栅格：按 span 的分数列宽 + 跨行自动换行，引擎 GridLayout 表达不了（track 见 ROADMAP）'],
-  ['ICEGridCol', '同上（栅格的一列）'],
   [
     'ICEMenu',
     '两条阻塞（2026-09-15 复核）：① 菜单项是"一项一个子节点"，Swing 里由 BasicMenuUI 直接画（同 JTable/JList 的 cell）' +

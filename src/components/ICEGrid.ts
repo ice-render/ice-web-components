@@ -1,5 +1,49 @@
 import { ICEContainer } from '../core/ICEContainer';
 import { iceUIManager } from '../core/ICEManager';
+import { ICELayoutManager } from 'ice-render';
+
+/**
+ * 24 栅格的自持策略（2026-09-15）。
+ *
+ * 为什么自持而不是用引擎的 `ICEGridLayout`：引擎的等分模式是"填满容器"（列宽行高都均分，
+ * 首选尺寸不表态），而 24 栅格要的是"**等列宽 + 行高按内容 + 自动高度 + 列偏移(offset)**"，
+ * 且每行的 unit 按该行实际列数算 —— 这是个有自己语义的网格，属于"组件自持策略"那一类
+ * （与 `ICETabs` / `ICEScrollPane` 同一条路）。
+ *
+ * 规则（与迁移前逐字一致）：
+ * 先按 `span + offset` 把列分行（每行不超过 24 格），行内
+ * `unit = (width - gutter × (列数 - 1)) / 24`，列起点 = `(已用格 + offset) × unit + gutter × 列序`。
+ */
+class ICEGridLayout extends ICELayoutManager {
+  layoutContainer(container: any): void {
+    const grid = container as ICEGrid;
+    const width = Number(container.state.width) || 0;
+    const gutter = grid.getGutter();
+    const gutterY = grid.getGutterY();
+    let top = 0;
+    grid.__rows().forEach((row: ICEGridCol[]) => {
+      const unit = (width - gutter * Math.max(0, row.length - 1)) / 24;
+      let slots = 0;
+      let rowHeight = 0;
+      row.forEach((col, index) => {
+        const left = (slots + col.offset) * unit + gutter * index;
+        col.applyLayout(left, top, col.span * unit);
+        slots += col.span;
+        // 行高取该列最高者；列自己没给高度时用它内容的高度（迁移前的口径，逐字保留）
+        const content = typeof col.getContent === 'function' ? col.getContent() : null;
+        rowHeight = Math.max(rowHeight, Number(col.state.height) || Number(content && content.state.height) || 0);
+      });
+      top += rowHeight + gutterY;
+    });
+    // 把"内容总高"回给组件：autoHeight 的高度策略要用（旧实现在这里直接写 state.height）
+    grid.__setContentBottom(Math.max(0, top - gutterY));
+  }
+
+  /** 序列化参数：栅格几何由组件级策略（gutter / span / offset）决定，策略本身无参。 */
+  public toJSON(): any {
+    return {};
+  }
+}
 
 /**
  * 24 栅格列：`span` 占多少格、`offset` 左边空多少格，`content` 是列内容。
@@ -76,6 +120,8 @@ export interface ICEGridOptions {
 
 export class ICEGrid extends ICEContainer {
   private cols: ICEGridCol[] = [];
+  /** 自持策略算出的内容总高（`autoHeight` 用）。 */
+  private __contentBottom = 0;
   private gutter: number;
   private gutterY: number;
   private autoHeight: boolean;
@@ -96,6 +142,8 @@ export class ICEGrid extends ICEContainer {
     this.gutter = props.gutter ?? theme.spacing.md;
     this.gutterY = props.gutterY ?? this.gutter;
     this.autoHeight = props.height === undefined;
+    // 排布交给自持策略（见文件头「为什么自持」）
+    this.setLayout(new ICEGridLayout());
   }
 
   public getCols(): ICEGridCol[] {
@@ -105,18 +153,32 @@ export class ICEGrid extends ICEContainer {
   public addCol(col: ICEGridCol): this {
     super.addChild(col, false);
     this.cols.push(col);
-    this.__layout();
+    this.doLayout();
     return this;
   }
 
   public setGutter(gutter: number, gutterY?: number): this {
     this.gutter = Number(gutter) || 0;
     this.gutterY = gutterY === undefined ? this.gutter : Number(gutterY) || 0;
-    this.__layout();
+    this.doLayout();
     return this;
   }
 
-  private __rows(): ICEGridCol[][] {
+  /** 策略回填的内容总高（`autoHeight` 的高度策略用它，见 `doLayout`）。 */
+  public __setContentBottom(bottom: number): void {
+    this.__contentBottom = Math.max(0, Number(bottom) || 0);
+  }
+
+  public getGutter(): number {
+    return this.gutter;
+  }
+
+  public getGutterY(): number {
+    return this.gutterY;
+  }
+
+  /** 按 `span + offset` 分行（每行不超过 24 格）。策略用它，测试也直接断言它。 */
+  public __rows(): ICEGridCol[][] {
     const rows: ICEGridCol[][] = [[]];
     let used = 0;
     this.cols.forEach((col) => {
@@ -131,38 +193,29 @@ export class ICEGrid extends ICEContainer {
     return rows;
   }
 
-  private __layout(): void {
-    const width = Number(this.state.width) || 0;
-    let top = 0;
-    this.__rows().forEach((row) => {
-      const unit = (width - this.gutter * Math.max(0, row.length - 1)) / 24;
-      let slots = 0;
-      let rowHeight = 0;
-      row.forEach((col, index) => {
-        const left = (slots + col.offset) * unit + this.gutter * index;
-        const colWidth = col.span * unit;
-        col.applyLayout(left, top, colWidth);
-        slots += col.span;
-        rowHeight = Math.max(rowHeight, Number(col.state.height) || this.__contentHeight(col));
-      });
-      top += rowHeight + this.gutterY;
-    });
-    if (this.autoHeight) {
-      this.state.height = Math.max(0, top - this.gutterY);
+  /**
+   * 排布 = 自持策略摆列 + 组件自己的高度策略（`autoHeight` 时高度 = 内容高度）。
+   *
+   * 宽度仍由调用方决定（栅格的 24 等分以它为基准）。
+   */
+  public doLayout(): void {
+    super.doLayout();
+    if (!this.autoHeight) {
+      return;
     }
-    if (this.ice) {
-      this.ice.dirty = true;
+    const bottom = this.__contentBottom;
+    if (Math.abs((Number(this.state.height) || 0) - bottom) > 0.5) {
+      this.state.height = Math.max(0, bottom);
+      this.dirty = true;
+      if (this.ice) {
+        this.ice.dirty = true;
+      }
     }
-  }
-
-  private __contentHeight(col: ICEGridCol): number {
-    const content = col.getContent();
-    return content ? Number(content.state.height) || 0 : 0;
   }
 
   public revalidate(): this {
     super.revalidate();
-    this.__layout();
+    this.doLayout();
     return this;
   }
 }
