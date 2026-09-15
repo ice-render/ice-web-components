@@ -255,6 +255,17 @@ export class ICETextField extends ICEWidget {
       this.ice && this.ice.canvasEl && typeof this.ice.canvasEl.getBoundingClientRect === 'function'
         ? this.ice.canvasEl.getBoundingClientRect()
         : { left: 0, top: 0 };
+    // 画布**显示尺寸**（CSS）相对内部坐标系（SCREEN_W×SCREEN_H）的缩放：
+    // 引擎把世界坐标画进 canvas 缓冲，缓冲再按 CSS 缩放到页面。getBoundingClientRect()
+    // 给的是*页面*坐标（含信箱边偏移），但 left/top 是从 getMinBoundingBox 拿的*世界*坐标
+    // （未缩放）——必须乘 scale 才能落到画布上文字真正的位置。否则在 CSS 缩放的画布上
+    // （XP 信箱边 / 任意非 1:1 的视口）透明 input 会整体偏右偏下、光标漂到画布外。
+    // scale 取引擎当前视口缩放（setViewport 设的 displayW/SCREEN_W）；取不到时按 1 兜底
+    // （单测环境没有 viewport，1:1 渲染也不影响）。
+    const scale =
+      this.ice && this.ice.viewport && Number.isFinite(Number(this.ice.viewport.scale))
+        ? Number(this.ice.viewport.scale)
+        : 1;
     // 替身要盖在**文本盒**上，而不是组件整盒：canvas 把文字内缩了 textNode.left（默认 spacing.sm = 12）、
     // 并按 textNode.width 排布。box 不跟着缩，原生光标就会整体偏左 12px、与画面文字错位。
     const textLeft = Number(this.textNode && this.textNode.state ? this.textNode.state.left : 0) || 0;
@@ -265,10 +276,10 @@ export class ICETextField extends ICEWidget {
     this.nativeInput = new ICENativeInput({
       doc,
       box: {
-        left: (Number(canvasRect.left) || 0) + left + textLeft,
-        top: (Number(canvasRect.top) || 0) + top,
-        width: textWidth,
-        height: Number(this.state.height) || 0,
+        left: (Number(canvasRect.left) || 0) + (left + textLeft) * scale,
+        top: (Number(canvasRect.top) || 0) + top * scale,
+        width: textWidth * scale,
+        height: (Number(this.state.height) || 0) * scale,
       },
       value: this.value,
       font: `${theme.font.weightNormal} ${theme.font.size}px ${theme.font.family}`,

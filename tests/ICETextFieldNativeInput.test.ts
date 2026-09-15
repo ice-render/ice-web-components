@@ -221,6 +221,30 @@ describe('ICETextField：光标对齐（替身 box = 文本盒 + 只留一个光
     expect(px(element.style.width)).toBeLessThan(200);
   });
 
+  it('缩放画布（CSS 信箱边）：替身 box 跟随视口 scale，落回画布文字真实位置', () => {
+    const env = makeEnv();
+    // 模拟 XP 信箱边：画布在页面里居中偏移 (200,50)，且按 0.5 等比缩放显示
+    env.ice.canvasEl = {
+      getBoundingClientRect: () => ({ left: 200, top: 50, width: 720, height: 450 }),
+      width: 1440,
+      height: 900,
+    };
+    env.ice.viewport = { scale: 0.5, tx: 0, ty: 0 };
+    const field: any = attach(new ICETextField({ width: 200 }), env);
+    field.getMinBoundingBox = () => ({ tl: [100, 60], br: [300, 92] });
+    field.setFocused(true);
+    const element = env.created[0];
+    const px = (v: any) => Number(String(v).replace('px', ''));
+    const textLeft = Number(field.textNode.state.left);
+    const textWidth = Number(field.textNode.state.width);
+    const height = Number(field.state.height);
+    // left = canvasRect.left + (worldLeft + textLeft) * scale —— 不乘 scale 会整体偏右偏下
+    expect(px(element.style.left)).toBeCloseTo(200 + (100 + textLeft) * 0.5);
+    expect(px(element.style.top)).toBeCloseTo(50 + 60 * 0.5);
+    expect(px(element.style.width)).toBeCloseTo(textWidth * 0.5);
+    expect(px(element.style.height)).toBeCloseTo(height * 0.5);
+  });
+
   it('非掩码：挂了替身就不再画 canvas 的 `|`（避免两个光标）', () => {
     const env = makeEnv();
     const field = attach(new ICETextField({ width: 200, value: 'abc' }), env);
