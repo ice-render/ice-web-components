@@ -82,6 +82,28 @@ const clickExpr = async (source) => {
   await page.waitForTimeout(320);
   return true;
 };
+/**
+ * 点 `ICEList` 的某一行（真实鼠标）。
+ *
+ * 行在 2026-09-15 之后**由 painter 画**、不再是子节点 —— 所以既没有行节点可以
+ * `boxOf`，旧 API `getRowNode(key).trigger('click')` 也一并删了（见 CHANGELOG）。
+ * 这里改成：`getRowBox(key)` 取行矩形（列表内容盒坐标系）→ 叠上列表自身的绝对盒 → 点中心。
+ */
+const clickListRow = async (listExpr, key) => {
+  const b = await boxOf(listExpr);
+  const row = await page.evaluate(
+    ({ src, k }) => {
+      // eslint-disable-next-line no-eval
+      const list = eval(src);
+      return list && typeof list.getRowBox === 'function' ? list.getRowBox(k) : null;
+    },
+    { src: listExpr, k: key }
+  );
+  if (!b || !row) return false;
+  await page.mouse.click(rect.left + b.l + row.left + row.width / 2, rect.top + b.t + row.top + row.height / 2);
+  await page.waitForTimeout(320);
+  return true;
+};
 const topOverlayBox = async () =>
   page.evaluate(() => {
     const layer = window.ICEWEB.getICEOverlayManager(window.__result.ice).getLayer();
@@ -146,7 +168,7 @@ const queueInit = await page.evaluate(() => ({
 }));
 check('队列默认 4 条待处理', queueInit.items === 4 && /4 个待处理/.test(queueInit.hint), JSON.stringify(queueInit));
 
-const picked = await clickExpr("window.__result.queueList.getRowNode('T-2043')");
+const picked = await clickListRow('window.__result.queueList', 'T-2043');
 const profile = await page.evaluate(() => ({
   title: window.__result.customerTitle.getText(),
   order: window.__result.customerInfo.getRowNodes ? '' : '',

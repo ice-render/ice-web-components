@@ -75,7 +75,16 @@ export class ICEList extends ICEWidget {
     this.onChange = typeof props.onChange === 'function' ? props.onChange : null;
     this.model = new ICESelectionModel({ mode: props.mode || 'single', selected: props.value || [] });
     this.model.addChangeListener(() => this.__markDirty());
-    this.content = new ICEWidget({ left: 0, top: 0, width: width - 8, height: this.items.length * this.itemHeight });
+    // 内容盒只负责画：**必须 interactive:false**，否则它会吃掉真实鼠标点击，
+    // 行几何反查（`__indexAtPoint`）永远收不到事件 —— 表现是"点行没反应"（2026-09-15 复核发现，
+    // 与 `ICEVirtualList` 的内容盒同一口径）。
+    this.content = new ICEWidget({
+      left: 0,
+      top: 0,
+      width: width - 8,
+      height: this.items.length * this.itemHeight,
+      interactive: false,
+    });
     // 行由 painter 画（内容盒是唯一子节点，行不建节点）
     this.content.setPainter({ paint: ({ ctx, theme, origin }: any) => this.paintRows(ctx, theme, origin) });
     this.focusable = true;

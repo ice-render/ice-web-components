@@ -19,6 +19,15 @@ const items = [
 ];
 
 describe('ICEList', () => {
+  it('内容盒不参与命中：行是画出来的，真实鼠标点击必须落到列表自身（否则点行没反应）', () => {
+    const list = new ICEList({ width: 200, height: 160, items });
+    const content = (list as any).content;
+    // 内容盒 `interactive: true` 时会先被 `hitTest` 命中、吃掉 click，
+    // 列表自己的几何反查（`__indexAtPoint`）就永远收不到事件 —— 2026-09-15 实测踩过。
+    expect(content.state.interactive).toBe(false);
+    expect(content.parentNode).toBe(list);
+  });
+
   it('渲染行 + 单选：点击替换选中，onChange 回调', () => {
     const changes: string[][] = [];
     const list = new ICEList({ left: 0, top: 0, width: 200, height: 160, items, onChange: (keys) => changes.push(keys) });

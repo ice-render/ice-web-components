@@ -172,6 +172,32 @@ const clickExpr = async (source) => {
   await page.waitForTimeout(420);
   return true;
 };
+/**
+ * 点 `ICEList` 的某一行（真实鼠标）。
+ *
+ * 行在 2026-09-15 之后由 painter 画、不再是子节点：`getRowNode(key).trigger('click')`
+ * 这个旧 API 已删（见 CHANGELOG），改用 `getRowBox(key)` 拿行矩形 → 叠上列表绝对盒 → 点中心。
+ */
+const clickListRow = async (listSource, key) => {
+  await scrollIntoView(listSource);
+  const b = await page.evaluate((src) => {
+    // eslint-disable-next-line no-eval
+    const node = eval(src);
+    return node && node.state ? window.__qa.box(node) : null;
+  }, listSource);
+  const row = await page.evaluate(
+    ({ src, k }) => {
+      // eslint-disable-next-line no-eval
+      const list = eval(src);
+      return list && typeof list.getRowBox === 'function' ? list.getRowBox(k) : null;
+    },
+    { src: listSource, k: key }
+  );
+  if (!b || !row) return false;
+  await page.mouse.click(rect.left + b.l + row.left + row.width / 2, rect.top + b.t + row.top + row.height / 2);
+  await page.waitForTimeout(420);
+  return true;
+};
 const dragExpr = async (source, dx, dy) => {
   await scrollIntoView(source);
   const b = await page.evaluate((src) => {
@@ -646,7 +672,7 @@ const splitBefore = await page.evaluate(() => window.__result.state.fulfillment.
 const splitDragged = await dragExpr('window.__result.state.fulfillment.splitter.getDividerNode()', 80, 0);
 const splitAfter = await page.evaluate(() => window.__result.state.fulfillment.splitter.getSize());
 check('履约：拖动分隔条改尺寸', splitDragged && splitBefore === 300 && splitAfter > splitBefore, `${splitBefore} → ${splitAfter}`);
-const queueClicked = await clickExpr("window.__result.state.fulfillment.list.getRowNode ? window.__result.state.fulfillment.list.getRowNode('o2') : null");
+const queueClicked = await clickListRow('window.__result.state.fulfillment.list', 'o2');
 const detailText = await page.evaluate(() => window.__result.state.fulfillment.progressLabel.getText());
 check('履约：切换订单详情跟随', queueClicked && /待支付确认/.test(detailText), detailText);
 const anchorClicked = await clickExpr("window.__result.state.fulfillment.anchor.getItemNode('service')");

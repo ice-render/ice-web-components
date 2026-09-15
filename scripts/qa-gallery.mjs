@@ -462,7 +462,20 @@ check(
 );
 
 // —— 17. 焦点环策略（`:focus-visible`）：鼠标操作不画环，键盘聚焦才画 ——
-const sliderBox = await nodeBox("window.__result.panel.childNodes.find((n) => n.state && n.state.id === 'slider')");
+// 注意：面板里的簇在 2026-09-15 之后被包进「内容宿主」里了（布局器接管排布的副作用），
+// 所以按 id 找节点必须**递归** —— `childNodes.find(...)` 只能命中最外一层。
+const sliderBox = await nodeBox(`(() => {
+  const walk = (node) => {
+    if (!node) return null;
+    if (node.state && node.state.id === 'slider') return node;
+    for (const child of node.childNodes || []) {
+      const hit = walk(child);
+      if (hit) return hit;
+    }
+    return null;
+  };
+  return walk(window.__result.panel);
+})()`);
 const ringManager = 'window.ICEWEB.getICEFocusManager(window.__result.ice)';
 const ringRect = await canvasRect();
 if (sliderBox) {

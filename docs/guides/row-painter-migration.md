@@ -146,3 +146,27 @@ renderItem: ({ ctx, index, item, x, y, width, height }) => {
 其余组件要么本来虚拟化、要么规模由调用方决定。**不为"自绘而自绘"做破坏性变更** ——
 自绘只在"装饰"场景（`ICEAvatar` / `ICESkeleton` / 已完成的两个列表）用，
 新组件的规则见 `AGENTS.md`「布局铁律」第 2 条。
+
+---
+
+## 后续：画家化之后漏掉的一条（2026-09-15 第二轮审计）
+
+画家化的直接后果是**"没有节点可以命中"** —— 命中必须落在**宿主组件**身上。
+
+`ICEList` 当时漏了一步：内部内容盒（`this.content`，行画在它上面）是 `ICEWidget` 的默认值
+`interactive: true`，于是真实鼠标点击先被内容盒命中、被它吃掉，列表自己的
+`__indexAtPoint` **永远收不到 click** —— 表现就是"点行没反应、键盘还能用"。
+
+三条教训（写进本仓规矩）：
+
+1. **纯绘制用的内容盒一律 `interactive: false`**（`ICEVirtualList` 一直是对的，
+   `ICEList` 这次补上）；构建期就定死，别留给"反正它没挂 click"的侥幸。
+2. **程序式 API 会掩盖命中路径的缺陷**：QA 脚本原来用
+   `getRowNode(key).trigger('click')`（已随行节点一起删除），既绕过了命中检测，
+   又在 API 删掉之后**静默变成"永远 false"**。QA 一律改成**真实鼠标**：
+   `getRowBox(key)` 拿行矩形 → 叠上列表绝对盒 → 点行中心（`qa-workbench.mjs` /
+   `qa-admin.mjs` 的 `clickListRow()`）。
+3. **删 API 要连带改测试脚本**：`getRowNode` 删除时只改了 CHANGELOG 与单测，
+   两个 QA 脚本（workbench / admin）从那以后**一直在失败**却没人发现 ——
+   因为 QA 脚本不在 `npm run verify` 里（见 `docs/guides/testing.md` 的取舍）。
+   改组件公共 API 时，除 `npm test` 外请顺手跑一遍 `npm run qa:*`。
