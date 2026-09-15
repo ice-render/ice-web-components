@@ -145,12 +145,21 @@
           text: '快捷键',
           style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
         });
-        const shortcutRows = ['1-5 切工具', 'Ctrl+Z 撤销', 'Ctrl+Y 重做', '画布上可拖动'].map(
-          (text, index) =>
+        /** 快捷键说明：4 行等距文字 —— 行距交给 BoxLayout，别再写 `top: 380 + index * 24`。 */
+        const SHORTCUT_ROWS = ['1-5 切工具', 'Ctrl+Z 撤销', 'Ctrl+Y 重做', '画布上可拖动'];
+        const shortcutList = new W.ICEWidget({
+          left: 16,
+          top: 380,
+          width: 136,
+          height: SHORTCUT_ROWS.length * 20 + (SHORTCUT_ROWS.length - 1) * 4,
+          fill: false,
+          stroke: false,
+          interactive: false,
+        });
+        const shortcutRows = SHORTCUT_ROWS.map(
+          (text) =>
             new W.ICELabel({
               interactive: false,
-              left: 16,
-              top: 380 + index * 24,
               width: 136,
               height: 20,
               text,
@@ -160,28 +169,39 @@
         toolPanel.addChild(toolCaption, false);
         toolPanel.addChild(toolHint, false);
         toolPanel.addChild(shortcutHint, false);
-        shortcutRows.forEach((label) => toolPanel.addChild(label, false));
+        toolPanel.addChild(shortcutList, false);
+        shortcutRows.forEach((label) => shortcutList.addChild(label, false));
+        shortcutList.setLayout(new ICE.ICEBoxLayout({ axis: 'y', gap: 4 }));
         ice.addChild(toolPanel);
+
+        /** 工具按钮列：行距交给 BoxLayout（36 高 + 10 间距）。 */
+        const toolList = new W.ICEWidget({
+          left: 16,
+          top: 44,
+          width: 136,
+          height: TOOLS.length * 36 + (TOOLS.length - 1) * 10,
+          fill: false,
+          stroke: false,
+          interactive: false,
+        });
+        toolList.setLayout(new ICE.ICEBoxLayout({ axis: 'y', gap: 10 }));
+        toolPanel.addChild(toolList, false);
 
         /** 工具按钮：ICEButton 的 variant 是构造期定的 → 换工具时重建这一列（和掌机卡带同一招）。 */
         const toolButtons = {};
         const renderTools = () => {
-          [...toolPanel.childNodes].forEach((node) => {
-            if (node.state && /^pixel-tool-/.test(node.state.id || '')) toolPanel.removeChild(node);
-          });
+          [...toolList.childNodes].forEach((node) => toolList.removeChild(node));
           Object.keys(toolButtons).forEach((key) => delete toolButtons[key]);
-          TOOLS.forEach((tool, index) => {
+          TOOLS.forEach((tool) => {
             const button = new W.ICEButton({
               id: `pixel-tool-${tool.key}`,
-              left: 16,
-              top: 44 + index * 46,
               width: 136,
               height: 36,
               text: tool.label,
               variant: tool.key === state.tool ? 'primary' : 'default',
             });
             button.on('click', () => selectTool(tool.key));
-            toolPanel.addChild(button, false);
+            toolList.addChild(button, false);
             toolButtons[tool.key] = button;
           });
         };
@@ -308,11 +328,28 @@
           ['dirty', '改动'],
           ['export', '导出'],
         ];
-        STATUS_ROWS.forEach(([key, label], index) => {
+        /**
+         * 状态表：**一行两列**（名 / 值）+ 行距 8。
+         *
+         * 两列宽度过去是手写的「名 70 宽 + 值从 100 起」（gap 6），行位置是 `232 + index * 30`；
+         * 现在行内交给横向 BoxLayout、行间交给纵向 BoxLayout —— 加一行不用再改两处数。
+         */
+        const statusRows = new W.ICEWidget({
+          left: 24,
+          top: 232,
+          width: 366,
+          height: STATUS_ROWS.length * 22 + (STATUS_ROWS.length - 1) * 8,
+          fill: false,
+          stroke: false,
+          interactive: false,
+        });
+        statusRows.setLayout(new ICE.ICEBoxLayout({ axis: 'y', gap: 8 }));
+        sidePanel.addChild(statusRows, false);
+        STATUS_ROWS.forEach(([key, label]) => {
+          const row = new W.ICEWidget({ width: 366, height: 22, fill: false, stroke: false, interactive: false });
+          row.setLayout(new ICE.ICEBoxLayout({ axis: 'x', gap: 6 }));
           const caption = new W.ICELabel({
             interactive: false,
-            left: 24,
-            top: 232 + index * 30,
             width: 70,
             height: 22,
             text: label,
@@ -322,22 +359,33 @@
           const value = new W.ICELabel({
             id: `pixel-status-${key}`,
             interactive: false,
-            left: 100,
-            top: 232 + index * 30,
             width: 290,
             height: 22,
             text: '—',
             verticalAlign: 'middle',
             style: { fontSize: 12, fontFamily: '"Courier New", monospace', fillStyle: theme.colors.text },
           });
-          sidePanel.addChild(caption, false);
-          sidePanel.addChild(value, false);
+          row.addChild(caption, false);
+          row.addChild(value, false);
+          statusRows.addChild(row, false);
           statusLabels[key] = value;
         });
         ice.addChild(sidePanel);
 
         /* --------------------------------- 顶部动作与尺寸 --------------------------------- */
 
+        /** 顶部动作按钮行（宽度不一 → 交给横向 BoxLayout，间距 10）。 */
+        const actionBar = new W.ICEWidget({
+          left: 48,
+          top: 104,
+          width: 580,
+          height: 34,
+          fill: false,
+          stroke: false,
+          interactive: false,
+        });
+        actionBar.setLayout(new ICE.ICEBoxLayout({ axis: 'x', gap: 10 }));
+        ice.addChild(actionBar);
         const actions = [
           { key: 'undo', text: '撤销 (Z)', variant: 'default', handler: () => undo() },
           { key: 'redo', text: '重做 (Y)', variant: 'default', handler: () => redo() },
@@ -347,22 +395,18 @@
           { key: 'svg', text: '导出 SVG', variant: 'primary', handler: () => exportSvg() },
         ];
         const actionButtons = {};
-        let actionX = 48;
         actions.forEach((action) => {
           const width = action.key === 'clear' ? 80 : 100;
           const button = new W.ICEButton({
             id: `pixel-action-${action.key}`,
-            left: actionX,
-            top: 104,
             width,
             height: 34,
             text: action.text,
             variant: action.variant,
           });
           button.on('click', action.handler);
-          ice.addChild(button);
+          actionBar.addChild(button);
           actionButtons[action.key] = button;
-          actionX += width + 10;
         });
 
         const SIZES = [
@@ -371,27 +415,35 @@
           { rows: 48, cols: 48, label: '48×48' },
         ];
         const sizeButtons = {};
+        /** 尺寸按钮行（三个等宽按钮，间距 8）—— 也交给横向 BoxLayout。 */
+        const sizeBar = new W.ICEWidget({
+          left: 1024,
+          top: 104,
+          width: 70 * SIZES.length + 8 * (SIZES.length - 1),
+          height: 34,
+          fill: false,
+          stroke: false,
+          interactive: false,
+        });
+        sizeBar.setLayout(new ICE.ICEBoxLayout({ axis: 'x', gap: 8 }));
+        ice.addChild(sizeBar);
         /** 尺寸按钮同样靠重建换选中态（ICEButton 的 variant 是构造期的）。 */
         const renderSizeButtons = () => {
           Object.keys(sizeButtons).forEach((key) => {
-            ice.removeChild(sizeButtons[key]);
+            sizeBar.removeChild(sizeButtons[key]);
             delete sizeButtons[key];
           });
-          let sizeX = 1024;
           SIZES.forEach((size) => {
             const button = new W.ICEButton({
               id: `pixel-size-${size.rows}`,
-              left: sizeX,
-              top: 104,
               width: 70,
               height: 34,
               text: size.label,
               variant: model.getRows() === size.rows && model.getCols() === size.cols ? 'primary' : 'default',
             });
             button.on('click', () => resizeBoard(size.rows, size.cols));
-            ice.addChild(button);
+            sizeBar.addChild(button);
             sizeButtons[size.rows] = button;
-            sizeX += 78;
           });
           ice.dirty = true;
         };

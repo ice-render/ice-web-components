@@ -342,6 +342,45 @@
         sidePanel.addChild(sideCaption, false);
         sidePanel.addChild(sideBody, false);
 
+        /**
+         * 侧栏「项名 / 值」两列行：行距 4，项名 60 + 缝 2 + 值 206。
+         *
+         * 四块卡带的侧栏原来各自抄了一遍 `top: index * 26` + 逐行 addChild ——
+         * 现在只留「一张纵向 BoxLayout + 每行一张横向 BoxLayout」，返回值标签供刷新用。
+         */
+        const createInfoRows = (parent) => {
+          const host = new W.ICEWidget({ left: 0, top: 0, width: 268, height: 82, fill: false, stroke: false, interactive: false });
+          host.setLayout(new ICE.ICEBoxLayout({ axis: 'y', gap: 4 }));
+          parent.addChild(host, false);
+          return {
+            host,
+            add(label, value) {
+              const row = new W.ICEWidget({ width: 268, height: 22, fill: false, stroke: false, interactive: false });
+              row.setLayout(new ICE.ICEBoxLayout({ axis: 'x', gap: 2 }));
+              const key = new W.ICELabel({
+                interactive: false,
+                width: 60,
+                height: 22,
+                text: label,
+                verticalAlign: 'middle',
+                style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+              });
+              const val = new W.ICELabel({
+                interactive: false,
+                width: 206,
+                height: 22,
+                text: value,
+                verticalAlign: 'middle',
+                style: { fontSize: 12, fontFamily: '"Courier New", monospace', fillStyle: theme.colors.text },
+              });
+              row.addChild(key, false);
+              row.addChild(val, false);
+              host.addChild(row, false);
+              return val;
+            },
+          };
+        };
+
         const helpPanel = new W.ICEPanel({ left: 850, top: 420, width: 300, height: 196, interactive: false });
         const helpCaption = new W.ICELabel({
           interactive: false,
@@ -364,14 +403,18 @@
         });
         helpPanel.addChild(helpCaption, false);
         helpPanel.addChild(helpBody, false);
+        /** 说明行容器：一行 = 「按键 96 + 缝 8 + 说明 164」，行距 4 —— 两列与行距都交给 BoxLayout。 */
+        const helpRows = new W.ICEWidget({ left: 0, top: 0, width: 268, height: 144, fill: false, stroke: false, interactive: false });
+        helpRows.setLayout(new ICE.ICEBoxLayout({ axis: 'y', gap: 4 }));
+        helpBody.addChild(helpRows, false);
         /** 按「按键 / 说明」两列铺一组说明（等宽字体 + 固定列宽，不用空格硬凑）。 */
         const setHelpRows = (rows) => {
-          helpBody.removeChildren([...helpBody.childNodes]);
-          rows.forEach(([keys, desc], index) => {
+          helpRows.removeChildren([...helpRows.childNodes]);
+          rows.forEach(([keys, desc]) => {
+            const row = new W.ICEWidget({ width: 268, height: 20, fill: false, stroke: false, interactive: false });
+            row.setLayout(new ICE.ICEBoxLayout({ axis: 'x', gap: 8 }));
             const keyLabel = new W.ICELabel({
               interactive: false,
-              left: 0,
-              top: index * 24,
               width: 96,
               height: 20,
               text: keys,
@@ -379,26 +422,34 @@
             });
             const descLabel = new W.ICELabel({
               interactive: false,
-              left: 104,
-              top: index * 24,
               width: 164,
               height: 20,
               text: desc,
               style: { fontSize: 13, fillStyle: theme.colors.textSecondary },
             });
-            helpBody.addChild(keyLabel, false);
-            helpBody.addChild(descLabel, false);
+            row.addChild(keyLabel, false);
+            row.addChild(descLabel, false);
+            helpRows.addChild(row, false);
           });
         };
 
         /** 底部这一排四颗按钮 + 音效开关，正好按 20px 缝铺满 COLUMN_W。 */
         const ACTION_W = 108;
-        const ACTION_PITCH = 118;
-        const pauseButton = new W.ICEButton({ id: 'arcade-pause', left: COLUMN_X, top: 636, width: ACTION_W, height: 40, text: '暂停 (P)' });
+        /** 这一排四颗按钮（108 宽 + 10 间距）→ 横向 BoxLayout，不必再写 `COLUMN_X + i * 118`。 */
+        const actionRow = new W.ICEWidget({
+          id: 'arcade-actions',
+          left: COLUMN_X,
+          top: 636,
+          width: ACTION_W * 4 + 10 * 3,
+          height: 40,
+          fill: false,
+          stroke: false,
+          interactive: false,
+        });
+        actionRow.setLayout(new ICE.ICEBoxLayout({ axis: 'x', gap: 10 }));
+        const pauseButton = new W.ICEButton({ id: 'arcade-pause', width: ACTION_W, height: 40, text: '暂停 (P)' });
         const restartButton = new W.ICEButton({
           id: 'arcade-restart',
-          left: COLUMN_X + ACTION_PITCH,
-          top: 636,
           width: ACTION_W,
           height: 40,
           text: '重开 (R)',
@@ -406,8 +457,6 @@
         });
         const leaderboardButton = new W.ICEButton({
           id: 'arcade-leaderboard',
-          left: COLUMN_X + ACTION_PITCH * 2,
-          top: 636,
           width: ACTION_W,
           height: 40,
           text: '排行榜 (L)',
@@ -415,13 +464,12 @@
         });
         const biosButton = new W.ICEButton({
           id: 'arcade-bios',
-          left: COLUMN_X + ACTION_PITCH * 3,
-          top: 636,
           width: ACTION_W,
           height: 40,
           text: 'BIOS (F2)',
           variant: 'default',
         });
+        [pauseButton, restartButton, leaderboardButton, biosButton].forEach((button) => actionRow.addChild(button));
         const soundSwitch = new W.ICESwitch({ id: 'arcade-sound', left: 1010, top: 645, width: 46, height: 22, selected: true });
         const soundLabel = new W.ICELabel({
           interactive: false,
@@ -532,11 +580,13 @@
 
               /** 侧栏：三个 NEXT 预览槽（每槽 4 个小格）。 */
               const PREVIEW_CELL = 15;
+              /** 三个预览槽是一行（84 宽 + 8 缝）→ 横向 BoxLayout。 */
+              const slotRow = new W.ICEWidget({ left: 0, top: 0, width: 268, height: 132, fill: false, stroke: false, interactive: false });
+              slotRow.setLayout(new ICE.ICEBoxLayout({ axis: 'x', gap: 8 }));
+              ctx.sideBody.addChild(slotRow, false);
               const slots = [0, 1, 2].map((index) => {
                 const slot = new W.ICEWidget({
                   id: `tetris-next-${index}`,
-                  left: index * 92,
-                  top: 0,
                   width: 84,
                   height: 132,
                   radius: 10,
@@ -562,7 +612,7 @@
                   slot.addChild(cell, false);
                   previewCells.push(cell);
                 }
-                ctx.sideBody.addChild(slot, false);
+                slotRow.addChild(slot, false);
                 return { slot, cells: previewCells };
               });
 
@@ -828,35 +878,12 @@
               );
 
               /** 侧栏：速度 / 地图 / 转向队列 + 图例。 */
+              const infoRows = createInfoRows(ctx.sideBody);
               const info = [
                 ['速度', '170 ms/格'],
                 ['地图', '20 × 20 · 撞墙即死'],
                 ['转向', '队列里还没有输入'],
-              ].map(([label, value], index) => {
-                const key = new W.ICELabel({
-                  interactive: false,
-                  left: 0,
-                  top: index * 26,
-                  width: 60,
-                  height: 22,
-                  text: label,
-                  verticalAlign: 'middle',
-                  style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
-                });
-                const val = new W.ICELabel({
-                  interactive: false,
-                  left: 62,
-                  top: index * 26,
-                  width: 206,
-                  height: 22,
-                  text: value,
-                  verticalAlign: 'middle',
-                  style: { fontSize: 12, fontFamily: '"Courier New", monospace', fillStyle: theme.colors.text },
-                });
-                ctx.sideBody.addChild(key, false);
-                ctx.sideBody.addChild(val, false);
-                return val;
-              });
+              ].map(([label, value]) => infoRows.add(label, value));
               const legend = new W.ICEWidget({
                 left: 0,
                 top: 92,
@@ -1083,35 +1110,12 @@
               );
 
               /** 侧栏：目标 / 最大块 / 提示。 */
+              const infoRows = createInfoRows(ctx.sideBody);
               const info = [
                 ['目标', '合并出 2048'],
                 ['当前最大', '2'],
                 ['状态', '进行中'],
-              ].map(([label, value], index) => {
-                const key = new W.ICELabel({
-                  interactive: false,
-                  left: 0,
-                  top: index * 26,
-                  width: 60,
-                  height: 22,
-                  text: label,
-                  verticalAlign: 'middle',
-                  style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
-                });
-                const val = new W.ICELabel({
-                  interactive: false,
-                  left: 62,
-                  top: index * 26,
-                  width: 206,
-                  height: 22,
-                  text: value,
-                  verticalAlign: 'middle',
-                  style: { fontSize: 12, fontFamily: '"Courier New", monospace', fillStyle: theme.colors.text },
-                });
-                ctx.sideBody.addChild(key, false);
-                ctx.sideBody.addChild(val, false);
-                return val;
-              });
+              ].map(([label, value]) => infoRows.add(label, value));
               const legend = new W.ICEWidget({
                 left: 0,
                 top: 92,
@@ -1123,12 +1127,15 @@
                 interactive: false,
                 style: { fillStyle: '#12161d', strokeStyle: '#232b36', lineWidth: 1 },
               });
-              ['2', '8', '64', '512'].forEach((value, index) => {
+              /** 图例是四个「色块 + 数字」组合（组合间 10 缝、块与字 4 缝）→ 两层 BoxLayout。 */
+              legend.setLayout(new ICE.ICEBoxLayout({ axis: 'x', gap: 10, align: 'center' }));
+              legend.setState({ padding: { left: 14 } });
+              ['2', '8', '64', '512'].forEach((value) => {
                 const style = PALETTE[value] || { fillStyle: '#adb5bd' };
-                legend.addChild(
+                const chip = new W.ICEWidget({ width: 56, height: 44, fill: false, stroke: false, interactive: false });
+                chip.setLayout(new ICE.ICEBoxLayout({ axis: 'x', gap: 4, align: 'center' }));
+                chip.addChild(
                   new W.ICEWidget({
-                    left: 14 + index * 62,
-                    top: 13,
                     width: 18,
                     height: 18,
                     radius: 4,
@@ -1139,11 +1146,9 @@
                   }),
                   false,
                 );
-                legend.addChild(
+                chip.addChild(
                   new W.ICELabel({
                     interactive: false,
-                    left: 36 + index * 62,
-                    top: 0,
                     width: 34,
                     height: 44,
                     text: value,
@@ -1152,6 +1157,7 @@
                   }),
                   false,
                 );
+                legend.addChild(chip, false);
               });
               ctx.sideBody.addChild(legend, false);
 
@@ -1338,13 +1344,10 @@
                 '按 P 继续',
                 theme.colors.warning,
               );
-              const info = [['ROM', 'demo · 绕屏笑脸'], ['频率', '600 指令/秒'], ['按键', '1234 QWER ASDF ZXCV']].map(([label, value], index) => {
-                const key = new W.ICELabel({ interactive: false, left: 0, top: index * 26, width: 60, height: 22, text: label, verticalAlign: 'middle', style: { fontSize: 12, fillStyle: theme.colors.textSecondary } });
-                const val = new W.ICELabel({ interactive: false, left: 62, top: index * 26, width: 206, height: 22, text: value, verticalAlign: 'middle', style: { fontSize: 12, fontFamily: '"Courier New", monospace', fillStyle: theme.colors.text } });
-                ctx.sideBody.addChild(key, false);
-                ctx.sideBody.addChild(val, false);
-                return val;
-              });
+              const infoRows = createInfoRows(ctx.sideBody);
+              const info = [['ROM', 'demo · 绕屏笑脸'], ['频率', '600 指令/秒'], ['按键', '1234 QWER ASDF ZXCV']].map(([label, value]) =>
+                infoRows.add(label, value),
+              );
               const model = new W.ICEChip8Model();
               model.loadProgram(W.ICE_CHIP8_DEMO_ROM);
               const state = { accumulator: 0, timer: 0, pausedShown: false, lastBeep: 0, lastPaint: '', lastKeyPaint: '' };
@@ -1457,7 +1460,6 @@
         const CART_WIDTH = 108;
         /** 卡带位：和上下几排面板一个节奏（20px 缝），一共 5 格正好铺满 COLUMN_W */
         const CART_GAP = 20;
-        const CART_PITCH = CART_WIDTH + CART_GAP;
         /**
          * 卡带位。ICEButton 的 variant 是构造期决定的（没有 setVariant），所以选中态不靠
          * 改属性，而是**每次切换重建这一行按钮** —— 反正只有四五个，重建最省心。
@@ -1472,15 +1474,15 @@
           stroke: false,
           interactive: false,
         });
+        /** 卡带位是一行按钮（108 宽 + 20 缝）→ 横向 BoxLayout。 */
+        cartridgeBar.setLayout(new ICE.ICEBoxLayout({ axis: 'x', gap: CART_GAP }));
         const cartridges = {};
         const renderCartridges = () => {
           cartridgeBar.removeChildren([...cartridgeBar.childNodes]);
           Object.keys(cartridges).forEach((key) => delete cartridges[key]);
-          CART_RIDGE.forEach((item, index) => {
+          CART_RIDGE.forEach((item) => {
             const button = new W.ICEButton({
               id: `arcade-cart-${item.key}`,
-              left: index * CART_PITCH,
-              top: 0,
               width: CART_WIDTH,
               height: 32,
               text: item.label,
@@ -1493,8 +1495,6 @@
           });
           const soonButton = new W.ICEButton({
             id: 'arcade-cart-soon',
-            left: CART_RIDGE.length * CART_PITCH,
-            top: 0,
             width: CART_WIDTH,
             height: 32,
             text: '中国象棋',
@@ -2190,10 +2190,7 @@
           progressPanel,
           sidePanel,
           helpPanel,
-          pauseButton,
-          restartButton,
-          leaderboardButton,
-          biosButton,
+          actionRow,
           soundSwitch,
           soundLabel,
           bestLabel,
