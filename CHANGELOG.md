@@ -57,7 +57,11 @@
   qa-counts 一致（八套 303 项）。
 - `npm run test:e2e`：10/10 ✅（9 个示例页无 console/pageerror + 画布像素占比）。
 - `npm run qa:all`：**8/8** ✅；`npm run qa:perf`：9 页节点数 / 空闲重绘 / 帧耗时全部在预算内 ✅。
-- 下游 `ice-smart-water`（真实业务场景）e2e 全绿 —— 见该仓 CHANGELOG。
+- 下游 `ice-smart-water`（真实业务场景）真 A/B：webpack 把 `ice-web-components` 别名到本仓目录，
+  所以直接替换本仓 `dist` 即可对照 —— 已发布的 **1.11.0 dist → 48/48**，本次 **1.12.0 dist → 48/48**
+  （含 `audit-all.spec.ts` 的「全量版面体检：六页签 × 三工况 + 岛溢出 + 顶栏溢出」与
+  `layout.spec.ts` 的「版面体检：折叠/展开菜单之后版式依然不交叠」）。该仓单测 18 套件 / 149 用例、
+  types、build 同样全绿；**行为无回归，故该仓无需跟着改**。
 
 ## [1.11.2] - 2026-09-15
 
