@@ -1324,49 +1324,19 @@
                 itemHeight: 28,
                 buffer: 2,
                 items: rows,
-                renderItem: (index, item, node) => {
+                // 行由 painter 直接画（不再给节点）：拿到行矩形与 ctx，自己画底色与文字
+                renderItem: ({ ctx, index, item, x, y, width, height }) => {
                   const zebra = index % 2 === 0 ? theme.colors.surface : theme.colors.background;
-                  node.addChild(
-                    new W.ICEWidget({
-                      left: 0,
-                      top: 0,
-                      width: 344,
-                      height: 26,
-                      radius: 3,
-                      fill: true,
-                      stroke: false,
-                      interactive: false,
-                      style: { fillStyle: zebra },
-                    }),
-                    false,
-                  );
-                  node.addChild(
-                    new W.ICELabel({
-                      interactive: false,
-                      left: 10,
-                      top: 0,
-                      width: 200,
-                      height: 26,
-                      text: item.name,
-                      verticalAlign: 'middle',
-                      style: { fontSize: 13 },
-                    }),
-                    false,
-                  );
-                  node.addChild(
-                    new W.ICELabel({
-                      interactive: false,
-                      left: 210,
-                      top: 0,
-                      width: 124,
-                      height: 26,
-                      text: item.amount,
-                      align: 'right',
-                      verticalAlign: 'middle',
-                      style: { fontSize: 13, fillStyle: theme.colors.textSecondary },
-                    }),
-                    false,
-                  );
+                  ctx.fillStyle = zebra;
+                  ctx.fillRect(x, y, width - 16, height - 2);
+                  ctx.fillStyle = theme.colors.text;
+                  ctx.font = `13px ${theme.font.family}`;
+                  ctx.textAlign = 'left';
+                  ctx.textBaseline = 'middle';
+                  ctx.fillText(item.name, x + 10, y + height / 2 - 1);
+                  ctx.fillStyle = theme.colors.textSecondary;
+                  ctx.textAlign = 'right';
+                  ctx.fillText(item.amount, x + width - 24, y + height / 2 - 1);
                 },
               });
               virtualList = list;

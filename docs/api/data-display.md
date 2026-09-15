@@ -785,7 +785,7 @@
 | `itemHeight` | `number` | 每行高度（固定行高才谈得上虚拟滚动） |
 | `buffer?` | `number` | 上下缓冲条数，默认 2 |
 | `items?` | `any[]` | 数据项 |
-| `renderItem?` | `(index: number, item: any, node: any) => void` | 渲染一条：拿到的是**数据下标**（不是节点下标），可以复用传入的 node |
+| `renderItem?` | `(context: ICEVirtualItemPaintContext) => void` | 画一条：**直接往 ctx 上画**（不再给节点）。 |
 | `scrollbar?` | `boolean` | 是否显示滚动条，默认 true |
 
 **方法**
@@ -799,12 +799,12 @@
 | `getContentHeight()` | `number` | 内容总高度（撑开滚动条用）。 |
 | `getScrollTop()` | `number` |  |
 | `getRange()` | `ICEVirtualRange` | 当前窗口（查询前会先同步一次，保证拿到的是最新状态）。 |
-| `getRenderedNodes()` | `Array<{ index: number; node: any }>` | 当前真正渲染出来的节点（按下标升序）。 |
-| `getRenderedCount()` | `number` |  |
+| `getRenderedCount()` | `number` | 当前窗口会画几条（= `getRange().count`）。 |
 | `getScrollPane()` | `ICEScrollPane` | 对外暴露滚动视口（需要挂滚动监听时用）。 |
 | `setItems(items: any[])` | `this` |  |
 | `setScrollTop(scrollTop: number)` | `this` |  |
 | `scrollToIndex(index: number)` | `this` | 把某一条滚进视口（贴顶对齐），下标会被夹进合法范围。 |
+| `paintItems(ctx: any, origin: [number, number])` | `void` | 画当前窗口的每一行（浏览器里由 content 的 painter 每帧自动调用； |
 
 ## `ICEKanban`
 

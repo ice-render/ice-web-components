@@ -11,14 +11,14 @@ import { ICEScrollPane } from './ICEScrollPane';
  * ```
  * ICEVirtualList (固定高度)
  *   └── ICEScrollPane            滚轮 / 滚动条 / 子树裁剪都交给它
- *         └── content (总高 = itemCount × itemHeight)
- *               ├── item[97]  ← 只建窗口内的
- *               ├── item[98]
- *               └── …
+ *         └── content (总高 = itemCount × itemHeight，**唯一子节点**)
+ *               └── painter 每帧只画窗口内的那几条（不再为每条建节点）
  * ```
  *
- * 窗口计算抽成了纯函数 `computeVirtualRange`（缓冲、贴底、空列表、越界都在那里守），
- * 组件层只管把窗口映射成节点。
+ * 窗口计算抽成了纯函数 `computeVirtualRange`（缓冲、贴底、空列表、越界都在那里守）；
+ * 绘制走 `painter`（Swing 的 `ListCellRenderer` + UI delegate 位）——
+ * **一万条数据同样是 1 个节点**，行只是画出来的。`renderItem` 因此拿到的是
+ * "行矩形 + ctx"（自己画），不再是一个可 addChild 的行节点。
  */
 
 /** 当前该渲染的区间：`[start, end)`。 */
@@ -63,6 +63,18 @@ export function computeVirtualRange(options: ICEVirtualWindowOptions): ICEVirtua
   return { start, end, count: Math.max(0, end - start) };
 }
 
+/** 画一条时拿到的上下文（行矩形 + 数据）。 */
+export interface ICEVirtualItemPaintContext {
+  ctx: any;
+  /** 数据下标（不是"第几个节点"） */
+  index: number;
+  item: any;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export interface ICEVirtualListOptions {
   id?: string;
   left?: number;
@@ -75,8 +87,13 @@ export interface ICEVirtualListOptions {
   /** 上下缓冲条数，默认 2 */
   buffer?: number;
   items?: any[];
-  /** 渲染一条：拿到的是**数据下标**（不是节点下标），可以复用传入的 node */
-  renderItem?: (index: number, item: any, node: any) => void;
+  /**
+   * 画一条：**直接往 ctx 上画**（不再给节点）。
+   *
+   * `x/y/width/height` 是这一行在内容盒坐标系里的矩形（已含滚动偏移），
+   * 拿它画底色/文字即可；窗口外的行不会被调用。
+   */
+  renderItem?: (context: ICEVirtualItemPaintContext) => void;
   /** 是否显示滚动条，默认 true */
   scrollbar?: boolean;
   [key: string]: any;
@@ -88,10 +105,8 @@ export class ICEVirtualList extends ICEWidget {
   private items: any[] = [];
   private pane: ICEScrollPane;
   private content: ICEWidget;
-  /** 当前渲染出来的节点：数据下标 → 节点 */
-  private nodes = new Map<number, any>();
   private scrollTop = 0;
-  private renderItem: (index: number, item: any, node: any) => void;
+  private renderItem: (context: ICEVirtualItemPaintContext) => void;
 
   constructor(props: ICEVirtualListOptions) {
     super({
@@ -112,6 +127,8 @@ export class ICEVirtualList extends ICEWidget {
       height: this.__height(),
       scrollbar: props.scrollbar !== false,
     });
+    // 行由 painter 画：content 是唯一子节点，窗口变化只是"重画一次"
+    this.content.setPainter({ paint: ({ ctx, origin }: any) => this.paintItems(ctx, origin) });
     this.pane.setContent(this.content);
     this.pane.on('scroll', (evt: any) => {
       const y = evt && evt.param ? Number(evt.param.y) || 0 : 0;
@@ -160,17 +177,14 @@ export class ICEVirtualList extends ICEWidget {
     };
   }
 
-  /** 当前真正渲染出来的节点（按下标升序）。 */
-  public getRenderedNodes(): Array<{ index: number; node: any }> {
-    this.__syncWindow();
-    return Array.from(this.nodes.keys())
-      .sort((a, b) => a - b)
-      .map((index) => ({ index, node: this.nodes.get(index) }));
-  }
-
+  /**
+   * 当前窗口会画几条（= `getRange().count`）。
+   *
+   * 名字保留自"渲染节点"时代：现在一条=一次 `renderItem` 调用，**不再有行节点**，
+   * 所以这个数就是"这一帧要画几行"。
+   */
   public getRenderedCount(): number {
-    this.__syncWindow();
-    return this.nodes.size;
+    return this.__range().count;
   }
 
   /** 对外暴露滚动视口（需要挂滚动监听时用）。 */
@@ -230,33 +244,40 @@ export class ICEVirtualList extends ICEWidget {
     });
   }
 
-  /** 把当前窗口映射成节点：窗口外的拆掉、窗口内的补上；重复调用是幂等的。 */
+  /**
+   * 画当前窗口的每一行（浏览器里由 content 的 painter 每帧自动调用；
+   * 单测可以直接调它，传一个假 ctx 就能断言"画了哪几行、画在哪个矩形"）。
+   */
+  public paintItems(ctx: any, origin: [number, number] = [0, 0]): void {
+    if (!ctx) {
+      return;
+    }
+    const range = this.__range();
+    const width = this.__width();
+    const [ox, oy] = origin;
+    for (let index = range.start; index < range.end; index += 1) {
+      this.renderItem({
+        ctx,
+        index,
+        item: this.items[index],
+        x: 0 - ox,
+        y: index * this.itemHeight - oy,
+        width,
+        height: this.itemHeight,
+      });
+    }
+  }
+
+  /**
+   * 窗口同步：只做两件事 —— 视口尺寸跟着 setState 走、标脏让 painter 重画。
+   * （旧实现在这里建/拆行节点；现在行是画出来的，所以**没有任何结构变更**。）
+   */
   private __syncWindow(): void {
-    // 视口尺寸可能被 setState 改过，跟着走
     if (this.pane.state.width !== this.__width() || this.pane.state.height !== this.__height()) {
       this.pane.setState({ width: this.__width(), height: this.__height() });
     }
-    const range = this.__range();
-    Array.from(this.nodes.keys()).forEach((index) => {
-      if (index >= range.start && index < range.end) return;
-      const node = this.nodes.get(index);
-      this.nodes.delete(index);
-      if (node && typeof this.content.removeChild === 'function') this.content.removeChild(node);
-    });
-    for (let index = range.start; index < range.end; index += 1) {
-      if (this.nodes.has(index)) continue;
-      const node = new ICEWidget({
-        left: 0,
-        top: index * this.itemHeight,
-        width: this.__width(),
-        height: this.itemHeight,
-        fill: false,
-        stroke: false,
-        interactive: false,
-      });
-      this.content.addChild(node, false);
-      this.nodes.set(index, node);
-      this.renderItem(index, this.items[index], node);
-    }
+    // 只标"列表自己"脏（视口大小的一块），不标 content（总高可能几十万像素，
+    // 标它等于让脏矩形退化成全量重绘）
+    this.dirty = true;
   }
 }

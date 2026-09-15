@@ -1,6 +1,7 @@
 # 「格子类」组件的 painter 迁移计划（2026-09-15）
 
-> 状态：**未开始**。本文是 2026-09-15 那轮布局收口时逐组件复核出来的结论，
+> 状态：**已开工** —— `ICEVirtualList` 已完成（见文末「已完成」），其余按顺序推进。
+> 本文是 2026-09-15 那轮布局收口时逐组件复核出来的结论，
 > 供下一轮直接照着做 —— 这些组件**不属于**"把坐标搬进策略"那一类，
 > 而是要把"一项一个子节点"改成 **UI delegate 直接画**（Swing 的 `JTable` / `JList` / `JTree` /
 > `BasicMenuUI` 都不为 cell/item 建子组件）。
@@ -81,3 +82,32 @@
 
 每完成一个：把该条目从 `tests/layoutConvention.test.ts` 的 `PENDING` 挪进 `MIGRATED`（棘轮会催），
 跑它自己的用例文件 + 全量 `npm run verify` + `npm run test:e2e`。
+
+---
+
+## 已完成
+
+### `ICEVirtualList`（2026-09-15，破坏性变更，家族早期趁早改）
+
+`renderItem` 从"给节点"改成"给行矩形直接画"：
+
+```ts
+// 之前：回调拿到一个可以 addChild 的行节点
+renderItem: (index, item, node) => { node.addChild(...); }
+
+// 现在：回调拿到行矩形，自己往 ctx 上画
+renderItem: ({ ctx, index, item, x, y, width, height }) => {
+  ctx.fillStyle = index % 2 ? theme.colors.background : theme.colors.surface;
+  ctx.fillRect(x, y, width, height);
+  ctx.fillText(item.label, x + 10, y + height / 2);
+}
+```
+
+* 一万条数据现在也是 **0 个行节点**（旧实现是"可见区 + buffer"个节点）；
+* `getRenderedNodes()` 删除；`getRenderedCount()` 语义变成"这一帧画几行"（值不变）；
+* 新增 `paintItems(ctx, origin?)`：painter 每帧自动调，单测可直接调来断言"画了哪几行、画在哪个矩形"；
+* 示例页 `examples/gallery.html` 已同步改成新写法；`tests/ICEVirtualList.test.ts` 新增
+  「行不再建节点（内容盒永远是空的）」用例。
+
+**给后续 `ICETable` / `ICETree` / `ICEList` 的模板**：数据+几何留在组件里 → painter 画窗口内的行
+→ 命中改几何反查 → 只改数据置脏（不建/拆节点）。

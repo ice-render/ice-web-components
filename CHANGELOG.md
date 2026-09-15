@@ -9,6 +9,17 @@
 
 ### 变更
 
+- **（破坏性）`ICEVirtualList.renderItem` 从"给节点"改成"给行矩形直接画"**（家族早期，趁早改）：
+  签名 `(index, item, node) => void` → `(context: { ctx, index, item, x, y, width, height }) => void`。
+  行不再建节点 —— 一万条数据也是 **0 个行节点**（旧实现是"可见区 + buffer"个节点），
+  绘制走 `painter`（Swing 的 `ListCellRenderer` + UI delegate 位）。配套：
+  - 删除 `getRenderedNodes()`（返回节点列表的 API 没有意义了）；`getRenderedCount()` 保留，
+    语义变成"这一帧画几行"，值仍等于 `getRange().count`；
+  - 新增 `paintItems(ctx, origin?)`：浏览器里由 painter 每帧自动调用，单测可直接调它断言
+    "画了哪几行、画在哪个矩形"；
+  - 迁移：`renderItem: (index, item, node) => { node.addChild(...) }` 改成
+    `renderItem: ({ ctx, item, x, y, width, height }) => { ctx.fillRect(...); ctx.fillText(...) }`
+    （示例页 `examples/gallery.html` 已按新写法改）。
 - **按"内容与装饰混排 → 组件自持策略"把四个容器收口了**（Swing 对应实现写在括号里）：
   - `ICEScrollPane` → 自持 `ICEScrollPaneLayout`（`JScrollPane` + `ScrollPaneLayout`）：
     内容盒（负滚动偏移）+ 两条轨道 + 两个滑块的几何全归策略；删掉手写的
