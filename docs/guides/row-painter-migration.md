@@ -109,5 +109,15 @@ renderItem: ({ ctx, index, item, x, y, width, height }) => {
 * 示例页 `examples/gallery.html` 已同步改成新写法；`tests/ICEVirtualList.test.ts` 新增
   「行不再建节点（内容盒永远是空的）」用例。
 
-**给后续 `ICETable` / `ICETree` / `ICEList` 的模板**：数据+几何留在组件里 → painter 画窗口内的行
+### `ICEList`（2026-09-15，破坏性变更）
+
+行同样改由 painter 画（Swing 的 `JList` + `ListCellRenderer` 位），并且**把点击改成几何反查**：
+
+* 删除 `getRowNode(key)`（没有行节点了）→ 新增
+  `clickRow(key)`（程序式点击，等价用户点中那一行）与 `getRowBox(key)`（行矩形，几何审计/e2e 用）；
+* 真实点击走 `__indexAtPoint`：事件坐标 → `screenToWorld` → 减去列表世界盒 + 滚动偏移 → 行下标；
+* 绘制走 `paintRows(ctx, theme, origin)`（painter 每帧自动调，单测可直接调）；
+* 行数不再影响节点数：内容盒永远是空的。
+
+**给后续 `ICETable` / `ICETree` 的模板**：数据+几何留在组件里 → painter 画窗口内的行
 → 命中改几何反查 → 只改数据置脏（不建/拆节点）。

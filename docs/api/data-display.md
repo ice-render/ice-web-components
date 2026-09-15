@@ -115,7 +115,7 @@
 
 - 选择逻辑在 `ICESelectionModel` 里（single 替换 / multiple 切换），组件只负责渲染与交互；
 - 内容高于可视高度时自动套一层 `ICEScrollPane`（复用 A2 的滚动底座与子树裁剪）；
-- 交互：点击行选中（disabled 行忽略）；焦点在列表上时 ↑/↓ 移动激活行（跳过 disabled）、 Enter/Space 选中激活行。
+- 交互：点击行选中（disabled 行忽略）；焦点在列表上时 ↑/↓ 移动激活行（跳过 disabled）、 Enter/Space 选中激活行。 **行由 painter 画**（2026-09-15，Swing 的 `JList` + `ListCellRenderer` 位）：行不再是子节点， 点击用几何反查行下标（`__indexAtPoint`）。程序式点击/断言用 `clickRow(key)`（旧的 `getRowNode(key).trigger('click')` 已删除）；行矩形用 `getRowBox(key)` 查。
 
 源码：[`src/components/ICEList.ts`](../../src/components/ICEList.ts)
 
@@ -142,10 +142,13 @@
 | `setSelectedKeys(keys: string[])` | `this` |  |
 | `getSelectionModel()` | `ICESelectionModel` |  |
 | `getActiveIndex()` | `number` |  |
-| `getRowNode(key: string)` | `ICEWidget \| null` |  |
+| `clickRow(key: string)` | `this` | 程序式点击某一行（等价于用户点中那一行；disabled 行无效）。 |
+| `getRowBox(key: string)` | `{ left: number; top: number; width: number; height: number } \| null` | 某一行的矩形（内容盒坐标系；`null` = 没有这一行）。几何审计 / e2e 定位用。 |
 | `getScrollPane()` | `ICEScrollPane \| null` |  |
 | `getItems()` | `ICEListItem[]` |  |
 | `setItems(items: ICEListItem[])` | `this` |  |
+| `paintRows(ctx: any, theme: any, origin: [number, number])` | `void` | 画所有行（浏览器里由 content 的 painter 每帧自动调用；单测可直接调它断言行矩形/颜色）。 |
+| `initEvents()` | `void` |  |
 
 ## `ICETree`
 

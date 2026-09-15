@@ -9,6 +9,11 @@
 
 ### 变更
 
+- **（破坏性）`ICEList` 行改由 painter 画，点击改几何反查**：删除 `getRowNode(key)`
+  （行不再是节点），新增 `clickRow(key)` 与 `getRowBox(key)`；真实点击按
+  「事件坐标 → 世界坐标 → 列表世界盒 + 滚动偏移 → 行下标」反查；绘制走 `paintRows()`。
+  行数不再影响节点数（内容盒永远是空的）。迁移：
+  `list.getRowNode(key).trigger('click')` → `list.clickRow(key)`。
 - **（破坏性）`ICEVirtualList.renderItem` 从"给节点"改成"给行矩形直接画"**（家族早期，趁早改）：
   签名 `(index, item, node) => void` → `(context: { ctx, index, item, x, y, width, height }) => void`。
   行不再建节点 —— 一万条数据也是 **0 个行节点**（旧实现是"可见区 + buffer"个节点），
