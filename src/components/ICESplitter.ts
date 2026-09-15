@@ -114,9 +114,9 @@ class ICESplitterLayout extends ICELayoutManager {
     }
   }
 
-  /** 序列化参数：分隔位置由 `requestedSize` + 拖拽态决定，策略本身无参。 */
+  /** 内部策略：不进文档（`null` = 由 `ICESplitter` 构造时重建，分隔位置在 state 里）。 */
   public toJSON(): any {
-    return {};
+    return null;
   }
 }
 

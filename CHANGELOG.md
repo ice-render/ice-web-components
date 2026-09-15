@@ -7,6 +7,25 @@
 
 > 下一个版本发布前，改动在这里累积。
 
+## [1.11.0] - 2026-09-15
+
+### 变更
+
+- **8 个组件内部布局改为「不进文档」**（`toJSON()` 返回 `null`）：`ICEMenuLayout` / `ICEWindowLayout` /
+  `ICEFormItemLayout` / `ICEScrollPaneLayout` / `ICESplitterLayout` / `ICETabsLayout` /
+  `ICEGridLayout`（组件库自己那个）/ `ICEStatCardLayout` 都是**内部策略** —— 参数活在组件的 `state` 里、
+  反序列化时由组件构造函数重建，本来就不该占快照、也不该逼消费方去 `registerType` 一个内部类型。
+  这是引擎 2.11 的新约定（`toJSON()` 返回 `null` = 显式声明"不进文档"，既不写也不告警），
+  所以 **peer 依赖抬到 `ice-render ^2.11.0`**。
+- `ICESegmented` 的 block 形态断言按引擎 2.11 的口径更新：等分格宽现在用「累计取整」切分
+  （292/3 → 97 / 98 / 97，各段相差 ≤1px、总和精确等于可分配量），换来整数落点 ——
+  相邻段之间不会再出现半像素缝。断言同时钉住了真正的契约：首段贴左内边距、末段贴右、相邻段间距正好等于 gap。
+
+### 验证
+
+- `npm run verify`（types + jest 1348 + build + docs + qa 计数）、`npm run test:e2e`（10）、
+  `npm run qa:all`（8/8 套件，含真实键鼠驱动 demo 页）全绿。
+
 ## [1.10.3] - 2026-09-15
 
 ### 变更

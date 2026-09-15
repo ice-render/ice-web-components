@@ -34,9 +34,9 @@ class ICEFormItemLayout extends ICELayoutManager {
     errorNode.setState({ left: 0, top: labelHeight + gap + controlHeight + gap });
   }
 
-  /** 序列化参数：形态与尺寸都是组件级策略（在 state 里），策略本身无参。 */
+  /** 内部策略：不进文档（`null` = 由 `ICEFormItem` 构造时重建，形态与尺寸都在 state 里）。 */
   public toJSON(): any {
-    return {};
+    return null;
   }
 }
 

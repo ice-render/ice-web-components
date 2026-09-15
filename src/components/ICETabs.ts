@@ -80,9 +80,9 @@ class ICETabsLayout extends ICELayoutManager {
     }
   }
 
-  /** 序列化参数：页签条几何由页签数/尺寸决定，没有可调的构造参数。 */
+  /** 内部策略：不进文档（`null` = 由 `ICETabs` 构造时重建，页签几何由 state 决定）。 */
   public toJSON(): any {
-    return {};
+    return null;
   }
 }
 export class ICETabs extends ICEContainer {

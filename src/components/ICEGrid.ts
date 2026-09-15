@@ -39,9 +39,9 @@ class ICEGridLayout extends ICELayoutManager {
     grid.__setContentBottom(Math.max(0, top - gutterY));
   }
 
-  /** 序列化参数：栅格几何由组件级策略（gutter / span / offset）决定，策略本身无参。 */
+  /** 内部策略：不进文档（`null` = 由 `ICEGrid` 构造时重建，gutter / span / offset 都在 state 里）。 */
   public toJSON(): any {
-    return {};
+    return null;
   }
 }
 

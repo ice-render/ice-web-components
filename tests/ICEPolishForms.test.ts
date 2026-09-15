@@ -79,10 +79,19 @@ describe('ICESegmented block 形态', () => {
 
   it('block：各段等宽铺满整条（后台筛选条常用）', () => {
     const seg = new ICESegmented({ options, width: 300, block: true });
-    const widths = seg.getSegmentBoxes().map((box) => box.width);
-    // 三段等宽：扣掉左右内边距与段间距之后均分
-    expect(widths.map((w) => Math.round(w))).toEqual([97, 97, 97]);
-    expect(new Set(widths.map((w) => Math.round(w * 100))).size).toBe(1);
+    const boxes = seg.getSegmentBoxes();
+    const widths = boxes.map((box) => box.width);
+    // 三段等宽：容器 padding=2、段间距 gapX=2 → 可分配 300-2*2-2*2 = 292，均分 292/3 = 97.33。
+    // 引擎从 2.11 起用「累计取整」切分：除不尽时各段相差 ≤1px，换来整数落点
+    // （相邻段之间不会出现半像素缝），且**总和精确等于可分配量**。
+    const rounded = widths.map((w) => Math.round(w));
+    expect(rounded.every((w) => Number.isInteger(w))).toBe(true);
+    expect(Math.max(...widths) - Math.min(...widths)).toBeLessThanOrEqual(1);
+    expect(rounded.reduce((sum, w) => sum + w, 0)).toBe(292);
+    // 真正的契约：三段无缝铺满内容区（首段贴左内边距、末段贴右内边距、相邻段间距正好是 gap）
+    expect(boxes[0].left).toBe(2);
+    expect(boxes[2].left + boxes[2].width).toBe(298);
+    expect(boxes[1].left).toBe(boxes[0].left + boxes[0].width + 2);
     expect(seg.isBlock()).toBe(true);
   });
 

@@ -196,9 +196,9 @@ class ICEWindowLayout extends ICELayoutManager {
     n.resizeHandle.setState({ left: width - 14, top: height - 14 });
   }
 
-  /** 序列化参数：外壳几何由窗口尺寸与 titleBarHeight 决定，策略本身无参。 */
+  /** 内部策略：不进文档（`null` = 由 `ICEWindow` 构造时重建，参数全在 state 里）。 */
   public toJSON(): any {
-    return {};
+    return null;
   }
 }
 

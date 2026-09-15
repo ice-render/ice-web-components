@@ -35,9 +35,9 @@ class ICEStatCardLayout extends ICELayoutManager {
     parts.trendNode.setState({ left: textLeft, top: textTop + 54, width: textWidth, height: 18 });
   }
 
-  /** 序列化参数：内部几何由卡片尺寸决定，策略本身无参。 */
+  /** 内部策略：不进文档（`null` = 由 `ICEStatCard` 构造时重建，内部几何由卡片尺寸推出）。 */
   public toJSON(): any {
-    return {};
+    return null;
   }
 }
 

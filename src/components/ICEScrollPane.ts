@@ -114,9 +114,9 @@ class ICEScrollPaneLayout extends ICELayoutManager {
     }
   }
 
-  /** 序列化参数：滚动条几何由尺寸/内容决定，没有可调的构造参数。 */
+  /** 内部策略：不进文档（`null` = 由 `ICEScrollPane` 构造时重建，几何参数在 state 里）。 */
   public toJSON(): any {
-    return {};
+    return null;
   }
 }
 

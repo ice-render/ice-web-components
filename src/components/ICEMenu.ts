@@ -74,9 +74,15 @@ class ICEMenuLayout extends ICELayoutManager {
     });
   }
 
-  /** 序列化参数：菜单几何由形态与尺寸决定，策略本身无参。 */
+  /**
+   * 内部策略：不进文档（引擎约定 `toJSON()` 返回 `null` 即"不用序列化"）。
+   *
+   * 菜单几何由形态与尺寸决定，参数活在组件的 `state` 里；反序列化时由 `ICEMenu` 的构造函数
+   * 自己 `setLayout(new ICEMenuLayout())` 重建，所以快照里再存一份策略既没用、还会逼着
+   * 消费方去 `registerType` 一个他们根本不该关心的内部类型。
+   */
   public toJSON(): any {
-    return {};
+    return null;
   }
 }
 
