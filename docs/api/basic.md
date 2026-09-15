@@ -32,8 +32,7 @@
 | `getFormValue()` | `any` | 表单取值约定：控件覆盖这两个方法即可被 ICEForm 直接读写。 |
 | `setFormValue(value: any)` | `void` |  |
 | `setHovered(hovered: boolean)` | `this` |  |
-| `setPreferredSize(width: number, height: number)` | `this` |  |
-| `getPreferredSize()` | `[number, number]` |  |
+| `getPreferredSize()` | `[number, number]` | 组件**想要多大**（布局用）。 |
 | `setPainter(painter: ICEPainter \| null)` | `this` |  |
 | `getPainter()` | `ICEPainter \| null` |  |
 | `addChild(child: any, markDirty: boolean)` | `void` | UI 组件内部的图元只负责外观，不参与画布级拖拽、变换、连线。 |

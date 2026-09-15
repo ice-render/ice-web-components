@@ -36,8 +36,6 @@ export class ICEWidget extends ICEGroup {
   private __t: ICETranslate | null = null;
 
   protected painter: ICEPainter | null = null;
-  protected preferredWidth: number = 0;
-  protected preferredHeight: number = 0;
   protected enabled: boolean = true;
   protected hovered: boolean = false;
   /**
@@ -212,18 +210,25 @@ export class ICEWidget extends ICEGroup {
     return this;
   }
 
-  public setPreferredSize(width: number, height: number): this {
-    this.preferredWidth = Math.max(0, width || 0);
-    this.preferredHeight = Math.max(0, height || 0);
-    this.revalidate();
-    return this;
-  }
-
+  /**
+   * 组件**想要多大**（布局用）。
+   *
+   * 优先级与 Swing 的 `JComponent.getPreferredSize()` 一致：
+   * ① 调用方 `setPreferredSize([w, h])` 声明过（引擎基类提供）→ 用声明值；
+   * ② 组件挂了自己的 `painter` 且它能报尺寸 → 问 painter（对应 Swing 的 UI delegate）；
+   * ③ 否则回到引擎基类（容器有布局时报内容尺寸，叶子报自己的盒子）。
+   *
+   * 注：本类原来自己实现过 `setPreferredSize(width, height)` + `preferredWidth/Height` 字段，
+   * 与引擎 2026-09-15 新增的同名 Swing API 撞了签名，已合并到引擎那一份（调用方改传数组）。
+   */
   public getPreferredSize(): [number, number] {
+    if (this.isPreferredSizeSet()) {
+      return super.getPreferredSize();
+    }
     if (this.painter && typeof this.painter.getPreferredSize === 'function') {
       return this.painter.getPreferredSize(this);
     }
-    return [this.preferredWidth, this.preferredHeight];
+    return super.getPreferredSize();
   }
 
   public setPainter(painter: ICEPainter | null): this {

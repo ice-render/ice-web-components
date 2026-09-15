@@ -81,8 +81,10 @@ export class ICETabs extends ICEContainer {
     // 页签多到装不下才出现箭头（默认 64 是「还能看清文字」的底线）
     const fitWidth = (this.declaredWidth - totalGap) / Math.max(1, this.tabs.length);
     this.overflow = this.scrollableProp === true || (this.scrollableProp !== false && fitWidth < this.minTabWidth);
-    // 只有「顶部横向条且不溢出」才交给流式布局；其它方位由本组件自己摆
-    // （流式布局会把贴底 / 竖排的位置重新算一遍，等于白摆）
+    // 只有「顶部横向条且不溢出」才交给引擎的流式布局；其它方位由本组件自己摆
+    // （overflow 形态有箭头、贴底/竖排有各自的基线，挂了策略会和手摆的位置打架）。
+    // 注：传 null 以前还有第二个用途 —— 阻断引擎把**父层**布局继承进来。引擎 2026-09-15 起
+    // 「布局不继承」（对齐 Swing `Container.setLayout`），所以 null 现在只剩「清掉自己的策略」。
     this.setLayout(this.placement === 'top' && !this.overflow ? new ICEFlowLayout({ gap, align: 'left' }) : (null as any));
     this.tabs.forEach((text, index) => {
       const button = new ICEButton({

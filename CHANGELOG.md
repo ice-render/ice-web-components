@@ -7,6 +7,30 @@
 
 > 下一个版本发布前，改动在这里累积。
 
+### 变更
+
+- **引擎布局不再继承父层策略（对齐 Java Swing）**：引擎侧删掉了「子容器默认继承父层布局」的
+  传播逻辑，`setLayout()` 只影响容器自己怎么摆子项。本库因此不再需要「用 `setLayout(null)` 退出
+  继承」这类规避手段，`ICETabs` 里那处 `null` 现在只剩「清掉自己的策略」一个语义（注释已更新）。
+  推论：**子容器要自动排布就自己 `setLayout()`**；给面板挂布局不会再重排它内部组件的零件。
+- **`docs/guides/layout.md` 补「引擎布局不继承」与尺寸协商口径**（`getPreferredSize()` /
+  `setPreferredSize()`；构造期 `width/height` 只算边界）。组件级三件套（`ICESpace` / `ICEGrid` /
+  `ICESplitter`）继续自己算坐标 —— 它们要的交叉轴对齐与按内容回写自身尺寸，引擎布局器还没有。
+
+### 修复
+
+- **给容器挂引擎布局会破坏子组件内部几何**：引擎 2.7 及以前会把布局策略递归灌给所有后代容器，
+  而本库每个组件都是 `ICEGroup` 子类、内部零件（按钮文字、输入框前后缀 / 清除按钮）都在同一个
+  `childNodes` 里，于是一次 `setLayout()` 等于把整个界面的内部零件按同一策略重摆一遍
+  （实测 `ICETextField(prefix, allowClear)` 的文本 `12 → 0`、清除按钮 `(170,6) → (316,0)`）。
+  引擎修掉继承后不再发生，本库加回归用例守住：`tests/engineLayout.integration.test.ts`。
+
+### 注意（依赖）
+
+- 上述修复依赖 **ice-render 当前 `dev` 分支**（`feat/layout-swing-alignment`，见该仓 CHANGELOG
+  `[Unreleased]`），尚未发版；本仓 `devDependencies`/`peerDependencies` 的 `ice-render` 范围
+  待引擎发版后再对齐（本地验证是把引擎构建产物同步进 `node_modules/ice-render` 跑的）。
+
 ## [1.6.0] - 2026-09-14
 
 ### 新增
