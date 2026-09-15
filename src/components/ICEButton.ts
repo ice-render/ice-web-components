@@ -237,6 +237,35 @@ export class ICEButton extends ICEWidget {
     this.__sync();
   }
 
+  /**
+   * 自身尺寸变化 → **内部文字标签跟着换盒子**。
+   *
+   * 为什么必须有：按钮的文字是 `centerTextNode(theme, width, height, …)` 在**构造期**按当时的
+   * 宽高建的（对齐/居中都是相对那个盒子算的）。构造后才改按钮尺寸的场景很多 ——
+   * 布局器给按钮写尺寸（`ICESegmented` 的等分、`ICEBoxLayout.grow`、调用方 `setState({width})`）——
+   * 不跟着换的话，文字还停在旧盒子上：比按钮宽就溢出、盖住邻居（smart-water 的「1×/2×/4×」
+   * 分段控件实测踩到），窄了则居中偏左。
+   */
+  protected __afterStateMerge(sizeChanged: boolean): void {
+    super.__afterStateMerge(sizeChanged);
+    if (sizeChanged) {
+      this.__syncLabelBox();
+    }
+  }
+
+  /** 把文字标签铺满按钮盒子（文字自身用 center + middle 对齐）。 */
+  private __syncLabelBox(): void {
+    if (!this.label) {
+      return;
+    }
+    const width = Number(this.state.width) || 0;
+    const height = Number(this.state.height) || 0;
+    if (Number(this.label.state.width) === width && Number(this.label.state.height) === height) {
+      return;
+    }
+    this.label.setState({ left: 0, top: 0, width, height });
+  }
+
   private __sync(): void {
     const theme = iceUIManager.getTheme();
     const active = this.enabled ? this.pressed : false;
