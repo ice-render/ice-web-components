@@ -1,4 +1,5 @@
 import { ICEWidget } from '../core/ICEWidget';
+import { ICELayoutManager } from 'ice-render';
 import { iceUIManager } from '../core/ICEManager';
 import { getICEWorldBox } from '../util/ICEWorldBox';
 
@@ -72,6 +73,53 @@ export interface ICESplitterOptions {
   onResize?: (size: number) => void;
 }
 
+/**
+ * 分隔布局的自持策略（2026-09-15）。
+ *
+ * 库里第三类"该自持"的容器：两栏 + 分隔条的尺寸**由拖拽驱动**，不是布局算出来的 ——
+ * 通用布局器表达不了"第一栏宽度 = 用户拖到哪"，于是组件自己实现一个 `ICELayoutManager`
+ * （对齐 Swing 的 `JSplitPane` + `BasicSplitPaneUI`：分隔条尺寸由 UI 管，不由 LayoutManager 管）。
+ *
+ * 策略只摆位置：`requestedSize → clamp → size` 的夹取、拖拽态、`onResize` 回调都留在组件里。
+ */
+class ICESplitterLayout extends ICELayoutManager {
+  layoutContainer(container: any): void {
+    const splitter = container as ICESplitter;
+    const width = Number(container.state.width) || 0;
+    const height = Number(container.state.height) || 0;
+    // 用 requestedSize 重新夹取：容器可能"先建后量"（初始 100×100），早先夹取过的值不能粘住
+    const size = splitter.__resolveSize();
+    const dividerSize = splitter.getDividerSize();
+    const horizontal = splitter.getDirection() === 'horizontal';
+    const first = splitter.getFirstNode();
+    const second = splitter.getSecondNode();
+    const divider = splitter.getDividerNode();
+
+    if (horizontal) {
+      if (first) {
+        first.setState({ left: 0, top: 0, width: size, height });
+      }
+      divider.setState({ left: size, top: 0, width: dividerSize, height });
+      if (second) {
+        second.setState({ left: size + dividerSize, top: 0, width: Math.max(0, width - size - dividerSize), height });
+      }
+    } else {
+      if (first) {
+        first.setState({ left: 0, top: 0, width, height: size });
+      }
+      divider.setState({ left: 0, top: size, width, height: dividerSize });
+      if (second) {
+        second.setState({ left: 0, top: size + dividerSize, width, height: Math.max(0, height - size - dividerSize) });
+      }
+    }
+  }
+
+  /** 序列化参数：分隔位置由 `requestedSize` + 拖拽态决定，策略本身无参。 */
+  public toJSON(): any {
+    return {};
+  }
+}
+
 export class ICESplitter extends ICEWidget {
   private direction: 'horizontal' | 'vertical';
   /** 调用方要的尺寸（不被「当下容器的夹取」覆盖，容器变大后能恢复） */
@@ -85,7 +133,6 @@ export class ICESplitter extends ICEWidget {
   private onResize: ((size: number) => void) | null;
   private dragging = false;
   private bound = false;
-  private laying = false;
 
   constructor(props: ICESplitterOptions) {
     const theme = iceUIManager.getTheme();
@@ -125,7 +172,9 @@ export class ICESplitter extends ICEWidget {
       this.addChild(this.second, false);
     }
     this.addChild(this.divider, false);
-    this.__layout();
+    // 排布交给自持策略（见 ICESplitterLayout 的说明）
+    this.setLayout(new ICESplitterLayout());
+    this.doLayout();
   }
 
   /** 当前第一栏尺寸。 */
@@ -151,7 +200,7 @@ export class ICESplitter extends ICEWidget {
       return this;
     }
     this.size = next;
-    this.__layout();
+    this.doLayout();
     this.trigger('resize', null, { size: this.size });
     if (this.onResize) {
       this.onResize(this.size);
@@ -185,7 +234,7 @@ export class ICESplitter extends ICEWidget {
   /** 自身尺寸变化后重排两栏（引擎在 setState 尺寸变化时会调这个钩子）。 */
   public revalidate(): this {
     super.revalidate();
-    this.__layout();
+    this.doLayout();
     return this;
   }
 
@@ -193,7 +242,7 @@ export class ICESplitter extends ICEWidget {
   protected __afterStateMerge(sizeChanged: boolean): void {
     super.__afterStateMerge(sizeChanged);
     if (sizeChanged) {
-      this.__layout();
+      this.doLayout();
     }
   }
 
@@ -219,46 +268,18 @@ export class ICESplitter extends ICEWidget {
     return Math.max(this.min, Math.min(this.__max(), Number(size) || 0));
   }
 
-  private __layout(): void {
-    if (this.laying) {
-      return;
-    }
-    this.laying = true;
-    const width = Number(this.state.width) || 0;
-    const height = Number(this.state.height) || 0;
-    // 注意用 requestedSize 重新夹取：容器可能是「先建后量」（初始 100×100，
-    // 之后才拿到真实尺寸），早先夹取过的值不能粘住调用方要的尺寸
+  /** 策略用：按当前 requestedSize 重新夹取并回写 `size`（容器尺寸可能刚变过）。 */
+  public __resolveSize(): number {
     this.size = this.__clamp(this.requestedSize);
-    const horizontal = this.direction === 'horizontal';
-    if (horizontal) {
-      if (this.first) {
-        this.first.setState({ left: 0, top: 0, width: this.size, height });
-      }
-      this.divider.setState({ left: this.size, top: 0, width: this.dividerSize, height });
-      if (this.second) {
-        this.second.setState({
-          left: this.size + this.dividerSize,
-          top: 0,
-          width: Math.max(0, width - this.size - this.dividerSize),
-          height,
-        });
-      }
-    } else {
-      if (this.first) {
-        this.first.setState({ left: 0, top: 0, width, height: this.size });
-      }
-      this.divider.setState({ left: 0, top: this.size, width, height: this.dividerSize });
-      if (this.second) {
-        this.second.setState({
-          left: 0,
-          top: this.size + this.dividerSize,
-          width,
-          height: Math.max(0, height - this.size - this.dividerSize),
-        });
-      }
-    }
-    this.__syncDivider();
-    this.laying = false;
+    return this.size;
+  }
+
+  public getDirection(): 'horizontal' | 'vertical' {
+    return this.direction;
+  }
+
+  public getDividerSize(): number {
+    return this.dividerSize;
   }
 
   private __onGlobalMouseDown(evt: any): void {

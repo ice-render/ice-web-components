@@ -56,19 +56,11 @@ const COMPOSITE_MIGRATED = new Set([
   'ICEVirtualList', // → 行由 painter 画（renderItem 给行矩形）
   'ICEAvatar', // → 圆底与首字由 painter 画
   'ICESkeleton', // → 占位条由 painter 画
+  'ICESplitter', // → 自持 ICESplitterLayout（JSplitPane 位：两栏 + 分隔条，尺寸由拖拽驱动）
+  'ICEWindow', // → 自持 ICEWindowLayout（JInternalFrame 位：底板/标题栏/按钮/客户区/缩放角）
 ]);
 
 const COMPOSITE_PENDING = new Map<string, string>([
-  [
-    'ICEWindow',
-    '窗口外壳（标题栏 + 按钮 + 客户区 + 缩放角）自持策略：等 ICEWindow 这一批把 chrome 节点收敛成'
-      + 'ICEWindowLayout 后迁（客户区是调用方内容，必须留节点）',
-  ],
-  [
-    'ICESplitter',
-    '分隔条尺寸由**拖拽**驱动（不是布局算出来的），第一栏宽度就是用户拖到哪 —— 目标是自持策略把'
-      + '"两栏 + 分隔条"一起摆，拖拽只改尺寸不再改坐标',
-  ],
   ['ICEImageView', 'cover/contain 的裁剪几何（自绘 image 的落墨矩形），不是子节点布局，**不属于本次口径**'],
 ]);
 
@@ -121,13 +113,13 @@ describe('布局约定棘轮：容器型组件的排布必须走引擎布局器'
     expect(missing).toEqual([]);
   });
 
-  it('复合叶子同样二选一（ICEWindow/ICESplitter 是已知缺口，已登记原因）', () => {
-    const composites = ['ICEFormItem', 'ICEList', 'ICEVirtualList', 'ICEAvatar', 'ICESkeleton', 'ICEWindow', 'ICESplitter', 'ICEImageView'];
+  it('复合叶子同样二选一（当前已全部决定：六个已迁移 + ICEImageView 明确排除）', () => {
+    const composites = ['ICEFormItem', 'ICEList', 'ICEVirtualList', 'ICEAvatar', 'ICESkeleton', 'ICESplitter', 'ICEWindow', 'ICEImageView'];
     const undecided = composites.filter((name) => !COMPOSITE_MIGRATED.has(name) && !COMPOSITE_PENDING.has(name));
     expect(undecided).toEqual([]);
-    // 自检：这两个已知缺口必须还在清单里（迁完就挪进 MIGRATED，别让它悄悄消失）
-    expect(COMPOSITE_PENDING.has('ICEWindow')).toBe(true);
-    expect(COMPOSITE_PENDING.has('ICESplitter')).toBe(true);
+    // 自检：上次复核的缺口（ICEWindow / ICESplitter）已迁完，不该再留在豁免里
+    expect(COMPOSITE_PENDING.has('ICEWindow')).toBe(false);
+    expect(COMPOSITE_PENDING.has('ICESplitter')).toBe(false);
   });
 
   it('豁免清单里不允许空原因（豁免必须写清楚为什么）', () => {

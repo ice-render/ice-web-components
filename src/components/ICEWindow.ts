@@ -1,4 +1,5 @@
 import { ICEWidget } from '../core/ICEWidget';
+import { ICELayoutManager } from 'ice-render';
 import { ICELabel } from './ICELabel';
 import { iceUIManager } from '../core/ICEManager';
 import { getICEWorldBox } from '../util/ICEWorldBox';
@@ -144,6 +145,61 @@ function mixHex(from: string, to: string, t: number): string {
   const channel = (a: number, b: number) => Math.round(a + (b - a) * t);
   const toHex = (value: number) => value.toString(16).padStart(2, '0');
   return `#${toHex(channel(r1, r2))}${toHex(channel(g1, g2))}${toHex(channel(b1, b2))}`;
+}
+
+/**
+ * 窗口外壳的自持策略（2026-09-15）。
+ *
+ * 复合叶子里的最后一块手写坐标：底板 / 标题栏 / 标题渐变带 / 图标与标题 / 三个标题栏按钮 /
+ * 客户区 / 缩放角，全部由这里摆。对齐 Swing 的 `JInternalFrame` + `BasicInternalFrameUI`：
+ * 外壳几何归 UI 管，**客户区是调用方内容**（只跟随尺寸，不参与摆位）。
+ *
+ * 窗口自身的拖动 / 缩放改的是窗口的 `left/top/size`（在组件那边），与这里的内部布局不冲突。
+ */
+class ICEWindowLayout extends ICELayoutManager {
+  layoutContainer(container: any): void {
+    const win = container as ICEWindow;
+    const n = win.__getWindowNodes();
+    const width = Number(container.state.width) || 0;
+    const height = Number(container.state.height) || 0;
+    const titleBarHeight = win.getTitleBarHeight();
+
+    if (n.shell) {
+      n.shell.setState({ width, height });
+    }
+    const barWidth = Math.max(0, width - 6);
+    n.titleBar.setState({ width: barWidth });
+    n.titleBands.forEach((band: any, index: number) => {
+      band.setState({
+        top: (index * titleBarHeight) / 10,
+        width: barWidth,
+        height: titleBarHeight / 10 + 1,
+      });
+    });
+    n.titleLabel.setState({ width: Math.max(0, barWidth - 120) });
+
+    const buttonSize = 20;
+    const rightEdge = width - 6 - 4;
+    n.closeButton.setState({ left: rightEdge - buttonSize, top: Math.round((titleBarHeight - (buttonSize - 4)) / 2) });
+    n.maximizeButton.setState({ left: rightEdge - buttonSize * 2 - 2 });
+    n.minimizeButton.setState({ left: rightEdge - buttonSize * 3 - 4 });
+
+    const clientWidth = Math.max(0, width - 6);
+    const clientHeight = Math.max(0, height - titleBarHeight - 6);
+    n.client.setState({ width: clientWidth, height: clientHeight });
+    if (n.content) {
+      n.content.setState({ left: 0, top: 0, width: clientWidth, height: clientHeight });
+      if (typeof n.content.revalidate === 'function') {
+        n.content.revalidate();
+      }
+    }
+    n.resizeHandle.setState({ left: width - 14, top: height - 14 });
+  }
+
+  /** 序列化参数：外壳几何由窗口尺寸与 titleBarHeight 决定，策略本身无参。 */
+  public toJSON(): any {
+    return {};
+  }
 }
 
 export class ICEWindow extends ICEWidget {
@@ -329,6 +385,9 @@ export class ICEWindow extends ICEWidget {
     this.__syncTitleBands();
     // 点窗体任意位置都算激活（含客户端区域）
     this.on('mousedown', () => this.activate());
+    // 外壳几何交给自持策略（见 ICEWindowLayout 的说明）
+    this.setLayout(new ICEWindowLayout());
+    this.doLayout();
   }
 
   public getTitle(): string {
@@ -430,7 +489,7 @@ export class ICEWindow extends ICEWidget {
     const bounds = this.__bounds();
     this.maximized = true;
     this.setState({ left: bounds.left, top: bounds.top, width: bounds.width, height: bounds.height });
-    this.__layout();
+    this.doLayout();
     this.trigger('maximize', null, { maximized: true });
     if (this.options.onMaximize) {
       this.options.onMaximize(true);
@@ -448,7 +507,7 @@ export class ICEWindow extends ICEWidget {
     if (box) {
       this.setState(box);
     }
-    this.__layout();
+    this.doLayout();
     this.trigger('maximize', null, { maximized: false });
     if (this.options.onMaximize) {
       this.options.onMaximize(false);
@@ -495,7 +554,7 @@ export class ICEWindow extends ICEWidget {
       width: Math.max(this.minWidth, Math.round(width) || this.minWidth),
       height: Math.max(this.minHeight, Math.round(height) || this.minHeight),
     });
-    this.__layout();
+    this.doLayout();
     return this;
   }
 
@@ -512,7 +571,7 @@ export class ICEWindow extends ICEWidget {
 
   public revalidate(): this {
     super.revalidate();
-    this.__layout();
+    this.doLayout();
     return this;
   }
 
@@ -520,7 +579,7 @@ export class ICEWindow extends ICEWidget {
   protected __afterStateMerge(sizeChanged: boolean): void {
     super.__afterStateMerge(sizeChanged);
     if (sizeChanged) {
-      this.__layout();
+      this.doLayout();
     }
   }
 
@@ -549,41 +608,31 @@ export class ICEWindow extends ICEWidget {
   }
 
   /** 窗口尺寸变化后重排标题栏 / 客户端 / 按钮 / 手柄。 */
-  private __layout(): void {
-    const width = Number(this.state.width) || 0;
-    const height = Number(this.state.height) || 0;
-    const shell = this.childNodes[0];
-    if (shell) {
-      shell.setState({ width, height });
-    }
-    const barWidth = Math.max(0, width - 6);
-    this.titleBar.setState({ width: barWidth });
-    this.titleBands.forEach((band, index) => {
-      band.setState({
-        top: (index * this.titleBarHeight) / TITLE_BANDS,
-        width: barWidth,
-        height: this.titleBarHeight / TITLE_BANDS + 1,
-      });
-    });
-    this.titleLabel.setState({ width: Math.max(0, barWidth - 120) });
-    const buttonSize = 20;
-    const rightEdge = width - 6 - 4;
-    this.closeButton.setState({ left: rightEdge - buttonSize, top: Math.round((this.titleBarHeight - (buttonSize - 4)) / 2) });
-    this.maximizeButton.setState({ left: rightEdge - buttonSize * 2 - 2 });
-    this.minimizeButton.setState({ left: rightEdge - buttonSize * 3 - 4 });
-    const clientWidth = Math.max(0, width - 6);
-    const clientHeight = Math.max(0, height - this.titleBarHeight - 6);
-    this.client.setState({ width: clientWidth, height: clientHeight });
-    if (this.content) {
-      this.content.setState({ left: 0, top: 0, width: clientWidth, height: clientHeight });
-      if (typeof this.content.revalidate === 'function') {
-        this.content.revalidate();
-      }
-    }
-    this.resizeHandle.setState({ left: width - 14, top: height - 14 });
-    if (this.ice) {
-      this.ice.dirty = true;
-    }
+  /** 策略要摆的节点（外壳 / 标题栏 / 标题带 / 按钮 / 客户区 / 缩放角）。 */
+  public __getWindowNodes(): {
+    shell: any;
+    titleBar: any;
+    titleBands: any[];
+    titleLabel: any;
+    closeButton: any;
+    maximizeButton: any;
+    minimizeButton: any;
+    client: any;
+    content: any;
+    resizeHandle: any;
+  } {
+    return {
+      shell: this.childNodes[0],
+      titleBar: this.titleBar,
+      titleBands: this.titleBands,
+      titleLabel: this.titleLabel,
+      closeButton: this.closeButton,
+      maximizeButton: this.maximizeButton,
+      minimizeButton: this.minimizeButton,
+      client: this.client,
+      content: this.content,
+      resizeHandle: this.resizeHandle,
+    };
   }
 
   /** 节点在世界坐标里的盒子（窗口自身 + 到 this 为止的子级偏移）。 */
@@ -614,12 +663,7 @@ export class ICEWindow extends ICEWidget {
     }
     const [wx, wy] = this.ice.screenToWorld(evt.offsetX, evt.offsetY);
     const box = this.__nodeBoxWorld(node);
-    return (
-      wx >= box.left &&
-      wx <= box.left + box.width &&
-      wy >= box.top &&
-      wy <= box.top + box.height
-    );
+    return wx >= box.left && wx <= box.left + box.width && wy >= box.top && wy <= box.top + box.height;
   }
 
   private __hitOwnButton(evt: any): boolean {
@@ -681,7 +725,7 @@ export class ICEWindow extends ICEWidget {
       const width = Math.max(this.minWidth, this.resizeStart.width + (wx - this.resizeStart.x));
       const height = Math.max(this.minHeight, this.resizeStart.height + (wy - this.resizeStart.y));
       this.setState({ width: Math.round(width), height: Math.round(height) });
-      this.__layout();
+      this.doLayout();
       this.trigger('resize', null, { width: this.state.width, height: this.state.height });
       if (this.options.onResize) {
         this.options.onResize(Number(this.state.width), Number(this.state.height));
