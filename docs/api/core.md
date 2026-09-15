@@ -171,6 +171,8 @@
 | `getDividerNode()` | `ICESplitterDivider` |  |
 | `getFirstNode()` | `any` |  |
 | `getSecondNode()` | `any` |  |
+| `getDirection()` | `'horizontal' \| 'vertical'` |  |
+| `getDividerSize()` | `number` |  |
 | `isDragging()` | `boolean` | 是否可拖动：分隔条自身 + 2px 容错（细条不好瞄）。 |
 
 ## `ICEWindow`

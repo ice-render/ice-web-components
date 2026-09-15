@@ -123,6 +123,9 @@
 | `getCols()` | `ICEGridCol[]` |  |
 | `addCol(col: ICEGridCol)` | `this` |  |
 | `setGutter(gutter: number, gutterY?: number)` | `this` |  |
+| `getGutter()` | `number` |  |
+| `getGutterY()` | `number` |  |
+| `doLayout()` | `void` | 排布 = 自持策略摆列 + 组件自己的高度策略（`autoHeight` 时高度 = 内容高度）。 |
 
 ## `ICEGridCol`
 

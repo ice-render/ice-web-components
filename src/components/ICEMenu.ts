@@ -1,4 +1,5 @@
 import { ICEWidget } from '../core/ICEWidget';
+import { ICELayoutManager } from 'ice-render';
 import { ICEContainer } from '../core/ICEContainer';
 import { iceUIManager } from '../core/ICEManager';
 import { createTextNode, readHovered } from '../util/ICEStyle';
@@ -22,6 +23,63 @@ export type ICEMenuItem = {
 /**
  * 菜单：菜单项 +（可选）子菜单内联展开；选中态与悬停态分离，父项在子项选中时只做“当前分组”提示。
  */
+/**
+ * 菜单行的自持策略（2026-09-15）。
+ *
+ * 库里最后一个手写坐标的容器。三种形态都在这里摆位：
+ * - `tree`：树形竖排，缩进 = `depth × depthIndent`（展开/收起的子行也在这里排）；
+ * - `flat-vertical`：收起态（侧栏只剩图标）竖排，整条宽度 = 图标宽；
+ * - `flat-horizontal`：顶栏横排，按各段宽度依次推进（段间 4px）。
+ *
+ * 展开/收起**动画只改 `transform.translate`**（不动 left/top），所以布局跑多少次都不会把动画弹回去 —
+ * 这也是本次先把动画从写 `top` 改成写 translate 的原因。
+ */
+class ICEMenuLayout extends ICELayoutManager {
+  layoutContainer(container: any): void {
+    const menu = container as ICEMenu;
+    const input = menu.__getMenuLayoutInput();
+    const { layoutMode, rows, itemHeight, inset, depthIndent, itemWidth } = input;
+    // 用 childNodes 而不是 itemPanels：`addChild` 会**立刻**触发一次布局，
+    // 而调用方是在 addChild 之后才把面板记进 itemPanels —— 用 itemPanels 会永远漏掉最后一行。
+    const panels: any[] = container.childNodes;
+
+    if (layoutMode === 'flat-horizontal') {
+      let left = 0;
+      panels.forEach((panel: any) => {
+        panel.setState({ left, top: 2, width: itemWidth, height: itemHeight });
+        left += itemWidth + 4;
+      });
+      return;
+    }
+
+    if (layoutMode === 'flat-vertical') {
+      panels.forEach((panel: any, index: number) => {
+        panel.setState({ left: inset, top: index * itemHeight, width: itemWidth, height: itemHeight });
+      });
+      return;
+    }
+
+    // tree：按扁平化后的每一行摆（缩进按 depth）
+    const width = Number(container.state.width) || 240;
+    rows.forEach((row: any, index: number) => {
+      const panel = panels[index];
+      if (!panel) return;
+      const indent = row.depth * depthIndent;
+      panel.setState({
+        left: inset + indent,
+        top: index * itemHeight,
+        width: Math.max(0, width - inset * 2 - indent),
+        height: itemHeight,
+      });
+    });
+  }
+
+  /** 序列化参数：菜单几何由形态与尺寸决定，策略本身无参。 */
+  public toJSON(): any {
+    return {};
+  }
+}
+
 export class ICEMenu extends ICEContainer {
   private items: ICEMenuItem[];
   /** 扁平化后的可见行（展开的父节点后紧跟其子项） */
@@ -56,6 +114,10 @@ export class ICEMenu extends ICEContainer {
   private expandAnimation = 0;
   private animatingKeys = new Set<string>();
   private __bound = false;
+  /** 当前渲染形态（决定策略怎么摆行）：tree / flat-vertical / flat-horizontal */
+  private __layoutMode: 'tree' | 'flat-vertical' | 'flat-horizontal' = 'tree';
+  /** 平铺形态下每段的宽度（由 __renderFlat 算出） */
+  private __flatItemWidth = 0;
 
   constructor(props: any = {}) {
     const theme = iceUIManager.getTheme();
@@ -83,6 +145,8 @@ export class ICEMenu extends ICEContainer {
     this.expandedWidth = width;
     this.collapsedWidth = Math.max(40, Math.floor(Number(props.collapsedWidth) || 56));
     this.expandAnimation = Math.max(0, Math.floor(Number(props.expandAnimation) || 0));
+    // 行摆位交给自持策略（见 ICEMenuLayout 的说明）
+    this.setLayout(new ICEMenuLayout());
     if (this.collapsed) {
       this.setState({ width: this.collapsedWidth });
     }
@@ -179,9 +243,9 @@ export class ICEMenu extends ICEContainer {
       duration,
       onUpdate: (progress: number) => {
         children.forEach((entry) => {
-          entry.node.setState({ top: parentTop + (entry.top - parentTop) * (1 - progress), opacity: 1 - progress });
+          this.__setTranslate(entry.node, (parentTop - entry.top) * progress, 1 - progress);
         });
-        below.forEach((entry) => entry.node.setState({ top: entry.top - collapsedHeight * progress }));
+        below.forEach((entry) => this.__setTranslate(entry.node, -collapsedHeight * progress));
       },
       onFinish: () => {
         this.animatingKeys.delete(key);
@@ -253,8 +317,9 @@ export class ICEMenu extends ICEContainer {
       return;
     }
     this.animatingKeys.add(key);
+    // 起点：子行已经排到自己的位置（布局摆的），用 translate 把它"拉回"父行位置
     children.forEach((entry) => {
-      entry.node.setState({ top: parentTop, opacity: 0 });
+      this.__setTranslate(entry.node, parentTop - entry.top, 0);
     });
     tween({
       from: 0,
@@ -262,14 +327,11 @@ export class ICEMenu extends ICEContainer {
       duration,
       onUpdate: (progress: number) => {
         children.forEach((entry) => {
-          entry.node.setState({
-            top: parentTop + (entry.top - parentTop) * progress,
-            opacity: progress,
-          });
+          this.__setTranslate(entry.node, (parentTop - entry.top) * (1 - progress), progress);
         });
       },
       onFinish: () => {
-        children.forEach((entry) => entry.node.setState({ top: entry.top, opacity: 1 }));
+        children.forEach((entry) => this.__setTranslate(entry.node, 0, 1));
         this.animatingKeys.delete(key);
         if (this.ice) {
           this.ice.dirty = true;
@@ -304,17 +366,58 @@ export class ICEMenu extends ICEContainer {
   }
 
   /** 某一项当前的盒子（动画中就是插值后的位置）。 */
+  /**
+   * 某一项的**视觉盒子**（含展开/收起动画的 `transform.translate` 位移）。
+   *
+   * 位置本身由 `ICEMenuLayout` 摆（`state.left/top`），动画只改 transform ——
+   * 于是"动画期间查位置"拿到的仍是它当前画在哪（几何审计 / 测试口径不变）。
+   */
+  /** 自持策略需要的输入（形态 / 行 / 面板 / 尺寸口径）。 */
+  public __getMenuLayoutInput(): {
+    layoutMode: 'tree' | 'flat-vertical' | 'flat-horizontal';
+    rows: Array<{ item: ICEMenuItem; depth: number }>;
+    panels: any[];
+    itemHeight: number;
+    inset: number;
+    depthIndent: number;
+    itemWidth: number;
+  } {
+    const theme = iceUIManager.getTheme();
+    return {
+      layoutMode: this.__layoutMode,
+      rows: this.rows,
+      panels: this.itemPanels,
+      itemHeight: this.itemHeight,
+      inset: theme.spacing.xxs,
+      depthIndent: theme.spacing.md,
+      itemWidth: this.__flatItemWidth,
+    };
+  }
+
   public getItemBox(key: string): { left: number; top: number; width: number; height: number } | null {
     const node = this.itemNodes.get(key);
     if (!node) {
       return null;
     }
+    return this.__visualBoxOf(node);
+  }
+
+  /** 视觉盒子：`state.left/top` 加上当前的 translate。 */
+  private __visualBoxOf(node: any): { left: number; top: number; width: number; height: number } {
+    const transform = (node.state && node.state.transform) || {};
+    const translate = (transform.translate as number[]) || [0, 0];
     return {
-      left: Number(node.state.left) || 0,
-      top: Number(node.state.top) || 0,
+      left: (Number(node.state.left) || 0) + (Number(translate[0]) || 0),
+      top: (Number(node.state.top) || 0) + (Number(translate[1]) || 0),
       width: Number(node.state.width) || 0,
       height: Number(node.state.height) || 0,
     };
+  }
+
+  /** 只改动画位移（布局算出的 left/top 不动，避免布局与动画互相打架）。 */
+  private __setTranslate(node: any, y: number, opacity?: number): void {
+    const transform = { ...(node.state.transform || {}), translate: [0, y] };
+    node.setState(opacity === undefined ? { transform } : { transform, opacity });
   }
 
   public setCollapsed(collapsed: boolean): this {
@@ -344,13 +447,8 @@ export class ICEMenu extends ICEContainer {
       .map((key, index) => {
         const node = this.itemNodes.get(key);
         if (!node) return null;
-        return {
-          key,
-          left: Number(node.state.left) || 0,
-          top: Number(node.state.top) || 0,
-          width: Number(node.state.width) || 0,
-          height: Number(node.state.height) || 0,
-        };
+        const box = this.__visualBoxOf(node);
+        return { key, ...box };
       })
       .filter(Boolean) as Array<{ key: string; left: number; top: number; width: number; height: number }>;
   }
@@ -644,18 +742,17 @@ export class ICEMenu extends ICEContainer {
     const inset = theme.spacing.xxs;
     this.rows = [];
     this.__flatten(this.items, 0, this.rows);
+    this.__layoutMode = 'tree';
     this.setState({ height: this.rows.length * this.itemHeight });
 
-    this.rows.forEach((row, index) => {
+    this.rows.forEach((row) => {
       const item = row.item;
+      // 位置与宽度由 ICEMenuLayout 摆（缩进按 depth）；indent 这里只用于标签宽度
       const indent = row.depth * theme.spacing.md;
       const panel = new ICEWidget({
         fill: true,
         stroke: false,
-        width: Math.max(0, width - inset * 2 - indent),
         height: this.itemHeight,
-        left: inset + indent,
-        top: index * this.itemHeight,
         radius: theme.radius.md,
         style: {
           fillStyle: item.key === this.selectedKey ? theme.colors.primaryBg : 'rgba(0,0,0,0)',
@@ -797,15 +894,15 @@ export class ICEMenu extends ICEContainer {
           )
         : Math.max(0, menuWidth - inset * 2);
     this.setState({ height: orientation === 'horizontal' ? this.itemHeight : this.items.length * this.itemHeight });
-    let left = 0;
-    this.items.forEach((item, index) => {
+    this.__layoutMode = orientation === 'horizontal' ? 'flat-horizontal' : 'flat-vertical';
+    this.__flatItemWidth = itemWidth;
+    this.items.forEach((item) => {
+      // 位置由 ICEMenuLayout 摆（横排依次推进 / 竖排按行）
       const panel = new ICEWidget({
         fill: true,
         stroke: false,
         width: itemWidth,
         height: this.itemHeight,
-        left: orientation === 'horizontal' ? left : inset,
-        top: orientation === 'horizontal' ? 2 : index * this.itemHeight,
         radius: theme.radius.md,
         style: { fillStyle: 'rgba(0,0,0,0)' },
       });
@@ -919,10 +1016,11 @@ export class ICEMenu extends ICEContainer {
         },
         this,
       );
-      left += itemWidth + 4;
     });
     if (orientation === 'horizontal') {
-      this.setState({ width: Math.max(left, Number(this.state.width) || 0) });
+      // 横排总占位 = 段数 × (段宽 + 段间 4px)（与策略里的推进一致）
+      const flatWidth = Math.max(0, this.items.length * (itemWidth + 4) - 4);
+      this.setState({ width: Math.max(flatWidth, Number(this.state.width) || 0) });
       this.__syncSubmenuIndicators();
     }
     this.__syncSelection();

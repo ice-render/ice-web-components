@@ -31,16 +31,11 @@ const MIGRATED = new Set([
   'ICEPagination', // → ICEBoxLayout(axis x)（页码行；顺手收敛了 76px 文案占位魔数）
   'ICEGrid', // → 自持 ICEGridLayout（24 栅格：等列宽 + 行高按内容 + 自动高度 + offset）
   'ICEGridCol', // 同上（栅格的一列，由行策略调用 applyLayout 摆位/撑宽）
+  'ICEMenu', // → 自持 ICEMenuLayout（树形竖排带缩进 / 收起态竖排 / 顶栏横排；动画改走 transform.translate）
 ]);
 
 /** 待迁：豁免清单（每条必须写原因；迁完从这张表挪进 MIGRATED）。 */
 const PENDING = new Map<string, string>([
-  [
-    'ICEMenu',
-    '两条阻塞（2026-09-15 复核）：① 菜单项是"一项一个子节点"，Swing 里由 BasicMenuUI 直接画（同 JTable/JList 的 cell）' +
-      '→ 归 painter 自绘线，不是布局线；② 展开/收起动画直接写 top（__animateExpand / __animateCollapse），' +
-      '一旦行位置交给布局，任何一次重排都会把动画"弹回去" → 先把动画改成 transform.translate（animation-safe）再谈迁布局',
-  ],
 ]);
 
 /**

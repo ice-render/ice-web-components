@@ -79,7 +79,7 @@
 |  | [`ICESteps`](./api/feedback.md#icesteps) | 步骤条：横向序号 + 标题/描述 + 连接线，当前步骤高亮、已完成打勾。 |
 |  | [`ICETour`](./api/feedback.md#icetour) | 漫游式引导：一步一步把用户带过关键界面。 |
 |  | [`ICEFloatButton`](./api/feedback.md#icefloatbutton) | 悬浮操作按钮：一个圆形主按钮，点击展开一组子按钮。 |
-| [导航](./api/navigation.md) | [`ICEMenu`](./api/navigation.md#icemenu) | 菜单：菜单项 +（可选）子菜单内联展开；选中态与悬停态分离，父项在子项选中时只做“当前分组”提示。 |
+| [导航](./api/navigation.md) | [`ICEMenu`](./api/navigation.md#icemenu) |  |
 |  | [`ICEBreadcrumb`](./api/navigation.md#icebreadcrumb) | 面包屑：一行「路径 + 分隔符」，最后一项是当前页。 |
 |  | [`ICEAnchor`](./api/navigation.md#iceanchor) | 锚点导航：一列锚点，点击滚到目标位置，滚动时自动高亮当前项。  与 `ICEScrollPane` 配合使用：`target` 传滚动容器，`items[].top` 是该段落在 **内容坐标系**里的纵向位置。滚动事件由 `ICEScrollPane` 的 `scroll` 事件驱动。 |
 |  | [`ICEBackTop`](./api/navigation.md#icebacktop) | 回到顶部：一个小圆按钮，滚动超过阈值才出现。  用法是把滚动容器交给它：`new ICEBackTop({ target: scrollPane })`。 依赖 `ICEScrollPane` 的 `scroll` 事件（滚动位置变化时派发）， 点击后把目标滚回 `(0, 0)` 并回调 `onClick`。 |

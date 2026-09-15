@@ -9,6 +9,18 @@
 
 ### 变更
 
+- **容器家族的「手写坐标」清零（2026-09-15 收尾批）**：
+  - `ICESplitter` → 自持 `ICESplitterLayout`（`JSplitPane` + `BasicSplitPaneUI` 位）：两栏 + 分隔条位置
+    归策略，拖拽只改 `requestedSize`（夹取/回调整字搬移）；删掉手写 `__layout` 与重入标志。
+  - `ICEWindow` → 自持 `ICEWindowLayout`（`JInternalFrame` 位）：底板 / 标题栏 / 标题带 / 图标与标题 /
+    三个按钮 / 客户区 / 缩放角全归策略；客户区是调用方内容只跟随尺寸。
+  - `ICEGrid` / `ICEGridCol` → 自持 24 栅格策略（等列宽 + 行高按内容 + 自动高度 + `offset` 列偏移，
+    逐字保留原语义）；组件只留 `autoHeight` 高度策略。
+  - `ICEMenu` → 自持 `ICEMenuLayout`（树形竖排带缩进 / 收起态竖排 / 顶栏横排）；为让它成立，
+    **展开/收起动画从写 `top` 改成写 `transform.translate`**（动画-safe，布局重排不会再弹回动画），
+    `getItemBox()` 改为汇报**视觉盒子**（含位移）以免断言语义变化。
+  - 棘轮现状：容器家族 **13 个已迁移、0 个豁免**；复合叶子 7 个已迁移（`ICEImageView` 明确排除，它
+    的 cover/contain 是自绘落墨矩形、不是子节点布局）。
 - **（破坏性）`ICEList` 行改由 painter 画，点击改几何反查**：删除 `getRowNode(key)`
   （行不再是节点），新增 `clickRow(key)` 与 `getRowBox(key)`；真实点击按
   「事件坐标 → 世界坐标 → 列表世界盒 + 滚动偏移 → 行下标」反查；绘制走 `paintRows()`。

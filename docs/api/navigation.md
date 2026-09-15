@@ -4,8 +4,6 @@
 
 ## `ICEMenu`
 
-菜单：菜单项 +（可选）子菜单内联展开；选中态与悬停态分离，父项在子项选中时只做“当前分组”提示。
-
 源码：[`src/components/ICEMenu.ts`](../../src/components/ICEMenu.ts)
 
 **方法**
@@ -25,7 +23,7 @@
 | `getExpandAnimation()` | `number` | 折叠动画时长（毫秒，0 = 立即展开）。 |
 | `setExpandAnimation(duration: number)` | `this` |  |
 | `isAnimating(key: string)` | `boolean` | 某个父项正在做展开/收起动画吗。 |
-| `getItemBox(key: string)` | `{ left: number; top: number; width: number; height: number } \| null` | 某一项当前的盒子（动画中就是插值后的位置）。 |
+| `getItemBox(key: string)` | `{ left: number; top: number; width: number; height: number } \| null` |  |
 | `setCollapsed(collapsed: boolean)` | `this` |  |
 | `isLabelVisible(key: string)` | `boolean` | 该项当前画没画文字（收起态只有图标）。 |
 | `hasIcon(key: string)` | `boolean` |  |
