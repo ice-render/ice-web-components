@@ -11,7 +11,7 @@ npx serve .
 
 | 示例 | 场景 | 主要用到的东西 |
 |---|---|---|
-| [`gallery.html`](../../examples/gallery.html) | 组件总览（一个个组件排开） | 几乎全部组件 + 手写「簇 + 货架」流式布局 |
+| [`gallery.html`](../../examples/gallery.html) | 组件总览（一个个组件排开） | 几乎全部组件 + 引擎布局器驱动的「簇 + 货架」流式布局 |
 | [`admin.html`](../../examples/admin.html) | 后台管理（6 页业务闭环） | 布局外壳、表格、表单、浮层、分栏、日历、引导… |
 | [`workbench.html`](../../examples/workbench.html) | 客服工单工作台（三栏高频操作） | `ICESplitter`、`ICEList`、`ICEComment`、`ICETimeline`… |
 | [`custom-component.html`](../../examples/custom-component.html) | 自己写组件并接进体系 | `ICEWidget` + 表单/焦点/主题约定 |
@@ -46,8 +46,9 @@ flowchart LR
 
 一页把库里能独立展示的组件都摆出来，用来快速“看长相、点交互”。
 
-* 布局是手写的 **cluster + 货架** 流式排布（每个 demo 自带局部坐标，整体平移；
-  放不下才换行）。思路与代码骨架见[画布内布局](./layout.md#三示例页里的簇-货架流式布局)；
+* 布局是 **cluster + 货架**（每个簇是一个容器节点，簇内保持局部坐标、整体平移），
+  排布交给引擎：簇区 `ICEFlowLayout({ pack: 'first-fit' })`、版块与整页 `ICEBoxLayout(axis:'y')`。
+  思路与代码骨架见[画布内布局](./layout.md#三簇-货架流式布局引擎布局器版)；
 * 加新组件时：在对应 `sections` 里加一项、给它一个 `id`，然后在
   `scripts/qa-gallery.mjs` 里补一条断言即可。
 

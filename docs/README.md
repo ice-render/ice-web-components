@@ -31,7 +31,7 @@ flowchart TD
   GUIDES --> G1["theming.md · 主题 token / 状态色 / 自定义主题"]
   GUIDES --> G2["forms.md · 表单三层 / 规则 / 异步校验 / 自定义控件接入"]
   GUIDES --> G3["overlays.md · 三类浮层 / 定位 / 关闭策略 / 动画"]
-  GUIDES --> G4["layout.md · 坐标 / zIndex 与创建顺序 / 簇+货架 / 裁剪"]
+  GUIDES --> G4["layout.md · 坐标 / zIndex 与创建顺序 / 簇+货架（引擎布局器版）/ 裁剪"]
   GUIDES --> G5["testing.md · 单测套路 / 八套浏览器 QA"]
   GUIDES --> G6["migration.md · UI* → ICE* / token 主题 / API 变更"]
   GUIDES --> G7["custom-components.md · 三档写法 / 接入 / 注册 / 踩坑"]

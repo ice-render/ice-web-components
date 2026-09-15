@@ -126,45 +126,70 @@ raise(callerProvidedNode, (Number(panel.state.zIndex) || 0) + 1);
 
 > 用**同一个值**是有讲究的：同 zIndex 内按树的“先父后子”顺序绘制；逐个分配不同值反而会把子节点压到父节点下面。
 
-## 三、示例页里的“簇 + 货架”流式布局
+## 三、“簇 + 货架”流式布局（引擎布局器版）
 
-两个示例页都用了一段手写布局（约 60 行），思路是把页面拆成 **cluster**：
+示例页（`gallery.html` / `admin.html`）用的还是**簇 + 货架**这个思路，但**排布已经交给引擎的布局器**
+（2026-09-15 起，此前是两页各约 100 行手写代码）：
 
-* cluster = 一组「必须贴在一起」的组件（「输入框 + 它的提示文字」「图片 + 图注」）；
-* cluster **内部保持相对位置**（作者按局部坐标写，整体平移）；
-* cluster 之间按“货架”排：优先回填到还放得下的上一行，放不下才换行，行内可顶对齐或垂直居中；
-* 度量一个 cluster 的包围盒时**要含后代**（如 Spin 右侧的 tip 文字），
-  但遇到 `clipChildren` 容器就以它自身为界（否则轮播里排在屏外的幻灯片会把宽度撑爆）。
+* **簇（cluster）**= 一组「必须贴在一起」的组件（「输入框 + 它的提示文字」「图片 + 图注」）。
+  做法是把它建成**一个真正的容器节点**（`ICEWidget`，`fill:false / stroke:false / interactive:false`），
+  成员按局部坐标放进去 —— 只有这样布局器才会把整簇当成**一个子项**（引擎排的是子节点，不是数组）。
+* **货架**= `ICEFlowLayout({ pack: 'first-fit', crossAlign, gap, gapY })`：
+  从左到右排，放不下换行；`first-fit` 会**优先回填到还放得下的上一行**（把零碎小簇塞回上一行，
+  页面不容易被撑高）；`crossAlign` 决定行内高矮不一的簇怎么对齐（`start` 顶对齐 / `center` 垂直居中）；
+  `gap` 是列间距、`gapY` 独立控制行间距。
+* **版块**= 再套一层 `ICEBoxLayout({ axis: 'y', gap })`：标题一行、簇区一行；整页也是
+  `ICEBoxLayout({ axis: 'y' })` 把版块纵向堆起来。
 
-结构关系如下：
+结构关系：
 
 ```mermaid
 flowchart TD
-  Shelf["货架（流式排布：回填上一行 / 放不下再换行）"]
-  CA["簇 A（如 输入框 + 提示文字）"]
-  CB["簇 B（如 图片 + 图注）"]
-  CA1["组件"]
-  CA2["组件"]
-  CB1["组件"]
-  Shelf --> CA & CB
-  CA --> CA1 & CA2
-  CB --> CB1
-  %% 簇内保持相对位置（整体平移）；簇间按货架排布
+  Page["页面（ICEBoxLayout axis:y）"] --> SecA["版块（ICEBoxLayout axis:y）"]
+  SecA --> Title["标题（ICELabel，宽度=版块宽）"]
+  SecA --> Area["簇区（ICEFlowLayout pack:first-fit）"]
+  Area --> CA["簇 A（容器节点）"]
+  Area --> CB["簇 B（容器节点）"]
+  CA --> CA1["组件"]
+  CA --> CA2["组件"]
+  CB --> CB1["组件"]
 ```
 
 ```js
-// examples/gallery.html / admin.html 里的 flowSections()：可直接抄
-flow(node, [
-  { title: '筛选', items: [segmented, keywordField, searchButton] },   // 每个 item 一个簇
-  { title: '订单列表', items: [table, pagination] },
-]);
+// 版块 → 簇区 → 簇（examples/gallery.html / admin.html 同款写法）
+container.setLayout(new ICE.ICEBoxLayout({ axis: 'y', gap: sectionGap }));
+const sectionBox = new W.ICEWidget({ width: avail, fill: false, stroke: false, interactive: false });
+sectionBox.setLayout(new ICE.ICEBoxLayout({ axis: 'y', gap: headingGap }));
+sectionBox.addChild(heading(section.title), false);
+
+const flowArea = new W.ICEWidget({ width: avail, height: 0, fill: false, stroke: false, interactive: false });
+flowArea.setLayout(new ICE.ICEFlowLayout({ gap: gapX, gapY, crossAlign: 'center', pack: 'first-fit' }));
+sectionBox.addChild(flowArea, false);
+container.addChild(sectionBox, false);
+
+// 每个簇 = 一个容器（成员保持局部坐标）
+const cluster = new W.ICEWidget({ fill: false, stroke: false, interactive: false });
+cluster.addChild(keywordField, false);
+cluster.addChild(searchButton, false);
+flowArea.addChild(cluster, false);
 ```
+
+**只剩两件事是页面自己的**（引擎不该管）：
+
+1. **量簇**：成员保持局部坐标，所以要算包围盒（含后代 —— 如 Spin 右侧的 tip 文字；
+   遇到 `clipChildren` 容器就以它自身为界，否则轮播里排在屏外的幻灯片会把宽度撑爆），
+   再把量到的尺寸写回簇容器、把成员整体平移到局部原点；
+2. **尺寸协商**：`flowArea.setState({ height: flowArea.getPreferredSize()[1] })`（引擎按它当前宽度算出
+   **换行后**的行高之和）→ 版块高度 = `sectionBox.getPreferredSize()[1]` → 容器高度同理。
+   这比手写累加更稳：宽度变了不用改公式。
 
 两个实践细节：
 
-1. 宽度比较留 **2~3px 容差**：文字实测宽度常比标称宽零点几像素，恰好铺满时会莫名换行；
-2. 内容会变的组件（时间轴、描述列表）首帧后才算出高度 —— 布局函数写成**幂等**的，
-   首帧渲染后再跑一次即可（示例页用 `requestAnimationFrame` 跑第二遍）。
+1. **容差**：`first-fit` 里内置了 0.5px 容差（文字实测宽度常比标称宽零点几像素，恰好铺满时不该换行）；
+   自己写布局器时记得留同样的余量；
+2. **动态文案**：内容会变的组件（时间轴、描述列表）首帧后才算出高度 —— 示例页的做法是
+   `requestAnimationFrame` 跑第二遍（重排函数写成**幂等**的：只重新量簇，结构只建一次）。
+   引擎自己的失效链路会在尺寸变化时重排位置，但"簇的包围盒"只有页面知道，所以量簇要重跑。
 
 ## 四、裁剪与滚动
 
