@@ -37,8 +37,9 @@ const PENDING = new Map<string, string>([
   ['ICEGridCol', '同上（栅格的一列）'],
   [
     'ICEMenu',
-    '子菜单面板当前是**子节点**（Swing 里是独立浮层 JPopupMenu），且展开/收起动画直接写 top：' +
-      '先按 ICEOverlayManager 把子菜单迁成浮层，行排布才能收敛成 ICEBoxLayout(axis y)',
+    '两条阻塞（2026-09-15 复核）：① 菜单项是"一项一个子节点"，Swing 里由 BasicMenuUI 直接画（同 JTable/JList 的 cell）' +
+      '→ 归 painter 自绘线，不是布局线；② 展开/收起动画直接写 top（__animateExpand / __animateCollapse），' +
+      '一旦行位置交给布局，任何一次重排都会把动画"弹回去" → 先把动画改成 transform.translate（animation-safe）再谈迁布局',
   ],
 ]);
 
