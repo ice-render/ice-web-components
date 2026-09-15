@@ -37,7 +37,7 @@
 
 ### 验证
 
-- `npm run verify` 全绿（189 suite / 1350+ 用例）；`npm run test:e2e` 10/10；`npm run qa:all` 8/8；
+- `npm run verify` 全绿（190 suite / 1348 用例）；`npm run test:e2e` 10/10；`npm run qa:all` 8/8（156s）；
 - 逐页截图与迁移前**逐像素比对**：workbench / pixel / algo / dos **0 像素差异**；
   xp 仅 150 像素（任务栏时钟）；arcade 0.556%（低于其自带动画噪声 0.73%）；
   gallery 的差异除一处旋转中的 loading 图标外，最大单通道差 ≤ 2（离屏位图预乘取整，属既有口径）。
