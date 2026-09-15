@@ -35,7 +35,11 @@ const MIGRATED = new Set([
 const PENDING = new Map<string, string>([
   ['ICEGrid', '24 栅格：按 span 的分数列宽 + 跨行自动换行，引擎 GridLayout 表达不了（track 见 ROADMAP）'],
   ['ICEGridCol', '同上（栅格的一列）'],
-  ['ICEMenu', '菜单项 + 子菜单浮层 + 选中/hover 语义：自持策略时要处理浮层节点不参与流式排布'],
+  [
+    'ICEMenu',
+    '子菜单面板当前是**子节点**（Swing 里是独立浮层 JPopupMenu），且展开/收起动画直接写 top：' +
+      '先按 ICEOverlayManager 把子菜单迁成浮层，行排布才能收敛成 ICEBoxLayout(axis y)',
+  ],
 ]);
 
 /** 从源码里找出所有"容器型"类名（extends ICEContainer / ICEPanel / ICECard / ICEStatCard）。 */

@@ -29,6 +29,10 @@ panel.setLayout(new ICEBoxLayout({ axis: 'y', gap: 12, align: 'stretch' })); // 
 | `ICEForm` | `ICEBoxLayout({ axis: 'y', align: 'stretch' })` | 高度 = 内容高度 |
 | `ICESpace` | 横向 → `ICEBoxLayout`；换行 → `ICEFlowLayout`；纵向 → `ICEBoxLayout` | 没给宽/高的那一轴按内容自适应 |
 | `ICESegmented` | `block` → `ICEGridLayout({ cellSizing: 'equal' })`；否则 `ICEBoxLayout(axis x)` | 段宽（非 block 时按文字估算）；内缩由 `padding` 承担 |
+| `ICEScrollPane` | 自持 `ICEScrollPaneLayout`（Swing `ScrollPaneLayout` 位） | 内容多大 / 能不能滚 / 滚动条显不显示 |
+| `ICETabs` | 自持 `ICETabsLayout`（Swing `JTabbedPane` 位） | 页签有哪些 / 要不要溢出 / 滚到哪 |
+| `ICEPagination` | `ICEBoxLayout(axis x)` | 页码窗口、高度（含 8px 下边距） |
+| `ICEFormItem`（复合叶子） | 自持 `ICEFormItemLayout` | 形态（水平/垂直）、标签宽、行高与间距 |
 
 其余三个**组件级**排布工具仍是各自的语义（引擎布局器没有对应能力）：
 

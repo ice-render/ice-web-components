@@ -9,6 +9,19 @@
 
 ### 变更
 
+- **按"内容与装饰混排 → 组件自持策略"把四个容器收口了**（Swing 对应实现写在括号里）：
+  - `ICEScrollPane` → 自持 `ICEScrollPaneLayout`（`JScrollPane` + `ScrollPaneLayout`）：
+    内容盒（负滚动偏移）+ 两条轨道 + 两个滑块的几何全归策略；删掉手写的
+    `__syncScrollbar` / `__syncHorizontalScrollbar`，滚动/改内容尺寸一律走 `doLayout()`。
+  - `ICETabs` → 自持 `ICETabsLayout`（`JTabbedPane` + `BasicTabbedPaneUI`）：
+    上/下/左/右四方位 + overflow（两端箭头 + 可滚动条带）都在策略里；删掉
+    `__applyVerticalLayout` / `__applyBottomLayout`，`__applyOverflowLayout` 拆成"只建结构"
+    的 `__ensureOverflowStructure`（布局策略只摆位置、不重建树）。
+  - `ICEPagination` → `ICEBoxLayout(axis x)`：顺手收敛了老实现里 **76px** 的文案占位魔数。
+  - `ICEFormItem`（复合叶子）→ 自持 `ICEFormItemLayout`：水平/垂直两形态都在策略里，删掉 `__layoutChildren`。
+- **棘轮清单同步收口**：`tests/layoutConvention.test.ts` 的"已迁移"从 7 个涨到 11 个；
+  剩余豁免 3 个（`ICEGrid`/`ICEGridCol` 分数列宽栅格、`ICEMenu` 子菜单需先迁成浮层），
+  每条都写清了原因与下一步。
 - **布局约定变成可执行的棘轮**：`AGENTS.md` 新增「布局铁律」（容器排布走引擎布局器 / 装饰走 painter /
   内容与装饰混合时自持策略 / 布局要能序列化），并由 `tests/layoutConvention.test.ts` 守住 ——
   `src/components` 里每个容器类必须在「已迁移」或「豁免清单（带原因）」里，新增容器必须二选一，
