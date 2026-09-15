@@ -470,7 +470,9 @@ export class ICETextField extends ICEWidget {
     if (this.suffixNode) rightInset += widthOf(this.suffixNode) + 6;
     if (this.countNode) rightInset += widthOf(this.countNode) + 6;
     if (this.clearButton && this.isClearVisible()) rightInset += 20;
-    this.textNode.setState({ left: leftInset, width: Math.max(20, width - leftInset - rightInset) });
+    // 文字盒 = 当前盒子扣掉左右内距，**高度也要跟上**：内层文字是 `verticalAlign: middle`，
+    // 拿旧高度当盒子会让文字垂直居中到错的位置（构造期建过一次，之后高度再没人对账）。
+    this.textNode.setState({ left: leftInset, top: 0, width: Math.max(20, width - leftInset - rightInset), height });
     if (this.prefixNode) this.prefixNode.setState({ left: theme.spacing.sm, top: 0, height });
     if (this.suffixNode) this.suffixNode.setState({ left: width - theme.spacing.sm - widthOf(this.suffixNode), top: 0, height });
     if (this.countNode) {
@@ -504,5 +506,17 @@ export class ICETextField extends ICEWidget {
       },
     });
     this.revalidate();
+  }
+
+  /**
+   * 尺寸变化时重排内部零件（`ICEWidget.__syncInternalLayout()`）。
+   *
+   * `__sync()` 本来就是**从 `this.state.width/height` 现算**的（内边距、前后缀、
+   * 字数、清除按钮的位置全在里面），所以这里只需在尺寸变化时叫它跑一遍 ——
+   * 以前它只挂在交互与取值路径上，父层布局把输入框拉窄之后，文字盒还停在旧宽度上，
+   * 文字与后缀图标直接画到框外。
+   */
+  protected __syncInternalLayout(): void {
+    this.__sync();
   }
 }

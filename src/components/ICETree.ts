@@ -436,6 +436,16 @@ export class ICETree extends ICEWidget {
     return keys;
   }
 
+  /**
+   * 尺寸变化时整段重排内部零件（`ICEWidget.__syncInternalLayout()`）。
+   *
+   * 树的每一行（缩进、行宽、连接线）都是按自身宽度算出来的，所以直接重跑 `__render()`：
+   * 它内部重建子项，不会留下停在旧宽度的行。
+   */
+  protected __syncInternalLayout(): void {
+    this.__render();
+  }
+
   private __render(): void {
     this.removeChildren([...this.childNodes]);
     this.pane = null;

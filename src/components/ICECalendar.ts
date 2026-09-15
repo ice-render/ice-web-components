@@ -315,6 +315,21 @@ export class ICECalendar extends ICEWidget {
     }
   }
 
+  /**
+   * 尺寸变化时整段重排内部零件（`ICEWidget.__syncInternalLayout()`）。
+   *
+   * 本组件的内部构图（子项尺寸、居中偏移、分栏/分行）**本身就是宽高的函数**，
+   * 所以按本库既有惯例直接重跑构造期那段 `__render()`：它内部 `removeChildren` 重建，
+   * 不会留下停在旧尺寸的零件（子项的事件在构造函数里重挂）。
+   */
+  protected __syncInternalLayout(): void {
+    // 格子高是 `(宽 - 内距) / 7 / 1.4` 的派生值（构造期算一次就存成字段）：宽度变了必须重算，
+    // 否则格子还按旧宽度撑高（窄盒子里格子比盒子还高），重排也只是把旧尺寸再摆一遍。
+    const width = Number(this.state.width) || 280;
+    this.cellHeight = Math.round(Math.min(40, Math.max(28, (width - 16) / 7 / 1.4)));
+    this.__render();
+  }
+
   private __render(): void {
     const theme = iceUIManager.getTheme();
     this.removeChildren([...this.childNodes]);

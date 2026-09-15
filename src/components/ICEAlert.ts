@@ -22,6 +22,10 @@ export class ICEAlert extends ICEWidget {
   private actionNode: any = null;
   private closeDuration: number;
   private animationEnabled: boolean;
+  /** 是否画类型图标（决定文字块左侧让位多少） */
+  private showIcon: boolean;
+  /** 右侧操作区的固定宽度（0 = 没有操作区；与组件宽度无关） */
+  private actionWidth = 0;
 
   constructor(props: any = {}) {
     const theme = iceUIManager.getTheme();
@@ -52,6 +56,7 @@ export class ICEAlert extends ICEWidget {
     this.type = type;
     this.closable = closable;
     this.banner = banner;
+    this.showIcon = showIcon;
     // 默认不播动画（老行为：点 ✕ 立刻消失）；要淡出的调用方显式传 `animation: true`
     this.animationEnabled = props.animation === true;
     this.closeDuration = Math.max(0, Math.floor(props.closeDuration === undefined ? 180 : Number(props.closeDuration) || 0));
@@ -138,6 +143,7 @@ export class ICEAlert extends ICEWidget {
     if (props.action) {
       const actionText = typeof props.action === 'string' ? props.action : String(props.action.text || '');
       const actionWidth = Math.max(64, actionText.length * 13 + 16);
+      this.actionWidth = actionWidth;
       const action = new ICEWidget({
         left: width - (closable ? 38 : 16) - actionWidth,
         top: Math.round((height - 26) / 2),
@@ -225,6 +231,48 @@ export class ICEAlert extends ICEWidget {
       return '✕';
     }
     return 'ℹ';
+  }
+
+  /**
+   * 尺寸变化时重排文案、关闭按钮与右侧操作区（`ICEWidget.__syncInternalLayout()`）。
+   *
+   * 构造期按 `props.width/height` 算好了文字块宽度（`width - 左右内距 - 图标 - 关闭按钮`）、
+   * 关闭按钮的右对齐位置、操作区的垂直居中位置，之后父层布局改尺寸时谁都不动 ——
+   * 文字块还是旧宽度（提示条被拉窄后文字画到条外），右侧两个控件也不再贴右边。
+   *
+   * 操作区的**宽度**由文案长度决定（与组件宽度无关），所以只重算它的水平位置。
+   */
+  protected __syncInternalLayout(): void {
+    const theme = iceUIManager.getTheme();
+    const width = Number(this.state.width) || 0;
+    const height = Number(this.state.height) || 0;
+    if (!(width > 0) || !(height > 0)) {
+      return;
+    }
+    const iconWidth = this.showIcon ? 24 : 0;
+    const textWidth = Math.max(0, width - theme.spacing.md * 2 - iconWidth - (this.closable ? 24 : 0));
+    if (this.iconNode) {
+      this.iconNode.setState({ left: theme.spacing.md, top: theme.spacing.xs });
+    }
+    if (this.titleNode) {
+      this.titleNode.setState({ left: theme.spacing.md + iconWidth, top: theme.spacing.xs, width: textWidth });
+    }
+    if (this.messageNode) {
+      this.messageNode.setState({
+        left: theme.spacing.md + iconWidth,
+        top: theme.spacing.md + 16,
+        width: textWidth,
+      });
+    }
+    if (this.closeButton) {
+      this.closeButton.setState({ left: width - 30, top: 10 });
+    }
+    if (this.actionNode && this.actionWidth > 0) {
+      this.actionNode.setState({
+        left: width - (this.closable ? 38 : 16) - this.actionWidth,
+        top: Math.round((height - 26) / 2),
+      });
+    }
   }
 
   /** 关闭（隐藏整棵子树）并回调 onClose；重复调用只生效一次。 */

@@ -369,6 +369,7 @@
 | `left?` | `number` | 相对父容器的左边距 |
 | `top?` | `number` | 相对父容器的上边距 |
 | `width?` | `number` | 宽度（不传用组件默认值） |
+| `height?` | `number` | 显式高度；不给则用「圆点 + 文字」的内容高度（`circleSize + 34`） |
 | `circleSize?` | `number` |  |
 | `onChange?` | `(current: number) => void` | 值变化回调 |
 

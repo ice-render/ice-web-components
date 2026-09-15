@@ -154,6 +154,23 @@ export class ICEStatistic extends ICEWidget {
     }
   }
 
+  /**
+   * 尺寸变化时把标题/数值两个标签的宽度跟上（`ICEWidget.__syncInternalLayout()`）。
+   *
+   * 构造期用 `Number(this.state.width) || 200` 给两个标签设了宽度就再没对过账：
+   * 父层布局改尺寸后标签还是旧宽度，`verticalAlign: middle` 与后续对齐都按旧盒子算，
+   * 文字于是画到组件外（等分网格里的统计项必现）。高度是常量，不用动。
+   */
+  protected __syncInternalLayout(): void {
+    const width = Number(this.state.width) || 200;
+    if (this.titleNode) {
+      this.titleNode.setState({ width });
+    }
+    if (this.valueNode) {
+      this.valueNode.setState({ width });
+    }
+  }
+
   public getTitleText(): string {
     return this.titleNode.getText();
   }

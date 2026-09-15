@@ -19,6 +19,8 @@ export interface ICEStepsOptions {
   left?: number;
   top?: number;
   width?: number;
+  /** 显式高度；不给则用「圆点 + 文字」的内容高度（`circleSize + 34`） */
+  height?: number;
   circleSize?: number;
   onChange?: (current: number) => void;
 }
@@ -40,7 +42,10 @@ export class ICESteps extends ICEWidget {
       left: props.left,
       top: props.top,
       width,
-      height: circleSize + 34,
+      // 显式给的高度优先，与库内其余组件同口径；没给才用「圆点 + 文字」的内容高度。
+      // 原来恒用内容高度，于是「构造时给 height」与「事后 setState 改 height」两条路
+      // 会得到不同的步骤高（前者的 state.height 被覆盖、后者没有），同一个尺寸两种样子。
+      height: props.height ?? circleSize + 34,
     });
     this.items = (props.items || []).slice();
     this.current = Math.min(Math.max(0, Number(props.current) || 0), Math.max(0, this.items.length - 1));
@@ -70,6 +75,17 @@ export class ICESteps extends ICEWidget {
 
   public getStepNode(index: number): ICEWidget | null {
     return this.stepNodes[index] || null;
+  }
+
+  /**
+   * 尺寸变化时整段重排内部零件（`ICEWidget.__syncInternalLayout()`）。
+   *
+   * 本组件的内部构图（子项尺寸、居中偏移、断行/分栏）**本身就是宽高的函数**，
+   * 所以按本库既有惯例直接重跑构造期那段 `__render()`；它内部用 `removeChildren` 重建，
+   * 不会留下停在旧尺寸的零件（重建出来的子项由各自构造函数重新挂事件）。
+   */
+  protected __syncInternalLayout(): void {
+    this.__render();
   }
 
   private __render(): void {

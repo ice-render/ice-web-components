@@ -32,6 +32,10 @@ export interface ICEResultOptions {
 
 export class ICEResult extends ICEWidget {
   private buttons = new Map<string, ICEButton>();
+  private iconLabel: ICELabel | null = null;
+  private titleLabel: ICELabel | null = null;
+  private subtitleLabel: ICELabel | null = null;
+  private actionRow: ICEWidget | null = null;
 
   constructor(props: ICEResultOptions) {
     const theme = iceUIManager.getTheme();
@@ -52,51 +56,45 @@ export class ICEResult extends ICEWidget {
         : theme.colors.info;
     const statusIcon = status === 'success' ? '✓' : status === 'error' ? '✕' : status === 'warning' ? '!' : 'ℹ';
 
-    this.addChild(
-      new ICELabel({
+    this.iconLabel = new ICELabel({
+      interactive: false,
+      left: 0,
+      top: Math.max(8, height / 2 - 72),
+      width,
+      height: 44,
+      align: 'center',
+      verticalAlign: 'middle',
+      text: statusIcon,
+      style: { fontSize: 36, fillStyle: statusColor },
+    });
+    this.addChild(this.iconLabel, false);
+    if (props.title) {
+      this.titleLabel = new ICELabel({
         interactive: false,
         left: 0,
-        top: Math.max(8, height / 2 - 72),
+        top: Math.max(56, height / 2 - 28),
         width,
-        height: 44,
+        height: 24,
         align: 'center',
         verticalAlign: 'middle',
-        text: statusIcon,
-        style: { fontSize: 36, fillStyle: statusColor },
-      }),
-      false,
-    );
-    if (props.title) {
-      this.addChild(
-        new ICELabel({
-          interactive: false,
-          left: 0,
-          top: Math.max(56, height / 2 - 28),
-          width,
-          height: 24,
-          align: 'center',
-          verticalAlign: 'middle',
-          text: props.title,
-          style: { fontSize: 16, fontWeight: '600', fillStyle: theme.colors.text },
-        }),
-        false,
-      );
+        text: props.title,
+        style: { fontSize: 16, fontWeight: '600', fillStyle: theme.colors.text },
+      });
+      this.addChild(this.titleLabel, false);
     }
     if (props.subtitle) {
-      this.addChild(
-        new ICELabel({
-          interactive: false,
-          left: 0,
-          top: Math.max(82, height / 2 - 2),
-          width,
-          height: 20,
-          align: 'center',
-          verticalAlign: 'middle',
-          text: props.subtitle,
-          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
-        }),
-        false,
-      );
+      this.subtitleLabel = new ICELabel({
+        interactive: false,
+        left: 0,
+        top: Math.max(82, height / 2 - 2),
+        width,
+        height: 20,
+        align: 'center',
+        verticalAlign: 'middle',
+        text: props.subtitle,
+        style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+      });
+      this.addChild(this.subtitleLabel, false);
     }
     const actions = props.actions || [];
     if (actions.length) {
@@ -114,6 +112,7 @@ export class ICEResult extends ICEWidget {
       });
       actionRow.setLayout(new ICEFlowLayout({ gap, align: 'center', crossAlign: 'center' }));
       this.addChild(actionRow, false);
+      this.actionRow = actionRow;
       actions.forEach((action) => {
         const button = new ICEButton({
           width: buttonWidth,
@@ -130,6 +129,33 @@ export class ICEResult extends ICEWidget {
         actionRow.addChild(button, false);
         this.buttons.set(action.key, button);
       });
+    }
+  }
+
+  /**
+   * 尺寸变化时把这一摞居中元素重新摆一遍（`ICEWidget.__syncInternalLayout()`）。
+   *
+   * 构造期每个子项都按 `width` 与 `height / 2 ± 偏移` 算好了位置，之后父层布局改尺寸时
+   * 谁都不动 —— 图标/标题留在旧的水平位置上（窄盒子里就跑到外面），垂直也不再居中。
+   * 动作按钮那一行本身挂了 `ICEFlowLayout`，宽度跟上即可由它自己重新居中。
+   */
+  protected __syncInternalLayout(): void {
+    const width = Number(this.state.width) || 0;
+    const height = Number(this.state.height) || 0;
+    if (!(width > 0) || !(height > 0)) {
+      return;
+    }
+    if (this.iconLabel) {
+      this.iconLabel.setState({ left: 0, top: Math.max(8, height / 2 - 72), width });
+    }
+    if (this.titleLabel) {
+      this.titleLabel.setState({ left: 0, top: Math.max(56, height / 2 - 28), width });
+    }
+    if (this.subtitleLabel) {
+      this.subtitleLabel.setState({ left: 0, top: Math.max(82, height / 2 - 2), width });
+    }
+    if (this.actionRow) {
+      this.actionRow.setState({ left: 0, top: Math.max(110, height / 2 + 26), width });
     }
   }
 

@@ -319,6 +319,43 @@ export class ICEWidget extends ICEGroup {
     return this;
   }
 
+  /**
+   * **尺寸变化时重排自己的内部零件**（复合组件的必填项，2026-09-15 立）。
+   *
+   * 背景：一批组件在**构造期**按当时的 `state.width/height` 算好内部零件的坐标/尺寸
+   * （文字盒、图标盒、滚动条、分隔线…），之后被父层布局改尺寸时零件不跟着走 ——
+   * 零件比组件宽就溢出盖住邻居。`ice-smart-water` 的等分网格统计卡与「1×/2×/4×」
+   * 分段控件分别踩到 `ICEStatCard` 与 `ICEButton`。
+   *
+   * 为什么必须由组件自己实现：引擎的布局器**尊重子项的显式尺寸**（几何量测的既定语义），
+   * 而这些组件正是把自己的尺寸当成子项的显式尺寸写进去的 —— 于是没有任何一层会去改它。
+   * 引擎、`ICEGroup` 都帮不上忙，只有"知道自己内部怎么摆"的组件自己能修。
+   *
+   * 契约：
+   * - 只改**内部零件**的几何，别在这里重建子树（重建会丢事件监听与子组件状态）；
+   * - 幂等：同一尺寸重复调用不应产生差异（布局每帧校验趟可能多次走到这里）；
+   * - 拿不到尺寸就早退，别把 `0` 当成有效宽度；
+   * - 典型实现是把构造期那段 `const width = Number(this.state.width) || 默认值` 的推导
+   *   抽成一个方法，构造期与这里都调它（`ICEButton.__syncLabelBox()` 是范例）。
+   *
+   * 默认空实现：不是复合组件（没有内部零件）的组件不需要覆盖。
+   * 回归闸门：`tests/internalLayoutSync.test.ts` + `tests/resizeFollowsOwnSize.test.ts`。
+   */
+  protected __syncInternalLayout(): void {}
+
+  /**
+   * `setState` 后置钩子：尺寸变了就把上面那个钩子跑一遍。
+   *
+   * 放在基类而不是让 80+ 组件各自记得覆盖，是因为「忘了覆盖」的代价是静默的版面错乱 ——
+   * 集中在基类分发，漏掉会由棘轮测试当场抓住，而不是等到业务页面上发现零件盖住邻居。
+   */
+  protected __afterStateMerge(sizeChanged: boolean): void {
+    super.__afterStateMerge(sizeChanged);
+    if (sizeChanged) {
+      this.__syncInternalLayout();
+    }
+  }
+
   protected theme() {
     return iceUIManager.getTheme();
   }

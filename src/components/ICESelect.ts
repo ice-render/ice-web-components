@@ -386,6 +386,18 @@ export class ICESelect extends ICEWidget {
   }
 
   /** 字段区：标签文本 / placeholder + 下拉箭头；同时处理错误态边框。 */
+  /**
+   * 尺寸变化时重排内部零件（`ICEWidget.__syncInternalLayout()`）。
+   *
+   * `__syncField()` 本来就是**从 `this.state.width/height` 现算**的（外框、文字盒、
+   * 下拉箭头、清除按钮的位置全在里面），所以这里只需在尺寸变化时叫它跑一遍 ——
+   * 以前它只挂在交互 / 取值路径上：父层布局把控件拉窄之后内部零件还停在构造期的尺寸，
+   * 文字与箭头直接画到框外（等分网格里的下拉框必现）。
+   */
+  protected __syncInternalLayout(): void {
+    this.__syncField();
+  }
+
   private __syncField(): void {
     const theme = iceUIManager.getTheme();
     const width = Number(this.state.width) || 200;

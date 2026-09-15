@@ -7,6 +7,58 @@
 
 > 下一个版本发布前，改动在这里累积。
 
+## [1.12.0] - 2026-09-15
+
+### 新增
+
+- **`ICEWidget.__syncInternalLayout()`：尺寸变化时重排内部零件的基类钩子**（布局铁律第 5 条，
+  已写进 `AGENTS.md`）。`ICEWidget.__afterStateMerge(sizeChanged)` 在自身尺寸变化时自动分发，
+  默认空实现，复合组件按需覆盖。集中在基类分发而不是让 80+ 组件各自记得处理 —— 「忘了覆盖」
+  的代价是**静默的版面错乱**，漏掉由棘轮测试当场抓住，而不是等业务页面上发现零件盖住邻居。
+- **棘轮测试 `tests/resizeFollowsOwnSize.test.ts`**：口径是「400×260 建出来再缩到 200×130，
+  内部零件几何必须与"一开始就 200×130 建出来"**完全一致**」。为什么不用"谁跑到盒子外"当判据：
+  文字比盒子宽（`ICELabel` 的自然宽文本）、滚动内容比视口大（`ICEScrollPane`）本来就会越界，
+  那是语义不是缺陷；用「同尺寸参照实例」能自动排除这类情形。清单当前为**空**（40 个已全修）。
+
+### 修复
+
+- **一批复合组件的内部零件不跟随自身尺寸**（40 个组件，同一类缺陷）。
+  根因是统一的：组件在**构造期**按当时的 `state.width/height` 算好内部零件（文字盒、图标盒、
+  轨道/进度条、居中偏移、派生尺寸），之后被父层布局改尺寸时零件不跟着走 —— 零件比组件宽就
+  溢出盖住邻居。业务侧先后踩到两次：`ice-smart-water` 的等分网格统计卡（`ICEStatCard`）与
+  「1×/2×/4×」分段控件（`ICEButton`）。
+  受影响的 40 个：`ICELabel`、`ICEBadge`、`ICETag`、`ICESelect`、`ICETree`、`ICECascader`、
+  `ICETreeSelect`、`ICEDatePicker`、`ICEDateRangePicker`、`ICETimePicker`、`ICEAutoComplete`、
+  `ICEInputNumber`、`ICETextField`、`ICETextArea`、`ICEPasswordField`、`ICEStatistic`、
+  `ICETypography`、`ICEAlert`、`ICEIconTile`、`ICEImageView`、`ICECarousel`、`ICESeparator`、
+  `ICESwitch`、`ICEProgressBar`、`ICESlider`、`ICECheckBox`、`ICERadioButton`、`ICERadioGroup`、
+  `ICECheckboxGroup`、`ICEAnchor`、`ICEBreadcrumb`、`ICECalendar`、`ICEColorPicker`、`ICEMenu`、
+  `ICEEmpty`、`ICEResult`、`ICEKanban`、`ICESteps`、`ICEStatCard`、`ICEButton`（后两个此前已修）。
+- **派生尺寸也一并跟上**（只改子项宽度是不够的，这些值是"宽度的函数"，必须重算）：
+  `ICECalendar` 的格子高 `(宽 - 16) / 7 / 1.4`、`ICEColorPicker` 的色块边长
+  `(可用宽 - 缝) / 列数`、`ICERadioGroup`/`ICECheckboxGroup` 横向形态的行高 `itemHeight`。
+- **`ICESteps` 现在尊重显式 `props.height`**（原先恒用内容高 `circleSize + 34`，
+  于是「构造时给 height」与「事后 `setState` 改 height」两条路会得到不同的步骤高 ——
+  同一个尺寸两种样子）。`ICEStepsOptions` 补上 `height?: number`。
+
+### 说明
+
+- **这类缺陷引擎侧修不了，契约只能落在组件层**：`ICELayoutManager` 尊重子项的显式尺寸
+  （几何量测的既定语义），而这些组件正是把自己的尺寸写成子项的显式尺寸 —— 没有任何一层会去改它。
+  因此本次**未改动引擎**（引擎的 `__afterStateMerge` / `requestLayout` / `doLayout` 链路本身是对的）。
+- **重建路径会 `setState` 的组件要防重入**：`ICEMenu.__renderFlat()` 内部会
+  `setState({ height })`，会把尺寸变化钩子打回自己，嵌套重建一次就让展开/收起动画的补间锁在
+  已作废的行节点上（动画期间所有行 `left/top` 归零）。修法是 `__render()` 加一层
+  `__rendering` 守卫（见 `ICEMenu`）。
+
+### 验证
+
+- `npm run verify`：types ✅、单测 **191 套件 / 1351 用例** ✅、build ✅、docs ✅、
+  qa-counts 一致（八套 303 项）。
+- `npm run test:e2e`：10/10 ✅（9 个示例页无 console/pageerror + 画布像素占比）。
+- `npm run qa:all`：**8/8** ✅；`npm run qa:perf`：9 页节点数 / 空闲重绘 / 帧耗时全部在预算内 ✅。
+- 下游 `ice-smart-water`（真实业务场景）e2e 全绿 —— 见该仓 CHANGELOG。
+
 ## [1.11.2] - 2026-09-15
 
 ### 变更

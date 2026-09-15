@@ -40,6 +40,10 @@ export class ICEIconTile extends ICEWidget {
   private onSelect: ((selected: boolean) => void) | null;
   private onOpen: ((label: string) => void) | null;
   private readonly labelText: string;
+  /** 图标区高度（来自 props，固定值；标签与高亮块的纵向位置由它推出来） */
+  private readonly iconSize: number;
+  /** 图标是调用方传进来的自绘节点（居中方式与内置字形不同） */
+  private readonly customIcon: boolean;
 
   constructor(props: ICEIconTileOptions) {
     const theme = iceUIManager.getTheme();
@@ -61,6 +65,8 @@ export class ICEIconTile extends ICEWidget {
     this.onSelect = typeof props.onSelect === 'function' ? props.onSelect : null;
     this.onOpen = typeof props.onOpen === 'function' ? props.onOpen : null;
     const iconSize = props.iconSize ?? 34;
+    this.iconSize = iconSize;
+    this.customIcon = !!props.iconNode;
     if (props.iconNode) {
       const glyph = props.iconNode;
       const glyphWidth = Number(glyph.state && glyph.state.width) || iconSize;
@@ -164,6 +170,34 @@ export class ICEIconTile extends ICEWidget {
 
   public getLabelBackground(): string {
     return String(this.labelBackground.state.style.fillStyle ?? 'rgba(0,0,0,0)');
+  }
+
+  /**
+   * 尺寸变化时重排图标、文字标签与选中高亮块（`ICEWidget.__syncInternalLayout()`）。
+   *
+   * 构造期是按 `width` 算好 `(width - 图标宽) / 2` 居中偏移、以及 `width - 4 / width - 8`
+   * 这些宽度的，之后父层布局改尺寸时谁都不动 —— 高亮块与标签还停在旧宽度上，
+   * 比盒子宽的部分直接画到邻居身上（等分网格里的磁贴必现）。
+   */
+  protected __syncInternalLayout(): void {
+    const theme = iceUIManager.getTheme();
+    const width = Number(this.state.width) || 0;
+    if (!(width > 0)) {
+      return;
+    }
+    if (this.customIcon) {
+      const glyphWidth = Number(this.iconNode.state && this.iconNode.state.width) || this.iconSize;
+      const glyphHeight = Number(this.iconNode.state && this.iconNode.state.height) || this.iconSize;
+      this.iconNode.setState({
+        left: Math.round((width - glyphWidth) / 2),
+        top: 4 + Math.max(0, Math.round((this.iconSize + 6 - glyphHeight) / 2)),
+      });
+    } else {
+      this.iconNode.setState({ left: 0, top: 4, width, height: this.iconSize + 6 });
+    }
+    this.labelNode.setState({ left: 4, top: this.iconSize + 12, width: width - 8, height: 18 });
+    this.labelBackground.setState({ left: 2, top: this.iconSize + 10, width: width - 4, height: 22 });
+    void theme;
   }
 
   protected __applyHoverState(): void {

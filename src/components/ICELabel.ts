@@ -170,6 +170,40 @@ export class ICELabel extends ICEWidget {
   }
 
   /**
+   * 尺寸变化时把内层文字盒铺到新的标签盒上（`ICEWidget.__syncInternalLayout()`）。
+   *
+   * 构造期只在「调用方显式给了宽高」时把内层文字盒设成同一个盒子（见构造函数），
+   * 那次之后就没人再对账了：父层布局把标签拉窄/拉高之后，文字盒还停在构造期的尺寸，
+   * 于是 `textAlign` / `textBaseline` 是**相对旧盒子**算的 —— 居中的字偏到盒子外，
+   * 右对齐的字直接越到邻居身上。
+   *
+   * 反过来（`__autoBoxWidth/Height`，即调用方没给尺寸）不能这么做：那种情况下是
+   * 标签盒跟着文字走，`__syncTextSize()` 负责，这里必须什么都不做，否则会打架。
+   */
+  protected __syncInternalLayout(): void {
+    if (!this.textNode || !this.textNode.state) {
+      return;
+    }
+    const cur = this.textNode.state;
+    const next: any = {};
+    if (!this.__autoBoxWidth) {
+      next.width = Number(this.state.width) || 0;
+    }
+    if (!this.__autoBoxHeight) {
+      next.height = Number(this.state.height) || 0;
+    }
+    if (next.width === undefined && next.height === undefined) {
+      return;
+    }
+    const widthSame = next.width === undefined || Number(cur.width) === next.width;
+    const heightSame = next.height === undefined || Number(cur.height) === next.height;
+    if (widthSame && heightSame) {
+      return;
+    }
+    this.textNode.setState(next);
+  }
+
+  /**
    * @overwrite
    * 标签的首选尺寸就是文字的实测尺寸。不覆盖的话会落到 `ICEGroup.getPreferredSize()` 的
    * `[0, 0]`（没有 layoutManager 时），按首选尺寸排布的调用方同样拿不到正确宽度。

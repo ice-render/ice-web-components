@@ -395,6 +395,33 @@ export class ICESlider extends ICEWidget {
     return Math.max(0, width - size);
   }
 
+  /**
+   * 尺寸变化时按新盒子重算轨道与手柄（`ICEWidget.__syncInternalLayout()`）。
+   *
+   * 构造期把 `props.width` 当成了轨道长、把 `props.height` 当成组件高，算出 `trackTop`
+   * 之后就再没对过账。父层布局改尺寸后轨道还是旧长度（多出来的部分画到盒子外），
+   * 手柄也没重新垂直居中。轨道与手柄的粗细由 `trackHeight/thumbSize` 决定，与组件尺寸无关。
+   *
+   * 注意 `__sync()` 是**读 `this.track.state.width`** 来算填充与手柄位置的，
+   * 所以必须先更新轨道尺寸、再调它，顺序反了等于白算。
+   */
+  protected __syncInternalLayout(): void {
+    const theme = iceUIManager.getTheme();
+    const width = Number(this.state.width) || 160;
+    const trackHeight = Number(this.track && this.track.state.height) || theme.control.sliderTrackHeight;
+    const thumbSize =
+      (Number(this.thumb && this.thumb.state.radius) || 0) * 2 || theme.control.sliderHandle;
+    const height = Math.max(Number(this.state.height) || theme.control.sliderHandle, thumbSize);
+    const trackTop = (height - trackHeight) / 2;
+    this.track.setState({ left: 0, top: trackTop, width, height: trackHeight, radius: trackHeight / 2 });
+    this.fill.setState({ left: 0, top: trackTop, height: trackHeight, radius: trackHeight / 2 });
+    this.thumb.setState({ top: (height - thumbSize) / 2 });
+    if (this.upperThumb) {
+      this.upperThumb.setState({ top: (height - thumbSize) / 2 });
+    }
+    this.__sync();
+  }
+
   private __sync(): void {
     const theme = iceUIManager.getTheme();
     const width = Number(this.track.state.width);

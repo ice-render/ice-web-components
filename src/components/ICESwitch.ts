@@ -128,6 +128,28 @@ export class ICESwitch extends ICEWidget {
     this.revalidate();
   }
 
+  /**
+   * 尺寸变化时按新盒子重算轨道、滑块尺寸与行程（`ICEWidget.__syncInternalLayout()`）。
+   *
+   * 构造期是把 `props.width/height` 直接当成轨道尺寸、并把滑块行程 `knobTravel` 存成字段的；
+   * 之后父层布局改尺寸时这三样都不动 —— 轨道还停在旧长度（比盒子长的部分直接画到外面），
+   * 滑块的开/关位置也按旧行程算。
+   */
+  protected __syncInternalLayout(): void {
+    const theme = iceUIManager.getTheme();
+    const width = Number(this.state.width) || theme.control.switchWidth;
+    const height = Number(this.state.height) || theme.control.switchHeight;
+    if (!(width > 0) || !(height > 0)) {
+      return;
+    }
+    const knobSize = Math.max(12, Math.min(theme.control.switchHandle, height - 4));
+    const knobGap = (height - knobSize) / 2;
+    this.knobTravel = width - knobSize - knobGap * 2;
+    this.track.setState({ left: 0, top: 0, width, height, radius: height / 2 });
+    this.knob.setState({ top: knobGap, radius: knobSize / 2 });
+    this.__sync();
+  }
+
   private __knobGap(): number {
     const height = Number(this.state.height) || iceUIManager.getTheme().control.switchHeight;
     const knobSize = Number(this.knob.state.radius) * 2 || iceUIManager.getTheme().control.switchHandle;

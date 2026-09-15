@@ -62,6 +62,23 @@ export class ICEBadge extends ICEWidget {
     this.addChild(this.textNode, false);
   }
 
+  /**
+   * 尺寸变化时把内层文字盒铺到新的胶囊盒上（`ICEWidget.__syncInternalLayout()`）。
+   *
+   * 构造期按 `props.width/height` 算好文字盒（左右各让出 `spacing.sm` 内边距）就再没对过账：
+   * 父层布局把胶囊拉宽/拉窄之后，文字盒还停在旧尺寸，`align: center` 于是在旧盒子里居中 ——
+   * 文字偏出胶囊（表格状态列这类定宽胶囊一定会看到）。
+   */
+  protected __syncInternalLayout(): void {
+    if (!this.textNode) {
+      return; // dot 模式/无文字
+    }
+    const padX = iceUIManager.getTheme().spacing.sm;
+    const width = Number(this.state.width) || 0;
+    const height = Number(this.state.height) || 0;
+    this.textNode.setState({ left: padX, top: 0, width: Math.max(0, width - padX * 2), height });
+  }
+
   public setText(text: string): this {
     if (this.dot) {
       return this;

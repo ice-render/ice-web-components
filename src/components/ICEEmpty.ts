@@ -25,6 +25,11 @@ export class ICEEmpty extends ICEWidget {
   private actionButton: ICEButton | null = null;
   /** 描述文案（构造时确定；语言包切换后重建组件即变） */
   private descriptionText = '';
+  private iconLabel: ICELabel;
+  private descLabel: ICELabel;
+  /** 操作按钮的固定宽高：与组件尺寸无关，只影响居中偏移 */
+  private static readonly ACTION_W = 96;
+  private static readonly ACTION_H = 30;
 
   constructor(props: ICEEmptyOptions) {
     const theme = iceUIManager.getTheme();
@@ -38,40 +43,36 @@ export class ICEEmpty extends ICEWidget {
     const hasAction = !!props.actionText;
     this.descriptionText = String(props.description ?? '');
 
-    this.addChild(
-      new ICELabel({
-        interactive: false,
-        left: 0,
-        top: Math.max(8, height / 2 - 46),
-        width,
-        height: 32,
-        align: 'center',
-        verticalAlign: 'middle',
-        text: icon,
-        style: { fontSize: 26, fillStyle: theme.colors.textDisabled },
-      }),
-      false,
-    );
-    this.addChild(
-      new ICELabel({
-        interactive: false,
-        left: 0,
-        top: Math.max(44, height / 2 - 8),
-        width,
-        height: 20,
-        align: 'center',
-        verticalAlign: 'middle',
-        text: props.description ?? '',
-        style: { fontSize: 13, fillStyle: theme.colors.textSecondary },
-      }),
-      false,
-    );
+    this.iconLabel = new ICELabel({
+      interactive: false,
+      left: 0,
+      top: Math.max(8, height / 2 - 46),
+      width,
+      height: 32,
+      align: 'center',
+      verticalAlign: 'middle',
+      text: icon,
+      style: { fontSize: 26, fillStyle: theme.colors.textDisabled },
+    });
+    this.addChild(this.iconLabel, false);
+    this.descLabel = new ICELabel({
+      interactive: false,
+      left: 0,
+      top: Math.max(44, height / 2 - 8),
+      width,
+      height: 20,
+      align: 'center',
+      verticalAlign: 'middle',
+      text: props.description ?? '',
+      style: { fontSize: 13, fillStyle: theme.colors.textSecondary },
+    });
+    this.addChild(this.descLabel, false);
     if (hasAction) {
       const button = new ICEButton({
-        left: (width - 96) / 2,
+        left: (width - ICEEmpty.ACTION_W) / 2,
         top: Math.max(72, height / 2 + 20),
-        width: 96,
-        height: 30,
+        width: ICEEmpty.ACTION_W,
+        height: ICEEmpty.ACTION_H,
         text: props.actionText as string,
         size: 'small',
         variant: 'default',
@@ -83,6 +84,32 @@ export class ICEEmpty extends ICEWidget {
       });
       this.addChild(button, false);
       this.actionButton = button;
+    }
+  }
+
+  /**
+   * 尺寸变化时把这一摞居中元素重新摆一遍（`ICEWidget.__syncInternalLayout()`）。
+   *
+   * 构造期每个子项都按 `width` 与 `height / 2 ± 偏移` 算好了位置，之后父层布局改尺寸时
+   * 谁都不动 —— 图标/文案留在旧的水平位置上（窄盒子里就跑到外面），垂直也不再居中。
+   */
+  protected __syncInternalLayout(): void {
+    const width = Number(this.state.width) || 0;
+    const height = Number(this.state.height) || 0;
+    if (!(width > 0) || !(height > 0)) {
+      return;
+    }
+    if (this.iconLabel) {
+      this.iconLabel.setState({ left: 0, top: Math.max(8, height / 2 - 46), width });
+    }
+    if (this.descLabel) {
+      this.descLabel.setState({ left: 0, top: Math.max(44, height / 2 - 8), width });
+    }
+    if (this.actionButton) {
+      this.actionButton.setState({
+        left: (width - ICEEmpty.ACTION_W) / 2,
+        top: Math.max(72, height / 2 + 20),
+      });
     }
   }
 

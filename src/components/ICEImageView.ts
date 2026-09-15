@@ -166,6 +166,17 @@ export class ICEImageView extends ICEWidget {
     return this.imageNode;
   }
 
+  /**
+   * 尺寸变化时整段重排内部零件（`ICEWidget.__syncInternalLayout()`）。
+   *
+   * 本组件的内部构图（子项尺寸、居中偏移、断行/分栏）**本身就是宽高的函数**，
+   * 所以按本库既有惯例直接重跑构造期那段 `__render()`；它内部用 `removeChildren` 重建，
+   * 不会留下停在旧尺寸的零件（重建出来的子项由各自构造函数重新挂事件）。
+   */
+  protected __syncInternalLayout(): void {
+    this.__render();
+  }
+
   private __render(): void {
     this.removeChildren([...this.childNodes]);
     const width = Number(this.state.width) || 120;

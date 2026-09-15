@@ -31,6 +31,10 @@ export class ICEColorPicker extends ICEWidget {
   private columns: number;
   private value?: string;
   private swatchSize: number;
+  /** `props.swatchSize` 显式给过（给了就不按宽度反算） */
+  private explicitSwatchSize = false;
+  /** 构造期给过宽度（决定是否按宽度反算色块尺寸，见 `__syncInternalLayout`） */
+  private hadWidth = false;
   private gap: number;
   private padding: number;
   private disabled: boolean;
@@ -67,6 +71,8 @@ export class ICEColorPicker extends ICEWidget {
     this.columns = columns;
     this.value = props.value === undefined ? undefined : String(props.value);
     this.swatchSize = size;
+    this.explicitSwatchSize = props.swatchSize !== undefined;
+    this.hadWidth = props.width !== undefined;
     this.gap = gap;
     this.padding = padding;
     this.disabled = props.disabled === true;
@@ -166,6 +172,22 @@ export class ICEColorPicker extends ICEWidget {
     if (next >= 0) {
       this.__pick(this.colors[next]);
     }
+  }
+
+  /**
+   * 尺寸变化时按新宽度重算色块尺寸并重排（`ICEWidget.__syncInternalLayout()`）。
+   *
+   * 色块尺寸是 `(可用宽 - 缝) / 列数` 的**派生值**（`__resolveSwatchSize`），构造期算一次就存成
+   * 字段了。父层布局改宽度后色块还是旧尺寸，而 `ICEGridLayout` 尊重子项的显式尺寸 ——
+   * 于是格子不会跟着缩（间距被挤掉、整块色板溢出色板盒）。
+   * 显式传了 `swatchSize`、或构造期没给宽度的，保持原口径不动。
+   */
+  protected __syncInternalLayout(): void {
+    if (!this.explicitSwatchSize && this.hadWidth) {
+      const available = Number(this.state.width) - this.padding * 2 - this.gap * (this.columns - 1);
+      this.swatchSize = Math.max(12, Math.floor(available / this.columns));
+    }
+    this.__render();
   }
 
   private __render(): void {

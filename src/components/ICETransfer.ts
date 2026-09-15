@@ -209,6 +209,17 @@ export class ICETransfer extends ICEWidget {
     this.__render();
   }
 
+  /**
+   * 尺寸变化时整段重排内部零件（`ICEWidget.__syncInternalLayout()`）。
+   *
+   * 本组件的内部构图（子项尺寸、居中偏移、分栏/分行）**本身就是宽高的函数**，
+   * 所以按本库既有惯例直接重跑构造期那段 `__render()`：它内部 `removeChildren` 重建，
+   * 不会留下停在旧尺寸的零件（子项的事件在构造函数里重挂）。
+   */
+  protected __syncInternalLayout(): void {
+    this.__render();
+  }
+
   private __render(): void {
     const theme = iceUIManager.getTheme();
     const width = Number(this.state.width) || 420;

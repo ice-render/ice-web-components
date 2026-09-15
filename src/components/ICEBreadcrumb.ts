@@ -124,6 +124,8 @@ export class ICEBreadcrumb extends ICEWidget {
   private userExpanded = false;
   private collapsed = false;
   private itemNodes: ICEBreadcrumbItemNode[] = [];
+  /** 构造期是否给了宽度（决定重排时是否沿用「宽度自适应」口径，见 `__syncInternalLayout`） */
+  private __adoptWidth = false;
   private separatorNodes: ICELabel[] = [];
 
   constructor(props: ICEBreadcrumbOptions) {
@@ -144,7 +146,8 @@ export class ICEBreadcrumb extends ICEWidget {
     this.onNavigate = typeof props.onNavigate === 'function' ? props.onNavigate : null;
     // 一行「项 + 分隔符」按顺序排、间距 = theme.spacing.xs → 流式布局（行对齐 left）
     this.setLayout(new ICEFlowLayout({ gap: theme.spacing.xs, align: 'left', crossAlign: 'center' }));
-    this.__render(props.width !== undefined);
+    this.__adoptWidth = props.width !== undefined;
+    this.__render(this.__adoptWidth);
   }
 
   /** 当前显示的标签（折叠时中间会多出一个 `…`）。 */
@@ -201,6 +204,17 @@ export class ICEBreadcrumb extends ICEWidget {
       { item: { label: '…' }, index: 1, ellipsis: true },
       ...tail.map((item, offset) => ({ item, index: tailStart + offset })),
     ];
+  }
+
+  /**
+   * 尺寸变化时按新宽度重新排这一行（`ICEWidget.__syncInternalLayout()`）。
+   *
+   * 面包屑的项宽（文字实测宽 + 分隔符）是按字号算的固定值，**要不要在给定宽度之外补足**
+   * 是构造期就定下的「宽度自适应」策略；重排时必须沿用同一个口径，否则会把父层刚设的
+   * 宽度覆盖掉。`__render` 内部会 `removeChildren` 重建，项上的点击事件随之重挂。
+   */
+  protected __syncInternalLayout(): void {
+    this.__render(this.__adoptWidth);
   }
 
   private __render(adoptWidth: boolean): void {

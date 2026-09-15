@@ -93,6 +93,8 @@ export class ICEMenu extends ICEContainer {
   /** 鼠标悬停的项（仅视觉反馈，不影响选中） */
   private hoverKey: string | null = null;
   private expanded = new Set<string>();
+  /** 是否正在 `__renderInner()` 内（防重入，见 `__syncInternalLayout`） */
+  private __rendering = false;
   private itemPanels: any[] = [];
   private itemNodes = new Map<string, any>();
   private itemIcons: any[] = [];
@@ -728,7 +730,38 @@ export class ICEMenu extends ICEContainer {
     }
   }
 
+  /**
+   * 尺寸变化时整段重排（`ICEWidget.__syncInternalLayout()`）。
+   *
+   * 菜单项面板宽（竖排 = 菜单宽 - 内距）与项内文字盒宽都是从自身宽度算出来的，
+   * 构造期算一次就再没对过账：父层布局把菜单拉窄后，面板跟上了、**面板里的文字盒没跟上**，
+   * 文字于是画到面板外（侧栏被折窄时必现）。三个形态（竖排 / 收起 / 横排）各有自己的
+   * 行宽口径，所以交给 `__render()` 按当前形态分派，别在这里重写一套。
+   */
+  protected __syncInternalLayout(): void {
+    // 重建期间 `__renderFlat()` 自己会 `setState({ height })`，那会再打回这里 ——
+    // 嵌套重来一次会把上一趟刚建好的行节点作废，展开/收起动画的补间就锁在死节点上
+    // （表现为动画期间所有行 `left/top` 归零）。正在重建就说明这次尺寸变化是重建的一部分，
+    // 当前这一趟已经按新宽度建过了，直接返回。
+    if (this.__rendering) {
+      return;
+    }
+    this.__render();
+  }
+
   private __render(): void {
+    if (this.__rendering) {
+      return;
+    }
+    this.__rendering = true;
+    try {
+      this.__renderInner();
+    } finally {
+      this.__rendering = false;
+    }
+  }
+
+  private __renderInner(): void {
     // 横向（顶栏菜单）与收起态（侧栏只留图标）走各自的渲染：它们是形态，不是同一个布局
     if (this.mode === 'horizontal') {
       this.__renderHorizontal();

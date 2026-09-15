@@ -206,6 +206,36 @@ export class ICEProgressBar extends ICEWidget {
     return Math.max(0, Math.min(width, width * this.__ratio()));
   }
 
+  /**
+   * 尺寸变化时按新盒子重算轨道/圆环与进度条（`ICEWidget.__syncInternalLayout()`）。
+   *
+   * 构造期直接把 `this.state.width/height` 当成了轨道尺寸（线形模式的轨道高 = 组件高、
+   * 圆形的直径 = 宽高较小者），之后父层布局改尺寸时它们都不动 —— 轨道比盒子长就画到外面。
+   */
+  protected __syncInternalLayout(): void {
+    const theme = iceUIManager.getTheme();
+    if (this.isCircle()) {
+      const fallback = Number(this.state.width) || Number(this.state.height) || 120;
+      const diameter = Math.min(Number(this.state.width) || fallback, Number(this.state.height) || fallback);
+      if (!(diameter > 0)) {
+        return;
+      }
+      if (this.trackRing) this.trackRing.setState({ left: 0, top: 0, width: diameter, height: diameter });
+      if (this.ring) this.ring.setState({ left: 0, top: 0, width: diameter, height: diameter });
+      if (this.textNode) this.textNode.setState({ left: 0, top: 0, width: diameter, height: diameter });
+      this.__sync();
+      return;
+    }
+    const width = Number(this.state.width) || 160;
+    const height = Number(this.state.height) || theme.control.progressHeight;
+    if (!(width > 0) || !(height > 0)) {
+      return;
+    }
+    if (this.track) this.track.setState({ left: 0, top: 0, width, height, radius: height / 2 });
+    if (this.fill) this.fill.setState({ left: 0, top: 0, height, radius: height / 2 });
+    this.__sync();
+  }
+
   private __sync(): void {
     if (this.isCircle()) {
       const ratio = this.__ratio();

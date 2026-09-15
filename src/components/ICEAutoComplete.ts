@@ -99,6 +99,22 @@ export class ICEAutoComplete extends ICEWidget {
     }
   }
 
+  /**
+   * 尺寸变化时让内部输入框铺满新盒子（`ICEWidget.__syncInternalLayout()`）。
+   *
+   * 构造期把 `props.width/height` 直接给了内部 `ICETextField`，之后父层布局改尺寸时
+   * 外层变了、内层没变 —— 输入框的边框与文字都还按旧尺寸画（自动完成被拉窄后文字画到框外）。
+   * 内层自己已会在尺寸变化时重排文字盒，这里只要把尺寸传下去。
+   */
+  protected __syncInternalLayout(): void {
+    const width = Number(this.state.width) || 0;
+    const height = Number(this.state.height) || 0;
+    if (!(width > 0) || !(height > 0) || !this.field) {
+      return;
+    }
+    this.field.setState({ left: 0, top: 0, width, height });
+  }
+
   public getValue(): string {
     return this.field.getValue();
   }

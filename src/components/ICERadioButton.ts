@@ -100,6 +100,30 @@ export class ICERadioButton extends ICEWidget {
     this.__sync();
   }
 
+  /**
+   * 尺寸变化时把圆形选框与内点重新居中（`ICEWidget.__syncInternalLayout()`）。
+   *
+   * 构造期按 `props.width/height` 算好 `outerLeft/outerTop` 就再没对过账：父层布局改尺寸后
+   * 居中偏移还停在旧值上，圆会偏出盒子。圆的大小由 `size` 决定（与组件尺寸无关），
+   * 所以只需重算居中偏移与内点相对位置。
+   */
+  protected __syncInternalLayout(): void {
+    const outerSize = (Number(this.outer && this.outer.state.radius) || 0) * 2;
+    if (!(outerSize > 0)) {
+      return;
+    }
+    const width = Number(this.state.width) || outerSize;
+    const height = Number(this.state.height) || outerSize;
+    const left = (width - outerSize) / 2;
+    const top = (height - outerSize) / 2;
+    const innerRadius = Number(this.inner && this.inner.state.radius) || 0;
+    this.outer.setState({ left, top });
+    this.inner.setState({
+      left: left + outerSize / 2 - innerRadius,
+      top: top + outerSize / 2 - innerRadius,
+    });
+  }
+
   private __sync(): void {
     const theme = iceUIManager.getTheme();
     const selected = this.model.isSelected();

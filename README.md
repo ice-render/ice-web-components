@@ -53,7 +53,7 @@ graph TD
 - **Bootstrap 5 token theme** (plus a dark theme) — swap with one call.
 - **No name collisions with the engine** — the package’s runtime exports are
   disjoint from `ice-render`’s (there is a regression test for it).
-- **Actually tested** — 1348 unit tests (190 suites: form validation, overlay
+- **Actually tested** — 1351 unit tests (191 suites: form validation, overlay
   positioning, keyboard navigation, sort/hover/focus edge cases, the Minesweeper,
   Tetris, Snake, 2048 and CHIP-8 rule/machine models, the pixel canvas and the undo
   stack, the console BIOS, the trace player + sorting/pathfinding and the DOS terminal)

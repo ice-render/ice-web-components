@@ -42,6 +42,8 @@ export class ICECheckboxGroup extends ICEWidget {
   private options: ICECheckboxGroupOption[];
   private selected: string[];
   private direction: 'horizontal' | 'vertical';
+  /** 构造期是否给了宽度（决定重排时是否沿用「宽度自适应」口径） */
+  private __adoptWidth = false;
   private itemGap: number;
   private fontSize: number;
   private itemHeight: number;
@@ -80,7 +82,8 @@ export class ICECheckboxGroup extends ICEWidget {
     this.setLayout(
       new ICEBoxLayout({ axis: direction === 'vertical' ? 'y' : 'x', gap: direction === 'vertical' ? 0 : this.itemGap, align: 'start' })
     );
-    this.__render(props.width !== undefined);
+    this.__adoptWidth = props.width !== undefined;
+    this.__render(this.__adoptWidth);
   }
 
   /** 已选值（按选项顺序）。 */
@@ -245,6 +248,22 @@ export class ICECheckboxGroup extends ICEWidget {
     if (this.ice) {
       this.ice.dirty = true;
     }
+  }
+
+  /**
+   * 尺寸变化时按新盒子重新排行（`ICEWidget.__syncInternalLayout()`）。
+   *
+   * 构造期把 `props.height` 直接当成了行高 `itemHeight` 存成字段，之后就再没对过账：
+   * 父层布局改尺寸后每一行还是旧行高，比组件高的行直接溢出（横向单选/复选组必现）。
+   *
+   * 只在 `horizontal` 方向重推行高 —— 那个方向下组件高**就是**行高（构造期也是这么定的）；
+   * `vertical` 方向反过来，组件高 = 行高 × 选项数，是行高派生出来的结果，不能反推。
+   */
+  protected __syncInternalLayout(): void {
+    if (this.direction !== 'vertical') {
+      this.itemHeight = Number(this.state.height) || iceUIManager.getTheme().control.height;
+    }
+    this.__render(this.__adoptWidth);
   }
 
   private __render(adoptWidth: boolean): void {

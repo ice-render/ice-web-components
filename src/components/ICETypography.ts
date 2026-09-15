@@ -212,6 +212,16 @@ export class ICETypography extends ICEWidget {
     this.revalidate();
   }
 
+  /**
+   * 尺寸变化时按新宽度重新断行并重排（`ICEWidget.__syncInternalLayout()`）。
+   *
+   * 排版（每行怎么切、切几行）**本身就是宽度的函数**，所以这里必须整段重跑 `__render()`：
+   * 只改子项宽度不够 —— 行数/断点都可能是错的。文本节点上没有事件监听，重建是安全的。
+   */
+  protected __syncInternalLayout(): void {
+    this.__render();
+  }
+
   private __render(): void {
     const theme = iceUIManager.getTheme();
     this.removeChildren([...this.childNodes]);
