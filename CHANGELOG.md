@@ -7,6 +7,23 @@
 
 > 下一个版本发布前，改动在这里累积。
 
+## [1.10.0] - 2026-09-15
+
+### 变更
+
+- **peer 依赖对齐 `ice-render ^2.10.0`**：本轮把示例页的「簇 + 货架」手写布局改成引擎布局器，
+  用到 2.10.0 新增的 `ICEFlowLayout.pack: 'first-fit'` 与 `gapY`（以及 2.9 的 `computeLayeredLayout`）。
+  peer 范围据此收紧 —— **消费者需要把引擎升到 2.10.0**。
+- 示例页 `gallery.html` / `admin.html` 的排布改为声明式（`ICEBoxLayout(axis:'y')` +
+  `ICEFlowLayout({ pack:'first-fit', crossAlign, gap, gapY })`），页面只保留"量簇"与尺寸协商；
+  `admin.html` 去掉了覆盖 `container.requestLayout` 的旧补丁；按 id 找节点改递归。
+- 文档：`docs/guides/layout.md` 第三节重写为「引擎布局器版」（含骨架与两个实践细节）。
+
+### 验证
+
+- `npm run verify` 全绿（188 suite / 1334 用例 + build + docs:check）；
+- `npm run test:e2e` 10/10（9 个示例页 + painter 真机）；gallery / admin 逐页截图人工复核。
+
 ## [1.9.2] - 2026-09-15
 
 ### 修复
