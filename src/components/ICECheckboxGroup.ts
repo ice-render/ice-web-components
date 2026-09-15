@@ -3,6 +3,7 @@ import { ICECheckBox } from './ICECheckBox';
 import { ICELabel } from './ICELabel';
 import { iceUIManager } from '../core/ICEManager';
 import { estimateTextWidth } from '../util/ICEStyle';
+import { ICEBoxLayout } from 'ice-render';
 
 /**
  * 多选组：一组可多选的选项，值是 `string[]`（按选项顺序）。
@@ -74,6 +75,11 @@ export class ICECheckboxGroup extends ICEWidget {
     this.max = Math.max(0, Number(props.max) || 0);
     this.onChange = typeof props.onChange === 'function' ? props.onChange : null;
     this.selected = this.__normalize(props.value);
+    // 选项的排布交给引擎布局器（交叉轴 start = 保持自身尺寸、贴起点，与历史行为一致）。
+    // 纵向的 `gap` 与 `ICERadioGroup` 同口径：历史行距 = itemHeight，`itemGap` 不参与（另议，先不改版式）。
+    this.setLayout(
+      new ICEBoxLayout({ axis: direction === 'vertical' ? 'y' : 'x', gap: direction === 'vertical' ? 0 : this.itemGap, align: 'start' })
+    );
     this.__render(props.width !== undefined);
   }
 
@@ -250,18 +256,13 @@ export class ICECheckboxGroup extends ICEWidget {
 
     const boxSize = theme.control.checkboxSize;
     const controlGap = theme.spacing.xs;
-    let cursor = 0;
     let maxWidth = 0;
 
-    this.options.forEach((option, index) => {
+    this.options.forEach((option) => {
       const label = String(option.label ?? option.value);
       const textWidth = estimateTextWidth(label, this.fontSize);
       const itemWidth = boxSize + controlGap + textWidth;
-      const left = this.direction === 'vertical' ? 0 : cursor;
-      const top = this.direction === 'vertical' ? index * this.itemHeight : 0;
       const item = new ICEWidget({
-        left,
-        top,
         width: itemWidth,
         height: this.itemHeight,
         fill: false,
@@ -269,9 +270,9 @@ export class ICECheckboxGroup extends ICEWidget {
         interactive: !option.disabled,
         focusable: false,
       });
+      // 行内（框 + 缝 + 文字）与行间排布都交给引擎布局器
+      item.setLayout(new ICEBoxLayout({ axis: 'x', gap: controlGap, align: 'start' }));
       const checkbox = new ICECheckBox({
-        left: 0,
-        top: 0,
         width: boxSize,
         height: this.itemHeight,
         selected: this.isChecked(option.value),
@@ -283,8 +284,6 @@ export class ICECheckboxGroup extends ICEWidget {
       }
       const labelNode = new ICELabel({
         interactive: false,
-        left: boxSize + controlGap,
-        top: 0,
         width: textWidth,
         height: this.itemHeight,
         text: label,
@@ -305,7 +304,6 @@ export class ICECheckboxGroup extends ICEWidget {
       this.checkboxNodes.push(checkbox);
       this.labelNodes.push(labelNode);
       maxWidth = Math.max(maxWidth, itemWidth);
-      cursor += itemWidth + this.itemGap;
     });
 
     if (this.direction === 'vertical') {

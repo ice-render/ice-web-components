@@ -3,6 +3,7 @@ import { ICELabel } from './ICELabel';
 import { ICERadioButton } from './ICERadioButton';
 import { iceUIManager } from '../core/ICEManager';
 import { estimateTextWidth } from '../util/ICEStyle';
+import { ICEBoxLayout } from 'ice-render';
 
 /**
  * 单选组：一组互斥选项，整行可点，值是选项的 `value`。
@@ -75,6 +76,12 @@ export class ICERadioGroup extends ICEWidget {
     this.value = this.__isKnown(props.value) ? String(props.value) : null;
     // 键盘活动项跟随初始值：聚焦后第一次按方向键是从「当前值」出发的
     this.activeIndex = this.value ? Math.max(0, this.options.findIndex((option) => option.value === this.value)) : 0;
+    // 选项的排布交给引擎布局器（交叉轴 start = 保持自身尺寸、贴起点，与历史行为一致）。
+    // 注意 `gap`：纵向的历史口径是「行距 = itemHeight」（标签在行内垂直居中，`itemGap` 不参与），
+    // 这里照旧传 0；纵向忽略 itemGap 属**既有语义**（是否统一到两轴另议），本组件不擅自改版式。
+    this.setLayout(
+      new ICEBoxLayout({ axis: direction === 'vertical' ? 'y' : 'x', gap: direction === 'vertical' ? 0 : this.itemGap, align: 'start' })
+    );
     this.__render(props.width !== undefined);
   }
 
@@ -232,19 +239,14 @@ export class ICERadioGroup extends ICEWidget {
 
     const radioSize = theme.control.radioSize;
     const controlGap = theme.spacing.xs;
-    let cursor = 0;
     let maxWidth = 0;
 
-    this.options.forEach((option, index) => {
+    this.options.forEach((option) => {
       const label = String(option.label ?? option.value);
       const textWidth = estimateTextWidth(label, this.fontSize);
       const itemWidth = radioSize + controlGap + textWidth;
-      const left = this.direction === 'vertical' ? 0 : cursor;
-      const top = this.direction === 'vertical' ? index * this.itemHeight : 0;
       // 整行（圈 + 文字）是一个可点节点：点文字也能选中，这是单选组的常规行为
       const item = new ICEWidget({
-        left,
-        top,
         width: itemWidth,
         height: this.itemHeight,
         fill: false,
@@ -252,9 +254,9 @@ export class ICERadioGroup extends ICEWidget {
         interactive: !option.disabled,
         focusable: false,
       });
+      // 行内也是派生排列（圈 + 缝 + 文字）→ 同样交给布局器
+      item.setLayout(new ICEBoxLayout({ axis: 'x', gap: controlGap, align: 'start' }));
       const radio = new ICERadioButton({
-        left: 0,
-        top: 0,
         width: radioSize,
         height: this.itemHeight,
         selected: option.value === this.value,
@@ -266,8 +268,6 @@ export class ICERadioGroup extends ICEWidget {
       }
       const labelNode = new ICELabel({
         interactive: false,
-        left: radioSize + controlGap,
-        top: 0,
         width: textWidth,
         height: this.itemHeight,
         text: label,
@@ -287,7 +287,6 @@ export class ICERadioGroup extends ICEWidget {
       this.radioNodes.push(radio);
       this.labelNodes.push(labelNode);
       maxWidth = Math.max(maxWidth, itemWidth);
-      cursor += itemWidth + this.itemGap;
     });
 
     if (this.direction === 'vertical') {
