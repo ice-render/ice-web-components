@@ -209,7 +209,9 @@ check(
 
 /* ---------- 4. 寻路模式 ---------- */
 await clickExpr('window.__algo.nodes.modeButtons.maze');
-await page.waitForFunction(() => window.__algo && window.__algo.player.getFrameCount() > 10, null, { timeout: 5000 });
+// 这里等的是「切到迷宫模式后轨迹要重录出帧」，不是性能 SLA：5s 在 `qa:all` 序列里会被前序套件的
+// 收尾/GC 挤爆（实测偶发 TimeoutError，而单跑 3/3 通过、帧数稳定 271）。给到 20s，判据不变。
+await page.waitForFunction(() => window.__algo && window.__algo.player.getFrameCount() > 10, null, { timeout: 20000 });
 const mazeBoot = await page.evaluate(() => {
   const algo = window.__algo;
   const maze = algo.nodes.maze;

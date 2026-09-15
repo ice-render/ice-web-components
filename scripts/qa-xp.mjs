@@ -592,18 +592,43 @@ await page.keyboard.press('Escape');
 await page.waitForTimeout(220);
 
 /* ---------- 8. 托盘音效开关 / 注销 / 关机 / 重新开机 ---------- */
-const soundBefore = await page.evaluate(() => ({ enabled: window.__result.sound.enabled, text: window.__result.trayLabel.getText() }));
+/**
+ * 托盘图标是**自绘位图**（画布禁彩色 emoji 的老问题：emoji 在 canvas 里会变方框），
+ * 所以这里断言的是"图标换了一张图"而不是文字：三个托盘图标都是 `data:image/png`，
+ * 静音时喇叭那张 src 变、再点回来又回到最初那张。
+ */
+const trayState = () =>
+  page.evaluate(() => {
+    const r = window.__result;
+    const glyphs = r.trayLabel.childNodes.map((n) => String((n.state && n.state.src) || ''));
+    return {
+      enabled: r.sound.enabled,
+      glyphCount: glyphs.length,
+      allBitmaps: glyphs.every((s) => s.startsWith('data:image/png')),
+      speaker: String((r.traySpeaker && r.traySpeaker.state && r.traySpeaker.state.src) || ''),
+    };
+  });
+const soundBefore = await trayState();
 const soundClick = await clickExpr('window.__result.traySoundToggle');
-const soundMuted = await page.evaluate(() => ({ enabled: window.__result.sound.enabled, text: window.__result.trayLabel.getText() }));
+const soundMuted = await trayState();
 await clickExpr('window.__result.traySoundToggle');
-const soundBack = await page.evaluate(() => ({
-  enabled: window.__result.sound.enabled,
-  text: window.__result.trayLabel.getText(),
-}));
+const soundBack = await trayState();
 check(
-  '托盘喇叭：点一下静音、再点回来（图标跟着变）',
-  soundClick && soundBefore.enabled === true && soundMuted.enabled === false && /🔇/.test(soundMuted.text) && soundBack.enabled === true && /🔊/.test(soundBack.text),
-  JSON.stringify({ soundBefore, soundMuted, soundBack }),
+  '托盘喇叭：点一下静音、再点回来（自绘图标跟着换）',
+  soundClick &&
+    soundBefore.enabled === true &&
+    soundMuted.enabled === false &&
+    soundBefore.glyphCount === 3 &&
+    soundBefore.allBitmaps === true &&
+    soundMuted.glyphCount === 3 &&
+    soundMuted.speaker !== soundBefore.speaker &&
+    soundBack.enabled === true &&
+    soundBack.speaker === soundBefore.speaker,
+  JSON.stringify({
+    before: { enabled: soundBefore.enabled, glyphs: soundBefore.glyphCount, bitmaps: soundBefore.allBitmaps, src: soundBefore.speaker.slice(0, 24) },
+    muted: { enabled: soundMuted.enabled, glyphs: soundMuted.glyphCount, src: soundMuted.speaker.slice(0, 24) },
+    back: { enabled: soundBack.enabled, sameSrcAsBefore: soundBack.speaker === soundBefore.speaker },
+  }),
 );
 
 // 开始菜单 → 注销 → 回登录界面
