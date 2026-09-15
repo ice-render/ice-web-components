@@ -56,6 +56,24 @@
        *
        * 之前靠手写绝对坐标排 60+ 个演示，结果是「新演示只能塞进缝里」，最后出现交叠。
        */
+      /**
+       * 版块流式排布（簇 + 货架）。
+       *
+       * **排布已交给引擎的布局器**（2026-09-15 起）：
+       * - `panel` → `ICEBoxLayout(axis: 'y')`：版块纵向堆叠（间距 = sectionGap）；
+       * - 每个版块 → `ICEBoxLayout(axis: 'y')`：标题一行 + 簇区一行（间距 = headingGap）；
+       * - 簇区 → `ICEFlowLayout({ pack: 'first-fit', crossAlign: 'center', gap, gapY })`：
+       *   簇从左到右排、放不下换行，**小簇优先回填到还放得下的上一行**（first-fit）——
+       *   这正是原先手写"货架"的逻辑，现在由引擎负责。
+       *
+       * 本函数只保留两件"引擎不该管"的事：
+       * ① **量簇**：簇内成员保持各自的局部坐标（整体平移），所以要算它们的包围盒；
+       *    含后代（如 ICESpin 右侧的 tip 文字），但遇到 `clipChildren` 容器以它自身为界
+       *    （否则轮播里排在屏外的幻灯片会把宽度撑爆）。
+       * ② 把量到的簇尺寸写回簇容器，然后 `panel.doLayout()` 让引擎排。
+       *
+       * 幂等：允许重复调用（首帧渲染后再跑一次，让"渲染时才定高"的组件拿到真实尺寸）。
+       */
       const flowSections = (panel, sections, options = {}) => {
         const padX = options.padX ?? 28;
         const padTop = options.padTop ?? 24;
@@ -67,14 +85,16 @@
         const sectionGap = options.sectionGap ?? 22;
         const width = Number(panel.state.width) || 0;
         const avail = width - padX * 2;
-        // 幂等：允许重复调用（首帧渲染后再跑一次，让「渲染时才定高」的组件拿到真实尺寸）。
-        // 标题只创建一次；已在面板里的节点不再重复 addChild（否则会重复挂载）。
-        const attach = (node) => {
-          if (node.parentNode !== panel) panel.addChild(node, false);
-        };
 
-        // 量一个 cluster 的包围盒：**含后代**（例如 ICESpin 右侧的 tip 文字），
-        // 但遇到 clipChildren 容器就以它自身为界（否则轮播里排在屏外的幻灯片会撑爆宽度）。
+        const ICE = window.ICE;
+        const W = window.ICEWEB;
+        const strip = (props) => new W.ICEWidget(Object.assign({ fill: false, stroke: false, interactive: false }, props));
+
+        // ① 面板与版块的布局策略（幂等：重复调用只是再设一次同一个策略）
+        panel.setState({ padding: { left: padX, right: padX, top: padTop, bottom: padBottom } });
+        panel.setLayout(new ICE.ICEBoxLayout({ axis: 'y', gap: sectionGap }));
+
+        // ② 量簇：含后代，clipChildren 处收边
         const measure = (cluster) => {
           let l = Infinity;
           let t = Infinity;
@@ -97,60 +117,60 @@
           cluster.forEach((node) => visit(node, 0, 0));
           return { l, t, w: r - l, h: b - t };
         };
-        const shift = (cluster, dx, dy) =>
-          cluster.forEach((node) =>
-            node.setState({ left: (Number(node.state.left) || 0) + dx, top: (Number(node.state.top) || 0) + dy }),
-          );
 
-        // ① 组行
-        const lines = [];
-        sections.forEach((section, index) => {
-          if (section.title) lines.push({ kind: 'heading', section, title: section.title, first: index === 0 });
-          // 货架式排放（first-fit）：优先回填到「还放得下」的上一行，
-          // 而不是一味往后换行 —— 否则小徽标/小按钮会把页面撑得极高。
-          const shelves = [];
-          section.items.forEach((entry) => {
-            const cluster = Array.isArray(entry) ? entry : [entry];
-            const m = measure(cluster);
-            // +0.5 容差：宽度刚好铺满时（浮点误差）不该换行
-            let shelf = shelves.find((s) => s.used + m.w <= avail + 0.5);
-            if (!shelf) {
-              shelf = { used: 0, h: 0, items: [] };
-              shelves.push(shelf);
+        // ③ 建结构（只建一次）+ 量簇写回尺寸
+        sections.forEach((section) => {
+          if (!section.__node) {
+            const box = strip({ width: avail });
+            box.setLayout(new ICE.ICEBoxLayout({ axis: 'y', gap: headingGap }));
+            if (section.title) {
+              const title = heading(section.title, 0, 0);
+              title.setState({ width: avail, height: headingHeight });
+              box.addChild(title, false);
             }
-            shelf.items.push({ cluster, m });
-            shelf.used += m.w + gapX;
-            shelf.h = Math.max(shelf.h, m.h);
+            const flowArea = strip({ width: avail, height: 0 });
+            flowArea.setLayout(
+              new ICE.ICEFlowLayout({ gap: gapX, gapY, crossAlign: 'center', pack: 'first-fit' })
+            );
+            box.addChild(flowArea, false);
+            section.__flowArea = flowArea;
+            section.__clusters = [];
+            section.items.forEach((entry) => {
+              const clusterNodes = Array.isArray(entry) ? entry : [entry];
+              const clusterBox = strip({ width: 0, height: 0 });
+              clusterNodes.forEach((node) => clusterBox.addChild(node, false));
+              flowArea.addChild(clusterBox, false);
+              section.__clusters.push({ box: clusterBox, nodes: clusterNodes });
+            });
+            panel.addChild(box, false);
+            section.__node = box;
+          }
+          // 量簇 → 写回簇容器尺寸（簇内成员保持局部坐标，整体由布局平移）
+          section.__clusters.forEach((entry) => {
+            const m = measure(entry.nodes);
+            entry.box.setState({ width: Math.max(0, m.w), height: Math.max(0, m.h) });
+            entry.nodes.forEach((node) =>
+              node.setState({
+                left: (Number(node.state.left) || 0) - m.l,
+                top: (Number(node.state.top) || 0) - m.t,
+              })
+            );
           });
-          shelves.forEach((shelf) => lines.push({ kind: 'row', row: shelf.items, h: shelf.h }));
-        });
-        lines.forEach((line) => {
-          if (line.h === undefined) line.h = headingHeight;
         });
 
-        // ② 落位
-        let y = padTop;
-        lines.forEach((line, index) => {
-          if (line.kind === 'heading') {
-            if (index > 0) y += sectionGap;
-            // 标题缓存在 section 上（lines 每次调用都会重建，缓存在行上会重复创建标题）
-            const title = line.section.__heading || (line.section.__heading = heading(line.title, 0, 0));
-            title.setState({ left: padX, top: y, width: avail, height: headingHeight });
-            attach(title);
-            y += line.h + headingGap;
-            return;
-          }
-          let x = padX;
-          line.row.forEach((entry) => {
-            const dy = y + Math.max(0, (line.h - entry.m.h) / 2);
-            shift(entry.cluster, x - entry.m.l, dy - entry.m.t);
-            entry.cluster.forEach(attach);
-            x += entry.m.w + gapX;
-          });
-          y += line.h + gapY;
+        // ④ 尺寸协商（自下而上）：簇区高度 = 换行后的行高之和（引擎按它当前宽度算），
+        //    版块高度 = 标题 + 间距 + 簇区（BoxLayout 的首选尺寸），面板高度 = 各版块之和。
+        sections.forEach((section) => {
+          const flowArea = section.__flowArea;
+          const box = section.__node;
+          if (!flowArea || !box) return;
+          flowArea.setState({ height: flowArea.getPreferredSize()[1] });
+          box.setState({ height: box.getPreferredSize()[1] });
         });
-        const height = y - gapY + padBottom;
+        const height = Math.max(0, panel.getPreferredSize()[1]) + padBottom;
         panel.setState({ height });
+        // ⑤ 交给引擎排（版块纵向 → 标题/簇区 → 簇 first-fit 流式）
+        panel.doLayout();
         return height;
       };
 
@@ -1533,6 +1553,17 @@
         },
       ];
 
+      // 按 id 找节点：**递归**（排布交给布局器后，节点嵌在"版块 → 簇区 → 簇"里，不再是面板的直接子节点）
+      const findById = (root, id) => {
+        const hit = (root.childNodes || []).find((node) => node.state && node.state.id === id);
+        if (hit) return hit;
+        for (const child of root.childNodes || []) {
+          const found = findById(child, id);
+          if (found) return found;
+        }
+        return undefined;
+      };
+
       // 画布随内容长高：改元素尺寸 + 同步 ice.canvasWidth/Height（渲染器每帧都读它）
       const syncCanvasToContent = (height) => {
         panel.setState({ height });
@@ -1553,7 +1584,7 @@
       syncCanvasToContent(flowSections(panel, sections));
 
       // 下拉菜单演示：点 Default 弹菜单，选中后触发按钮文字更新
-      const defaultButton = panel.childNodes.find((node) => node.state && node.state.id === 'btn-default');
+      const defaultButton = findById(panel, 'btn-default');
       const dropdown = W.attachDropdown(ice, defaultButton, {
         items: [
           { key: 'day', label: '按天' },
@@ -1567,7 +1598,7 @@
 
 
       // 浮层演示：点 Primary 弹出 popover（弹层底座 + 入场缩放/出场淡出）
-      const primaryButton = panel.childNodes.find((node) => node.state && node.state.id === 'btn-primary');
+      const primaryButton = findById(panel, 'btn-primary');
       const makePopover = () => {
         const popover = new W.ICEPanel({ width: 208, height: 84, radius: 8 });
         popover.addChild(

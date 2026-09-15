@@ -91,6 +91,22 @@
        * 流式布局：cluster（一组必须贴在一起的组件）内部保持相对位置，整体平移；
        * 簇之间「货架式」first-fit 排布，放不下才换行。页面高度按内容算。
        * ------------------------------------------------------------------ */
+      /**
+       * 版块流式排布（簇 + 货架）。
+       *
+       * **排布与"什么时候重排"都交给引擎的布局器**（2026-09-15 起）：
+       * 容器 → `ICEBoxLayout(axis:'y')`；版块 → `ICEBoxLayout(axis:'y')`（标题 + 簇区）；
+       * 簇区 → `ICEFlowLayout({ pack: 'first-fit', crossAlign, gap, gapY })` —— 小簇优先回填到
+       * 还放得下的上一行，这就是原先手写"货架"的逻辑。
+       *
+       * 本函数只保留两件引擎不该管的事：
+       * ① **量簇**（簇内成员保持局部坐标，整体由布局平移；含后代，clipChildren 处收边）；
+       * ② 尺寸协商 + 把"重新量簇"挂到 `container.__relayout` 上（动态文案改了宽度要重新量，
+       *    `relayoutAncestors` 会从内到外调用它）。
+       *
+       * 注意：**不再覆盖 `container.requestLayout`** —— 以前那是手写一次性布局的补丁
+       * （文字变宽后兄弟节点不会回来）；现在引擎自己的失效链路就会重排，覆盖反而会把它挡掉。
+       */
       const flow = (container, sections, options = {}) => {
         const padX = options.padX ?? 24;
         const padTop = options.padTop ?? 20;
@@ -100,13 +116,11 @@
         const headingHeight = options.headingHeight ?? 18;
         const headingGap = options.headingGap ?? 10;
         const sectionGap = options.sectionGap ?? 20;
-        /** 行内对齐：'center' 让高矮不一的控件（按钮/标签）居中对齐；卡片场景用 'top' 顶对齐 */
+        /** 行内对齐：'center' 让高矮不一的控件居中对齐；卡片场景用 'top' 顶对齐 */
         const alignItems = options.align || 'center';
         const avail = (Number(container.state.width) || 0) - padX * 2;
+        const strip = (props) => new W.ICEWidget(Object.assign({ fill: false, stroke: false, interactive: false }, props));
 
-        const attach = (node) => {
-          if (node.parentNode !== container) container.addChild(node, false);
-        };
         const measure = (cluster) => {
           let l = Infinity;
           let t = Infinity;
@@ -129,77 +143,68 @@
           cluster.forEach((node) => visit(node, 0, 0));
           return { l, t, w: r - l, h: b - t };
         };
-        const shift = (cluster, dx, dy) =>
-          cluster.forEach((node) =>
-            node.setState({ left: (Number(node.state.left) || 0) + dx, top: (Number(node.state.top) || 0) + dy }),
-          );
 
-        const lines = [];
-        sections.forEach((section, index) => {
-          if (section.title) lines.push({ kind: 'heading', section, title: section.title, first: index === 0 });
-          const shelves = [];
-          section.items.forEach((entry) => {
-            // 过滤掉空位（例如条件创建的组件没生成），避免测量时拿到 undefined
-            const cluster = (Array.isArray(entry) ? entry : [entry]).filter((node) => node && node.state);
-            const m = measure(cluster);
-            // +3 容差：簇的实测宽度常比标称宽零点几像素（文字测量），
-            // 「刚好铺满」的算式会因为这点误差整行换掉
-            let shelf = shelves.find((s) => s.used + m.w <= avail + 3);
-            if (!shelf) {
-              shelf = { used: 0, h: 0, items: [] };
-              shelves.push(shelf);
+        container.setState({ padding: { left: padX, right: padX, top: padTop, bottom: padBottom } });
+        container.setLayout(new ICE.ICEBoxLayout({ axis: 'y', gap: sectionGap }));
+
+        sections.forEach((section) => {
+          const items = (section.items || [])
+            .map((entry) => (Array.isArray(entry) ? entry : [entry]).filter((node) => node && node.state))
+            .filter((cluster) => cluster.length > 0);
+          if (!section.__node) {
+            const sectionBox = strip({ width: avail });
+            sectionBox.setLayout(new ICE.ICEBoxLayout({ axis: 'y', gap: headingGap }));
+            if (section.title) {
+              const title = heading(section.title);
+              title.setState({ width: avail, height: headingHeight });
+              sectionBox.addChild(title, false);
+              section.__heading = title;
             }
-            shelf.items.push({ cluster, m });
-            shelf.used += m.w + gapX;
-            shelf.h = Math.max(shelf.h, m.h);
+            const flowArea = strip({ width: avail, height: 0 });
+            flowArea.setLayout(
+              new ICE.ICEFlowLayout({
+                gap: gapX,
+                gapY,
+                crossAlign: alignItems === 'center' ? 'center' : 'start',
+                pack: 'first-fit',
+              })
+            );
+            sectionBox.addChild(flowArea, false);
+            section.__flowArea = flowArea;
+            section.__clusters = items.map((clusterNodes) => {
+              const clusterBox = strip({ width: 0, height: 0 });
+              clusterNodes.forEach((node) => clusterBox.addChild(node, false));
+              flowArea.addChild(clusterBox, false);
+              return { box: clusterBox, nodes: clusterNodes };
+            });
+            container.addChild(sectionBox, false);
+            section.__node = sectionBox;
+          }
+          // 量簇 → 写回簇容器尺寸（幂等：动态文案变了宽度要重新量）
+          section.__clusters.forEach((entry) => {
+            const m = measure(entry.nodes);
+            entry.box.setState({ width: Math.max(0, m.w), height: Math.max(0, m.h) });
+            entry.nodes.forEach((node) =>
+              node.setState({
+                left: (Number(node.state.left) || 0) - m.l,
+                top: (Number(node.state.top) || 0) - m.t,
+              })
+            );
           });
-          shelves.forEach((shelf) => lines.push({ kind: 'row', row: shelf.items, h: shelf.h }));
-        });
-        lines.forEach((line) => {
-          if (line.h === undefined) line.h = headingHeight;
         });
 
-        let y = padTop;
-        lines.forEach((line, index) => {
-          if (line.kind === 'heading') {
-            if (index > 0) y += sectionGap;
-            const title = line.section.__heading || (line.section.__heading = heading(line.title));
-            title.setState({ left: padX, top: y, width: avail, height: headingHeight });
-            attach(title);
-            y += line.h + headingGap;
-            return;
-          }
-          let x = padX;
-          line.row.forEach((entry) => {
-            const dy = alignItems === 'top' ? y : y + Math.max(0, (line.h - entry.m.h) / 2);
-            shift(entry.cluster, x - entry.m.l, dy - entry.m.t);
-            entry.cluster.forEach(attach);
-            x += entry.m.w + gapX;
-          });
-          y += line.h + gapY;
+        // 尺寸协商（自下而上）：簇区高度 = 换行后行高之和（引擎按它当前宽度算）；
+        // 版块 = 标题 + 间距 + 簇区；容器 = 各版块之和 + 下内距
+        sections.forEach((section) => {
+          if (!section.__node || !section.__flowArea) return;
+          section.__flowArea.setState({ height: section.__flowArea.getPreferredSize()[1] });
+          section.__node.setState({ height: section.__node.getPreferredSize()[1] });
         });
-        const height = y - gapY + padBottom;
+        const height = Math.max(0, container.getPreferredSize()[1]) + padBottom;
         container.setState({ height });
-        /**
-         * 记下「怎么重排这一次」：页面里的文案是动态的（选中数量 / 金额区间 / 履约进度…），
-         * 文字一变宽度就变，而这是一次性布局 —— 不重排的话兄弟节点还停在
-         * 「按旧文字宽度」算出来的位置上，文字就压过去了（批量操作行就是这么被压住的）。
-         * 重排是幂等的：每次都重新测量簇的包围盒，再把它们摆到该在的位置。
-         */
+        container.doLayout();
+        /** 动态文案改了宽度时，`relayoutAncestors` 会从内到外调它 —— 重新量簇再让引擎排一次。 */
         container.__relayout = () => flow(container, sections, options);
-        /**
-         * 组件主动要求重排时（`ICELabel` 发现自己的实测尺寸变了，会调父容器的 `requestLayout()`），
-         * 把这一步接到这一层的重排上。不接的话，一次性布局的容器对 `requestLayout` 只会无动于衷 ——
-         * 包装盒从 418 修成 228 之后，按旧宽度留位的邻居不会跟着回来。
-         */
-        container.requestLayout = () => {
-          container.__relayout();
-          // 页面这一层的高度变了：同步滚动内容尺寸（页面节点 = 直接挂在 pageHost 下）
-          if (container.parentNode === pageHost) {
-            pageHost.setState({ height: container.state.height });
-            contentHost.setContentSize(container.state.width, container.state.height);
-          }
-        };
         return height;
       };
 
