@@ -155,10 +155,25 @@ raise(callerProvidedNode, (Number(panel.state.zIndex) || 0) + 1);
 逐个登记文件里"会自建子节点 + 按序号/游标推导位置"的类，**新组件漏做决定就红**。
 同一文件里另外几条管着容器型组件（`MIGRATED` / `PENDING`）与复合叶子。
 
-被判成 `derived` 的现存清单（按迁移成本从低到高）：
-`ICERate`（一行星星）、`ICEResult`（宽度不一的按钮行）、`ICEBreadcrumb`（横向项 + 分隔符靠 cursor 累计）、
-`ICEColorPicker`（色板网格）、`ICEAnchor`、`ICETimeline`、`ICEDescriptions`、`ICEFormList`、`ICEUpload`、
-`ICECascader`、`ICESteps`（横向步骤；连接线宽度与圆圈直径绑在一起，要一起算）。
+**被判成 `derived` 的那批已经全部迁完**（2026-09-15 同日第三批，共 11 个组件）：
+`ICERate` / `ICEResult` / `ICEBreadcrumb` / `ICEColorPicker` / `ICEAnchor` / `ICETimeline` /
+`ICEDescriptions` / `ICEFormList` / `ICEUpload` / `ICECascader` / `ICESteps`。
+迁移口径是**坐标与历史手写版逐项一致**（不是"看起来差不多"），逐条钉在
+`tests/derivedLayoutMigration.test.ts` 里（期望值就按历史公式算：`index × 行高`、
+`padding + col × (格 + 缝)`）。
+
+三处值得记下的手法：
+
+* **装饰与排布分开**：`ICETimeline` 的竖线 / 圆点是"相对本行"算的，就把它们收进**行内**
+  （行自己由 BoxLayout 排）—— 否则布局会把装饰当成内容再摆一遍；
+* **宿主隔离**：`ICEUpload` 的上传区是固定内缩 3px 的单体构件、文件行从它下方起且行间无缝，
+  两段间距不是同一个数 → 只给**文件行宿主**挂 BoxLayout，上传区保持自身坐标；
+* **容器宽度是这一趟算出来的**：`ICEBreadcrumb` 的宽度自适应会改写自己的 `width`，
+  而 `addChild` 已经按旧宽度排过一遍（宽度不够会折行）→ 末尾必须 `doLayout()` **立刻**再排一次，
+  只调 `revalidate()`（下一帧）会先闪一帧错版。
+
+`derived` 这个口径本身留着：以后新增组件若一时迁不动，就在棘轮里登记成 `derived：<理由>`，
+它会被"改判检查"盯着（迁完必须改写成 `engine：`）。
 
 **示例页**这一轮也按同一把尺子过了一遍：
 

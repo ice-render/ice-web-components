@@ -1,6 +1,6 @@
 {
   "name": "ice-web-components",
-  "version": "1.10.1",
+  "version": "1.10.2",
   "description": "Swing-style Canvas UI components built on ice-render.",
   "repository": {
     "type": "git",
@@ -30,6 +30,7 @@
     "qa:algo": "node scripts/qa-algo.mjs",
     "qa:dos": "node scripts/qa-dos.mjs",
     "qa:counts": "node scripts/lib/qa-counts.mjs",
+    "qa:all": "node scripts/qa-all.mjs",
     "qa:perf": "node scripts/qa-perf.mjs",
     "qa:counts:write": "node scripts/lib/qa-counts.mjs --write",
     "docs:api": "node scripts/gen-docs.mjs",
@@ -37,7 +38,7 @@
     "docs": "npm run docs:api && npm run docs:check",
     "verify": "npm run types:check && npm test && npm run build && npm run docs && node scripts/lib/qa-counts.mjs --check",
     "test:e2e": "npm run build && playwright test",
-    "verify:full": "npm run verify && npm run test:e2e && npm run qa:perf"
+    "verify:full": "npm run verify && npm run test:e2e && npm run qa:all && npm run qa:perf"
   },
   "devDependencies": {
     "@babel/core": "7.28.5",

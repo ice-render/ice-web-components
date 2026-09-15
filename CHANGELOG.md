@@ -7,6 +7,41 @@
 
 > 下一个版本发布前，改动在这里累积。
 
+## [1.10.2] - 2026-09-15
+
+### 变更
+
+- **11 个"派生排列"组件改挂引擎布局器**（第二轮审计判为 `derived：待迁` 的那批，一次做完）：
+  `ICERate`（星星行）、`ICEResult`（居中按钮行）、`ICEBreadcrumb`（项 + 分隔符）、
+  `ICEColorPicker`（色板网格）、`ICEAnchor`（条目列）、`ICETimeline`（条目行，竖线/圆点收进行内）、
+  `ICEDescriptions`（标签/值网格）、`ICEFormList`（行 + 添加按钮）、`ICEUpload`（文件行宿主）、
+  `ICECascader`（列行 + 列内选项行）、`ICESteps`（步骤槽）。
+  **坐标与历史手写版逐项一致**（回归见新增 `tests/derivedLayoutMigration.test.ts` 与
+  `tests/ICECascader.test.ts` 的几何用例）—— 用户看不到任何版式变化，变化的是"位置由谁算"。
+- `tests/layoutConvention.test.ts` 的复合控件决策表随之改写：`derived` 清零，12 条改判 `engine`。
+  决策表口径与三处迁移手法写进 `docs/guides/layout.md` 第四节。
+
+### 修复
+
+- **`ICETimeline.__render()` 没清空 `itemNodes` / `dots`**：`setItems()` 之后再取节点会拿到
+  **上一次渲染**的那批（坐标已过期），`getDotColor(i)` 同样返回旧节点颜色。
+- **`ICEBreadcrumb` 宽度自适应后不立刻重排**：宽度是渲染这一趟算出来的，而 `addChild` 已按旧宽度
+  排过一遍（宽度不够会把项折行），只调 `revalidate()` 要等下一帧才纠正 → 补一次同步 `doLayout()`。
+
+### 工程
+
+- **八套浏览器 QA 接进门禁**：新增 `npm run qa:all`（顺序执行 + 汇总，任一套失败则非 0），
+  `verify:full` 现在是 `verify → test:e2e → qa:all → qa:perf`。
+  此前 `qa:*` 不在任何门禁里 —— `ICEList.getRowNode` 删除后 `qa-workbench` / `qa-admin`
+  一直是失败的却没人发现（脚本先崩、后面几十项根本没跑）。见 `docs/guides/testing.md`。
+
+### 验证
+
+- `npm run verify` 全绿（189 suite / 1350+ 用例）；`npm run test:e2e` 10/10；`npm run qa:all` 8/8；
+- 逐页截图与迁移前**逐像素比对**：workbench / pixel / algo / dos **0 像素差异**；
+  xp 仅 150 像素（任务栏时钟）；arcade 0.556%（低于其自带动画噪声 0.73%）；
+  gallery 的差异除一处旋转中的 loading 图标外，最大单通道差 ≤ 2（离屏位图预乘取整，属既有口径）。
+
 ## [1.10.1] - 2026-09-15
 
 ### 修复

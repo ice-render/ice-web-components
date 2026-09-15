@@ -63,7 +63,8 @@ export function collectCounts() {
   const dir = path.join(ROOT, 'scripts');
   return fs
     .readdirSync(dir)
-    .filter((name) => /^qa-.*\.mjs$/.test(name))
+    // `qa-all.mjs` 是**执行器**（顺序跑各套 + 汇总），自己不是一套 QA，别统计进来。
+    .filter((name) => /^qa-.*\.mjs$/.test(name) && name !== 'qa-all.mjs')
     .sort()
     .map((name) => {
       const key = name.replace(/^qa-/, '').replace(/\.mjs$/, '');
