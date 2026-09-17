@@ -53,7 +53,7 @@ graph TD
 - **Bootstrap 5 token theme** (plus a dark theme) — swap with one call.
 - **No name collisions with the engine** — the package’s runtime exports are
   disjoint from `ice-render`’s (there is a regression test for it).
-- **Actually tested** — 1351 unit tests (191 suites: form validation, overlay
+- **Actually tested** — 1356 unit tests (192 suites, as of 2026-09-17: form validation, overlay
   positioning, keyboard navigation, sort/hover/focus edge cases, the Minesweeper,
   Tetris, Snake, 2048 and CHIP-8 rule/machine models, the pixel canvas and the undo
   stack, the console BIOS, the trace player + sorting/pathfinding and the DOS terminal)
@@ -346,7 +346,7 @@ kill. Keyboard: arrows or `W` / `A` / `S` / `D` to steer, `P` pause, `R` restart
 Clicking a cell on the board steers towards it — that is the tile map’s `cellclick`,
 i.e. a real hit test inside a single component.
 
-**Cartridge 3 — 2048** (`ICE2048Model`, 19 unit tests). The classic rules: two starting
+**Cartridge 3 — 2048** (`ICE2048Model`, 21 unit tests). The classic rules: two starting
 tiles, merges score their own value, each tile merges at most once per move (so `2 2 2 2`
 becomes `4 4`, not `8`), a move that changes nothing spawns nothing, and filling the board
 without any merge left is game over. Reaching 2048 wins but lets you keep playing.

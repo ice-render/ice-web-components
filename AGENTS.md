@@ -16,7 +16,7 @@
 
 ## 门禁
 
-- `npm run verify`：types:check → jest（837 用例）→ build → docs（API 生成 + 链接检查）
+- `npm run verify`：types:check → jest（192 suites / 1356 用例，2026-09-17 实测）→ build → docs（API 生成 + 链接检查）
 - `npm run verify:full`：verify + `test:e2e`（9 个合成示例页逐页断言无 console/pageerror、画布内容像素占比达标）
 
 ## 布局铁律（2026-09-15 确立，五条）
