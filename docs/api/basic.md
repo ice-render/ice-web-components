@@ -37,11 +37,25 @@
 | `getPainter()` | `ICEPainter \| null` |  |
 | `paintDecoration()` | `void` | 让 painter 画一次内部装饰。`doRender()` 每帧自动调用；单测可以直接调它来断言画笔行为 |
 | `addChild(child: any, markDirty: boolean)` | `void` | UI 组件内部的图元只负责外观，不参与画布级拖拽、变换、连线。 |
+| `onMount()` | `void` | 挂进 ICE 场景后调用一次（引擎 `AFTER_ADD`，与 `afterAddHandler` 同源）。 |
+| `onUnmount()` | `void` | 被移出场景前调用一次（引擎 `AFTER_REMOVE`；`removeChild()` 与 `ICE.remove()` 两条路都会触发）。 |
+| `onShow()` | `void` | 自身 `state.display` 由假变真时调用（对齐 Swing 的 `componentShown`）。祖先隐藏不算。 |
+| `onHide()` | `void` | 自身 `state.display` 由真变假时调用（对齐 Swing 的 `componentHidden`）。祖先隐藏不算。 |
+| `onResize()` | `void` | 自身宽或高变化时调用，**包含父容器布局器摆位引起的尺寸变化**。 |
+| `initEvents()` | `void` | 注册默认事件：转发给引擎基类（鼠标 / 键盘），再补上生命周期钩子要的一次性监听。 |
 | `theme()` |  |  |
 
 ## `ICEContainer`
 
-容器基类：在此挂布局策略（`setLayout`，链式返回自身）。
+容器型组件基类：**应用层对外的主要入口** —— 页面、面板、工作区的默认基类。
+
+- **契约**：继承本类 = ① 我能持有子节点、也能被嵌套；② 我负责把子节点排到正确位置； ③ 子节点坐标相对本容器的内容区（已扣 `padding`），因此可以无限嵌套。
+- **选哪条线**：要 `addChild` 并负责排布 → 本类；画不持有子节点、也不负责排布的叶子控件 （指针、状态灯…）→ `ICEWidget`。判定只需问一句：**我要不要给它 `addChild` 并负责排布？**
+- **布局**：优先挂布局策略（`setLayout`）；不挂才由调用方给绝对坐标（等价 Swing 的 `setLayout(null)`）。库内新增容器必须「挂布局」或「写清豁免原因」二选一，棘轮测试管着。
+- **不涉及页面 / 路由 / 激活**：谁挂载我、什么时候让我出现，是**宿主**的决定。宿主用 `setState({ display })` 切换可见性，容器收到 `onShow` / `onHide` / `onResize` / `onMount` / `onUnmount`（定义与分发点见 `ICEWidget`）。`onUpdate(deps)` 不是引擎回调， 是应用层自己的约定：页面自己声明关心哪些值、自己调用它。
+- **嵌套是能力，不是义务**：具体工程选扁平挂载（页面节点直接挂根、一套绝对坐标）还是 逐层嵌套，属于挂载方的策略，两者不冲突。
+- **不覆盖 `toJSON()`**：容器是结构，属于文档本身，应当被序列化。要排除内部零件，由组件 自己覆盖（`ICEMenu` / `ICETabs` / `ICEScrollPane` 是范例）。
+- 完整口径见 `docs/guides/layout.md`。
 
 源码：[`src/core/ICEContainer.ts`](../../src/core/ICEContainer.ts)
 
