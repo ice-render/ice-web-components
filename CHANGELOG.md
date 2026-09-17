@@ -7,6 +7,28 @@
 
 > 下一个版本发布前，改动在这里累积。
 
+### 新增
+
+- **`ICEContainer` 升为应用层对外的主要基类，并写清容器契约**（2026-09-17）。
+  契约三条：能持有子节点、负责把子节点排到正确位置、子节点坐标相对本容器内容区（已扣
+  `padding`）。页面 / 面板 / 工作区一律继承它；不持有子节点也不负责排布的叶子控件才继承
+  `ICEWidget`。判定只需问一句「我要不要给它 `addChild` 并负责排布」。库里**不出现**
+  页面 / 路由 / 激活概念 —— 谁挂载、何时显示由宿主决定。完整口径见
+  `docs/guides/layout.md` 第六节，源码注释是入口。
+- **`ICEWidget` 补齐生命周期钩子**：`onMount` / `onUnmount` / `onShow` / `onHide` /
+  `onResize`，全部可选实现（鸭子类型）。分发点分别接引擎的 `AFTER_ADD` / `AFTER_REMOVE`，
+  以及 `setState` 的显隐翻转与尺寸变化（**含父容器布局器摆出来的尺寸**）。`onUpdate(deps)`
+  不是引擎回调，是应用层自调用约定 —— 库不替应用判断「什么算数据变了」。
+  回归闸门：`tests/ICEWidgetLifecycle.test.ts`。
+
+### 修复
+
+- **`ICESplitter` 的私有字段与新的 `onResize` 钩子重名**（TS 报「separate declarations of
+  a private property」，属编译期硬错误）。只改私有字段名 `onResize → __onResizeCallback`，
+  对外 `props.onResize(size)` 的签名与语义不变。两者语义本就不同：prop 是「分隔条尺寸变了」，
+  钩子是「我这个组件被改尺寸了」；prop 的命名收敛（→ `onSplitChange` / 走 `resize` 事件）
+  是对外破坏性变更，单独排期。
+
 ## [1.12.0] - 2026-09-15
 
 ### 新增

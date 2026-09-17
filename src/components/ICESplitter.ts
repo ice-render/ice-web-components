@@ -130,7 +130,16 @@ export class ICESplitter extends ICEWidget {
   private first: any = null;
   private second: any = null;
   private divider: ICESplitterDivider;
-  private onResize: ((size: number) => void) | null;
+  /**
+   * 调用方传进来的 `props.onResize(size)` —— 语义是「**分隔条尺寸**变了」，不是「我这个组件
+   * 被改尺寸了」，与新加的 `ICEWidget.onResize()` 生命周期钩子（自身宽高变化）是两回事，
+   * 所以两者不能共用同一个字段名（TS 会直接报“separate declarations of a private property”）。
+   *
+   * TODO(命名收敛)：这个 prop 与 `ICEWindow` 的 `options.onResize` 都属于「同一件事两个名字」
+   * 里的构造回调那一半，建议改为 `onSplitChange` / 走已有的 `resize` 事件；
+   * 因为是对外 API 破坏性变更，单独排期，不混在生命周期钩子这一批里。
+   */
+  private __onResizeCallback: ((size: number) => void) | null;
   private dragging = false;
   private bound = false;
 
@@ -153,7 +162,7 @@ export class ICESplitter extends ICEWidget {
     this.direction = direction;
     this.dividerSize = Math.max(2, dividerSize);
     this.min = Math.max(0, Number(props.min) || 40);
-    this.onResize = typeof props.onResize === 'function' ? props.onResize : null;
+    this.__onResizeCallback = typeof props.onResize === 'function' ? props.onResize : null;
     this.requestedSize = Number(props.size) || 0;
     this.size = this.__clamp(this.requestedSize);
     this.first = props.first ?? null;
@@ -202,8 +211,8 @@ export class ICESplitter extends ICEWidget {
     this.size = next;
     this.doLayout();
     this.trigger('resize', null, { size: this.size });
-    if (this.onResize) {
-      this.onResize(this.size);
+    if (this.__onResizeCallback) {
+      this.__onResizeCallback(this.size);
     }
     return this;
   }

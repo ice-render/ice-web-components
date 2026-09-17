@@ -1,4 +1,4 @@
-import { ICEGroup } from 'ice-render';
+import { ICEGroup, ICE_EVENT_NAME_CONSTS } from 'ice-render';
 import type { ICEPainter } from './ICEPainter';
 import { iceUIManager } from './ICEManager';
 import { tFor } from '../i18n/ICEI18n';
@@ -343,16 +343,81 @@ export class ICEWidget extends ICEGroup {
    */
   protected __syncInternalLayout(): void {}
 
+  // ───────────────────────── 生命周期钩子（应用层契约） ─────────────────────────
+  //
+  // 全部可选实现（鸭子类型：实现了就生效，不强制）。语义与分发点见下面各条注释，
+  // 应用层该怎么用见 `ICEContainer` 的容器契约。
+
+  /** 挂进 ICE 场景后调用一次（引擎 `AFTER_ADD`，与 `afterAddHandler` 同源）。 */
+  protected onMount(): void {}
+
+  /** 被移出场景前调用一次（引擎 `AFTER_REMOVE`；`removeChild()` 与 `ICE.remove()` 两条路都会触发）。 */
+  protected onUnmount(): void {}
+
+  /** 自身 `state.display` 由假变真时调用（对齐 Swing 的 `componentShown`）。祖先隐藏不算。 */
+  protected onShow(): void {}
+
+  /** 自身 `state.display` 由真变假时调用（对齐 Swing 的 `componentHidden`）。祖先隐藏不算。 */
+  protected onHide(): void {}
+
+  /** 自身宽或高变化时调用，**包含父容器布局器摆位引起的尺寸变化**。 */
+  protected onResize(): void {}
+
   /**
-   * `setState` 后置钩子：尺寸变了就把上面那个钩子跑一遍。
+   * 本次 `setState` 是否翻转了**自身** `display`：`__beforeStateMerge` 写、`__afterStateMerge` 消费。
+   *
+   * 名字**不能**叫 `__displayChanged` —— 引擎 `ICEComponent` 已有同名私有字段，
+   * 重名会直接编译报错（TS 的「separate declarations of a private property」），
+   * 就算绕过类型检查，运行期也是同一个属性互相覆盖。
+   */
+  private __displayFlip: 'show' | 'hide' | null = null;
+
+  /**
+   * 注册默认事件：转发给引擎基类（鼠标 / 键盘），再补上生命周期钩子要的一次性监听。
+   *
+   * **子类覆盖时必须调 `super.initEvents()`** —— 否则不只是丢生命周期，还会丢掉引擎在
+   * `ICEGroup.initEvents` 里注册的 `AFTER_ADD` 同步链路。
+   */
+  protected initEvents(): void {
+    super.initEvents();
+    // 引擎在 `ICEGroup.initEvents` 里为 `AFTER_ADD` 注册了一次性回调，这里对称补上摘除的一侧。
+    this.once(ICE_EVENT_NAME_CONSTS.AFTER_REMOVE, this.onUnmount, this);
+  }
+
+  protected afterAddHandler(): void {
+    super.afterAddHandler();
+    this.onMount();
+  }
+
+  protected __beforeStateMerge(newState: any): boolean {
+    if (!!newState && newState.display !== undefined) {
+      const next = !!newState.display;
+      if (next !== this.state.display) {
+        this.__displayFlip = next ? 'show' : 'hide';
+      }
+    }
+    return super.__beforeStateMerge(newState);
+  }
+
+  /**
+   * `setState` 后置钩子：把「尺寸变化」和「显隐翻转」两件事分发出去。
    *
    * 放在基类而不是让 80+ 组件各自记得覆盖，是因为「忘了覆盖」的代价是静默的版面错乱 ——
    * 集中在基类分发，漏掉会由棘轮测试当场抓住，而不是等到业务页面上发现零件盖住邻居。
    */
   protected __afterStateMerge(sizeChanged: boolean): void {
     super.__afterStateMerge(sizeChanged);
+    const flip = this.__displayFlip;
+    this.__displayFlip = null;
+    if (flip === 'show') {
+      this.onShow();
+    } else if (flip === 'hide') {
+      this.onHide();
+    }
     if (sizeChanged) {
+      // 先让内部零件跟上新尺寸，再通知业务代码 —— `onResize()` 里读到的应当已经是摆好的版面。
       this.__syncInternalLayout();
+      this.onResize();
     }
   }
 

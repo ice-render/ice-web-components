@@ -6,7 +6,7 @@
 | 分组 | 组件 | 说明 |
 |---|---|---|
 | [基础组件](./api/basic.md) | [`ICEWidget`](./api/basic.md#icewidget) | 所有 UI 组件的基类（继承引擎 ICEGroup）。  在引擎的绘制能力之上只加四件事：交互态（enabled / hovered / focused）、键盘焦点 （`focusable` / `activate()`）、表单校验态（`validateStatus`）、表单取值约定 （`getFormValue` / `setFormValue`）。 |
-|  | [`ICEContainer`](./api/basic.md#icecontainer) | 容器基类：在此挂布局策略（`setLayout`，链式返回自身）。 |
+|  | [`ICEContainer`](./api/basic.md#icecontainer) | 容器型组件基类：**应用层对外的主要入口** —— 页面、面板、工作区的默认基类。 |
 |  | [`ICEPanel`](./api/basic.md#icepanel) | 面板：带填充、描边、圆角与阴影的基础容器，业务页面的“卡片底座”。 |
 |  | [`ICESpace`](./api/basic.md#icespace) | 间距容器：按固定间距排列一组子组件。 |
 |  | [`ICEGrid`](./api/basic.md#icegrid) | 24 栅格列：`span` 占多少格、`offset` 左边空多少格，`content` 是列内容。  一般配合 `ICEGrid`（行）使用，由行统一算宽度与位置，不需要手动设 width。 |
