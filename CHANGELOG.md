@@ -7,6 +7,35 @@
 
 > 下一个版本发布前，改动在这里累积。
 
+## [1.16.0] - 2026-09-17
+
+### 变更
+
+- ⚠️ **`getStatusColors()` 现在返回「主题引用」，不是色值字面量。**
+
+  这张表被 **Alert / Badge / Tag / StatCard / Statistic** 五处共用。以前它返回构造期取好的色值，
+  于是这五个组件全都停在"建出来的那一刻"的颜色上（热切换时"面板深了、标签还是浅底"）。
+  现在每个槽返回 `token('ui.colors.successBg')` 这类**引用**，五处**一次性**获得热切换能力，
+  而且按**各自的引擎实例**解析主题。
+
+  **对使用者的影响**：直接把这些值当字符串用（拼 CSS、`mix` / `shade` / alpha 运算）的代码要改 ——
+  先 `resolveColorValue(value)` 解析成字符串再算。库里唯一一处（`ICETag` 的悬停混色）已经改了。
+  家族应用层 grep 过：没有直接使用 `getStatusColors()` 的地方。
+
+  新增 `resolveColorValue(value, fallback?)`：把"可能是引用的色值"解析成字符串（派生计算用）。
+  `onSolid` 例外，仍是字面量 —— 它是"实底上配黑字还是白字"的**对比决定**，不是主题色。
+
+### 棘轮
+
+- `tests/theme-refs.test.ts` 的预算随之下降：库内构造期取色 **354 → 325 处**，`util/ICEStyle.ts`
+  从 31 处降到 **2 处**，Alert/Badge/Tag/StatCard/Statistic 五个文件直接归零。
+
+### 回归
+
+- `verify:full`：types / jest **196 suites · 1421 用例** / build / docs 346 链接 / qa-counts 303 项 /
+  真机 e2e 12/12 / **qa:all 8/8** / qa:perf 全在预算内。
+  （状态色这一改动在 admin / gallery / workbench 三套 QA 里都有实例。）
+
 ## [1.15.2] - 2026-09-17
 
 ### 新增

@@ -1,4 +1,4 @@
-import { ICEText, resolveThemeValue, tokenValue, type ICEThemeTokenRef } from 'ice-render';
+import { ICEText, resolveThemeValue, token, tokenValue, type ICEThemeTokenRef } from 'ice-render';
 import type { ICEThemeTokens } from '../theme/ICETheme';
 import { iceUIManager } from '../core/ICEManager';
 
@@ -33,6 +33,21 @@ export function resolvedStyleColor(
     }
   }
   return String(resolved === undefined || resolved === null ? fallback : resolved);
+}
+
+/**
+ * 把"可能是主题引用的色值"解析成**字符串**（派生计算 `mix` / `shade` / alpha 用得上）。
+ *
+ * 引用在 paint 时由引擎解析，但凡是**算**出来的颜色都必须先拿到字符串 ——
+ * 所以做混色前先过这一道（`getStatusColors()` 返回的就是引用）。
+ */
+export function resolveColorValue(value: any, fallback = ''): string {
+  if (typeof value === 'string') return value;
+  const path =
+    value && typeof value === 'object' && typeof value.$token === 'string' ? String(value.$token) : null;
+  if (!path) return fallback;
+  const resolved = tokenValue(path, { semantic: { ui: iceUIManager.getTheme() } } as any);
+  return resolved === undefined || resolved === null ? fallback : String(resolved);
 }
 
 /**
@@ -96,80 +111,96 @@ export function roundRectPath(
 }
 
 export type ICEStatusColors = {
-  background: string;
-  border: string;
+  /**
+   * 每个槽都是**主题引用**（`token('ui.colors.successBg')` 这类），不是色值字面量。
+   *
+   * 为什么：这套表被 Alert / Badge / Tag / StatCard / Statistic 五处共用，返回字面量的话
+   * 它们全都停在构造那一刻的颜色上（热切换时"面板深了、标签还是浅底"）。返回引用之后，
+   * 五处一起热切换，而且**每个 ICE 实例按自己的主题解析**。
+   *
+   * 要拿色值做派生计算（mix / shade / alpha）的，先用 `resolveColorValue()` 解析。
+   */
+  background: string | ICEThemeTokenRef;
+  border: string | ICEThemeTokenRef;
   /** 状态实色（白底上的文字 / 进度条等填充） */
-  text: string;
+  text: string | ICEThemeTokenRef;
   /** subtle 浅底上的强调文字色（Bootstrap `*-text-emphasis`） */
-  strong: string;
+  strong: string | ICEThemeTokenRef;
   /** 实底填充（Bootstrap `.text-bg-*` 的 background） */
-  solid: string;
-  /** 实底上的文字色（亮色底为黑字） */
+  solid: string | ICEThemeTokenRef;
+  /** 实底上的文字色（亮色底为黑字）。**这条是明暗对比的决定，不是主题色**，所以保留字面量。 */
   onSolid: string;
 };
 
+/**
+ * 状态色表。**返回值是主题引用**（不是色值）—— 这样五处使用者一起热切换。
+ *
+ * `theme` 参数保留是为了调用方不必改签名，但表里已经不再读它（引用在 paint 时按各自实例解析）。
+ * 需要色值做派生计算时用 `resolveColorValue()`。
+ */
 export function getStatusColors(theme: ICEThemeTokens, status: ICEStatusColor = 'default') {
+  void theme;
   // `text` = 状态实色（用在白底上，如统计卡的涨跌数字）
   // `strong` = 强调文字色（用在 subtle 浅底上，如 Alert/Tag/Badge 的文字）
   // `solid` / `onSolid` = Bootstrap 的 `.text-bg-*`（实底 + 白字，亮色底配黑字）
   if (status === 'success') {
     return {
-      background: theme.colors.successBg,
-      border: theme.colors.successBorder,
-      text: theme.colors.success,
-      strong: theme.colors.successTextEmphasis,
-      solid: theme.colors.success,
+      background: token('ui.colors.successBg'),
+      border: token('ui.colors.successBorder'),
+      text: token('ui.colors.success'),
+      strong: token('ui.colors.successTextEmphasis'),
+      solid: token('ui.colors.success'),
       onSolid: '#ffffff',
     };
   }
   if (status === 'warning') {
     return {
-      background: theme.colors.warningBg,
-      border: theme.colors.warningBorder,
-      text: theme.colors.warning,
-      strong: theme.colors.warningTextEmphasis,
-      solid: theme.colors.warning,
+      background: token('ui.colors.warningBg'),
+      border: token('ui.colors.warningBorder'),
+      text: token('ui.colors.warning'),
+      strong: token('ui.colors.warningTextEmphasis'),
+      solid: token('ui.colors.warning'),
       // Bootstrap `.text-bg-warning` 用黑字（亮黄底白字看不清）
       onSolid: '#000000',
     };
   }
   if (status === 'error') {
     return {
-      background: theme.colors.errorBg,
-      border: theme.colors.errorBorder,
-      text: theme.colors.error,
-      strong: theme.colors.errorTextEmphasis,
-      solid: theme.colors.error,
+      background: token('ui.colors.errorBg'),
+      border: token('ui.colors.errorBorder'),
+      text: token('ui.colors.error'),
+      strong: token('ui.colors.errorTextEmphasis'),
+      solid: token('ui.colors.error'),
       onSolid: '#ffffff',
     };
   }
   if (status === 'info') {
     return {
-      background: theme.colors.infoBg,
-      border: theme.colors.infoBorder,
-      text: theme.colors.info,
-      strong: theme.colors.infoTextEmphasis,
-      solid: theme.colors.info,
+      background: token('ui.colors.infoBg'),
+      border: token('ui.colors.infoBorder'),
+      text: token('ui.colors.info'),
+      strong: token('ui.colors.infoTextEmphasis'),
+      solid: token('ui.colors.info'),
       onSolid: '#000000',
     };
   }
   if (status === 'primary') {
     return {
-      background: theme.colors.primaryBg,
-      border: theme.colors.primaryBorder,
-      text: theme.colors.primary,
-      strong: theme.colors.primaryTextEmphasis,
-      solid: theme.colors.primary,
+      background: token('ui.colors.primaryBg'),
+      border: token('ui.colors.primaryBorder'),
+      text: token('ui.colors.primary'),
+      strong: token('ui.colors.primaryTextEmphasis'),
+      solid: token('ui.colors.primary'),
       onSolid: '#ffffff',
     };
   }
   return {
     background: theme.colors.surface,
-    border: theme.colors.border,
-    text: theme.colors.textSecondary,
-    strong: theme.colors.text,
+    border: token('ui.colors.border'),
+    text: token('ui.colors.textSecondary'),
+    strong: token('ui.colors.text'),
     // Bootstrap 的 `.text-bg-secondary`
-    solid: theme.colors.textSecondary,
+    solid: token('ui.colors.textSecondary'),
     onSolid: '#ffffff',
   };
 }

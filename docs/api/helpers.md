@@ -355,6 +355,8 @@ centerTextNode(text: string, theme: ICEThemeTokens, width: number, height: numbe
 
 ### `getStatusColors` — 函数
 
+状态色表。**返回值是主题引用**（不是色值）—— 这样五处使用者一起热切换。
+
 ```ts
 getStatusColors(theme: ICEThemeTokens, status: ICEStatusColor)
 ```

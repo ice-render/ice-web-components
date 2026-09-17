@@ -1,6 +1,6 @@
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
-import { ICEStatusColors, createTextNode, getStatusColors } from '../util/ICEStyle';
+import { ICEStatusColors, createTextNode, getStatusColors, resolveColorValue } from '../util/ICEStyle';
 
 /**
  * 标签：默认 Bootstrap 实底（`.text-bg-*`），`variant: 'soft'` 切浅底 + 强调文字。
@@ -81,8 +81,9 @@ export class ICETag extends ICEWidget {
     // solid：稍微提亮；soft：往面色上靠一点
     const hoverFill =
       this.variant === 'solid'
-        ? this.__mix('#ffffff', this.statusColors.solid, 0.85)
-        : this.__mix(theme.colors.surface, this.statusColors.background, 0.55);
+        ? // 状态色表现在返回的是**主题引用**（那样才能热切换），派生计算前先解析成色值
+          this.__mix('#ffffff', resolveColorValue(this.statusColors.solid), 0.85)
+        : this.__mix(resolveColorValue(theme.colors.surface), resolveColorValue(this.statusColors.background), 0.55);
     this.setState({
       style: {
         ...this.state.style,

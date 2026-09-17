@@ -21,6 +21,12 @@ import { ICEBoxLayout, ICEFlowLayout } from 'ice-render';
 import { ICE_LIGHT_THEME } from '../src';
 import { resolvedStyleColor } from '../src/util/ICEStyle';
 
+/**
+ * 读"状态色"：`getStatusColors()` 现在返回**主题引用**（那样 Alert/Badge/Tag/StatCard/Statistic
+ * 五处才能一起热切换），所以断言要解析一次 —— 直接读 `style.fillStyle` 会拿到 `{$token}`。
+ */
+const statusColor = (node: any, key: 'fillStyle' | 'strokeStyle') => resolvedStyleColor(node, key);
+
 describe('ice-web-components component behavior', () => {
   beforeEach(() => {
     iceUIManager.setTheme('light');
@@ -77,28 +83,28 @@ describe('ice-web-components component behavior', () => {
       button.setText('Stop');
       expect(button.getText()).toBe('Stop');
 
-      expect(button.state.style.fillStyle).toBe(ICE_LIGHT_THEME.colors.primary);
+      expect(statusColor(button, 'fillStyle')).toBe(ICE_LIGHT_THEME.colors.primary);
       button.setHovered(true);
-      expect(button.state.style.fillStyle).toBe(ICE_LIGHT_THEME.colors.primaryHover);
+      expect(statusColor(button, 'fillStyle')).toBe(ICE_LIGHT_THEME.colors.primaryHover);
       button.setHovered(false);
-      expect(button.state.style.fillStyle).toBe(ICE_LIGHT_THEME.colors.primary);
+      expect(statusColor(button, 'fillStyle')).toBe(ICE_LIGHT_THEME.colors.primary);
     });
 
     it('applies pressed colour on mousedown and restores on mouseup', () => {
       const button = new ICEButton({ text: 'Go' });
       button.trigger('mousedown', {});
-      expect(button.state.style.fillStyle).toBe(ICE_LIGHT_THEME.colors.primaryActive);
+      expect(statusColor(button, 'fillStyle')).toBe(ICE_LIGHT_THEME.colors.primaryActive);
       button.trigger('mouseup', {});
-      expect(button.state.style.fillStyle).toBe(ICE_LIGHT_THEME.colors.primary);
+      expect(statusColor(button, 'fillStyle')).toBe(ICE_LIGHT_THEME.colors.primary);
     });
 
     it('disables interactions and changes label colour', () => {
       const button = new ICEButton({ text: 'Disabled', variant: 'default' });
       const label = button.childNodes[0];
-      expect(label.state.style.fillStyle).toBe(ICE_LIGHT_THEME.colors.text);
+      expect(statusColor(label, 'fillStyle')).toBe(ICE_LIGHT_THEME.colors.text);
       button.setEnabled(false);
       expect(button.state.interactive).toBe(false);
-      expect(label.state.style.fillStyle).toBe(ICE_LIGHT_THEME.colors.textDisabled);
+      expect(statusColor(label, 'fillStyle')).toBe(ICE_LIGHT_THEME.colors.textDisabled);
     });
   });
 
@@ -106,16 +112,16 @@ describe('ice-web-components component behavior', () => {
     it('creates badges and tags with status colours', () => {
       const badge = new ICEBadge({ text: '5', status: 'error' });
       // 默认实底（Bootstrap `.text-bg-*`），配白字
-      expect(badge.state.style.fillStyle).toBe(ICE_LIGHT_THEME.colors.error);
-      expect(badge.state.style.strokeStyle).toBe(ICE_LIGHT_THEME.colors.error);
+      expect(statusColor(badge, 'fillStyle')).toBe(ICE_LIGHT_THEME.colors.error);
+      expect(statusColor(badge, 'strokeStyle')).toBe(ICE_LIGHT_THEME.colors.error);
       expect(badge.childNodes[0].state.style.fillStyle).toBe('#ffffff');
       badge.setText('8');
       expect(badge.childNodes[0].state.text).toBe('8');
 
       const tag = new ICETag({ text: 'Draft', status: 'warning' });
       // 亮黄实底配黑字（Bootstrap `.text-bg-warning`）
-      expect(tag.state.style.fillStyle).toBe(ICE_LIGHT_THEME.colors.warning);
-      expect(tag.state.style.strokeStyle).toBe(ICE_LIGHT_THEME.colors.warning);
+      expect(statusColor(tag, 'fillStyle')).toBe(ICE_LIGHT_THEME.colors.warning);
+      expect(statusColor(tag, 'strokeStyle')).toBe(ICE_LIGHT_THEME.colors.warning);
       expect(tag.childNodes[0].state.style.fillStyle).toBe('#000000');
       tag.setText('Ready');
       expect(tag.childNodes[0].state.text).toBe('Ready');
@@ -123,14 +129,14 @@ describe('ice-web-components component behavior', () => {
 
     it('badge / tag 支持 soft 变体（subtle 浅底 + 强调文字）', () => {
       const softBadge = new ICEBadge({ text: '5', status: 'error', variant: 'soft' });
-      expect(softBadge.state.style.fillStyle).toBe(ICE_LIGHT_THEME.colors.errorBg);
-      expect(softBadge.state.style.strokeStyle).toBe(ICE_LIGHT_THEME.colors.errorBorder);
-      expect(softBadge.childNodes[0].state.style.fillStyle).toBe(ICE_LIGHT_THEME.colors.errorTextEmphasis);
+      expect(statusColor(softBadge, 'fillStyle')).toBe(ICE_LIGHT_THEME.colors.errorBg);
+      expect(statusColor(softBadge, 'strokeStyle')).toBe(ICE_LIGHT_THEME.colors.errorBorder);
+      expect(statusColor(softBadge.childNodes[0], 'fillStyle')).toBe(ICE_LIGHT_THEME.colors.errorTextEmphasis);
 
       const softTag = new ICETag({ text: 'Draft', status: 'warning', variant: 'soft' });
-      expect(softTag.state.style.fillStyle).toBe(ICE_LIGHT_THEME.colors.warningBg);
-      expect(softTag.state.style.strokeStyle).toBe(ICE_LIGHT_THEME.colors.warningBorder);
-      expect(softTag.childNodes[0].state.style.fillStyle).toBe(ICE_LIGHT_THEME.colors.warningTextEmphasis);
+      expect(statusColor(softTag, 'fillStyle')).toBe(ICE_LIGHT_THEME.colors.warningBg);
+      expect(statusColor(softTag, 'strokeStyle')).toBe(ICE_LIGHT_THEME.colors.warningBorder);
+      expect(statusColor(softTag.childNodes[0], 'fillStyle')).toBe(ICE_LIGHT_THEME.colors.warningTextEmphasis);
     });
 
     it('creates avatar and icon text nodes', () => {
@@ -222,7 +228,7 @@ describe('ice-web-components component behavior', () => {
       tabs.setActiveIndex(2);
       expect(tabs.getActiveIndex()).toBe(2);
       const activeButton = tabs.childNodes[2] as ICEButton;
-      expect(activeButton.state.style.fillStyle).toBe(ICE_LIGHT_THEME.colors.primary);
+      expect(statusColor(activeButton, 'fillStyle')).toBe(ICE_LIGHT_THEME.colors.primary);
       expect(activeButton.childNodes[0].state.style.fillStyle).toBe(ICE_LIGHT_THEME.colors.primaryText);
     });
 

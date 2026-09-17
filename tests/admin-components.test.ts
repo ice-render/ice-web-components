@@ -8,6 +8,7 @@ import {
   iceUIManager,
 } from '../src';
 import { ICE_LIGHT_THEME } from '../src';
+import { resolvedStyleColor } from '../src/util/ICEStyle';
 
 describe('admin UI components', () => {
   beforeEach(() => {
@@ -34,7 +35,8 @@ describe('admin UI components', () => {
     // 3 = 类型图标（默认显示，文字整体右移让位）+ 标题 + 正文
     expect(alert.childNodes).toHaveLength(3);
     expect(alert.getIconNode()!.getText()).toBe('✓');
-    expect(alert.state.style.fillStyle).toBe(ICE_LIGHT_THEME.colors.successBg);
+    // 状态色表现在返回**主题引用**（热切换用），断言要解析一次
+    expect(resolvedStyleColor(alert, 'fillStyle')).toBe(ICE_LIGHT_THEME.colors.successBg);
     alert.setTitle('Updated');
     alert.setMessage('Done');
     expect(alert.childNodes[1].state.text).toBe('Updated');

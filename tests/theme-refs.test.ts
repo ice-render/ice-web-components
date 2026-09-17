@@ -29,7 +29,6 @@ const SRC = path.resolve(__dirname, '..', 'src');
  * 用法：把某个文件改成引用式之后，把它的数字改小；改到 0 就从表里删掉。
  */
 const BUDGET: Record<string, number> = {
-  'util/ICEStyle.ts': 31,
   'components/ICEMenu.ts': 24,
   'components/ICEDateRangePicker.ts': 22,
   'components/ICEButton.ts': 17,
@@ -71,6 +70,7 @@ const BUDGET: Record<string, number> = {
   'components/ICERate.ts': 2,
   'components/ICESplitter.ts': 2,
   'components/ICEStatCard.ts': 2,
+  'util/ICEStyle.ts': 2,
   'components/ICEAutoComplete.ts': 1,
   'components/ICEComment.ts': 1,
   'components/ICEIcon.ts': 1,
@@ -82,6 +82,7 @@ const BUDGET: Record<string, number> = {
   'components/ICETag.ts': 1,
   'components/ICETimeline.ts': 1,
 };
+
 
 const walk = (dir: string, out: string[] = []): string[] => {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -123,8 +124,8 @@ describe('主题引用棘轮（构造期取色只许减）', () => {
   it('迁移进度（打印用：总用量与文件数，改完可以对着这个数看进展）', () => {
     const current = usages();
     const total = Object.values(current).reduce((sum, n) => sum + n, 0);
-    // 2026-09-17 起点：592 处 / 52 个文件（迁移 238 处样式槽之后剩这些派生色）
-    expect(total).toBeLessThanOrEqual(354);
+    // 起点：592 处（迁移 238 处样式槽 + 状态色表 → 当前值）。数字只能往下走。
+    expect(total).toBeLessThanOrEqual(325);
     expect(Object.keys(current).length).toBeLessThanOrEqual(52);
   });
 });
