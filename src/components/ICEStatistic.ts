@@ -109,7 +109,12 @@ export class ICEStatistic extends ICEWidget {
     this.countdownMode = props.countdown !== undefined;
     this.rawValue = props.value ?? 0;
     this.onFinish = typeof props.onFinish === 'function' ? props.onFinish : null;
-    const valueColor = props.status ? getStatusColors(theme, props.status).text : theme.colors.text;
+    /**
+     * 数值压在**卡片面**上，用 `strong`（`*TextEmphasis`）那一档 —— 与 `ICEAlert` / `ICEBadge` /
+     * `ICETag` / `ICEStatCard` 同一口径。用状态实色当文字的话，暗色主题下 `success #198754`
+     * 压在 `#2b3035` 上只有 2.94:1（`docs/guides/theming.md` §1.1）。
+     */
+    const valueColor = props.status ? getStatusColors(theme, props.status).strong : theme.colors.text;
 
     this.titleNode = new ICELabel({
       interactive: false,

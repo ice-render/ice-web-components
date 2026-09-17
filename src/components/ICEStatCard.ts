@@ -63,7 +63,11 @@ export class ICEStatCard extends ICEPanel {
     const theme = iceUIManager.getTheme();
     const width = props.width || 220;
     const height = props.height || 120;
-    const iconColor = props.iconColor || theme.colors.primary;
+    /**
+     * 图标压在 `primaryBg` 这块**浅底小方块**上 —— 按 §1.1 的表，浅底上的文字/字形要用
+     * `*TextEmphasis` 那一档（`primary` 是填充色，压在 `primaryBg` 上实测只有 2.2:1 左右）。
+     */
+    const iconColor = props.iconColor || theme.colors.primaryTextEmphasis;
     const iconBg = props.iconBg || theme.colors.primaryBg;
     const trendType = props.trendType || 'success';
     const trend = props.trend === undefined ? '' : String(props.trend);
@@ -135,7 +139,12 @@ export class ICEStatCard extends ICEPanel {
       width: textWidth,
       height: 18,
       text: trend,
-      fillStyle: getStatusColors(theme, trendType).text,
+      /**
+       * 趋势文字压在**卡片面**（`surface`）上，不是压在状态浅底上 —— 所以用 `strong`（`*TextEmphasis`），
+       * 与 `ICEAlert` / `ICEBadge` / `ICETag` 同一个口径。用实色 `.text` 的话，暗色主题下
+       * `success #198754` 压在 `#2b3035` 上只有 2.94:1。
+       */
+      fillStyle: getStatusColors(theme, trendType).strong,
       fontFamily: theme.font.family,
       fontSize: theme.font.sizeSmall,
       fontWeight: theme.font.weightSemibold,

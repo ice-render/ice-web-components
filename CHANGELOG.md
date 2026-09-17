@@ -7,6 +7,30 @@
 
 > 下一个版本发布前，改动在这里累积。
 
+## [1.14.1] - 2026-09-17
+
+### 修复
+
+- **1.14.0 漏扫的三处"状态实色当文字"** —— 同一类问题，`getStatusColors` 那一圈当时只扫了
+  `ICEAlert` / `ICEBadge` / `ICETag`（它们都用对了 `strong`），漏掉了另外两处：
+
+  - **`ICEStatCard` 的趋势文字**：`getStatusColors(...).text`（状态**实色**）压在**卡片面**上 ——
+    暗色主题下 `success #198754` 对 `#2b3035` 只有 **2.94:1** → 改用 `.strong`（`*TextEmphasis`，
+    与 Alert/Badge/Tag 同口径）。
+  - **`ICEStatistic` 的数值**：同样 `.text` → `.strong`（暗色下同样是 2.94 那一档）。
+  - **`ICEStatCard` 的图标**：图标字形压在 `primaryBg` 这块**浅底小方块**上，却用的是 `primary`
+    （填充色）→ 改用 `primaryTextEmphasis`（"浅底上的文字"那一档）。这一处是深色仪表盘里最显眼的
+    一块：五个指标卡的图标全是"蓝底压蓝色字形"。
+
+  判据都在 `docs/guides/theming.md` §1.1 那张表里；这次也说明**表要配着"扫一遍用法"才是闭环** ——
+  只改 `theme.colors.primary` 的字面量用法，会漏掉 `getStatusColors(...).text` 这种间接取色。
+
+### 验证
+
+- `verify`：types / jest **193 suites · 1408 用例** / build / docs 24 文件 346 链接 / qa-counts 303 项；
+- `verify:full`：+ 真机 e2e 10/10、**qa:all 8/8**、qa:perf 全在预算内（这几个组件在 admin / gallery /
+  workbench 三套 QA 里都有实例）。
+
 ## [1.14.0] - 2026-09-17
 
 ### 新增
