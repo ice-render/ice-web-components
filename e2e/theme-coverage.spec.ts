@@ -143,4 +143,135 @@ test.describe('主题覆盖（真机逐节点比对）', () => {
     // 棘轮：换色节点数不许回退（2026-09-17 实测 1195；迁移前是 306）
     expect(changed).toBeGreaterThanOrEqual(Number(process.env.ICE_THEME_CHANGED_FLOOR ?? 1150));
   });
+
+  /**
+   * **样式值说变了 ≠ 屏幕上真的变了**。
+   *
+   * 上面那条用例读的是 `resolvedStyleColor()`（样式里解析出来的颜色），它**证明不了画布**：
+   * 2026-09-17 的真实缺陷就是这么漏掉的 —— 换主题后文本仍贴着**烤进离屏位图的旧颜色**
+   * （引擎的组件级缓存/静态层把旧图贴回来），而样式值早已是新主题的色。
+   * 修复在引擎 2.14.1（`ICE.__recomposeTheme()` 调 `renderer.invalidateObjectCache()`）。
+   *
+   * 这条把两端钉在一起：**画布上找得到"样式里那个颜色"的像素**。
+   */
+  test('画出来的像素与样式里的颜色一致（位图缓存不许贴旧主题）', async ({ page }) => {
+    await page.goto('/examples/gallery.html');
+    await page.waitForFunction(() => !!(window as any).__result && !!(window as any).ICEWEB);
+    await page.waitForTimeout(800);
+
+    /**
+     * 对每个文本节点：把它的**世界盒**投影到画布上撒点采样，看有没有像素等于
+     * `resolvedStyleColor()` 报出来的颜色。找不到 = 画布上还留着旧颜色（位图过期）。
+     *
+     * ⚠️ 口径是**差分**的：只要求"**切换前找得到**的节点，切换后也必须找得到"。
+     * 理由：滚动容器里的节点（大表头那一行就是）世界盒映射不到画布 —— 那是探针的局限，
+     * 不是缺陷。差分口径把这类假阳性挡掉，同时又抓得住真问题：位图若是旧的，
+     * 新颜色在画布上就一个像素都找不到。
+     */
+    /**
+     * ⚠️ **切主题与读像素必须在两个 evaluate 之间**：在同一个 evaluate 里 `setTheme()` 之后立刻
+     * `getImageData()`，读到的是**上一帧**的画布（新帧还没画）—— 实测会凭空多出 149 个"找不到"。
+     */
+    let prev: Record<string, string> = {};
+    const sample = async (theme: 'light' | 'dark') => {
+      await page.evaluate((t) => (window as any).ICEWEB.iceUIManager.setTheme(t), theme);
+      await page.waitForTimeout(260); // 等两帧：一帧按新主题重画，一帧落定
+      return page.evaluate(({ theme: t, prev }) => {
+        const W = (window as any).ICEWEB;
+        const canvas = document.querySelector('#canvas') as HTMLCanvasElement;
+        const ctx = canvas.getContext('2d')!;
+        const d = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        const parse = (v: string): [number, number, number] | null => {
+          const m = /^#([0-9a-f]{6})$/i.exec(String(v).trim());
+          if (!m) return null;
+          const n = parseInt(m[1], 16);
+          return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+        };
+        const out: Array<{ key: string; color: string; found: boolean; oldColorInk: boolean; text: string }> = [];
+        let seq = 0;
+        const walk = (node: any, path: string) => {
+          const st = node.state;
+          const text = st && st.text;
+          const id = `${path}#${seq++}`;
+          if (typeof text === 'string' && text && st.style) {
+            const color = W.resolvedStyleColor(node, 'fillStyle');
+            const prevColor = prev[id] || color;
+            const target = parse(color);
+            const w = Number(st.width) || 0;
+            const h = Number(st.height) || 0;
+            if (target && w > 8 && h > 8) {
+              let l = 0;
+              let top = 0;
+              let cur = node;
+              while (cur && cur.state) {
+                l += Number(cur.state.left) || 0;
+                top += Number(cur.state.top) || 0;
+                cur = cur.parentNode;
+              }
+              const origin = Array.isArray(st.localOrigin) ? st.localOrigin : [w / 2, h / 2];
+              const x0 = l - origin[0];
+              const y0 = top - origin[1];
+              const dist = (t: [number, number, number], x: number, y: number): number => {
+                const i = (y * canvas.width + x) * 4;
+                return Math.abs(d[i] - t[0]) + Math.abs(d[i + 1] - t[1]) + Math.abs(d[i + 2] - t[2]);
+              };
+              // 新色：给抗锯齿留 24 的余量（字形核心是纯色）；
+              // 旧色：**收紧到 6** —— 深色里有几档颜色彼此只差 ~10（`textDisabled #6c757d` vs 浅色
+              // `textSecondary #6a7178`），容差 24 会把"别人画对了的颜色"误判成"这个节点的旧色还在"。
+              const near = (t: [number, number, number], x: number, y: number): boolean => dist(t, x, y) <= 24;
+              const nearExact = (t: [number, number, number], x: number, y: number): boolean => dist(t, x, y) <= 6;
+              let hit = false;
+              let oldHit = false;
+              const prev = parse(prevColor);
+              for (let gy = 0.15; gy <= 0.95; gy += 0.1) {
+                for (let gx = 0.05; gx <= 0.95; gx += 0.05) {
+                  const px = Math.round(x0 + w * gx);
+                  const py = Math.round(y0 + h * gy);
+                  if (px < 0 || py < 0 || px >= canvas.width || py >= canvas.height) continue;
+                  if (near(target, px, py)) hit = true;
+                  // 顺便看看**旧色**还在不在：这才是"位图没换"的铁证
+                  if (prev && nearExact(prev, px, py)) oldHit = true;
+                }
+              }
+              out.push({ key: id, color, found: hit, oldColorInk: oldHit, text: String(text).slice(0, 16) });
+            }
+          }
+          (node.childNodes || []).forEach((c: any, i: number) => walk(c, `${id}.${i}`));
+        };
+        walk((window as any).__result.ice || (window as any).__result.panel, 'root');
+        return out;
+      }, { theme, prev });
+    };
+
+    const light = await sample('light');
+    const prevByKey: Record<string, string> = {};
+    for (const r of light) prevByKey[r.key] = r.color;
+    prev = prevByKey;
+    const dark = await sample('dark');
+
+    const lightByKey = new Map(light.map((r) => [r.key, r]));
+    const darkByKey = new Map(dark.map((r) => [r.key, r]));
+    const stale: string[] = [];
+    const inconclusive: string[] = [];
+    let comparable = 0;
+    for (const [key, before] of lightByKey) {
+      const after = darkByKey.get(key);
+      if (!after || !before.found) continue; // 切换前都找不到 → 探针局限，跳过
+      if (before.color === after.color) continue; // 颜色没变的节点不该要求它变
+      comparable++;
+      if (after.found) continue;
+      // 旧色还在框里 → **位图没换**（这才是缺陷）；新旧都没找到 → 采样没落在墨迹上（探针局限）
+      if (after.oldColorInk) stale.push(`「${after.text}」${key}：画布上还是旧色 ${before.color}（样式已是 ${after.color}）`);
+      else inconclusive.push(`${key}：样式 ${after.color} / 旧色 ${before.color} 都没采到`);
+    }
+
+    // eslint-disable-next-line no-console
+    console.log(
+      `像素对账：可比节点 ${comparable}｜位图没换（旧色还在）${stale.length}｜采样没落在墨迹上（探针局限）${inconclusive.length}`
+    );
+    expect({ 可比节点够多: comparable > 50 }).toEqual({ 可比节点够多: true });
+    expect(stale).toEqual([]);
+    // 探针局限必须有上限：超过说明采样口径坏了，而不是"图没问题"
+    expect(inconclusive.length).toBeLessThanOrEqual(10);
+  });
 });
