@@ -1,4 +1,4 @@
-import { ICEText } from 'ice-render';
+import { ICEText, token } from 'ice-render';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 
@@ -15,7 +15,7 @@ export class ICELabel extends ICEWidget {
   constructor(props: any = {}) {
     const theme = iceUIManager.getTheme();
     const font = {
-      fillStyle: theme.colors.text,
+      fillStyle: token('ui.colors.text'),
       fontFamily: theme.font.family,
       fontSize: theme.font.size,
       fontWeight: theme.font.weightNormal,

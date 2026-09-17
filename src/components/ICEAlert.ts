@@ -3,6 +3,7 @@ import { ICELabel } from './ICELabel';
 import { iceUIManager } from '../core/ICEManager';
 import { createTextNode, getStatusColors } from '../util/ICEStyle';
 import { fadeTo } from '../util/ICEAnimation';
+import { token } from 'ice-render';
 
 export type ICEAlertType = 'info' | 'success' | 'warning' | 'error';
 
@@ -99,7 +100,7 @@ export class ICEAlert extends ICEWidget {
       width: textWidth,
       height: 18,
       text: props.message || '',
-      fillStyle: theme.colors.textSecondary,
+      fillStyle: token('ui.colors.textSecondary'),
       fontFamily: theme.font.family,
       fontSize: theme.font.sizeSmall,
       fontWeight: theme.font.weightNormal,

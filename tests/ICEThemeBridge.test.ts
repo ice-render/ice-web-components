@@ -82,9 +82,53 @@ describe('applyThemeToEngine', () => {
     expect(seen).toHaveLength(1);
     expect(seen[0].chrome.guide.color).toBe(ICE_HIGH_CONTRAST_THEME.colors.focusRing);
 
-    // 不传 ice 时只改本库 token（保持既有行为）
+    /**
+     * ⚠️ 契约在 2026-09-17 变了：**不传 ice 时也不再"只改本库 token"** ——
+     * `setTheme()` 会把新主题广播到**所有登记过的引擎实例**（登记发生在
+     * `applyThemeToEngine()` 里）。这正是热切换能成立的原因：应用不必自己
+     * 维护"我有哪几块画布"的清单，也不会漏打某个实例。
+     */
     const before = seen.length;
     iceUIManager.setTheme('light');
-    expect(seen.length).toBe(before);
+    expect(seen.length).toBe(before + 1);
+    expect(seen[seen.length - 1].background).toBe(ICE_LIGHT_THEME.colors.surface);
+  });
+
+  it('引擎主题里带上了**整份 UI token 树**（`token(\'ui.colors.x\')` 才解析得到）', () => {
+    const patches: any[] = [];
+    const ice: any = { setTheme: (patch: any) => patches.push(patch) };
+    applyThemeToEngine(ice, ICE_DARK_THEME);
+    expect(patches).toHaveLength(1);
+    // 组件样式里写的就是这些路径（迁移后 238 处），缺一个就会"取不到色、那一块不画"
+    expect(patches[0].ui.colors.text).toBe(ICE_DARK_THEME.colors.text);
+    expect(patches[0].ui.colors.link).toBe(ICE_DARK_THEME.colors.link);
+    expect(patches[0].ui.colors.textTertiary).toBe(ICE_DARK_THEME.colors.textTertiary);
+    expect(patches[0].ui.spacing.md).toBe(ICE_DARK_THEME.spacing.md);
+  });
+
+  it('setTheme 会广播给订阅者（宿主侧 DOM / 图表的挂点）', () => {
+    const seen: Array<{ name: string; link: string }> = [];
+    const off = iceUIManager.onThemeChange((change) => {
+      seen.push({ name: change.name, link: change.tokens.colors.link });
+    });
+    iceUIManager.setTheme('dark');
+    off();
+    iceUIManager.setTheme('light');
+    expect(seen).toHaveLength(1);
+    expect(seen[0]).toEqual({ name: 'dark', link: ICE_DARK_THEME.colors.link });
+  });
+
+  it('登记的实例会被剪枝：已销毁的实例不再收到主题补丁', () => {
+    const patches: any[] = [];
+    const alive: any = { setTheme: (patch: any) => patches.push(patch) };
+    const dead: any = { destroyed: true, setTheme: (patch: any) => patches.push(patch) };
+    iceUIManager.trackEngine(alive);
+    iceUIManager.trackEngine(dead);
+    const before = patches.length;
+    iceUIManager.setTheme('dark');
+    iceUIManager.setTheme('light');
+    // 两次切换各打到 alive 一次；dead 一次都不该打到
+    expect(patches.length).toBe(before + 2);
+    expect(iceUIManager.trackedEngineCount()).toBeGreaterThan(0);
   });
 });

@@ -6,6 +6,7 @@ import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../co
 import { estimateTextWidth } from '../util/ICEStyle';
 import { ICEScrollPane } from './ICEScrollPane';
 import { computeVirtualRange } from './ICEVirtualList';
+import { token } from 'ice-render';
 
 /**
  * 选择器：输入框外观 + 下拉选项（单选 / 多选 / 搜索过滤）。
@@ -97,8 +98,8 @@ export class ICESelect extends ICEWidget {
       height,
       radius: theme.radius.md,
       style: {
-        fillStyle: theme.colors.surface,
-        strokeStyle: theme.colors.border,
+        fillStyle: token('ui.colors.surface'),
+        strokeStyle: token('ui.colors.border'),
         lineWidth: theme.control.lineWidth,
       },
     });
@@ -453,7 +454,7 @@ export class ICESelect extends ICEWidget {
         verticalAlign: 'middle',
         align: 'center',
         text: '▾',
-        style: { fontSize: 12, fillStyle: theme.colors.textTertiary },
+        style: { fontSize: 12, fillStyle: token('ui.colors.textTertiary') },
       }),
       false,
     );
@@ -489,7 +490,7 @@ export class ICESelect extends ICEWidget {
         radius: theme.radius.sm,
         fill: true,
         stroke: false,
-        style: { fillStyle: theme.colors.primaryBg },
+        style: { fillStyle: token('ui.colors.primaryBg') },
       });
       chip.addChild(
         new ICELabel({
@@ -500,7 +501,7 @@ export class ICESelect extends ICEWidget {
           height: tagHeight,
           verticalAlign: 'middle',
           text: item.label,
-          style: { fontSize: 12, fillStyle: theme.colors.link },
+          style: { fontSize: 12, fillStyle: token('ui.colors.link') },
         }),
         false,
       );
@@ -523,7 +524,7 @@ export class ICESelect extends ICEWidget {
           align: 'center',
           verticalAlign: 'middle',
           text: '✕',
-          style: { fontSize: 10, fillStyle: theme.colors.link },
+          style: { fontSize: 10, fillStyle: token('ui.colors.link') },
         }),
         false,
       );
@@ -544,7 +545,7 @@ export class ICESelect extends ICEWidget {
           height,
           verticalAlign: 'middle',
           text,
-          style: { fontSize: 12, fillStyle: theme.colors.textTertiary },
+          style: { fontSize: 12, fillStyle: token('ui.colors.textTertiary') },
         }),
         false,
       );
@@ -559,7 +560,7 @@ export class ICESelect extends ICEWidget {
         align: 'center',
         verticalAlign: 'middle',
         text: '▾',
-        style: { fontSize: 12, fillStyle: theme.colors.textTertiary },
+        style: { fontSize: 12, fillStyle: token('ui.colors.textTertiary') },
       }),
       false,
     );
@@ -573,7 +574,7 @@ export class ICESelect extends ICEWidget {
       width,
       height: searchHeight + Math.min(6, this.options.length) * this.optionHeight + 8,
       radius: theme.radius.md,
-      style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border, shadow: 'md' },
+      style: { fillStyle: token('ui.colors.surface'), strokeStyle: token('ui.colors.border'), shadow: 'md' },
     });
   }
 
@@ -638,7 +639,7 @@ export class ICESelect extends ICEWidget {
           height: this.optionHeight,
           verticalAlign: 'middle',
           text: `创建「${trimmed}」`,
-          style: { fontSize: 13, fillStyle: theme.colors.link },
+          style: { fontSize: 13, fillStyle: token('ui.colors.link') },
         }),
         false,
       );
@@ -738,7 +739,7 @@ export class ICESelect extends ICEWidget {
           height: this.optionHeight,
           verticalAlign: 'middle',
           text: '✓',
-          style: { fontSize: 12, fillStyle: theme.colors.link },
+          style: { fontSize: 12, fillStyle: token('ui.colors.link') },
         }),
         false,
       );

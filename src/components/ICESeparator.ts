@@ -1,4 +1,4 @@
-import { ICERect } from 'ice-render';
+import { ICERect, token } from 'ice-render';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 
@@ -21,8 +21,8 @@ export class ICESeparator extends ICEWidget {
       width: props.width || 1,
       height: props.height || 1,
       style: {
-        fillStyle: theme.colors.border,
-        strokeStyle: theme.colors.border,
+        fillStyle: token('ui.colors.border'),
+        strokeStyle: token('ui.colors.border'),
       },
     });
     this.addChild(this.line, false);

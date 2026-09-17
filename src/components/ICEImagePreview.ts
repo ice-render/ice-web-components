@@ -5,6 +5,7 @@ import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../core/ICEOverlayManager';
 import { ICEFocusManager, getICEFocusManager } from '../core/ICEFocusManager';
+import { token } from 'ice-render';
 
 /**
  * 图片预览：全屏遮罩 + 居中图片 + 底部工具栏。
@@ -367,7 +368,7 @@ export class ICEImagePreview {
         variant: def.name === 'close' ? 'default' : 'default',
         size: 'small',
       });
-      button.setState({ radius: size / 2, style: { ...button.state.style, fillStyle: theme.colors.elevated } });
+      button.setState({ radius: size / 2, style: { ...button.state.style, fillStyle: token('ui.colors.elevated') } });
       button.on('click', def.onClick);
       toolbar.addChild(button, false);
       this.buttons.set(def.name, button);

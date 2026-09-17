@@ -1,4 +1,4 @@
-import { ICECircle } from 'ice-render';
+import { ICECircle, token } from 'ice-render';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEToggleModel } from '../model/ICEToggleModel';
@@ -36,7 +36,7 @@ export class ICERadioButton extends ICEWidget {
       top: outerTop,
       radius: outerRadius,
       style: {
-        fillStyle: theme.colors.surface,
+        fillStyle: token('ui.colors.surface'),
         strokeStyle: selected ? theme.colors.primary : theme.colors.borderSecondary,
         lineWidth: theme.control.lineWidth,
       },

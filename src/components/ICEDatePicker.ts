@@ -6,6 +6,7 @@ import { iceUIManager } from '../core/ICEManager';
 import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../core/ICEOverlayManager';
 import type { ICELocalizedProps } from '../i18n/ICEI18n';
 import { ICE_DEFAULT_WEEK_START, resolveWeekStart } from '../i18n/ICEI18n';
+import { token } from 'ice-render';
 
 /**
  * 日期选择器。
@@ -94,8 +95,8 @@ export class ICEDatePicker extends ICEWidget {
       height,
       radius: theme.radius.md,
       style: {
-        fillStyle: theme.colors.surface,
-        strokeStyle: theme.colors.border,
+        fillStyle: token('ui.colors.surface'),
+        strokeStyle: token('ui.colors.border'),
         lineWidth: theme.control.lineWidth,
       },
     });
@@ -238,7 +239,7 @@ export class ICEDatePicker extends ICEWidget {
       width,
       height: 40 + 24 + this.cellSize * 6 + 12,
       radius: theme.radius.md,
-      style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border, shadow: 'md' },
+      style: { fillStyle: token('ui.colors.surface'), strokeStyle: token('ui.colors.border'), shadow: 'md' },
     });
     this.panel = panel;
     this.__renderPanel();
@@ -386,7 +387,7 @@ export class ICEDatePicker extends ICEWidget {
         align: 'center',
         verticalAlign: 'middle',
         text: '▾',
-        style: { fontSize: 12, fillStyle: theme.colors.textTertiary },
+        style: { fontSize: 12, fillStyle: token('ui.colors.textTertiary') },
       }),
       false,
     );
@@ -412,7 +413,7 @@ export class ICEDatePicker extends ICEWidget {
       radius: theme.radius.sm,
       fill: true,
       stroke: false,
-      style: { fillStyle: theme.colors.background },
+      style: { fillStyle: token('ui.colors.background') },
     });
     prev.addChild(
       new ICELabel({
@@ -424,7 +425,7 @@ export class ICEDatePicker extends ICEWidget {
         align: 'center',
         verticalAlign: 'middle',
         text: '‹',
-        style: { fontSize: 14, fillStyle: theme.colors.text },
+        style: { fontSize: 14, fillStyle: token('ui.colors.text') },
       }),
       false,
     );
@@ -437,7 +438,7 @@ export class ICEDatePicker extends ICEWidget {
       radius: theme.radius.sm,
       fill: true,
       stroke: false,
-      style: { fillStyle: theme.colors.background },
+      style: { fillStyle: token('ui.colors.background') },
     });
     next.addChild(
       new ICELabel({
@@ -449,7 +450,7 @@ export class ICEDatePicker extends ICEWidget {
         align: 'center',
         verticalAlign: 'middle',
         text: '›',
-        style: { fontSize: 14, fillStyle: theme.colors.text },
+        style: { fontSize: 14, fillStyle: token('ui.colors.text') },
       }),
       false,
     );
@@ -463,7 +464,7 @@ export class ICEDatePicker extends ICEWidget {
       align: 'center',
       verticalAlign: 'middle',
       text: this.t('calendar.yearMonth', { year: this.viewYear, month: this.viewMonth }),
-      style: { fontSize: 13, fontWeight: '600', fillStyle: theme.colors.text },
+      style: { fontSize: 13, fontWeight: '600', fillStyle: token('ui.colors.text') },
     });
     panel.addChild(prev, false);
     panel.addChild(this.monthLabel, false);
@@ -481,7 +482,7 @@ export class ICEDatePicker extends ICEWidget {
           align: 'center',
           verticalAlign: 'middle',
           text: this.t(key),
-          style: { fontSize: 11, fillStyle: theme.colors.textTertiary },
+          style: { fontSize: 11, fillStyle: token('ui.colors.textTertiary') },
         }),
         false,
       );

@@ -2,7 +2,7 @@ import { ICEButton } from './ICEButton';
 import { ICELabel } from './ICELabel';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
-import { ICEFlowLayout } from 'ice-render';
+import { ICEFlowLayout, token } from 'ice-render';
 
 /**
  * 结果页：状态图标 + 标题 + 副标题 + 操作按钮组。
@@ -78,7 +78,7 @@ export class ICEResult extends ICEWidget {
         align: 'center',
         verticalAlign: 'middle',
         text: props.title,
-        style: { fontSize: 16, fontWeight: '600', fillStyle: theme.colors.text },
+        style: { fontSize: 16, fontWeight: '600', fillStyle: token('ui.colors.text') },
       });
       this.addChild(this.titleLabel, false);
     }
@@ -92,7 +92,7 @@ export class ICEResult extends ICEWidget {
         align: 'center',
         verticalAlign: 'middle',
         text: props.subtitle,
-        style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+        style: { fontSize: 12, fillStyle: token('ui.colors.textSecondary') },
       });
       this.addChild(this.subtitleLabel, false);
     }

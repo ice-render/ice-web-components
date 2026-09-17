@@ -4,6 +4,7 @@ import { ICEPanel } from '../components/ICEPanel';
 import { ICEButton } from '../components/ICEButton';
 import { iceUIManager } from './ICEManager';
 import { fadeOut, slideIn, ICEEasing, ICEFrameDriver } from '../util/ICEAnimation';
+import { token } from 'ice-render';
 
 /**
  * 全局提示（Message / Notification）。
@@ -174,7 +175,7 @@ export class ICEMessageManager {
         width,
         height,
         radius: theme.radius.md,
-        style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border, shadow: 'md' },
+        style: { fillStyle: token('ui.colors.surface'), strokeStyle: token('ui.colors.border'), shadow: 'md' },
       });
       const color = this.__typeColor(options.type);
       panel.addChild(
@@ -197,7 +198,7 @@ export class ICEMessageManager {
             height,
           verticalAlign: 'middle',
           text,
-          style: { fontSize: 13, fillStyle: theme.colors.text },
+          style: { fontSize: 13, fillStyle: token('ui.colors.text') },
         }),
         false,
       );
@@ -220,7 +221,7 @@ export class ICEMessageManager {
           width,
           height,
           radius: theme.radius.md,
-          style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border, shadow: 'lg' },
+          style: { fillStyle: token('ui.colors.surface'), strokeStyle: token('ui.colors.border'), shadow: 'lg' },
         });
         panel.addChild(
           new ICELabel({
@@ -230,7 +231,7 @@ export class ICEMessageManager {
             height: 22,
             verticalAlign: 'middle',
             text: title,
-            style: { fontSize: 14, fontWeight: '600', fillStyle: theme.colors.text },
+            style: { fontSize: 14, fontWeight: '600', fillStyle: token('ui.colors.text') },
           }),
           false,
         );
@@ -243,7 +244,7 @@ export class ICEMessageManager {
               height: bodyHeight,
               verticalAlign: 'middle',
               text: description,
-              style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+              style: { fontSize: 12, fillStyle: token('ui.colors.textSecondary') },
             }),
             false,
           );

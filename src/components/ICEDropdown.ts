@@ -5,6 +5,7 @@ import { iceUIManager } from '../core/ICEManager';
 import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../core/ICEOverlayManager';
 import type { ICEOverlayPlacement } from '../util/ICEOverlayPosition';
 import { estimateTextWidth } from '../util/ICEStyle';
+import { token } from 'ice-render';
 
 /**
  * 下拉菜单：点击触发组件弹出选项列表。
@@ -210,7 +211,7 @@ export class ICEDropdown {
       width,
       height: this.items.length * itemHeight + 8,
       radius: theme.radius.md,
-      style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border, shadow: 'md' },
+      style: { fillStyle: token('ui.colors.surface'), strokeStyle: token('ui.colors.border'), shadow: 'md' },
     });
     return panel;
   }
@@ -273,7 +274,7 @@ export class ICEDropdown {
             verticalAlign: 'middle',
             text: '✓',
             // 勾选标记是**文字/图标**，用 `link`（那档在暗底上也过 AA）；`primary` 留给填充 / 描边
-            style: { fontSize: 12, fillStyle: theme.colors.link },
+            style: { fontSize: 12, fillStyle: token('ui.colors.link') },
           }),
           false,
         );

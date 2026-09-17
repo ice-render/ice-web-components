@@ -4,7 +4,7 @@ import { ICEWidget } from '../core/ICEWidget';
 import { ICEScrollPane } from './ICEScrollPane';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../core/ICEOverlayManager';
-import { ICEBoxLayout } from 'ice-render';
+import { ICEBoxLayout, token } from 'ice-render';
 
 /**
  * 级联选择。
@@ -77,8 +77,8 @@ export class ICECascader extends ICEWidget {
       height,
       radius: theme.radius.md,
       style: {
-        fillStyle: theme.colors.surface,
-        strokeStyle: theme.colors.border,
+        fillStyle: token('ui.colors.surface'),
+        strokeStyle: token('ui.colors.border'),
         lineWidth: theme.control.lineWidth,
       },
     });
@@ -187,7 +187,7 @@ export class ICECascader extends ICEWidget {
       width: PANEL_PADDING * 2 + Math.max(1, this.__maxDepth()) * COLUMN_WIDTH,
       height: PANEL_PADDING * 2 + Math.max(1, this.__maxRows()) * ROW_HEIGHT,
       radius: theme.radius.md,
-      style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border, shadow: 'md' },
+      style: { fillStyle: token('ui.colors.surface'), strokeStyle: token('ui.colors.border'), shadow: 'md' },
     });
     this.panel = panel;
     this.__renderPanel();
@@ -386,7 +386,7 @@ export class ICECascader extends ICEWidget {
         align: 'center',
         verticalAlign: 'middle',
         text: '▾',
-        style: { fontSize: 12, fillStyle: theme.colors.textTertiary },
+        style: { fontSize: 12, fillStyle: token('ui.colors.textTertiary') },
       }),
       false,
     );
@@ -485,7 +485,7 @@ export class ICECascader extends ICEWidget {
               align: 'center',
               verticalAlign: 'middle',
               text: '›',
-              style: { fontSize: 12, fillStyle: theme.colors.textTertiary },
+              style: { fontSize: 12, fillStyle: token('ui.colors.textTertiary') },
             }),
             false,
           );

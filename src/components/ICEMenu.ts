@@ -1,5 +1,5 @@
 import { ICEWidget } from '../core/ICEWidget';
-import { ICELayoutManager } from 'ice-render';
+import { ICELayoutManager, token } from 'ice-render';
 import { ICEContainer } from '../core/ICEContainer';
 import { iceUIManager } from '../core/ICEManager';
 import { createTextNode, readHovered } from '../util/ICEStyle';
@@ -141,7 +141,7 @@ export class ICEMenu extends ICEContainer {
       width,
       height,
       style: {
-        fillStyle: theme.colors.surface,
+        fillStyle: token('ui.colors.surface'),
         ...(props.style || {}),
       },
     });
@@ -507,7 +507,7 @@ export class ICEMenu extends ICEContainer {
       width,
       height: (item.children as ICEMenuItem[]).length * this.itemHeight + 8,
       radius: theme.radius.md,
-      style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border, shadow: 'md' },
+      style: { fillStyle: token('ui.colors.surface'), strokeStyle: token('ui.colors.border'), shadow: 'md' },
     });
     const nodes = new Map<string, any>();
     (item.children as ICEMenuItem[]).forEach((child, index) => {
@@ -875,7 +875,7 @@ export class ICEMenu extends ICEContainer {
             width: 14,
             height: this.itemHeight,
             text: this.expanded.has(item.key) ? '⌄' : '›',
-            fillStyle: theme.colors.textTertiary,
+            fillStyle: token('ui.colors.textTertiary'),
             fontFamily: theme.font.family,
             fontSize: theme.font.size,
             align: 'center',
@@ -1013,7 +1013,7 @@ export class ICEMenu extends ICEContainer {
             width: 14,
             height: this.itemHeight,
             text: '⌄',
-            fillStyle: theme.colors.textTertiary,
+            fillStyle: token('ui.colors.textTertiary'),
             fontFamily: theme.font.family,
             fontSize: theme.font.sizeSmall,
             align: 'center',

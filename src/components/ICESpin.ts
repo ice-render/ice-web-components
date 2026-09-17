@@ -1,4 +1,4 @@
-import { ICEPath } from 'ice-render';
+import { ICEPath, token } from 'ice-render';
 import { ICELabel } from './ICELabel';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
@@ -77,7 +77,7 @@ export class ICESpin extends ICEWidget {
           height: size,
           verticalAlign: 'middle',
           text: tip,
-          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+          style: { fontSize: 12, fillStyle: token('ui.colors.textSecondary') },
         }),
         false,
       );

@@ -6,6 +6,7 @@ import { iceUIManager } from '../core/ICEManager';
 import { ICESelectionModel, ICESelectionMode } from '../model/ICESelectionModel';
 import { readHovered } from '../util/ICEStyle';
 import { computeVirtualRange } from './ICEVirtualList';
+import { token } from 'ice-render';
 
 /**
  * 树（Swing JTree 的最小可用版）。
@@ -96,8 +97,8 @@ export class ICETree extends ICEWidget {
       height,
       radius: theme.radius.md,
       style: {
-        fillStyle: theme.colors.surface,
-        strokeStyle: theme.colors.border,
+        fillStyle: token('ui.colors.surface'),
+        strokeStyle: token('ui.colors.border'),
         lineWidth: theme.control.lineWidth,
       },
     });
@@ -263,7 +264,7 @@ export class ICETree extends ICEWidget {
     const row = this.rows[this.__rowIndexAt(wy - box.tl[1])];
     if (!row || row.node.disabled) return;
     const theme = iceUIManager.getTheme();
-    const indicator = new ICEWidget({ left: 0, top: 0, width: Number(this.content.state.width) || 0, height: 2, fill: true, stroke: false, display: false, interactive: false, style: { fillStyle: theme.colors.primary } });
+    const indicator = new ICEWidget({ left: 0, top: 0, width: Number(this.content.state.width) || 0, height: 2, fill: true, stroke: false, display: false, interactive: false, style: { fillStyle: token('ui.colors.primary') } });
     const highlight = new ICEWidget({ left: 0, top: 0, width: Number(this.content.state.width) || 0, height: this.itemHeight, radius: 3, fill: true, stroke: false, display: false, interactive: false, style: { fillStyle: iceUIManager.getTheme().colors.primaryBg } });
     this.content.addChild(highlight, false);
     this.content.addChild(indicator, false);
@@ -533,7 +534,7 @@ export class ICETree extends ICEWidget {
           height: this.itemHeight,
           verticalAlign: 'middle',
           text: this.expanded.indexOf(row.node.key) !== -1 ? '▾' : '▸',
-          style: { fontSize: 11, fillStyle: theme.colors.textSecondary },
+          style: { fontSize: 11, fillStyle: token('ui.colors.textSecondary') },
         });
         node.addChild(arrow, false);
       }

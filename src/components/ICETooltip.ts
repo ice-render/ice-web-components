@@ -5,6 +5,7 @@ import { iceUIManager } from '../core/ICEManager';
 import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../core/ICEOverlayManager';
 import type { ICEOverlayPlacement } from '../util/ICEOverlayPosition';
 import { estimateTextWidth, readHovered } from '../util/ICEStyle';
+import { token } from 'ice-render';
 
 /** tooltip 文本字号与左右内边距（面板宽度按它估算） */
 export const ICE_TOOLTIP_FONT_SIZE = 12;
@@ -164,7 +165,7 @@ export class ICETooltip {
       width,
       height,
       radius: 4,
-      style: { fillStyle: theme.colors.text, strokeStyle: theme.colors.text, shadow: 'md' },
+      style: { fillStyle: token('ui.colors.text'), strokeStyle: token('ui.colors.text'), shadow: 'md' },
     });
     const label = new ICELabel({
       left: paddingX,
@@ -172,7 +173,7 @@ export class ICETooltip {
       height,
       verticalAlign: 'middle',
       text: title,
-      style: { fontSize, fillStyle: theme.colors.surface },
+      style: { fontSize, fillStyle: token('ui.colors.surface') },
     });
     panel.addChild(label, false);
     return panel;

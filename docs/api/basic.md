@@ -42,6 +42,7 @@
 | `onShow()` | `void` | 自身 `state.display` 由假变真时调用（对齐 Swing 的 `componentShown`）。祖先隐藏不算。 |
 | `onHide()` | `void` | 自身 `state.display` 由真变假时调用（对齐 Swing 的 `componentHidden`）。祖先隐藏不算。 |
 | `onResize()` | `void` | 自身宽或高变化时调用，**包含父容器布局器摆位引起的尺寸变化**。 |
+| `onThemeChange()` | `void` | 主题切换后调用（`iceUIManager.setTheme()` 应用完成时）。 |
 | `initEvents()` | `void` | 注册默认事件：转发给引擎基类（鼠标 / 键盘），再补上生命周期钩子要的一次性监听。 |
 | `theme()` |  |  |
 

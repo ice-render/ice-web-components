@@ -1,6 +1,7 @@
 import { ICEWidget } from '../core/ICEWidget';
 import { ICELabel } from './ICELabel';
 import { iceUIManager } from '../core/ICEManager';
+import { resolvedStyleColor } from '../util/ICEStyle';
 
 /**
  * 图标磁贴（桌面图标 / 应用宫格）：大图标字形 + 下方文字标签。
@@ -165,11 +166,11 @@ export class ICEIconTile extends ICEWidget {
 
   public getLabelColor(): string {
     const textNode = this.labelNode.childNodes[0];
-    return textNode ? String(textNode.state.style.fillStyle) : '';
+    return textNode ? resolvedStyleColor(textNode, 'fillStyle') : '';
   }
 
   public getLabelBackground(): string {
-    return String(this.labelBackground.state.style.fillStyle ?? 'rgba(0,0,0,0)');
+    return resolvedStyleColor(this.labelBackground, 'fillStyle', 'rgba(0,0,0,0)');
   }
 
   /**

@@ -9,6 +9,7 @@ import { ICEFocusManager, getICEFocusManager } from '../core/ICEFocusManager';
 import { getICEWorldBox } from '../util/ICEWorldBox';
 import type { ICELocalizedProps } from '../i18n/ICEI18n';
 import { tFor } from '../i18n/ICEI18n';
+import { token } from 'ice-render';
 
 /**
  * 漫游式引导：一步一步把用户带过关键界面。
@@ -317,7 +318,7 @@ export class ICETour {
       fill: false,
       stroke: true,
       radius: theme.radius.sm,
-      style: { strokeStyle: theme.colors.primary, lineWidth: 2 },
+      style: { strokeStyle: token('ui.colors.primary'), lineWidth: 2 },
     });
     mask.addChild(highlight, false);
     this.highlight = highlight;
@@ -332,7 +333,7 @@ export class ICETour {
       width: panelWidth,
       height: panelHeight,
       radius: theme.radius.md,
-      style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border, shadow: 'lg' },
+      style: { fillStyle: token('ui.colors.surface'), strokeStyle: token('ui.colors.border'), shadow: 'lg' },
     });
     const panelPadding = 16;
     this.titleNode = new ICELabel({
@@ -343,7 +344,7 @@ export class ICETour {
       height: 20,
       text: step.title,
       verticalAlign: 'middle',
-      style: { fontSize: 14, fontWeight: theme.font.weightSemibold, fillStyle: theme.colors.text },
+      style: { fontSize: 14, fontWeight: theme.font.weightSemibold, fillStyle: token('ui.colors.text') },
     });
     panel.addChild(this.titleNode, false);
     let top = 16 + 20;
@@ -357,7 +358,7 @@ export class ICETour {
         height: bodyHeight,
         text: step.description,
         verticalAlign: 'middle',
-        style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+        style: { fontSize: 12, fillStyle: token('ui.colors.textSecondary') },
       });
       panel.addChild(this.descriptionNode, false);
       top += bodyHeight;
@@ -372,7 +373,7 @@ export class ICETour {
       height: 32,
       text: `${this.current + 1}/${this.steps.length}`,
       verticalAlign: 'middle',
-      style: { fontSize: 12, fillStyle: theme.colors.textTertiary },
+      style: { fontSize: 12, fillStyle: token('ui.colors.textTertiary') },
     });
     panel.addChild(this.counterNode, false);
     this.skipButton = new ICEButton({

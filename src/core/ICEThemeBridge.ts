@@ -96,6 +96,22 @@ export function toEngineThemePatch(tokens: ICEThemeTokens): any {
       },
       lineBorder: c.borderSecondary || c.border || '#e9ecef',
     },
+    /**
+     * **整份 UI token 树**也塞进引擎主题（落在 `semantic.ui`）。
+     *
+     * 为什么：引擎的样式支持**主题引用**（`token('…')`，paint 时解析，见引擎
+     * `src/theme/ICETheme.ts` 的 ④）。把 UI token 树放进去之后，库里的组件就能写
+     * `fillStyle: token('ui.colors.text')` —— 于是：
+     *
+     * - **热切换**：`ice.setTheme()` 标脏即可，不必重建组件（引擎外墙早就是这么做的）；
+     * - **每个 ICE 实例各自的主题**：引用按**该实例**的主题解析，多实例/多品牌天然成立；
+     * - 漏了 `applyThemeToEngine()` 也不会"取不到色" —— 见那边新增的自动登记。
+     *
+     * ⚠️ 这同时是"组件库与引擎之间唯一的取色通道"：组件不该再在构造期把颜色抄成字面量
+     * （那正是热切换做不成的原因）。派生色（`mix` / `shade` / alpha）仍是构造期算的，
+     * 要让它们也跟随，组件自己实现 `ICEWidget.onThemeChange()`。
+     */
+    ui: tokens,
   };
 }
 
@@ -110,5 +126,13 @@ export function applyThemeToEngine(ice: any, tokens?: ICEThemeTokens): any {
   }
   const theme = tokens || iceUIManager.getTheme();
   ice.setTheme(toEngineThemePatch(theme));
+  // 记下"这个实例上的 UI token 树是哪一版"：组件挂载时据此判断要不要补打（见 ICEManager.revision）
+  ice.__uiThemeRevision = iceUIManager.themeRevision();
+  /**
+   * **登记这个实例**：之后 `iceUIManager.setTheme()` 会把所有登记过的实例一起换掉 ——
+   * 应用不必自己维护"我有哪些画布"的清单，也不会再出现"漏打一个实例、那块还是旧色"。
+   * （销毁的实例在下一次应用时按 `destroyed` 剪掉，不会积住。）
+   */
+  iceUIManager.trackEngine(ice);
   return ice;
 }

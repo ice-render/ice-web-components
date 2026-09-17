@@ -2,6 +2,7 @@ import { ICEWidget } from '../core/ICEWidget';
 import { ICELabel } from './ICELabel';
 import { iceUIManager } from '../core/ICEManager';
 import { computeDropTarget, moveKanbanCard } from '../util/ICEDragReorder';
+import { token } from 'ice-render';
 
 /**
  * 看板：列 + 卡片，卡片可以**跨列拖拽**（CRM / 项目管理最常见的那块界面）。
@@ -171,7 +172,7 @@ export class ICEKanban extends ICEWidget {
         fill: true,
         stroke: true,
         interactive: false,
-        style: { fillStyle: theme.colors.background, strokeStyle: theme.colors.border, lineWidth: 1 },
+        style: { fillStyle: token('ui.colors.background'), strokeStyle: token('ui.colors.border'), lineWidth: 1 },
       });
       panel.addChild(
         new ICELabel({
@@ -182,7 +183,7 @@ export class ICEKanban extends ICEWidget {
           height: HEADER_HEIGHT,
           text: `${column.title} · ${column.cards.length}`,
           verticalAlign: 'middle',
-          style: { fontSize: 13, fontWeight: theme.font.weightSemibold, fillStyle: theme.colors.text },
+          style: { fontSize: 13, fontWeight: theme.font.weightSemibold, fillStyle: token('ui.colors.text') },
         }),
         false,
       );
@@ -199,7 +200,7 @@ export class ICEKanban extends ICEWidget {
           // 卡片必须是可交互节点：引擎的指针拖拽只会打到可交互目标上，
           // 拿根节点当拖拽目标时后续 mousemove 的坐标不会跟着指针走（实测踩到）
           interactive: true,
-          style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border, lineWidth: 1, ...theme.shadows.sm },
+          style: { fillStyle: token('ui.colors.surface'), strokeStyle: token('ui.colors.border'), lineWidth: 1, ...theme.shadows.sm },
         });
         node.addChild(
           new ICELabel({
@@ -211,7 +212,7 @@ export class ICEKanban extends ICEWidget {
             text: card.title,
             verticalStyle: undefined,
             verticalAlign: 'middle',
-            style: { fontSize: 13, fillStyle: theme.colors.text },
+            style: { fontSize: 13, fillStyle: token('ui.colors.text') },
           }),
           false,
         );
@@ -228,7 +229,7 @@ export class ICEKanban extends ICEWidget {
         stroke: false,
         display: false,
         interactive: false,
-        style: { fillStyle: theme.colors.primary },
+        style: { fillStyle: token('ui.colors.primary') },
       });
       panel.addChild(indicator, false);
       panel.setState({ indicator });

@@ -10,6 +10,7 @@ import type { ICEEasing, ICEFrameDriver } from '../util/ICEAnimation';
 import type { ICELocalizedProps } from '../i18n/ICEI18n';
 import { tFor } from '../i18n/ICEI18n';
 import type { ICETranslate } from '../i18n/ICEI18n';
+import { token } from 'ice-render';
 
 /**
  * 模态对话框：全屏遮罩 + 居中面板 + 焦点陷阱。
@@ -434,7 +435,7 @@ export class ICEModal {
       width,
       height,
       radius: theme.radius.lg,
-      style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border, shadow: 'lg' },
+      style: { fillStyle: token('ui.colors.surface'), strokeStyle: token('ui.colors.border'), shadow: 'lg' },
     });
     // 阻止点在面板上时冒泡到遮罩（遮罩只处理「面板外」的点击）
     dialog.on('click', (evt: any) => {
@@ -454,7 +455,7 @@ export class ICEModal {
           height: titleHeight,
           verticalAlign: 'middle',
           text: this.options.title,
-          style: { fontSize: 16, fontWeight: '600', fillStyle: theme.colors.text },
+          style: { fontSize: 16, fontWeight: '600', fillStyle: token('ui.colors.text') },
         });
       dialog.addChild(this.titleNode, false);
       top += titleHeight + 8;
@@ -475,7 +476,7 @@ export class ICEModal {
           height: bodyHeight,
           verticalAlign: 'middle',
           text: String(this.options.content ?? ''),
-          style: { fontSize: 13, fillStyle: theme.colors.textSecondary },
+          style: { fontSize: 13, fillStyle: token('ui.colors.textSecondary') },
         });
       dialog.addChild(this.contentNode, false);
     }
@@ -541,7 +542,7 @@ export class ICEModal {
           align: 'center',
           verticalAlign: 'middle',
           text: '◢',
-          style: { fontSize: 11, fillStyle: theme.colors.textTertiary },
+          style: { fontSize: 11, fillStyle: token('ui.colors.textTertiary') },
         }),
         false,
       );

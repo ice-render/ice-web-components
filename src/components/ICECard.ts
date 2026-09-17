@@ -1,6 +1,7 @@
 import { ICEPanel } from './ICEPanel';
 import { iceUIManager } from '../core/ICEManager';
 import { createTextNode } from '../util/ICEStyle';
+import { token } from 'ice-render';
 
 /**
  * 卡片：面板 + 标题，并提供右上角 `extra` 插槽（放“更多/操作”）。
@@ -26,7 +27,7 @@ export class ICECard extends ICEPanel {
         left: props.paddingLeft ?? theme.spacing.md,
         top: props.paddingTop ?? theme.spacing.sm,
         text: props.title,
-        fillStyle: theme.colors.text,
+        fillStyle: token('ui.colors.text'),
         fontFamily: theme.font.family,
         fontSize: theme.font.sizeLarge,
         fontWeight: theme.font.weightSemibold,

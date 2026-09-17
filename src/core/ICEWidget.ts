@@ -1,6 +1,7 @@
 import { ICEGroup, ICE_EVENT_NAME_CONSTS } from 'ice-render';
 import type { ICEPainter } from './ICEPainter';
 import { iceUIManager } from './ICEManager';
+import { applyThemeToEngine } from './ICEThemeBridge';
 import { tFor } from '../i18n/ICEI18n';
 import type { ICETranslate } from '../i18n/ICEI18n';
 
@@ -364,6 +365,42 @@ export class ICEWidget extends ICEGroup {
   protected onResize(): void {}
 
   /**
+   * 主题切换后调用（`iceUIManager.setTheme()` 应用完成时）。
+   *
+   * **什么时候需要实现它**：只有当你的颜色是**算出来的**（`mix` / `shade` / alpha / 条件取色）
+   * 时才需要 —— 那种颜色没法写成引擎的主题引用。直接用 token 的地方应当写成引用式
+   * （`fillStyle: token('ui.colors.text')`），那样引擎换主题时**下一帧就是新色**，不需要这个钩子。
+   *
+   * 订阅是**挂载时建立、卸载时摘掉**的（与 `onMount` / `onUnmount` 同一处），所以不会漏、也不会积。
+   */
+  protected onThemeChange(): void {}
+
+  /** 主题订阅的退订函数（只有实现了 `onThemeChange` 的组件才有）。 */
+  private __themeOff: (() => void) | null = null;
+
+  /** 只有子类真的实现了 `onThemeChange` 才订阅 —— 基类默认实现是空函数，订阅它纯属浪费。 */
+  private __bindThemeFollow(): void {
+    if (this.__themeOff) return;
+    if (this.onThemeChange === ICEWidget.prototype.onThemeChange) return;
+    this.__themeOff = iceUIManager.onThemeChange(() => {
+      this.onThemeChange();
+      // 组件自己在回调里改了样式 → 让引擎重画（脏标记是引擎的活，不替它猜）
+      try {
+        if (this.ice) this.ice.dirty = true;
+      } catch (err) {
+        /* 未挂载 / 引擎已销毁：忽略 */
+      }
+    });
+  }
+
+  private __unbindThemeFollow(): void {
+    if (this.__themeOff) {
+      this.__themeOff();
+      this.__themeOff = null;
+    }
+  }
+
+  /**
    * 本次 `setState` 是否翻转了**自身** `display`：`__beforeStateMerge` 写、`__afterStateMerge` 消费。
    *
    * 名字**不能**叫 `__displayChanged` —— 引擎 `ICEComponent` 已有同名私有字段，
@@ -381,12 +418,37 @@ export class ICEWidget extends ICEGroup {
   protected initEvents(): void {
     super.initEvents();
     // 引擎在 `ICEGroup.initEvents` 里为 `AFTER_ADD` 注册了一次性回调，这里对称补上摘除的一侧。
-    this.once(ICE_EVENT_NAME_CONSTS.AFTER_REMOVE, this.onUnmount, this);
+    this.once(ICE_EVENT_NAME_CONSTS.AFTER_REMOVE, () => {
+      this.__unbindThemeFollow();
+      this.onUnmount();
+    });
   }
 
   protected afterAddHandler(): void {
     super.afterAddHandler();
+    this.__ensureEngineTheme();
+    this.__bindThemeFollow();
     this.onMount();
+  }
+
+  /**
+   * 保证**我所在的引擎**带上了 UI token 树（组件样式里的 `token('ui.colors.x')` 靠它解析）。
+   *
+   * 为什么需要：组件取色改成引用式之后，"引擎主题里有没有 `ui` 树"从"好看一点"变成了
+   * **硬前提** —— 没有它，引用解析不到，那一块就画不出颜色。而应用可能根本没调
+   * `applyThemeToEngine(ice)`（以前不需要，因为颜色是构造期抄好的字面量）。
+   * 所以这里兜底：挂载时按**主题版本号**判断，不是当前版本才补打一次
+   * （版本号在 `applyThemeToEngine` 里被记到实例上，所以同一引擎上只有第一个组件会真的打补丁）。
+   */
+  private __ensureEngineTheme(): void {
+    try {
+      const ice: any = this.ice;
+      if (!ice || typeof ice.setTheme !== 'function') return;
+      if (ice.__uiThemeRevision === iceUIManager.themeRevision()) return;
+      applyThemeToEngine(ice);
+    } catch (err) {
+      /* 引擎已销毁 / 非常规实例：忽略 —— 兜底逻辑不该反过来把挂载搞崩 */
+    }
   }
 
   protected __beforeStateMerge(newState: any): boolean {

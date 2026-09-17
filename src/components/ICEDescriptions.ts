@@ -2,7 +2,7 @@ import { ICELabel } from './ICELabel';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { truncateTextLines } from './ICETypography';
-import { ICEGridLayout } from 'ice-render';
+import { ICEGridLayout, token } from 'ice-render';
 
 /**
  * 描述列表：成对的「标签 / 值」，支持单列与多列。
@@ -127,7 +127,7 @@ export class ICEDescriptions extends ICEWidget {
           height: this.itemHeight,
           verticalAlign: 'middle',
           text: labelText,
-          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+          style: { fontSize: 12, fillStyle: token('ui.colors.textSecondary') },
         }),
         false,
       );
@@ -140,7 +140,7 @@ export class ICEDescriptions extends ICEWidget {
           height: this.itemHeight,
           verticalAlign: 'middle',
           text: valueText,
-          style: { fontSize: 13, fillStyle: theme.colors.text },
+          style: { fontSize: 13, fillStyle: token('ui.colors.text') },
         }),
         false,
       );

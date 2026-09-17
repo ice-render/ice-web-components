@@ -350,6 +350,10 @@ ICE 内核的移动类事件为了性能不会在 mousemove 时做全量命中�
 | `setDensity(density: ICEDensity)` | `this` | 切换密度。 |
 | `getDensity()` | `ICEDensity` |  |
 | `setTheme(name: ICEThemeName, ice?: any)` | `this` | 切换主题。 |
+| `themeRevision()` | `number` | 当前主题版本号（见 `revision` 的注释）。 |
+| `trackEngine(ice: any)` | `this` | 登记一个引擎实例（`applyThemeToEngine()` 内部调用）。 |
+| `trackedEngineCount()` | `number` | 已登记的引擎数量（调试 / 测试用）。 |
+| `onThemeChange(listener: (change: { name: string; tokens: ICEThemeTokens }) => void)` | `() => void` | 订阅主题变更（`setTheme` 应用完成后触发）。 |
 | `getThemeName()` | `ICEThemeName` |  |
 | `registerTheme(name: string, tokens: ICEThemeTokens)` | `this` | 注册（或覆盖）一套主题 token。 |
 | `hasTheme(name: string)` | `boolean` |  |

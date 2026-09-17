@@ -3,6 +3,7 @@ import { ICELabel } from './ICELabel';
 import { iceUIManager } from '../core/ICEManager';
 import { getStatusColors } from '../util/ICEStyle';
 import { tween, ICETweenHandle } from '../util/ICEAnimation';
+import { token } from 'ice-render';
 
 /**
  * 数值格式化：精度 + 可选千分位；非数字（如「暂缺」）原样返回。
@@ -127,7 +128,7 @@ export class ICEStatistic extends ICEWidget {
       style: {
         fontSize: theme.font.sizeSmall,
         fontFamily: theme.font.family,
-        fillStyle: theme.colors.textSecondary,
+        fillStyle: token('ui.colors.textSecondary'),
       },
     });
     this.valueNode = new ICELabel({

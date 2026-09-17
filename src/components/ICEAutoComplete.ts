@@ -5,6 +5,7 @@ import { ICETextField } from './ICETextField';
 import { ICEScrollPane } from './ICEScrollPane';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../core/ICEOverlayManager';
+import { token } from 'ice-render';
 
 /**
  * 自动完成：文本输入 + 候选下拉。
@@ -332,7 +333,7 @@ export class ICEAutoComplete extends ICEWidget {
       width,
       height: Math.min(6, this.visibleOptions.length) * this.optionHeight + 8,
       radius: theme.radius.md,
-      style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border, shadow: 'md' },
+      style: { fillStyle: token('ui.colors.surface'), strokeStyle: token('ui.colors.border'), shadow: 'md' },
     });
   }
 
@@ -386,7 +387,7 @@ export class ICEAutoComplete extends ICEWidget {
           height: this.optionHeight,
           verticalAlign: 'middle',
           text: option,
-          style: { fontSize: 13, fillStyle: theme.colors.text },
+          style: { fontSize: 13, fillStyle: token('ui.colors.text') },
         }),
         false,
       );

@@ -2,6 +2,7 @@ import { ICELabel } from './ICELabel';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { createTextNode, readHovered } from '../util/ICEStyle';
+import { token } from 'ice-render';
 
 /**
  * 折叠面板。
@@ -124,7 +125,7 @@ export class ICECollapse extends ICEWidget {
         fill: true,
         stroke: false,
         interactive: !item.disabled,
-        style: { fillStyle: theme.colors.background },
+        style: { fillStyle: token('ui.colors.background') },
       });
       header.addChild(
         new ICELabel({
@@ -136,7 +137,7 @@ export class ICECollapse extends ICEWidget {
           align: 'center',
           verticalAlign: 'middle',
           text: expanded ? '▾' : '▸',
-          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+          style: { fontSize: 12, fillStyle: token('ui.colors.textSecondary') },
         }),
         false,
       );
@@ -183,7 +184,7 @@ export class ICECollapse extends ICEWidget {
           height: this.contentHeight,
           fill: true,
           stroke: false,
-          style: { fillStyle: theme.colors.surface },
+          style: { fillStyle: token('ui.colors.surface') },
         });
         if (typeof item.content === 'function') {
           const node = item.content();
@@ -199,7 +200,7 @@ export class ICECollapse extends ICEWidget {
               width: width - 44,
               height: this.contentHeight,
               text: String(item.content ?? ''),
-              fillStyle: theme.colors.textSecondary,
+              fillStyle: token('ui.colors.textSecondary'),
               fontFamily: theme.font.family,
               fontSize: 12,
               align: 'left',

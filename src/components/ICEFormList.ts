@@ -3,7 +3,7 @@ import { ICEPanel } from './ICEPanel';
 import { ICELabel } from './ICELabel';
 import { ICEButton } from './ICEButton';
 import { iceUIManager } from '../core/ICEManager';
-import { ICEBoxLayout } from 'ice-render';
+import { ICEBoxLayout, token } from 'ice-render';
 
 /**
  * 可增删的重复表单项（多联系人 / 多地址 / 明细行）。
@@ -220,7 +220,7 @@ export class ICEFormList extends ICEWidget {
         width,
         height: this.rowHeight,
         radius: theme.radius.sm,
-        style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border },
+        style: { fillStyle: token('ui.colors.surface'), strokeStyle: token('ui.colors.border') },
       });
       const content = this.renderRow(row.data, { index, rowKey: row.key });
       if (content) {

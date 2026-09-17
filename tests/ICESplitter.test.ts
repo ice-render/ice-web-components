@@ -10,6 +10,7 @@
 import { ICEPanel } from '../src/components/ICEPanel';
 import { ICESplitter } from '../src/components/ICESplitter';
 import { iceUIManager } from '../src/core/ICEManager';
+import { resolvedStyleColor } from '../src/util/ICEStyle';
 
 const theme = iceUIManager.getTheme();
 
@@ -115,11 +116,20 @@ describe('ICESplitter', () => {
   it('悬停分隔条变色', () => {
     const { splitter } = makeSplitter();
     const divider = splitter.getDividerNode();
-    const before = divider.state.style.fillStyle;
+    /**
+     * ⚠️ 断言的是**解析后的颜色**，不是样式里存的字面量。
+     *
+     * 2026-09-17 起组件样式可以直接写**主题引用**（`token('ui.colors.primary')`，paint 时解析）——
+     * 那是热切换与"每个 ICE 实例各自主题"的实现方式。所以"现在是什么颜色"要问
+     * `resolvedStyleColor()`；直接读 `style.fillStyle` 拿到的是引用对象
+     * （QA / 调试接口当初就只看到 `[object Object]`）。
+     */
+    const colorOf = () => resolvedStyleColor(divider, 'fillStyle');
+    const before = colorOf();
     divider.setHovered(true);
-    expect(divider.state.style.fillStyle).toBe(theme.colors.primary);
+    expect(colorOf()).toBe(theme.colors.primary);
     divider.setHovered(false);
-    expect(divider.state.style.fillStyle).toBe(before);
+    expect(colorOf()).toBe(before);
   });
 
   it('容器「先建后量」：拿到真实尺寸后恢复调用方要的 size，不被构造期夹取粘住', () => {

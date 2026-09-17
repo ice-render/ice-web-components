@@ -3,6 +3,7 @@ import { iceUIManager } from '../core/ICEManager';
 import { ICEButton } from './ICEButton';
 import { createTextNode } from '../util/ICEStyle';
 import { ICENativeInput } from '../util/ICENativeInput';
+import { token } from 'ice-render';
 
 /**
  * 单行文本输入：聚焦边框、错误态、表单取值约定与键盘输入；
@@ -50,8 +51,8 @@ export class ICETextField extends ICEWidget {
       height,
       radius: theme.radius.md,
       style: {
-        fillStyle: theme.colors.surface,
-        strokeStyle: theme.colors.border,
+        fillStyle: token('ui.colors.surface'),
+        strokeStyle: token('ui.colors.border'),
         lineWidth: theme.control.lineWidth,
         ...(props.style || {}),
       },
@@ -398,7 +399,7 @@ export class ICETextField extends ICEWidget {
         width: 120,
         height,
         text,
-        fillStyle: theme.colors.textTertiary,
+        fillStyle: token('ui.colors.textTertiary'),
         fontFamily: theme.font.family,
         fontSize: theme.font.size,
         fontWeight: theme.font.weightNormal,
@@ -452,7 +453,7 @@ export class ICETextField extends ICEWidget {
     this.setState({
       style: {
         ...this.state.style,
-        fillStyle: theme.colors.surface,
+        fillStyle: token('ui.colors.surface'),
         // 校验失败优先于聚焦态：错误必须一眼可见
         strokeStyle: borderColor,
         lineWidth:

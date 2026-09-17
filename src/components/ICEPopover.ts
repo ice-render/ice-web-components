@@ -4,6 +4,7 @@ import { iceUIManager } from '../core/ICEManager';
 import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../core/ICEOverlayManager';
 import type { ICEOverlayPlacement } from '../util/ICEOverlayPosition';
 import { readHovered } from '../util/ICEStyle';
+import { token } from 'ice-render';
 
 /**
  * 卡片式浮层：点击（默认）或悬停触发，内容可以是文本或自定义组件工厂。
@@ -133,7 +134,7 @@ export class ICEPopover {
       width,
       height,
       radius: 6,
-      style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border, shadow: 'md' },
+      style: { fillStyle: token('ui.colors.surface'), strokeStyle: token('ui.colors.border'), shadow: 'md' },
     });
     if (title) {
       panel.addChild(
@@ -143,7 +144,7 @@ export class ICEPopover {
           height: titleHeight,
           verticalAlign: 'middle',
           text: title,
-          style: { fontSize: 13, fontWeight: '600', fillStyle: theme.colors.text },
+          style: { fontSize: 13, fontWeight: '600', fillStyle: token('ui.colors.text') },
         }),
         false,
       );
@@ -156,7 +157,7 @@ export class ICEPopover {
         height: bodyHeight,
         verticalAlign: 'middle',
         text: body,
-        style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+        style: { fontSize: 12, fillStyle: token('ui.colors.textSecondary') },
       }),
       false,
     );

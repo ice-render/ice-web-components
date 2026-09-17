@@ -2,7 +2,7 @@ import { ICEContainer } from '../core/ICEContainer';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { tween, resolveICEAnimationDuration } from '../util/ICEAnimation';
-import { ICELayoutManager } from 'ice-render';
+import { ICELayoutManager, token } from 'ice-render';
 
 /**
  * 滚动视口（Swing 的 JScrollPane / CSS 的 overflow:auto 容器）。
@@ -153,8 +153,8 @@ export class ICEScrollPane extends ICEContainer {
       fill: props.fill !== undefined ? props.fill : true,
       stroke: props.stroke !== undefined ? props.stroke : true,
       style: {
-        fillStyle: theme.colors.surface,
-        strokeStyle: theme.colors.border,
+        fillStyle: token('ui.colors.surface'),
+        strokeStyle: token('ui.colors.border'),
         lineWidth: theme.control.lineWidth,
         ...(props.style || {}),
       },
@@ -177,7 +177,7 @@ export class ICEScrollPane extends ICEContainer {
       fill: true,
       stroke: false,
       interactive: false,
-      style: { fillStyle: theme.colors.disabled },
+      style: { fillStyle: token('ui.colors.disabled') },
     });
     this.scrollbarThumb = new ICEWidget({
       left: 0,
@@ -188,7 +188,7 @@ export class ICEScrollPane extends ICEContainer {
       fill: true,
       stroke: false,
       interactive: false,
-      style: { fillStyle: theme.colors.borderSecondary },
+      style: { fillStyle: token('ui.colors.borderSecondary') },
     });
     this.scrollbarTrack.addChild(this.scrollbarThumb, false);
     this.addChild(this.scrollbarTrack, false);
@@ -201,7 +201,7 @@ export class ICEScrollPane extends ICEContainer {
       radius: SCROLLBAR_WIDTH / 2,
       fill: true,
       stroke: false,
-      style: { fillStyle: theme.colors.borderSecondary },
+      style: { fillStyle: token('ui.colors.borderSecondary') },
     });
     this.hThumb = new ICEWidget({
       left: 0,
@@ -211,7 +211,7 @@ export class ICEScrollPane extends ICEContainer {
       radius: SCROLLBAR_WIDTH / 2,
       fill: true,
       stroke: false,
-      style: { fillStyle: theme.colors.textTertiary },
+      style: { fillStyle: token('ui.colors.textTertiary') },
     });
     this.hTrack.addChild(this.hThumb, false);
     this.addChild(this.hTrack, false);

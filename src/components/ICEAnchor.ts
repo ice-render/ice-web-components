@@ -1,8 +1,8 @@
 import { ICEWidget } from '../core/ICEWidget';
 import { ICELabel } from './ICELabel';
 import { iceUIManager } from '../core/ICEManager';
-import { estimateTextWidth } from '../util/ICEStyle';
-import { ICEBoxLayout } from 'ice-render';
+import { estimateTextWidth, resolvedStyleColor } from '../util/ICEStyle';
+import { ICEBoxLayout, token } from 'ice-render';
 
 /**
  * 锚点导航：一列锚点，点击滚到目标位置，滚动时自动高亮当前项。
@@ -98,7 +98,7 @@ export class ICEAnchor extends ICEWidget {
     const index = this.items.findIndex((item) => item.key === key);
     const label = index === -1 ? null : this.labelNodes[index];
     const textNode = label && label.childNodes[0];
-    return textNode ? String(textNode.state.style.fillStyle) : '';
+    return textNode ? resolvedStyleColor(textNode, 'fillStyle') : '';
   }
 
   /** 程序式切换活动项（默认不滚动，传 scroll: true 才滚）。 */
@@ -274,7 +274,7 @@ export class ICEAnchor extends ICEWidget {
         style: {
           fontSize: this.fontSize,
           fontFamily: theme.font.family,
-          fillStyle: theme.colors.textSecondary,
+          fillStyle: token('ui.colors.textSecondary'),
         },
       });
       row.addChild(bar, false);

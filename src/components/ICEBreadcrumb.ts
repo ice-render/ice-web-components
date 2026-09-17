@@ -2,7 +2,7 @@ import { ICEWidget } from '../core/ICEWidget';
 import { ICELabel } from './ICELabel';
 import { iceUIManager } from '../core/ICEManager';
 import { estimateTextWidth } from '../util/ICEStyle';
-import { ICEFlowLayout } from 'ice-render';
+import { ICEFlowLayout, token } from 'ice-render';
 
 /**
  * 面包屑：一行「路径 + 分隔符」，最后一项是当前页。
@@ -270,7 +270,7 @@ export class ICEBreadcrumb extends ICEWidget {
           style: {
             fontSize: this.fontSize,
             fontFamily: theme.font.family,
-            fillStyle: theme.colors.textTertiary,
+            fillStyle: token('ui.colors.textTertiary'),
           },
         });
         this.addChild(separatorNode, false);

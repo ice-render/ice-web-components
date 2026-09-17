@@ -4,6 +4,7 @@ import { ICEWidget } from '../core/ICEWidget';
 import { ICEScrollPane } from './ICEScrollPane';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../core/ICEOverlayManager';
+import { token } from 'ice-render';
 
 /**
  * 时间选择器。
@@ -90,8 +91,8 @@ export class ICETimePicker extends ICEWidget {
       height,
       radius: theme.radius.md,
       style: {
-        fillStyle: theme.colors.surface,
-        strokeStyle: theme.colors.border,
+        fillStyle: token('ui.colors.surface'),
+        strokeStyle: token('ui.colors.border'),
         lineWidth: theme.control.lineWidth,
       },
     });
@@ -208,7 +209,7 @@ export class ICETimePicker extends ICEWidget {
       width: PANEL_PADDING * 2 + units.length * COLUMN_WIDTH,
       height: PANEL_PADDING * 2 + VISIBLE_ROWS * ROW_HEIGHT,
       radius: theme.radius.md,
-      style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border, shadow: 'md' },
+      style: { fillStyle: token('ui.colors.surface'), strokeStyle: token('ui.colors.border'), shadow: 'md' },
     });
     this.panel = panel;
     this.__renderPanel();
@@ -362,7 +363,7 @@ export class ICETimePicker extends ICEWidget {
         align: 'center',
         verticalAlign: 'middle',
         text: '▾',
-        style: { fontSize: 12, fillStyle: theme.colors.textTertiary },
+        style: { fontSize: 12, fillStyle: token('ui.colors.textTertiary') },
       }),
       false,
     );

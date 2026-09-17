@@ -3,6 +3,8 @@ import { ICELabel } from './ICELabel';
 import { iceUIManager } from '../core/ICEManager';
 import type { ICELocalizedProps } from '../i18n/ICEI18n';
 import { ICE_DEFAULT_WEEK_START, resolveWeekStart } from '../i18n/ICEI18n';
+import { token } from 'ice-render';
+import { resolvedStyleColor } from '../util/ICEStyle';
 
 /** 周标题的文案 key（顺序 = 周一开头的展示顺序）。 */
 export const ICE_CALENDAR_WEEKDAY_KEYS = [
@@ -145,7 +147,7 @@ export class ICECalendar extends ICEWidget {
       width,
       height,
       radius: theme.radius.md,
-      style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border, lineWidth: theme.control.lineWidth },
+      style: { fillStyle: token('ui.colors.surface'), strokeStyle: token('ui.colors.border'), lineWidth: theme.control.lineWidth },
     });
     this.setLocale(props.locale); // 实例级语言（组件层文案可配、不持全局状态）
     // 一周首日：props.weekStart 优先，否则按语言推导（en-US → 周日，zh-CN → 周一）
@@ -244,13 +246,13 @@ export class ICECalendar extends ICEWidget {
 
   public getCellBackground(date: string): string {
     const node = this.cellNodeMap.get(date);
-    return node ? String(node.state.style.fillStyle) : '';
+    return node ? resolvedStyleColor(node, 'fillStyle') : '';
   }
 
   public getCellTextColor(date: string): string {
     const label = this.cellLabels.get(date);
     const textNode = label && label.childNodes[0];
-    return textNode ? String(textNode.state.style.fillStyle) : '';
+    return textNode ? resolvedStyleColor(textNode, 'fillStyle') : '';
   }
 
   public isToday(date: string): boolean {
@@ -363,7 +365,7 @@ export class ICECalendar extends ICEWidget {
         text: '‹',
         align: 'center',
         verticalAlign: 'middle',
-        style: { fontSize: 16, fillStyle: theme.colors.textSecondary },
+        style: { fontSize: 16, fillStyle: token('ui.colors.textSecondary') },
       }),
       false,
     );
@@ -386,7 +388,7 @@ export class ICECalendar extends ICEWidget {
         text: '›',
         align: 'center',
         verticalAlign: 'middle',
-        style: { fontSize: 16, fillStyle: theme.colors.textSecondary },
+        style: { fontSize: 16, fillStyle: token('ui.colors.textSecondary') },
       }),
       false,
     );
@@ -402,7 +404,7 @@ export class ICECalendar extends ICEWidget {
       text: this.t('calendar.yearMonth', { year, month: monthIndex + 1 }),
       align: 'center',
       verticalAlign: 'middle',
-      style: { fontSize: 14, fontWeight: theme.font.weightSemibold, fillStyle: theme.colors.text },
+      style: { fontSize: 14, fontWeight: theme.font.weightSemibold, fillStyle: token('ui.colors.text') },
     });
     this.addChild(prev, false);
     this.addChild(this.titleNode, false);
@@ -420,7 +422,7 @@ export class ICECalendar extends ICEWidget {
         text,
         align: 'center',
         verticalAlign: 'middle',
-        style: { fontSize: 12, fillStyle: theme.colors.textTertiary },
+        style: { fontSize: 12, fillStyle: token('ui.colors.textTertiary') },
       });
       this.addChild(node, false);
       this.weekdayNodes.push(node);
@@ -443,7 +445,7 @@ export class ICECalendar extends ICEWidget {
         radius: theme.radius.sm,
         style: {
           fillStyle: selected ? theme.colors.primary : 'rgba(0,0,0,0)',
-          strokeStyle: theme.colors.primary,
+          strokeStyle: token('ui.colors.primary'),
           lineWidth: 1,
         },
       });

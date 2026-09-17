@@ -6,6 +6,7 @@ import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../co
 import { ICEFocusManager, getICEFocusManager } from '../core/ICEFocusManager';
 import { slideIn } from '../util/ICEAnimation';
 import type { ICEEasing, ICEFrameDriver } from '../util/ICEAnimation';
+import { token } from 'ice-render';
 
 /**
  * 抽屉：从屏幕某一边滑入的面板（带遮罩与焦点陷阱）。
@@ -219,7 +220,7 @@ export class ICEDrawer {
       width,
       height,
       radius: 0,
-      style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border, shadow: 'lg' },
+      style: { fillStyle: token('ui.colors.surface'), strokeStyle: token('ui.colors.border'), shadow: 'lg' },
     });
     panel.on('click', (evt: any) => {
       if (evt && typeof evt.stopPropagation === 'function') {
@@ -236,7 +237,7 @@ export class ICEDrawer {
           height: headerHeight,
           verticalAlign: 'middle',
           text: this.options.title,
-          style: { fontSize: 15, fontWeight: '600', fillStyle: theme.colors.text },
+          style: { fontSize: 15, fontWeight: '600', fillStyle: token('ui.colors.text') },
         }),
         false,
       );
@@ -286,7 +287,7 @@ export class ICEDrawer {
           height: 24,
           verticalAlign: 'middle',
           text: String(this.options.content ?? ''),
-          style: { fontSize: 13, fillStyle: theme.colors.textSecondary },
+          style: { fontSize: 13, fillStyle: token('ui.colors.textSecondary') },
         }),
         false,
       );
@@ -304,7 +305,7 @@ export class ICEDrawer {
           width,
           height: footerHeight,
           radius: 0,
-          style: { fillStyle: theme.colors.background, strokeStyle: theme.colors.border },
+          style: { fillStyle: token('ui.colors.background'), strokeStyle: token('ui.colors.border') },
         });
         footer.setState({ left: 20, top: Math.round((footerHeight - (Number(footer.state && footer.state.height) || 32)) / 2) });
         bar.addChild(footer, false);

@@ -2,6 +2,7 @@ import { ICELabel } from './ICELabel';
 import { ICEWidget } from '../core/ICEWidget';
 import { ICEButton } from './ICEButton';
 import { iceUIManager } from '../core/ICEManager';
+import { token } from 'ice-render';
 
 /**
  * 数字输入框。
@@ -54,8 +55,8 @@ export class ICEInputNumber extends ICEWidget {
       height,
       radius: theme.radius.md,
       style: {
-        fillStyle: theme.colors.surface,
-        strokeStyle: theme.colors.border,
+        fillStyle: token('ui.colors.surface'),
+        strokeStyle: token('ui.colors.border'),
         lineWidth: theme.control.lineWidth,
       },
     });

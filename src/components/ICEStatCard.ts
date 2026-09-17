@@ -1,4 +1,4 @@
-import { ICERect } from 'ice-render';
+import { ICERect, token } from 'ice-render';
 import { ICEPanel } from './ICEPanel';
 import { iceUIManager } from '../core/ICEManager';
 import { createTextNode, getStatusColors } from '../util/ICEStyle';
@@ -113,7 +113,7 @@ export class ICEStatCard extends ICEPanel {
       width: textWidth,
       height: 18,
       text: props.title || '',
-      fillStyle: theme.colors.textSecondary,
+      fillStyle: token('ui.colors.textSecondary'),
       fontFamily: theme.font.family,
       fontSize: theme.font.sizeSmall,
       fontWeight: theme.font.weightNormal,
@@ -126,7 +126,7 @@ export class ICEStatCard extends ICEPanel {
       width: textWidth,
       height: 30,
       text: String(props.value ?? '0'),
-      fillStyle: theme.colors.text,
+      fillStyle: token('ui.colors.text'),
       fontFamily: theme.font.family,
       fontSize: 24,
       fontWeight: theme.font.weightSemibold,

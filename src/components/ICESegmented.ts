@@ -2,7 +2,7 @@ import { ICEButton } from './ICEButton';
 import { iceUIManager } from '../core/ICEManager';
 import { estimateTextWidth } from '../util/ICEStyle';
 import { ICEContainer } from '../core/ICEContainer';
-import { ICEBoxLayout, ICEGridLayout } from 'ice-render';
+import { ICEBoxLayout, ICEGridLayout, token } from 'ice-render';
 
 /**
  * 分段控制器：
@@ -60,7 +60,7 @@ export class ICESegmented extends ICEContainer {
       // 内缩 2：等分/盒式的"内容盒"从 2px 开始（老实现是写死在 left/top 里的 2）
       padding: 2,
       radius: theme.radius.md,
-      style: { fillStyle: theme.colors.background, strokeStyle: theme.colors.border },
+      style: { fillStyle: token('ui.colors.background'), strokeStyle: token('ui.colors.border') },
     });
     this.options = (props.options || []).slice();
     this.value = props.value ?? (this.options.length ? this.options[0].value : null);

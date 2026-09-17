@@ -2,6 +2,7 @@ import { ICEWidget } from './ICEWidget';
 import { iceUIManager } from './ICEManager';
 import { getICEWorldBox } from '../util/ICEWorldBox';
 import { getICEOverlayManager } from './ICEOverlayManager';
+import { token } from 'ice-render';
 
 /** node 是否在 ancestor 子树内（含自身）。 */
 function isDescendantOf(node: any, ancestor: any): boolean {
@@ -76,7 +77,7 @@ export class ICEFocusManager {
       transformable: false,
       display: false,
       // Bootstrap 的聚焦色（#86b7fe），而不是主色本身
-      style: { strokeStyle: theme.colors.focusRing, lineWidth: 2 },
+      style: { strokeStyle: token('ui.colors.focusRing'), lineWidth: 2 },
     });
     this.toolNode.addChild(this.ring, false);
     if (typeof this.ice.addTool === 'function') {

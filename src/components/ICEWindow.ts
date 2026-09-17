@@ -3,6 +3,7 @@ import { ICELayoutManager } from 'ice-render';
 import { ICELabel } from './ICELabel';
 import { iceUIManager } from '../core/ICEManager';
 import { getICEWorldBox } from '../util/ICEWorldBox';
+import { resolvedStyleColor } from '../util/ICEStyle';
 
 /**
  * 通用窗口外壳（桌面 / 多窗口场景的底座）：标题栏 + 按钮 + 客户端区域 + 缩放手柄。
@@ -441,7 +442,7 @@ export class ICEWindow extends ICEWidget {
   public getTitleBarColor(): string {
     const mid = Math.floor(this.titleBands.length / 2);
     const band = this.titleBands[mid];
-    return band ? String(band.state.style.fillStyle) : '';
+    return band ? resolvedStyleColor(band, 'fillStyle') : '';
   }
 
   public isActive(): boolean {

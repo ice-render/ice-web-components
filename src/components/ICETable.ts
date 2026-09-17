@@ -6,7 +6,7 @@ import { ICEPanel } from './ICEPanel';
 import { iceUIManager } from '../core/ICEManager';
 import { getICEOverlayManager } from '../core/ICEOverlayManager';
 import { createTextNode, readHovered } from '../util/ICEStyle';
-import { ICERect } from 'ice-render';
+import { ICERect, token } from 'ice-render';
 import { ICEScrollPane } from './ICEScrollPane';
 import { ICETextField } from './ICETextField';
 import { ICELabel } from './ICELabel';
@@ -309,8 +309,8 @@ export class ICETable extends ICEWidget {
       height,
       radius: theme.radius.md,
       style: {
-        fillStyle: theme.colors.surface,
-        strokeStyle: theme.colors.border,
+        fillStyle: token('ui.colors.surface'),
+        strokeStyle: token('ui.colors.border'),
         lineWidth: theme.control.lineWidth,
         ...(props.style || {}),
       },
@@ -555,7 +555,7 @@ export class ICETable extends ICEWidget {
       width,
       height,
       radius: theme.radius.md,
-      style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border, shadow: 'md' },
+      style: { fillStyle: token('ui.colors.surface'), strokeStyle: token('ui.colors.border'), shadow: 'md' },
     });
     const options = new Map<string, any>();
     const active = this.filters[key] || [];
@@ -586,7 +586,7 @@ export class ICETable extends ICEWidget {
           width: width - 50,
           height: optionHeight,
           text: option.text,
-          fillStyle: theme.colors.text,
+          fillStyle: token('ui.colors.text'),
           fontFamily: theme.font.family,
           fontSize: theme.font.size,
           align: 'left',
@@ -873,7 +873,7 @@ export class ICETable extends ICEWidget {
       height: 18,
       verticalAlign: 'middle',
       text: message,
-      style: { fontSize: 11, fillStyle: theme.colors.error },
+      style: { fontSize: 11, fillStyle: token('ui.colors.error') },
     });
     this.addChild(node, false);
     this.editErrorNode = node;
@@ -1816,7 +1816,7 @@ export class ICETable extends ICEWidget {
       height: this.headerHeight,
       radius: theme.radius.sm,
       style: {
-        fillStyle: theme.colors.background,
+        fillStyle: token('ui.colors.background'),
       },
     });
     this.addChild(header, false);
@@ -1879,7 +1879,7 @@ export class ICETable extends ICEWidget {
           align: 'right',
           verticalAlign: 'middle',
           text,
-          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+          style: { fontSize: 12, fillStyle: token('ui.colors.textSecondary') },
         });
         header.addChild(this.selectionHintNode, false);
       }
@@ -1904,7 +1904,7 @@ export class ICETable extends ICEWidget {
       height: 1,
       fill: true,
       stroke: false,
-      style: { fillStyle: theme.colors.border },
+      style: { fillStyle: token('ui.colors.border') },
     });
     header.addChild(divider, false);
 
@@ -2004,7 +2004,7 @@ export class ICETable extends ICEWidget {
     const widths = this.__columnWidths(contentWidth - offset);
     const bodyHeight = Math.max(0, viewportHeight - this.headerHeight);
 
-    const headerContent = new ICEWidget({ left: 0, top: 0, width: contentWidth, height: this.headerHeight, fill: true, stroke: false, interactive: false, style: { fillStyle: theme.colors.background } });
+    const headerContent = new ICEWidget({ left: 0, top: 0, width: contentWidth, height: this.headerHeight, fill: true, stroke: false, interactive: false, style: { fillStyle: token('ui.colors.background') } });
     this.__placeCells(headerContent, widths, this.columns.map((column) => this.getHeaderLabel(column.key)), true, this.columns, undefined, offset);
     this.headerPane = new ICEScrollPane({ left: 0, top: 0, width: viewportWidth, height: this.headerHeight, scrollbar: false });
     this.headerPane.setContent(headerContent);
@@ -2048,7 +2048,7 @@ export class ICETable extends ICEWidget {
         fill: true,
         stroke: false,
         interactive: false,
-        style: { fillStyle: theme.colors.background },
+        style: { fillStyle: token('ui.colors.background') },
       });
       this.frozenLayer.addChild(frozenHeader, false);
       this.__placeCells(
@@ -2070,7 +2070,7 @@ export class ICETable extends ICEWidget {
         height: viewportHeight,
         fill: true,
         stroke: false,
-        style: { fillStyle: theme.colors.border },
+        style: { fillStyle: token('ui.colors.border') },
       });
       this.frozenLayer.addChild(edge, false);
       this.addChild(this.frozenLayer, false);
@@ -2234,7 +2234,7 @@ export class ICETable extends ICEWidget {
         width: size,
         height: size,
         text: expanded ? '▾' : '▸',
-        fillStyle: theme.colors.textSecondary,
+        fillStyle: token('ui.colors.textSecondary'),
         fontFamily: theme.font.family,
         fontSize: 11,
         align: 'center',
@@ -2279,7 +2279,7 @@ export class ICETable extends ICEWidget {
         width: size,
         height: size,
         text: expanded ? '▾' : '▸',
-        fillStyle: theme.colors.textSecondary,
+        fillStyle: token('ui.colors.textSecondary'),
         fontFamily: theme.font.family,
         fontSize: 11,
         align: 'center',
@@ -2319,7 +2319,7 @@ export class ICETable extends ICEWidget {
       height: this.expandableHeight,
       fill: true,
       stroke: false,
-      style: { fillStyle: theme.colors.background },
+      style: { fillStyle: token('ui.colors.background') },
     });
     panel.addChild(
       new ICERect({
@@ -2329,7 +2329,7 @@ export class ICETable extends ICEWidget {
         height: 1,
         fill: true,
         stroke: false,
-        style: { fillStyle: theme.colors.border },
+        style: { fillStyle: token('ui.colors.border') },
       }),
       false,
     );
@@ -2481,7 +2481,7 @@ export class ICETable extends ICEWidget {
       fill: true,
       stroke: false,
       interactive: false,
-      style: { fillStyle: theme.colors.background },
+      style: { fillStyle: token('ui.colors.background') },
     });
     node.addChild(
       new ICERect({
@@ -2491,7 +2491,7 @@ export class ICETable extends ICEWidget {
         height: 1,
         fill: true,
         stroke: false,
-        style: { fillStyle: theme.colors.border },
+        style: { fillStyle: token('ui.colors.border') },
       }),
       false,
     );
@@ -2506,7 +2506,7 @@ export class ICETable extends ICEWidget {
         width: 1,
         height: this.rowHeight,
         text,
-        fillStyle: theme.colors.text,
+        fillStyle: token('ui.colors.text'),
         fontFamily: theme.font.family,
         fontSize: theme.font.size,
         fontWeight: theme.font.weightSemibold,
@@ -2650,7 +2650,7 @@ export class ICETable extends ICEWidget {
       stroke: false,
       display: false,
       interactive: false,
-      style: { fillStyle: theme.colors.primary },
+      style: { fillStyle: token('ui.colors.primary') },
     });
     this.addChild(this.columnDropIndicator, false);
   }
@@ -2876,7 +2876,7 @@ export class ICETable extends ICEWidget {
       stroke: false,
       display: false,
       interactive: false,
-      style: { fillStyle: theme.colors.primary },
+      style: { fillStyle: token('ui.colors.primary') },
     });
     this.__dropHost().addChild(indicator, false);
     this.dragRow = { from, target: null, indicator };

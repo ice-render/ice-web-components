@@ -1,5 +1,5 @@
 import { ICEWidget } from '../core/ICEWidget';
-import { ICELayoutManager } from 'ice-render';
+import { ICELayoutManager, token } from 'ice-render';
 import { iceUIManager } from '../core/ICEManager';
 import { getICEWorldBox } from '../util/ICEWorldBox';
 
@@ -14,7 +14,7 @@ class ICESplitterDivider extends ICEWidget {
       stroke: false,
       radius: 0,
       ...props,
-      style: { fillStyle: theme.colors.border, ...(props.style || {}) },
+      style: { fillStyle: token('ui.colors.border'), ...(props.style || {}) },
     });
   }
 

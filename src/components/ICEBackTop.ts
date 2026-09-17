@@ -1,6 +1,7 @@
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
-import { centerTextNode } from '../util/ICEStyle';
+import { centerTextNode, resolvedStyleColor } from '../util/ICEStyle';
+import { token } from 'ice-render';
 
 /**
  * 回到顶部：一个小圆按钮，滚动超过阈值才出现。
@@ -47,7 +48,7 @@ export class ICEBackTop extends ICEWidget {
       height: size,
       opacity: 0,
       style: {
-        fillStyle: theme.colors.primary,
+        fillStyle: token('ui.colors.primary'),
         ...theme.shadows.md,
       },
     });
@@ -57,7 +58,7 @@ export class ICEBackTop extends ICEWidget {
     this.onClick = typeof props.onClick === 'function' ? props.onClick : null;
     this.iconNode = centerTextNode(props.icon ?? '↑', theme, size, size, {
       fontSize: Math.round(size * 0.5),
-      fillStyle: theme.colors.primaryText,
+      fillStyle: token('ui.colors.primaryText'),
     });
     this.addChild(this.iconNode, false);
     this.on('click', () => this.__click());
@@ -73,7 +74,7 @@ export class ICEBackTop extends ICEWidget {
 
   /** 当前按钮底色（悬停态取主色 hover）。 */
   public getButtonColor(): string {
-    return String(this.state.style.fillStyle);
+    return resolvedStyleColor(this, 'fillStyle');
   }
 
   public setTarget(target: any): this {

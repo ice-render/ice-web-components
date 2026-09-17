@@ -1,6 +1,7 @@
 import { ICEAvatar } from './ICEAvatar';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
+import { token } from 'ice-render';
 
 /**
  * 头像组。
@@ -106,7 +107,7 @@ export class ICEAvatarGroup extends ICEWidget {
         top: 0,
         size: this.size,
         text: `+${rest}`,
-        backgroundColor: theme.colors.borderSecondary,
+        backgroundColor: token('ui.colors.borderSecondary'),
       });
       this.addChild(more, false);
       this.restNode = more;

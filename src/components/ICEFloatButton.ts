@@ -1,6 +1,7 @@
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
-import { centerTextNode } from '../util/ICEStyle';
+import { centerTextNode, resolvedStyleColor } from '../util/ICEStyle';
+import { token } from 'ice-render';
 
 /**
  * 悬浮操作按钮：一个圆形主按钮，点击展开一组子按钮。
@@ -65,7 +66,7 @@ export class ICEFloatButton extends ICEWidget {
       height: size,
       style: {
         fillStyle: props.type === 'default' ? theme.colors.surface : theme.colors.primary,
-        strokeStyle: theme.colors.border,
+        strokeStyle: token('ui.colors.border'),
         ...theme.shadows.md,
       },
     });
@@ -101,7 +102,7 @@ export class ICEFloatButton extends ICEWidget {
   }
 
   public getButtonColor(): string {
-    return String(this.state.style.fillStyle);
+    return resolvedStyleColor(this, 'fillStyle');
   }
 
   public expand(): this {
@@ -173,15 +174,15 @@ export class ICEFloatButton extends ICEWidget {
         radius: this.size / 2,
         display: false,
         style: {
-          fillStyle: theme.colors.elevated,
-          strokeStyle: theme.colors.border,
+          fillStyle: token('ui.colors.elevated'),
+          strokeStyle: token('ui.colors.border'),
           ...theme.shadows.sm,
         },
       });
       node.addChild(
         centerTextNode(item.icon, theme, this.size, this.size, {
           fontSize: Math.round(this.size * 0.4),
-          fillStyle: theme.colors.text,
+          fillStyle: token('ui.colors.text'),
         }),
         false,
       );

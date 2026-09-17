@@ -7,6 +7,62 @@
 
 > 下一个版本发布前，改动在这里累积。
 
+## [1.15.0] - 2026-09-17
+
+### 新增
+
+- **热切换：换主题不再需要重建组件树。** 三件事合起来才成立：
+
+  1. `applyThemeToEngine()` 打给引擎的补丁现在**带上整份 UI token 树**（落在 `semantic.ui`）——
+     引擎的**主题引用**（`token('ui.colors.text')`）是 paint 时解析的，查的就是它；
+  2. 库内**直接进样式槽**的 **238 处**取色（`fillStyle` / `strokeStyle` / `color` /
+     `backgroundColor` / `caretColor`）从"构造期抄字面量"改成**引用式**；
+  3. `iceUIManager.setTheme()` 现在会**广播到所有登记过的引擎实例**（登记发生在
+     `applyThemeToEngine()` 里），并通知订阅者。
+
+  真机证明：`e2e/theme-hot-switch.spec.ts` —— 切主题后**同一个组件实例**（切换前打的标记还在）、
+  画布指纹变化、颜色换成新主题那一档、再切回来还原。
+
+- **`ICEWidget.onThemeChange()`**：派生色（`mix` / `shade` / alpha / 状态色表）的重算钩子 ——
+  这些颜色写不成一条引用。订阅在挂载时建立、卸载时退订，回调后库会置脏重绘。
+  **直接用 token 的地方不要实现它**（引擎自己会重画）。
+- **`applyThemeToCss()` / `themeCssVariables()`**：DOM 那半的官方支持 —— 把同一张 token 表写成
+  `--ice-color-*` / `--ice-space-*` / `--ice-radius-*` / `--ice-font-*` / `--ice-control-*` /
+  `--ice-shadow-*`，并给根元素打 `data-ice-theme`。以前 `ice-agent-console` 与 `ice-smart-water`
+  各手写一份（变量名还不一样），现在收到库里。**故意不做 `--bg` / `--panel` 这类短别名**（别名是
+  第二套命名，改 token 就得记得改映射）。配 `iceUIManager.onThemeChange()` 即"开页一次 + 热切换跟随"。
+- **`resolvedStyleColor(node, key, fallback)`**：读**画出来的颜色**。样式里存的可能是主题引用
+  （`{$token}`），直接 `String()` 会得到 `[object Object]` —— 组件的公开读数接口（QA / 调试用）
+  一律走它。库内 9 处回读已改过来。
+
+### 变更
+
+- **`iceUIManager.setTheme(name)` 的契约变了**：以前"不传 `ice` 就只改本库 token"，
+  现在会把新主题应用到**所有登记过的引擎实例**上。这正是热切换要的行为（应用不必自己维护
+  "我有哪几块画布"的清单，也不会漏打某个实例）；`tests/ICEThemeBridge.test.ts` 同步更新，
+  并补了广播 / 剪枝（销毁的实例不再收补丁）/ 订阅三条断言。
+- **组件挂载时会兜底保证所在引擎带上了 UI token 树**（按**主题版本号**去重，同一引擎只有第一个
+  组件会真的打补丁）。没有它，"应用忘了调 `applyThemeToEngine`"会从"引擎外墙是默认色"
+  升级成"引用解析不到、那块没颜色"—— 兜底之后这个坑不存在了。
+
+### 文档
+
+- `docs/guides/theming.md` 新增 **§七 热切换**：原理、三件东西（`applyThemeToEngine` /
+  `setTheme` 广播 / `onThemeChange`）各管什么、什么时候**才**需要 `onThemeChange`、
+  以及迁移进度（**354 处 / 52 个文件**仍是构造期取色的派生色）。
+
+### 回归
+
+- `verify:full`：types / jest **195 suites · 1419 用例** / build / docs 24 文件 346 链接 /
+  qa-counts 303 项 / 真机 e2e **12/12**（含新增的热切换 2 条）/ **qa:all 8/8** / qa:perf 全在预算内。
+  （`qa:algo` 在 `qa:all` 里偶发失败一次，单跑与复跑全绿 —— 与既有偶发记录一致，不是本次改动。）
+
+### 棘轮
+
+- `tests/theme-refs.test.ts`：**构造期取色只许减不许增**（按文件记预算；某文件涨了红、
+  降下来不登记也红）。新写组件时颜色能写成 `token('ui.colors.x')` 就写成引用 ——
+  热切换、多实例主题、暗色适配三件事一起解决。
+
 ## [1.14.1] - 2026-09-17
 
 ### 修复

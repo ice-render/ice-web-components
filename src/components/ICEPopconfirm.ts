@@ -7,6 +7,7 @@ import { ICEPopover, ICEPopoverOptions } from './ICEPopover';
 import type { ICELocalizedProps } from '../i18n/ICEI18n';
 import { tFor } from '../i18n/ICEI18n';
 import type { ICETranslate } from '../i18n/ICEI18n';
+import { token } from 'ice-render';
 
 /**
  * 气泡确认框：点击目标弹出「标题 + 说明 + 取消/确定」的小卡片。
@@ -51,7 +52,7 @@ export class ICEPopconfirm extends ICEPopover {
       width,
       height,
       radius: 6,
-      style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border, shadow: 'md' },
+      style: { fillStyle: token('ui.colors.surface'), strokeStyle: token('ui.colors.border'), shadow: 'md' },
     });
     panel.addChild(
       new ICELabel({
@@ -60,7 +61,7 @@ export class ICEPopconfirm extends ICEPopover {
         height: titleHeight,
         verticalAlign: 'middle',
         text: title,
-        style: { fontSize: 13, fontWeight: '600', fillStyle: theme.colors.text },
+        style: { fontSize: 13, fontWeight: '600', fillStyle: token('ui.colors.text') },
       }),
       false,
     );
@@ -73,7 +74,7 @@ export class ICEPopconfirm extends ICEPopover {
           height: descHeight,
           verticalAlign: 'middle',
           text: description,
-          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+          style: { fontSize: 12, fillStyle: token('ui.colors.textSecondary') },
         }),
         false,
       );

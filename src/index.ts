@@ -2,6 +2,7 @@ export * from './theme/ICETheme';
 export * from './theme/ICEArcadeTheme';
 export * from './core/ICEManager';
 export * from './core/ICEThemeBridge';
+export * from './core/ICEThemeCss';
 export * from './core/ICEHoverManager';
 export * from './core/ICEPainter';
 export * from './core/ICEOverlayManager';

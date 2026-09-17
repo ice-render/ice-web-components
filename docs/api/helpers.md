@@ -344,13 +344,13 @@ readHovered(evt: any): boolean
 创建一段按照 ICE 约定居中显示的文本。
 
 ```ts
-createTextNode(props: { text?: string; left?: number; top?: number; width?: number; height?: number; fillStyle?: string; fontFamily?: string; fontSize?: number; fontWeight?: string; align?: 'left' | 'center' | 'right'; verticalAlign?: 'top' | 'middle' | 'bottom'; })
+createTextNode(props: { text?: string; left?: number; top?: number; width?: number; height?: number; /** 允许直接给色值，也允许给引擎的主题引用（`token('ui.colors.text')`）—— 后者才能热切换。 */ fillStyle?: string | ICEThemeTokenRef; fontFamily?: string; fontSize?: number; fontWeight?: string; align?: 'left' | 'center' | 'right'; verticalAlign?: 'top' | 'middle' | 'bottom'; })
 ```
 
 ### `centerTextNode` — 函数
 
 ```ts
-centerTextNode(text: string, theme: ICEThemeTokens, width: number, height: number, options: { fontSize?: number; fontWeight?: string; fillStyle?: string })
+centerTextNode(text: string, theme: ICEThemeTokens, width: number, height: number, options: { fontSize?: number; fontWeight?: string; fillStyle?: string | ICEThemeTokenRef })
 ```
 
 ### `getStatusColors` — 函数

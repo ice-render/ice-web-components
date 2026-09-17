@@ -1,4 +1,4 @@
-import { ICECircle, ICERect } from 'ice-render';
+import { ICECircle, ICERect, token } from 'ice-render';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEToggleModel } from '../model/ICEToggleModel';
@@ -45,8 +45,8 @@ export class ICESwitch extends ICEWidget {
       top: knobGap,
       radius: knobSize / 2,
       style: {
-        fillStyle: theme.colors.surface,
-        strokeStyle: theme.colors.surface,
+        fillStyle: token('ui.colors.surface'),
+        strokeStyle: token('ui.colors.surface'),
         ...theme.shadows.sm,
       },
     });

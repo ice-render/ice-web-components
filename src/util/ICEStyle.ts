@@ -1,7 +1,39 @@
-import { ICEText } from 'ice-render';
+import { ICEText, resolveThemeValue, tokenValue, type ICEThemeTokenRef } from 'ice-render';
 import type { ICEThemeTokens } from '../theme/ICETheme';
+import { iceUIManager } from '../core/ICEManager';
 
 export type ICEStatusColor = 'default' | 'primary' | 'success' | 'warning' | 'error' | 'info';
+
+/**
+ * 读**画出来的颜色**：解析样式里的主题引用。
+ *
+ * 组件样式里的色值现在有两种形态：普通字符串，或**主题引用**（`token('ui.colors.text')`，
+ * 见 `ICEThemeBridge`）—— 后者是热切换与"每个 ICE 实例各自主题"的实现方式。
+ * 但引用是个对象，直接 `String(style.fillStyle)` 会得到 `[object Object]`
+ * （QA / 调试接口断言颜色时就是这么踩的），所以公开的读数接口一律走这个helper。
+ */
+export function resolvedStyleColor(
+  node: any,
+  key: 'fillStyle' | 'strokeStyle' = 'fillStyle',
+  fallback = ''
+): string {
+  const raw = node && node.state && node.state.style ? node.state.style[key] : undefined;
+  if (raw === undefined || raw === null) return fallback;
+  const theme = node && node.ice && typeof node.ice.getTheme === 'function' ? node.ice.getTheme() : undefined;
+  let resolved = theme ? resolveThemeValue(raw, theme) : raw;
+  if (resolved === raw && resolved !== null && typeof resolved === 'object') {
+    /**
+     * 没挂到引擎上（单测 / 构造期就调这个读数接口）时，`resolveThemeValue` 没地方查表。
+     * 组件里的引用清一色是 `ui.…`（指向本库 token），所以这里退一步用**当前 UI 主题**解析 ——
+     * 否则调用方拿到的是 `[object Object]`。
+     */
+    const path = raw && typeof raw === 'object' && typeof (raw as any).$token === 'string' ? String((raw as any).$token) : null;
+    if (path && path.indexOf('ui.') === 0) {
+      resolved = tokenValue(path, { semantic: { ui: iceUIManager.getTheme() } } as any);
+    }
+  }
+  return String(resolved === undefined || resolved === null ? fallback : resolved);
+}
 
 /**
  * 极简文本宽度估算（给「按最长文字定容器宽度」用的）。
@@ -152,7 +184,8 @@ export function createTextNode(props: {
   top?: number;
   width?: number;
   height?: number;
-  fillStyle?: string;
+  /** 允许直接给色值，也允许给引擎的主题引用（`token('ui.colors.text')`）—— 后者才能热切换。 */
+  fillStyle?: string | ICEThemeTokenRef;
   fontFamily?: string;
   fontSize?: number;
   fontWeight?: string;
@@ -208,7 +241,7 @@ export function centerTextNode(
   theme: ICEThemeTokens,
   width: number,
   height: number,
-  options: { fontSize?: number; fontWeight?: string; fillStyle?: string } = {},
+  options: { fontSize?: number; fontWeight?: string; fillStyle?: string | ICEThemeTokenRef } = {},
 ) {
   return createTextNode({
     text,

@@ -4,7 +4,7 @@ import { ICELabel } from './ICELabel';
 import { iceUIManager } from '../core/ICEManager';
 import type { ICEFormRule } from '../model/ICEFormModel';
 import type { ICELocalizedProps } from '../i18n/ICEI18n';
-import { ICELayoutManager } from 'ice-render';
+import { ICELayoutManager, token } from 'ice-render';
 
 /**
  * 表单项的自持策略（Swing 里 `JLabel` + 编辑器的复合版式，由各 Look&Feel 自己摆）。
@@ -136,7 +136,7 @@ export class ICEFormItem extends ICEWidget {
       height: labelHeight,
       verticalAlign: 'middle',
       text: this.labelText,
-      style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+      style: { fontSize: 12, fillStyle: token('ui.colors.textSecondary') },
     });
     this.errorNode = new ICELabel({
       left: 0,
@@ -145,7 +145,7 @@ export class ICEFormItem extends ICEWidget {
       verticalAlign: 'middle',
       text: '',
       display: false,
-      style: { fontSize: 12, fillStyle: theme.colors.error },
+      style: { fontSize: 12, fillStyle: token('ui.colors.error') },
     });
 
     this.addChild(this.labelNode, false);

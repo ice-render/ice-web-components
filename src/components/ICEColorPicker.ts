@@ -1,6 +1,6 @@
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
-import { ICEGridLayout } from 'ice-render';
+import { ICEGridLayout, token } from 'ice-render';
 
 /**
  * 颜色选择器。
@@ -62,8 +62,8 @@ export class ICEColorPicker extends ICEWidget {
       height,
       radius: theme.radius.md,
       style: {
-        fillStyle: theme.colors.surface,
-        strokeStyle: theme.colors.border,
+        fillStyle: token('ui.colors.surface'),
+        strokeStyle: token('ui.colors.border'),
         lineWidth: theme.control.lineWidth,
       },
     });
@@ -214,7 +214,7 @@ export class ICEColorPicker extends ICEWidget {
         stroke: true,
         interactive: !this.disabled,
         style: {
-          fillStyle: theme.colors.surface,
+          fillStyle: token('ui.colors.surface'),
           strokeStyle: selected ? theme.colors.primary : borderColor,
           lineWidth: selected ? 2 : 1,
         },

@@ -1,6 +1,6 @@
 import { ICEButton } from './ICEButton';
 import { ICELabel } from './ICELabel';
-import { ICEBoxLayout } from 'ice-render';
+import { ICEBoxLayout, token } from 'ice-render';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEContainer } from '../core/ICEContainer';
 import type { ICELocalizedProps } from '../i18n/ICEI18n';
@@ -156,7 +156,7 @@ export class ICEPagination extends ICEContainer {
         height,
         verticalAlign: 'middle',
         text: this.t('pagination.total', { total: this.total }),
-        style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+        style: { fontSize: 12, fillStyle: token('ui.colors.textSecondary') },
       });
       this.addChild(totalLabel, false);
     }
@@ -195,7 +195,7 @@ export class ICEPagination extends ICEContainer {
           height,
           verticalAlign: 'middle',
           text: '...',
-          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+          style: { fontSize: 12, fillStyle: token('ui.colors.textSecondary') },
         });
         this.addChild(ellipsis, false);
         return;

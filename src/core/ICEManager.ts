@@ -26,6 +26,19 @@ export class ICEManager {
   /** 密度派生的主题缓存：同一套主题 + 同一密度必须返回**同一个对象**（组件会比对引用） */
   private densityCache = new Map<string, ICEThemeTokens>();
 
+  /** 被 `applyThemeToEngine()` 登记过的引擎实例：`setTheme()` 时统一换主题（见 trackEngine）。 */
+  private engines = new Set<any>();
+  /** 主题变更订阅者（`ICEWidget.onThemeChange` 与宿主侧共用同一个广播）。 */
+  private themeListeners = new Set<(change: { name: string; tokens: ICEThemeTokens }) => void>();
+  /**
+   * 主题**版本号**：每次切主题 / 注册主题 / 改密度都 +1。
+   *
+   * 用途：组件挂载时用它判断"我这个引擎上的 UI token 树是不是当前这一版"——
+   * 不是才补一次补丁。没有它就得每次挂载都打一遍（gallery 里有 1757 个节点，
+   * 每个都 deepMerge 一整棵 token 树会直接拖垮首帧）。
+   */
+  private revision = 0;
+
   /**
    * 切换密度。
    *
@@ -52,13 +65,91 @@ export class ICEManager {
     // 未注册的名字直接忽略：保持「setTheme 不抛异常」的既有行为
     if (typeof name === 'string' && this.themes.has(name)) {
       this.themeName = name;
-      if (ice) {
-        // 静态 import：两边都是"函数内部才用对方"，模块循环是安全的；
-        // 这里**不能用 require** —— UMD 产物在浏览器里没有 require，页面会直接报错（踩过）。
-        applyThemeToEngine(ice);
-      }
+      // 静态 import：两边都是"函数内部才用对方"，模块循环是安全的；
+      // 这里**不能用 require** —— UMD 产物在浏览器里没有 require，页面会直接报错（踩过）。
+      /**
+       * **广播**：把新主题应用到所有登记过的引擎实例上。
+       *
+       * 这是"热切换"落地的关键一步：组件样式里的**主题引用**（`token('ui.colors.text')`）
+       * 是 paint 时解析的，所以只要引擎主题换了、再标脏，界面下一帧就是新色 —— 不用重建组件树。
+       * 登记来自 `applyThemeToEngine()`（每个实例第一次被主题化时自动登记）。
+       *
+       * 传进来的 `ice` 先登记、再由这一次广播统一应用 —— 不单独打一遍，否则同一实例会被
+       * 连打两次（既浪费，也会让"setTheme 调了几次引擎"这种断言变成 2）。
+       */
+      if (ice) this.trackEngine(ice);
+      this.applyToTrackedEngines();
+      this.notifyThemeChange(name);
+      this.revision++;
     }
     return this;
+  }
+
+  /** 当前主题版本号（见 `revision` 的注释）。 */
+  public themeRevision(): number {
+    return this.revision;
+  }
+
+  /**
+   * 登记一个引擎实例（`applyThemeToEngine()` 内部调用）。
+   *
+   * 为什么要登记：应用侧"漏打一个画布"是很难查的静默故障（那块永远是旧色），
+   * 而 `setTheme()` 又只有应用自己知道"我有哪几块画布"。登记一次之后，切主题时
+   * 库自己会把清单跑一遍。
+   */
+  public trackEngine(ice: any): this {
+    if (ice && typeof ice.setTheme === 'function') this.engines.add(ice);
+    return this;
+  }
+
+  /** 已登记的引擎数量（调试 / 测试用）。 */
+  public trackedEngineCount(): number {
+    return this.engines.size;
+  }
+
+  /** 把当前主题应用到所有登记过的实例；顺手剪掉已销毁的（不积住）。 */
+  private applyToTrackedEngines(): void {
+    for (const engine of [...this.engines]) {
+      if (!engine || engine.destroyed) {
+        this.engines.delete(engine);
+        continue;
+      }
+      try {
+        applyThemeToEngine(engine);
+      } catch (err) {
+        // 单个实例出问题不该拖垮整次切换（多实例场景下更明显）：摘掉它，继续处理其余的
+        this.engines.delete(engine);
+      }
+    }
+  }
+
+  /**
+   * 订阅主题变更（`setTheme` 应用完成后触发）。
+   *
+   * 用途分两类：
+   * - **组件的派生色**：颜色是算出来的（`mix` / `shade` / alpha），引用式取色救不了它，
+   *   在回调里重算自己的样式即可（`ICEWidget` 把它包装成 `onThemeChange()` 钩子）；
+   * - **宿主侧**：DOM 那半（CSS 变量）、图表调色板、第三方控件，需要自己跟着换。
+   *
+   * 返回取消订阅的函数。
+   */
+  public onThemeChange(listener: (change: { name: string; tokens: ICEThemeTokens }) => void): () => void {
+    if (typeof listener !== 'function') return () => undefined;
+    this.themeListeners.add(listener);
+    return () => {
+      this.themeListeners.delete(listener);
+    };
+  }
+
+  private notifyThemeChange(name: string): void {
+    const change = { name, tokens: this.getTheme() };
+    for (const listener of [...this.themeListeners]) {
+      try {
+        listener(change);
+      } catch (err) {
+        // 一个订阅者抛异常不该影响其它订阅者，也不该让 setTheme 半途而废
+      }
+    }
   }
 
   public getThemeName(): ICEThemeName {

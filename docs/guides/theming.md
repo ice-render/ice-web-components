@@ -157,5 +157,55 @@ iceUIManager.registerTheme('xp', ICE_XP_THEME).setTheme('xp');
 
 ## 六、焦点色
 
+## 七、热切换（2026-09-17 起支持，不用重建组件树）
+
+以前组件是**构造期**把 token 抄成字面量的，所以"换主题"只能重建整棵树 ——
+`ice-smart-water` / `ice-agent-console` 两个应用都因此退到"存偏好 + 重新加载"。现在两条腿都通了：
+
+```ts
+import { iceUIManager, applyThemeToEngine } from 'ice-web-components';
+
+applyThemeToEngine(ice);            // ① 把主题（含整份 UI token 树）打到引擎实例上
+iceUIManager.setTheme('dark');      // ② 换主题：广播到所有登记过的实例 + 通知订阅者
+// ③ 引擎标脏 → 下一帧按新色重画。**组件树没动**。
+```
+
+原理是引擎的**主题引用**（`src/theme/ICETheme.ts` ④）：样式里的 `token('ui.colors.text')` 是
+**paint 时**解析的，所以换主题只要"改表 + 标脏"。库内**直接进样式槽**的 238 处已经全部改成这种写法
+（真机判据：`e2e/theme-hot-switch.spec.ts` —— 同一棵组件树、画面指纹变化、颜色换成新主题那一档）。
+
+### 7.1 三件东西各管什么
+
+| 件 | 作用 | 谁调 |
+|---|---|---|
+| `applyThemeToEngine(ice)` | 把 UI token 树（`semantic.ui`）+ 语义色 + 交互外壳打进**这个引擎实例** | 应用（每个 `new ICE()` 一次）。**忘了也不要紧**：组件挂载时会按主题版本号兜底补一次 |
+| `iceUIManager.setTheme(name)` | 换主题 + **广播**到所有登记过的实例 + 通知订阅者 | 应用（切主题时一次） |
+| `ICEWidget.onThemeChange()` | 派生色组件的重算钩子（挂载时订阅、卸载时退订） | 组件自己（**只有算出来的颜色才需要**） |
+
+### 7.2 什么时候还需要 `onThemeChange()`
+
+只有**算出来的颜色**才需要 —— 它们没法写成一条引用：
+
+```ts
+class Fancy extends ICEWidget {
+  protected onThemeChange(): void {
+    const theme = iceUIManager.getTheme();
+    // 派生色：混色 / 压暗 / 加透明度 / 按状态查表
+    this.setState({ style: { ...this.state.style, fillStyle: shade(theme.colors.primary, -0.35) } });
+  }
+}
+```
+
+直接用 token 的地方**不要**实现它（引擎会自己重画，重复设置只是白费）。
+
+### 7.3 迁移进度与棘轮（别让新代码走回头路）
+
+`tests/theme-refs.test.ts` 按文件记了"构造期取色"的**预算**（当前 **354 处 / 52 个文件**，
+集中在 `ICEStyle.ts`（状态色表）、`ICEMenu`、`ICEDateRangePicker`、`ICEButton` 这些派生色多的地方）：
+某个文件用量涨了会红；降下来不登记也会红（棘轮只进不退）。
+
+自己写组件时：**颜色能写成 `token('ui.colors.x')` 就写成引用** —— 那样热切换、多实例主题、
+暗色适配三件事一起解决；确实要算的（`mix` / `shade` / alpha）再加 `onThemeChange()`。
+
 `colors.focusRing`（浅色 `#86b7fe` / 深色 `#6ea8fe`）用于**焦点环**与**输入框聚焦边框** ——
 浅蓝而不是主色，是 Bootstrap 的取值。

@@ -2,6 +2,7 @@ import { ICEButton } from './ICEButton';
 import { ICELabel } from './ICELabel';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
+import { token } from 'ice-render';
 
 /**
  * 评论：文字头像 + 作者 + 时间 + 正文 + 操作按钮 + 嵌套回复。
@@ -88,7 +89,7 @@ export class ICEComment extends ICEWidget {
         align: 'center',
         verticalAlign: 'middle',
         text: avatarText,
-        style: { fontSize: 13, fontWeight: '600', fillStyle: theme.colors.primaryText },
+        style: { fontSize: 13, fontWeight: '600', fillStyle: token('ui.colors.primaryText') },
       }),
       false,
     );
@@ -105,7 +106,7 @@ export class ICEComment extends ICEWidget {
         height: LINE_HEIGHT,
         verticalAlign: 'middle',
         text: props.author,
-        style: { fontSize: 13, fontWeight: '600', fillStyle: theme.colors.text },
+        style: { fontSize: 13, fontWeight: '600', fillStyle: token('ui.colors.text') },
       }),
       false,
     );
@@ -120,7 +121,7 @@ export class ICEComment extends ICEWidget {
           align: 'right',
           verticalAlign: 'middle',
           text: props.time,
-          style: { fontSize: 12, fillStyle: theme.colors.textTertiary },
+          style: { fontSize: 12, fillStyle: token('ui.colors.textTertiary') },
         }),
         false,
       );
@@ -134,7 +135,7 @@ export class ICEComment extends ICEWidget {
         height: LINE_HEIGHT,
         verticalAlign: 'middle',
         text: props.content,
-        style: { fontSize: 13, fillStyle: theme.colors.textSecondary },
+        style: { fontSize: 13, fillStyle: token('ui.colors.textSecondary') },
       }),
       false,
     );

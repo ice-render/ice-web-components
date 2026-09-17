@@ -2,6 +2,7 @@ import { ICEWidget } from '../core/ICEWidget';
 import { ICELabel } from './ICELabel';
 import { iceUIManager } from '../core/ICEManager';
 import { tween, ICETweenHandle, ICEFrameDriver } from '../util/ICEAnimation';
+import { token } from 'ice-render';
 
 /**
  * 轮播。
@@ -85,7 +86,7 @@ export class ICECarousel extends ICEWidget {
       width: props.width ?? 320,
       height: props.height ?? 180,
       radius: theme.radius.md,
-      style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border },
+      style: { fillStyle: token('ui.colors.surface'), strokeStyle: token('ui.colors.border') },
     });
     this.slides = (props.slides || []).slice();
     this.loop = props.loop !== false;
@@ -380,7 +381,7 @@ export class ICECarousel extends ICEWidget {
       fill: false,
       stroke: true,
       interactive: false,
-      style: { strokeStyle: theme.colors.border },
+      style: { strokeStyle: token('ui.colors.border') },
     });
     this.addChild(frame, false);
     this.__raiseSubtree(frame, base + 3);
@@ -413,7 +414,7 @@ export class ICECarousel extends ICEWidget {
         align: 'center',
         verticalAlign: 'middle',
         text,
-        style: { fontSize: 16, fillStyle: theme.colors.text },
+        style: { fontSize: 16, fillStyle: token('ui.colors.text') },
       }),
       false,
     );

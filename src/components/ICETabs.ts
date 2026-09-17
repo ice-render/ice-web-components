@@ -1,6 +1,6 @@
 import { ICEButton } from './ICEButton';
 import { ICEContainer } from '../core/ICEContainer';
-import { ICELayoutManager } from 'ice-render';
+import { ICELayoutManager, token } from 'ice-render';
 import { iceUIManager } from '../core/ICEManager';
 
 /**
@@ -478,7 +478,7 @@ export class ICETabs extends ICEContainer {
       };
       arrow('‹', 0, -this.tabWidthValue, 'prev');
       arrow('›', width - arrowWidth, this.tabWidthValue, 'next');
-      this.strip.setState({ style: { ...this.strip.state.style, fillStyle: theme.colors.background } });
+      this.strip.setState({ style: { ...this.strip.state.style, fillStyle: token('ui.colors.background') } });
     }
     if (this.ice) {
       this.ice.dirty = true;

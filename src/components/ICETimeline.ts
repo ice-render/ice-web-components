@@ -1,7 +1,8 @@
 import { ICELabel } from './ICELabel';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
-import { ICEBoxLayout } from 'ice-render';
+import { ICEBoxLayout, token } from 'ice-render';
+import { resolvedStyleColor } from '../util/ICEStyle';
 
 /**
  * 时间线：竖线 + 节点圆点 + 标题/描述/时间。
@@ -55,7 +56,7 @@ export class ICETimeline extends ICEWidget {
 
   public getDotColor(index: number): string {
     const dot = this.dots[index];
-    return dot ? String(dot.state.style.fillStyle) : '';
+    return dot ? resolvedStyleColor(dot, 'fillStyle') : '';
   }
 
   /** 替换数据并重排（内容随选中项变化时用）。 */
@@ -109,7 +110,7 @@ export class ICETimeline extends ICEWidget {
             fill: true,
             stroke: false,
             interactive: false,
-            style: { fillStyle: theme.colors.borderSecondary },
+            style: { fillStyle: token('ui.colors.borderSecondary') },
           }),
           false,
         );
@@ -137,7 +138,7 @@ export class ICETimeline extends ICEWidget {
           height: 20,
           verticalAlign: 'middle',
           text: item.title,
-          style: { fontSize: 13, fontWeight: '600', fillStyle: theme.colors.text },
+          style: { fontSize: 13, fontWeight: '600', fillStyle: token('ui.colors.text') },
         }),
         false,
       );
@@ -151,7 +152,7 @@ export class ICETimeline extends ICEWidget {
             height: 18,
             verticalAlign: 'middle',
             text: item.description,
-            style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+            style: { fontSize: 12, fillStyle: token('ui.colors.textSecondary') },
           }),
           false,
         );
@@ -167,7 +168,7 @@ export class ICETimeline extends ICEWidget {
             align: 'right',
             verticalAlign: 'middle',
             text: item.time,
-            style: { fontSize: 12, fillStyle: theme.colors.textTertiary },
+            style: { fontSize: 12, fillStyle: token('ui.colors.textTertiary') },
           }),
           false,
         );

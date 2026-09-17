@@ -1,4 +1,4 @@
-import { ICECircle, ICERect } from 'ice-render';
+import { ICECircle, ICERect, token } from 'ice-render';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEBoundedRangeModel } from '../model/ICEBoundedRangeModel';
@@ -56,8 +56,8 @@ export class ICESlider extends ICEWidget {
       height: trackHeight,
       radius: trackHeight / 2,
       style: {
-        fillStyle: theme.colors.borderSecondary,
-        strokeStyle: theme.colors.borderSecondary,
+        fillStyle: token('ui.colors.borderSecondary'),
+        strokeStyle: token('ui.colors.borderSecondary'),
         lineWidth: theme.control.lineWidth,
       },
     });
@@ -68,8 +68,8 @@ export class ICESlider extends ICEWidget {
       height: trackHeight,
       radius: trackHeight / 2,
       style: {
-        fillStyle: theme.colors.primary,
-        strokeStyle: theme.colors.primary,
+        fillStyle: token('ui.colors.primary'),
+        strokeStyle: token('ui.colors.primary'),
         lineWidth: theme.control.lineWidth,
       },
     });
@@ -78,8 +78,8 @@ export class ICESlider extends ICEWidget {
       top: (height - thumbSize) / 2,
       radius: thumbSize / 2,
       style: {
-        fillStyle: theme.colors.primary,
-        strokeStyle: theme.colors.surface,
+        fillStyle: token('ui.colors.primary'),
+        strokeStyle: token('ui.colors.surface'),
         lineWidth: theme.control.lineWidth + 1,
         ...theme.shadows.sm,
       },
@@ -93,8 +93,8 @@ export class ICESlider extends ICEWidget {
         top: (height - thumbSize) / 2,
         radius: thumbSize / 2,
         style: {
-          fillStyle: theme.colors.primary,
-          strokeStyle: theme.colors.surface,
+          fillStyle: token('ui.colors.primary'),
+          strokeStyle: token('ui.colors.surface'),
           lineWidth: theme.control.lineWidth + 1,
           ...theme.shadows.sm,
         },
@@ -352,7 +352,7 @@ export class ICESlider extends ICEWidget {
     const active = this.hovered || (this.dragging && this.activeThumb === which);
     return {
       fillStyle: active ? theme.colors.primaryHover : theme.colors.primary,
-      strokeStyle: theme.colors.surface,
+      strokeStyle: token('ui.colors.surface'),
       lineWidth: theme.control.lineWidth + (active ? 2 : 1),
       ...theme.shadows.sm,
     };

@@ -1,4 +1,4 @@
-import { ICERect } from 'ice-render';
+import { ICERect, token } from 'ice-render';
 import { ICEBoxLayout } from 'ice-render';
 import { ICELabel } from './ICELabel';
 import { ICEProgressBar } from './ICEProgressBar';
@@ -733,7 +733,7 @@ export class ICEUpload extends ICEWidget {
           align: 'center',
           verticalAlign: 'middle',
           text: this.hint,
-          style: { fontSize: 11, fillStyle: theme.colors.textTertiary },
+          style: { fontSize: 11, fillStyle: token('ui.colors.textTertiary') },
         }),
         false,
       );
@@ -792,7 +792,7 @@ export class ICEUpload extends ICEWidget {
           height: this.rowHeight,
           verticalAlign: 'middle',
           text: `${file.name}${sizeText}${statusText}`,
-          style: { fontSize: 12, fillStyle: theme.colors.text },
+          style: { fontSize: 12, fillStyle: token('ui.colors.text') },
         });
       row.addChild(label, false);
       this.fileLabels.set(file.uid, label);
@@ -828,7 +828,7 @@ export class ICEUpload extends ICEWidget {
           align: 'center',
           verticalAlign: 'middle',
           text: '✕',
-          style: { fontSize: 12, fillStyle: theme.colors.textTertiary },
+          style: { fontSize: 12, fillStyle: token('ui.colors.textTertiary') },
         }),
         false,
       );

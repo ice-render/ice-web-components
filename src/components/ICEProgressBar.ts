@@ -1,4 +1,4 @@
-import { ICEPath, ICERect } from 'ice-render';
+import { ICEPath, ICERect, token } from 'ice-render';
 import { ICELabel } from './ICELabel';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
@@ -95,7 +95,7 @@ export class ICEProgressBar extends ICEWidget {
         height: diameter,
         full: true,
         style: {
-          strokeStyle: theme.colors.borderSecondary,
+          strokeStyle: token('ui.colors.borderSecondary'),
           lineWidth: strokeWidth,
           lineCap: 'round',
         },
@@ -120,7 +120,7 @@ export class ICEProgressBar extends ICEWidget {
           align: 'center',
           verticalAlign: 'middle',
           text: this.__format(this.__ratio()),
-          style: { fontSize: Math.max(12, Math.round(diameter * 0.18)), fillStyle: theme.colors.text },
+          style: { fontSize: Math.max(12, Math.round(diameter * 0.18)), fillStyle: token('ui.colors.text') },
         });
         this.addChild(this.textNode, false);
       }
@@ -134,8 +134,8 @@ export class ICEProgressBar extends ICEWidget {
         height,
         radius: height / 2,
         style: {
-          fillStyle: theme.colors.disabled,
-          strokeStyle: theme.colors.borderSecondary,
+          fillStyle: token('ui.colors.disabled'),
+          strokeStyle: token('ui.colors.borderSecondary'),
           lineWidth: theme.control.lineWidth,
         },
       });

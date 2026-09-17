@@ -19,6 +19,7 @@ import {
 } from '../src';
 import { ICEBoxLayout, ICEFlowLayout } from 'ice-render';
 import { ICE_LIGHT_THEME } from '../src';
+import { resolvedStyleColor } from '../src/util/ICEStyle';
 
 describe('ice-web-components component behavior', () => {
   beforeEach(() => {
@@ -146,7 +147,8 @@ describe('ice-web-components component behavior', () => {
 
     it('creates a separator with border colour', () => {
       const separator = new ICESeparator({ width: 100, height: 1 });
-      expect(separator.childNodes[0].state.style.fillStyle).toBe(ICE_LIGHT_THEME.colors.border);
+      // 样式里存的是**主题引用**（热切换用），断言「看起来是什么颜色」要解析一次
+      expect(resolvedStyleColor(separator.childNodes[0], 'fillStyle')).toBe(ICE_LIGHT_THEME.colors.border);
     });
   });
 

@@ -4,6 +4,7 @@ import { t } from '../i18n/ICEI18n';
 import { ICEScrollPane } from './ICEScrollPane';
 import { iceUIManager } from '../core/ICEManager';
 import type { ICELocalizedProps } from '../i18n/ICEI18n';
+import { token } from 'ice-render';
 
 /**
  * 穿梭框。
@@ -67,8 +68,8 @@ export class ICETransfer extends ICEWidget {
       height: props.height ?? 220,
       radius: theme.radius.md,
       style: {
-        fillStyle: theme.colors.surface,
-        strokeStyle: theme.colors.border,
+        fillStyle: token('ui.colors.surface'),
+        strokeStyle: token('ui.colors.border'),
         lineWidth: theme.control.lineWidth,
       },
     });
@@ -226,7 +227,7 @@ export class ICETransfer extends ICEWidget {
     const height = Number(this.state.height) || 220;
     const borderColor = this.validateStatus === 'error' ? theme.colors.error : theme.colors.border;
     this.setState({
-      style: { ...this.state.style, fillStyle: theme.colors.surface, strokeStyle: borderColor },
+      style: { ...this.state.style, fillStyle: token('ui.colors.surface'), strokeStyle: borderColor },
     });
     this.removeChildren([...this.childNodes]);
     this.sourceRows.clear();
@@ -291,7 +292,7 @@ export class ICETransfer extends ICEWidget {
       fill: true,
       stroke: true,
       interactive: false,
-      style: { fillStyle: theme.colors.background, strokeStyle: theme.colors.border },
+      style: { fillStyle: token('ui.colors.background'), strokeStyle: token('ui.colors.border') },
     });
     panel.addChild(
       new ICELabel({
@@ -302,7 +303,7 @@ export class ICETransfer extends ICEWidget {
         height: HEADER_HEIGHT,
         verticalAlign: 'middle',
         text: title,
-        style: { fontSize: 12, fontWeight: '600', fillStyle: theme.colors.textSecondary },
+        style: { fontSize: 12, fontWeight: '600', fillStyle: token('ui.colors.textSecondary') },
       }),
       false,
     );

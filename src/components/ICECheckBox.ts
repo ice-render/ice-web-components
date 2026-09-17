@@ -1,4 +1,4 @@
-import { ICERect } from 'ice-render';
+import { ICERect, token } from 'ice-render';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEToggleModel } from '../model/ICEToggleModel';
@@ -49,7 +49,7 @@ export class ICECheckBox extends ICEWidget {
     this.mark = centerTextNode(selected ? '✓' : '', theme, boxSize, boxSize, {
       fontSize: Math.max(12, boxSize * 0.72),
       fontWeight: theme.font.weightBold,
-      fillStyle: theme.colors.primaryText,
+      fillStyle: token('ui.colors.primaryText'),
     });
     this.mark.setState({ left: boxLeft, top: boxTop, width: boxSize, height: boxSize });
     this.addChild(this.box, false);

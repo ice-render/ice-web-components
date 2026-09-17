@@ -2,6 +2,7 @@ import { ICEButton } from './ICEButton';
 import { ICELabel } from './ICELabel';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
+import { token } from 'ice-render';
 
 /**
  * 空状态：居中的图标 + 描述 + 可选操作按钮。
@@ -52,7 +53,7 @@ export class ICEEmpty extends ICEWidget {
       align: 'center',
       verticalAlign: 'middle',
       text: icon,
-      style: { fontSize: 26, fillStyle: theme.colors.textDisabled },
+      style: { fontSize: 26, fillStyle: token('ui.colors.textDisabled') },
     });
     this.addChild(this.iconLabel, false);
     this.descLabel = new ICELabel({
@@ -64,7 +65,7 @@ export class ICEEmpty extends ICEWidget {
       align: 'center',
       verticalAlign: 'middle',
       text: props.description ?? '',
-      style: { fontSize: 13, fillStyle: theme.colors.textSecondary },
+      style: { fontSize: 13, fillStyle: token('ui.colors.textSecondary') },
     });
     this.addChild(this.descLabel, false);
     if (hasAction) {

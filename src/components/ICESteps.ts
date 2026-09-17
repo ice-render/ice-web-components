@@ -1,7 +1,7 @@
 import { ICELabel } from './ICELabel';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
-import { ICEBoxLayout } from 'ice-render';
+import { ICEBoxLayout, token } from 'ice-render';
 
 /**
  * 步骤条：横向序号 + 标题/描述 + 连接线，当前步骤高亮、已完成打勾。
@@ -135,7 +135,7 @@ export class ICESteps extends ICEWidget {
           style: {
             fontSize: 12,
             fontWeight: '600',
-            fillStyle: theme.colors.primaryText,
+            fillStyle: token('ui.colors.primaryText'),
           },
         }),
         false,
@@ -168,7 +168,7 @@ export class ICESteps extends ICEWidget {
             height: 18,
             verticalAlign: 'middle',
             text: item.description,
-            style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+            style: { fontSize: 12, fillStyle: token('ui.colors.textSecondary') },
           }),
           false,
         );

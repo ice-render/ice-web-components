@@ -6,6 +6,7 @@ import { iceUIManager } from '../core/ICEManager';
 import { ICESelectionModel, ICESelectionMode } from '../model/ICESelectionModel';
 import { getICEWorldBox } from '../util/ICEWorldBox';
 import { roundRectPath } from '../util/ICEStyle';
+import { token } from 'ice-render';
 
 /**
  * 列表（Swing JList 的最小版）。
@@ -65,8 +66,8 @@ export class ICEList extends ICEWidget {
       height,
       radius: theme.radius.md,
       style: {
-        fillStyle: theme.colors.surface,
-        strokeStyle: theme.colors.border,
+        fillStyle: token('ui.colors.surface'),
+        strokeStyle: token('ui.colors.border'),
         lineWidth: theme.control.lineWidth,
       },
     });

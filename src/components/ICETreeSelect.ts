@@ -4,6 +4,7 @@ import { ICEWidget } from '../core/ICEWidget';
 import { ICETree, ICETreeNode } from './ICETree';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEOverlayManager, ICEOverlayHandle, getICEOverlayManager } from '../core/ICEOverlayManager';
+import { token } from 'ice-render';
 
 /**
  * 树选择器：下拉里放一棵 ICETree，选中节点后回写值。
@@ -73,8 +74,8 @@ export class ICETreeSelect extends ICEWidget {
       height,
       radius: theme.radius.md,
       style: {
-        fillStyle: theme.colors.surface,
-        strokeStyle: theme.colors.border,
+        fillStyle: token('ui.colors.surface'),
+        strokeStyle: token('ui.colors.border'),
         lineWidth: theme.control.lineWidth,
       },
     });
@@ -250,7 +251,7 @@ export class ICETreeSelect extends ICEWidget {
       width,
       height: searchHeight + this.treeHeight + 8,
       radius: theme.radius.md,
-      style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border, shadow: 'md' },
+      style: { fillStyle: token('ui.colors.surface'), strokeStyle: token('ui.colors.border'), shadow: 'md' },
     });
     this.panel = panel;
     this.__rebuildTree();
@@ -500,7 +501,7 @@ export class ICETreeSelect extends ICEWidget {
         align: 'center',
         verticalAlign: 'middle',
         text: '▾',
-        style: { fontSize: 12, fillStyle: theme.colors.textTertiary },
+        style: { fontSize: 12, fillStyle: token('ui.colors.textTertiary') },
       }),
       false,
     );
