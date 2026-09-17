@@ -18,6 +18,9 @@ import { ICEWidget } from './ICEWidget';
  *   逐层嵌套，属于挂载方的策略，两者不冲突。
  * - **不覆盖 `toJSON()`**：容器是结构，属于文档本身，应当被序列化。要排除内部零件，由组件
  *   自己覆盖（`ICEMenu` / `ICETabs` / `ICEScrollPane` 是范例）。
+ * - **应用页面怎么写**：一页一个 `ICEContainer` 子类、`onUpdate()` 由宿主在"数据换新之后"
+ *   调用、别在 `onShow()` 里自更新（那一刻数据还是上一轮的）、入口决策表与验收清单 ——
+ *   完整口径见 `docs/guides/app-pages.md`。
  * - 完整口径见 `docs/guides/layout.md`。
  */
 export class ICEContainer extends ICEWidget {

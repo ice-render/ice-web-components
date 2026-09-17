@@ -78,3 +78,8 @@ static 常量/字段  →  static 方法  →  实例字段  →  构造函数  
 
 引擎仓的 `AGENTS.md`（`../ice-render/AGENTS.md`）汇总了跨仓铁律（渲染/序列化/事件/i18n 边界/动画等），
 本仓改动涉及引擎契约时以那份为准。
+
+**应用层页面怎么写**（一页一类、`onUpdate()` 由谁在什么时候调、稳定结构的边界、入口决策表、
+验收清单、常见坑）单一来源是 [`docs/guides/app-pages.md`](./docs/guides/app-pages.md)；
+容器本身的契约见 [`docs/guides/layout.md`](./docs/guides/layout.md) 第六节。各应用仓的 AGENTS
+只记自己特有的部分，**别在那里再写一份** —— 两份契约一定会漂。
