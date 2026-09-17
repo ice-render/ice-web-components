@@ -1,7 +1,7 @@
 import { ICELabel } from './ICELabel';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
-import { ICEBoxLayout, token } from 'ice-render';
+import { ICEBoxLayout, token, type ICEThemeTokenRef } from 'ice-render';
 import { resolvedStyleColor } from '../util/ICEStyle';
 
 /**
@@ -11,7 +11,13 @@ export interface ICETimelineItem {
   title: string;
   description?: string;
   time?: string;
-  color?: string;
+  /**
+   * 节点圆点的颜色。
+   *
+   * 允许传**主题引用**（`token('ui.colors.link')`）—— 引用是 paint 时解析的，所以热切换时
+   * 这一项也跟着换；传色值字面量则停在构造那一刻（`resolvedStyleColor()` 两种都能读）。
+   */
+  color?: string | ICEThemeTokenRef;
 }
 
 export interface ICETimelineOptions {
