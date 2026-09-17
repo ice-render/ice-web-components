@@ -1,6 +1,6 @@
 {
   "name": "ice-web-components",
-  "version": "1.13.2",
+  "version": "1.13.3",
   "description": "Swing-style Canvas UI components built on ice-render.",
   "repository": {
     "type": "git",

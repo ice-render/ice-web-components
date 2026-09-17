@@ -144,6 +144,50 @@ ice.addChild(panel);
 
 ![Quick start](docs/images/quick-start.png)
 
+### 4.1 From a script to a page
+
+The snippet above is the right shape for a **demo**: a canvas, a few components, a module-level
+counter. But the moment it becomes an actual **page** — several components that must update when
+data changes, a second page in the same app, a host that pushes fresh data — stop stacking
+`ice.addChild(...)` calls and wrap it in one class. That is the family-wide convention
+(one page = one class):
+
+```ts
+import { ICE } from 'ice-render';
+import { ICEContainer, ICELabel, ICETable } from 'ice-web-components';
+
+const ice = new ICE().init('canvas');
+
+class DataPage extends ICEContainer {
+  private readonly table: ICETable;                 // ① build the tree once, in the constructor
+
+  constructor() {
+    super({ left: 0, top: 0, width: 960, height: 640 });
+    this.addChild(new ICELabel({ left: 16, top: 12, text: 'Run data' }));
+    this.table = new ICETable({ left: 16, top: 48, width: 928 });
+    this.addChild(this.table);
+  }
+
+  /** ② the single place that writes new data — the host calls it once fresh data is in place */
+  onUpdate(snapshot: { rows: any[] }): void {
+    this.table.setData(snapshot.rows);
+  }
+}
+
+ice.addChild(new DataPage());
+```
+
+Three signs it is time to upgrade from script to page: **a second page**, **data pushed by a host**,
+and **the same structure being re-filled over and over**. A page never calls back into its host —
+it *declares* what it needs (`headerActions()` / `statusTags()` / `islandSpecs()`) and the host asks.
+
+The full contract — who calls `onUpdate()` and when, which layer to pick for what, where the line
+between stable structure and mutable content sits, the acceptance checklist and the pitfalls we
+actually hit — is written up as
+[应用层：一个页面怎么写](https://ice-render.github.io/ice-render-doc/docs/conventions/app-pages)
+(Chinese), with the container contract itself in
+[`docs/guides/layout.md`](./docs/guides/layout.md) §6.
+
 ## 5. Documentation
 
 Full docs live in [`docs/`](./docs/README.md):

@@ -7,6 +7,34 @@
 
 > 下一个版本发布前，改动在这里累积。
 
+## [1.13.3] - 2026-09-17
+
+### 文档
+
+- **README 的 Quick start 后面补了一节 `4.1 From a script to a page`**。原因是实测出来的：
+  三个首屏入口（引擎 README、本包 README、文档站「你的第一个场景」）教的都是**引擎原语**的
+  脚本式写法 —— 那对单文件 demo 是对的，但一个应用真正要交付的是**页面**（若干控件、数据由
+  宿主推、刷新时只改值不重建结构），而原来的路径里**没有任何一处**说"什么时候该从脚本升级成
+  页面"；本包 README 全文甚至没出现过 "page" 这个词，`ICEContainer` 只在 §7 的组件清单里作为
+  一个名字出现过一次。
+
+  新小节给 12 行 `class DataPage extends ICEContainer`（构造期建树 + `onUpdate()` 唯一改值入口）、
+  三条升级判据（第二个页面 / 宿主推数据 / 同一结构反复改值）、以及指向
+  [应用层：一个页面怎么写](https://ice-render.github.io/ice-render-doc/docs/conventions/app-pages)
+  与 `docs/guides/layout.md` 第六节的链接。顺序刻意放在 Quick start **紧后面**
+  （React 的 Quick Start → Thinking in React 就是这个排法）。
+
+  同一节也补进了引擎 README 与文档站的「你的第一个场景」。
+
+### 说明
+
+- **不含运行时变更**：`dist/` 与 1.13.2 逐字节相同，tarball 的差异只有 README 与版本号。
+
+### 验证
+
+- 2026-09-17 本机实跑 `npm run verify`：types:check / jest 192 suites · 1356 用例 / build /
+  docs（24 个文件 345 条相对链接全在）/ qa:counts 八套 303 项一致。
+
 ## [1.13.2] - 2026-09-17
 
 ### 文档
