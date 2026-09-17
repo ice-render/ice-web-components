@@ -4,6 +4,7 @@ import { iceUIManager } from './ICEManager';
 import { applyThemeToEngine } from './ICEThemeBridge';
 import { tFor } from '../i18n/ICEI18n';
 import type { ICETranslate } from '../i18n/ICEI18n';
+import type { ICEThemeTokens } from '../theme/ICETheme';
 
 /**
  * 所有 UI 组件的基类（继承引擎 ICEGroup）。
@@ -484,6 +485,25 @@ export class ICEWidget extends ICEGroup {
   }
 
   protected theme() {
+    /**
+     * **作用域优先**：组件生效的主题 = 实例主题 + 祖先链上的 `props.theme` 补丁（引擎的 `themeOf()`）。
+     *
+     * 为什么不能直接返回 `iceUIManager.getTheme()`：那只是"页面当前主题"。局部作用域
+     * （`theme: themeScope('dark')`，见 `ICEThemeBridge`）下，样式槽里的**主题引用**由引擎按
+     * `themeOf()` 解析、会跟随作用域，而**派生色与 painter 取色**走的是这个方法 —— 读全局的话
+     * 就会出现"面板底色是深的、里面的头像和骨架屏还是浅的"这种半生效。
+     *
+     * 性能：引擎无作用域时是零分配快路径（只沿祖先链看一眼 `props.theme`），有作用域时才合并并按
+     * 主题版本缓存；`qa:perf` 的帧耗时门禁盯着这条路径。
+     */
+    const ice: any = this.ice;
+    if (ice && typeof (this as any).themeOf === 'function') {
+      const resolved: any = (this as any).themeOf();
+      const ui = resolved && resolved.semantic ? resolved.semantic.ui : null;
+      // 只有**打过本库主题**的实例才有 `semantic.ui`（`applyThemeToEngine()` 的活）；
+      // 没有就退回当前 UI 主题 —— 单测与"刚 `new ICE()` 还没打主题"的窗口期都走这条。
+      if (ui) return ui as ICEThemeTokens;
+    }
     return iceUIManager.getTheme();
   }
 }

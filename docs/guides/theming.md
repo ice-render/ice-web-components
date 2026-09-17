@@ -194,6 +194,7 @@ iceUIManager.setTheme('dark');      // ② 换主题：广播到所有登记过�
 | `applyThemeToEngine(ice)` | 把 UI token 树（`semantic.ui`）+ 语义色 + 交互外壳打进**这个引擎实例** | 应用（每个 `new ICE()` 一次）。**忘了也不要紧**：组件挂载时会按主题版本号兜底补一次 |
 | `iceUIManager.setTheme(name)` | 换主题 + **广播**到所有登记过的实例 + 通知订阅者 | 应用（切主题时一次） |
 | `ICEWidget.onThemeChange()` | 派生色组件的重算钩子（挂载时订阅、卸载时退订） | 组件自己（**只有算出来的颜色才需要**） |
+| `themeScope('dark')` | **局部**主题：给一棵子树单独一套（不影响整页） | 应用（分屏 / 暗底嵌亮卡片时，写在容器的 `theme` 上）。见第八节 |
 
 ### 7.2 什么时候还需要 `onThemeChange()`
 
@@ -232,3 +233,42 @@ class Fancy extends ICEWidget {
 
 自己写组件时：**颜色能写成 `token('ui.colors.x')` 就写成引用** —— 那样热切换、多实例主题、
 暗色适配三件事一起解决；确实要算的（`mix` / `shade` / alpha）再加 `onThemeChange()`。
+
+## 八、局部主题作用域（分屏大屏 / 暗底面板里嵌亮底卡片，2026-09-17 起）
+
+整页一套主题不够用时，给某棵子树单独声明：
+
+```ts
+import { ICEPanel, themeScope } from 'ice-web-components';
+
+// 整页浅色，这一块固定深色 —— 页面换主题时它**不跟着变**（这就是"分区用不同主题"）
+new ICEPanel({ left: 512, top: 72, width: 456, height: 440, theme: themeScope('dark') });
+// 也可以直接给一套 token：themeScope(ICE_XP_THEME)
+```
+
+`theme` 是**引擎**的入口（`props.theme` 是一份主题补丁，`themeOf()` 沿祖先链由外向内合并，
+按「主题版本 + 参与作用域的组件身份」缓存 → 每帧零重算）；`themeScope()` 只是把本库的 token 树
+包成引擎认的那份补丁，省得应用自己拼。
+
+```mermaid
+flowchart TD
+  Ice["ICE 实例主题<br/>applyThemeToEngine(ice)"]
+  Scope["面板 A<br/>theme: themeScope('dark')"]
+  ScopeB["面板 B<br/>无作用域"]
+  ChildA["A 里的按钮 / 列表 / 骨架屏"]
+  ChildB["B 里的按钮 / 列表 / 骨架屏"]
+  Ice --> Scope --> ChildA
+  Ice --> ScopeB --> ChildB
+  %% 两条链各自解析：A 用深色档，B 跟页面
+```
+
+要写对，注意两件事：
+
+- **`themeScope()` 必须带整份 `ui` token 树**，不能只带几个色值 —— 圆角、字体、控件尺寸都在里面，
+  少一半会让作用域里的控件跟外面不一样高（`tests/theme-scope.test.ts` 钉着这条）。
+- **先建父容器、再建子组件**。引擎的默认 `zIndex` 是**构造顺序计数器**，而渲染队列是**全局按
+  `zIndex` 排序**的 —— 父容器比子组件后构造时 `zIndex` 更高，会把自己的整棵子树盖住
+  （画出来一片空白，不报错）。这不是主题的问题，写任何页面都适用。
+
+真机判据：`e2e/theme-scope.spec.ts`（同一个组件分别放进有/无作用域的两块面板，读**画布像素**确认
+分属两套主题；切页面主题时只有无作用域那块变），样板页 `examples/theme-scope.html`。

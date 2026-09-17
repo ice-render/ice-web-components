@@ -7,6 +7,65 @@
 
 > 下一个版本发布前，改动在这里累积。
 
+## [1.18.0] - 2026-09-17
+
+### 新增
+
+- **局部主题作用域 `themeScope()`**：给一棵子树单独一套主题（分屏大屏、暗底面板里嵌亮底卡片）。
+
+  ```ts
+  import { ICEPanel, themeScope } from 'ice-web-components';
+
+  // 整页浅色，这一块固定深色 —— 页面换主题时它不跟着变（这正是作用域的语义）
+  new ICEPanel({ left: 512, top: 72, width: 456, height: 440, theme: themeScope('dark') });
+  // 也可以直接给一套 token：themeScope(ICE_XP_THEME)
+  ```
+
+  机制本来就在引擎（`props.theme` 是主题补丁，`themeOf()` 沿祖先链由外向内合并，
+  按「主题版本 + 参与作用域的组件身份」缓存），`themeScope()` 只是把本库的 token 树包成引擎认的补丁，
+  并**同时**带上 `semantic.ui`（整份 UI token 树，含圆角/字体/控件尺寸）与引擎外壳那层
+  （选中框 / 手柄 / 引导线 / 阴影）。
+
+  配套新增 `iceUIManager.getThemeTokens(name)`：按名字取"那套"token 而**不改当前主题**
+  （名字没注册过回退当前主题，不抛异常）；密度（紧凑模式）与 `getTheme()` 同一套换算，
+  免得紧密模式下嵌一块面板、那块面板的控件比外面高一头。
+
+### 修复
+
+- ⚠️ **作用域原本只做了一半**：样式槽里的**主题引用**由引擎按 `themeOf()` 解析（跟随作用域），
+  而**派生色与 painter 取色**走 `ICEWidget.theme()`，那里读的是**全局单例**（不跟随）。
+  症状是"面板底色是深的、里面的骨架屏和列表还是浅的"，而且**单测全绿**。
+  `ICEWidget.theme()` 现在优先读 `themeOf().semantic.ui`（没打过本库主题的实例自动回退，见下）。
+- `resolvedStyleColor()` / `resolveColorValue()` 改从 `themeOf()` 取主题（原本用实例主题）
+  —— 读数接口必须和画笔看**同一份**主题，否则作用域下"画的是深色、读数说浅色"。
+  `resolveColorValue(value, fallback?, node?)` 新增可选的 `node`（旧的 2 参调用不受影响）；
+  库内 `ICETag` / `ICETypography` / `ICETextField` 已带上自己。
+- 兜底：只有**带 `semantic.ui`** 的主题才算数（`applyThemeToEngine()` 才有），否则退回当前 UI 主题
+  —— 否则单测里的假 ICE 实例与"刚 `new ICE()` 还没打主题"的窗口期会读出空串（实测踩到）。
+
+### 示例与门禁
+
+- 新增样板页 `examples/theme-scope.html`：浅色页面里左右两块面板放**同一组**组件，右边声明深色作用域；
+- 新增真机用例 `e2e/theme-scope.spec.ts`：读**画布像素**（painter 画的东西没有节点样式可读）确认
+  两边分属两套主题，且切页面主题时只有无作用域那块变；
+- 新增单测 `tests/theme-scope.test.ts`：补丁形状（两件套是否齐全）、名字回退、`getThemeTokens` 与当前主题解耦。
+
+### 文档
+
+- `docs/guides/theming.md` 新增第八节「局部主题作用域」（含流程图与两条坑）；
+  §7.1 的"三件东西各管什么"补上 `themeScope()`；`examples.md` 收录新样板页。
+- `AGENTS.md` 新增「主题作用域」注意条。
+
+> ⚠️ 顺带挖出一个**与主题无关**的引擎侧坑（本轮未改引擎，仅记录）：默认 `zIndex` 是**构造顺序计数器**
+> （`ICEComponent.instanceCounter++`），渲染队列又是**全局按 zIndex 扁平排序** ——
+> 所以"父容器比子组件后构造"时，父会把自己的整棵子树盖住（画出来一片空白、不报错）。
+> 写页面时**先建父、再建子**即可；样板页里注释标了这一点。
+
+### 回归
+
+- `verify:full`：types / jest **197 suites · 1426 用例** / build / docs / qa-counts /
+  真机 e2e / **qa:all 8/8** / qa:perf 全在预算内。
+
 ## [1.17.0] - 2026-09-17
 
 ### 变更

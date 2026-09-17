@@ -287,7 +287,7 @@ export class ICETextField extends ICEWidget {
       // 掩码时把原生光标藏掉（它按真实字符定位、会和 • 的落点错开），改由 canvas 的 `|` 当光标
       // 原生替身的光标色写进的是 **DOM**（`element.style.caretColor`），只吃字符串 ——
       // 所以这里把主题引用解析成当前主题的色值，而不是把引用对象塞给 DOM。
-      caretColor: masked ? 'transparent' : resolveColorValue(token('ui.colors.text')),
+      caretColor: masked ? 'transparent' : resolveColorValue(token('ui.colors.text'), '', this),
       maxLength: this.maxLength,
       multiline: this.allowNewline,
       onInput: (value) => this.__applyNativeValue(value),
@@ -494,7 +494,7 @@ export class ICETextField extends ICEWidget {
     // 否则会出现「原生光标被藏掉、canvas 光标又被抑制」→ 一个光标都没有。
     const masked = this.__isMaskedDisplay();
     if (this.nativeInput) {
-      this.nativeInput.setCaretColor(masked ? 'transparent' : resolveColorValue(token('ui.colors.text')));
+      this.nativeInput.setCaretColor(masked ? 'transparent' : resolveColorValue(token('ui.colors.text'), '', this));
     }
     // 光标占位：只在「没有原生替身」（Node / 小程序 / 未聚焦）或「掩码显示」时画 canvas 的 `|`。
     // 非掩码且已挂替身时用原生光标（box 已对齐到文本盒，位置正确）—— 两个都画就会出现两个错位的光标。

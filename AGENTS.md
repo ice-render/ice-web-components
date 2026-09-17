@@ -44,6 +44,18 @@ style: { fillStyle: iceUIManager.getTheme().colors.text }  // ✘ 冻在构造�
 - `e2e/theme-coverage.spec.ts`：真机侧，逐节点比对 `resolvedStyleColor()` 切主题前后变没变，
   **可疑字面量必须为 0** + 换色节点数不许回退。2026-09-17 迁移前后实测 **306 → 1195**（有色节点 1456 个）。
 
+## 主题作用域（局部主题）
+
+分屏大屏、暗底面板里嵌亮底卡片：给某个容器写 `theme: themeScope('dark')`（或直接给一套 token），
+整棵子树按那套解析，**页面换主题时它不跟着变**。契约与坑见
+[`docs/guides/theming.md`](./docs/guides/theming.md) 第八节；真机判据 `e2e/theme-scope.spec.ts`。
+
+两条容易踩的：
+
+- `themeScope()` 必须带**整份** `ui` token 树（圆角/字体/控件尺寸都在里面），只给色值会"半生效"；
+- 库内读主题一律走 `ICEWidget.theme()`（已接作用域）；`e2e/theme-scope.spec.ts` 就是钉这个的
+  —— 它一度只做了一半（引用色跟随、painter 与派生色不跟随），单测全绿也照样漏。
+
 ## 布局铁律（2026-09-15 确立，五条）
 
 引擎的布局机制（`ICELayoutManager` + `setLayout`）是**唯一**的排布入口。历史教训：2026-09-15 之前

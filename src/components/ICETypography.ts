@@ -171,7 +171,7 @@ export class ICETypography extends ICEWidget {
   public getTextColor(): string {
     // 公开读数接口只给**字符串**：`__color()` 现在可能返回主题引用（热切换用），
     // 这里解析成当前主题下的实际色值（见 `ICEStyle.resolveColorValue`）。
-    return resolveColorValue(this.__color());
+    return resolveColorValue(this.__color(), '', this);
   }
 
   public getLabelNodes(): ICELabel[] {

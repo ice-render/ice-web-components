@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <meta charset="utf-8" />
+  <title>局部主题作用域示例 — ice-web-components</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      font: 14px/1.6 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f8f9fa;
+      color: #212529;
+    }
+    h1 {
+      font-size: 20px;
+      margin: 0 0 4px;
+    }
+    p.hint {
+      margin: 0 0 16px;
+      color: #6c757d;
+    }
+    canvas {
+      display: block;
+      border-radius: 12px;
+      background: #ffffff;
+      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+  </style>
+  <body>
+    <h1>局部主题作用域（分屏大屏 / 暗底面板里嵌亮底卡片）</h1>
+    <p class="hint">
+      画布整体是当前页面主题；右边那块面板用 <code>theme: themeScope('dark')</code> 声明自己的作用域。切换页面主题时，
+      <strong>面板保持自己的那套</strong> —— 这就是"分区用不同主题"。
+    </p>
+    <canvas id="canvas" width="1000" height="560"></canvas>
+
+    <script src="../node_modules/ice-render/dist/index.umd.js"></script>
+    <script src="../dist/index.umd.js"></script>
+    <script>
+      const ice = new ICE.ICE().init('canvas');
+      const W = ICEWEB;
+      new W.ICEHoverManager(ice).start();
+      W.getICEFocusManager(ice).start();
+      W.applyThemeToEngine(ice);
+
+      const heading = (text, left, top) =>
+        new W.ICELabel({ left, top, text, style: { fontSize: 15, fontWeight: '600', fillStyle: ICE.token('ui.colors.text') } });
+
+      /* ------------------------------------------------------------------
+       * 左：跟随页面主题（无作用域）
+       * 右：声明 `theme: W.themeScope('dark')` —— 整棵子树按深色解析
+       *
+       * ⚠️ 顺序有讲究：**先建父容器、再建子组件**。
+       * 引擎的默认 `zIndex` 是"构造顺序计数器"，而渲染队列是**全局按 zIndex 排序** ——
+       * 父容器比子组件后构造时 zIndex 更高，会把自己的子树整个盖住（画出来一片空白）。
+       * ------------------------------------------------------------------ */
+      const root = new W.ICEPanel({ width: 1000, height: 560, style: { fillStyle: ICE.token('ui.colors.background') } });
+      const pagePanel = new W.ICEPanel({
+        left: 24,
+        top: 72,
+        width: 456,
+        height: 440,
+        style: { fillStyle: ICE.token('ui.colors.surface'), strokeStyle: ICE.token('ui.colors.border') },
+      });
+      const darkPanel = new W.ICEPanel({
+        left: 512,
+        top: 72,
+        width: 456,
+        height: 440,
+        theme: W.themeScope('dark'),
+        style: { fillStyle: ICE.token('ui.colors.surface'), strokeStyle: ICE.token('ui.colors.border') },
+      });
+
+      /** 往一个面板里塞同一组组件 —— 唯一的差别是这个面板有没有作用域。 */
+      const fillPanel = (panel) => {
+        panel.addChild(heading('页面主题', 20, 16), false);
+        panel.addChild(new W.ICELabel({ left: 20, top: 44, text: '正文文字 text', style: { fontSize: 13, fillStyle: ICE.token('ui.colors.text') } }), false);
+        panel.addChild(new W.ICELabel({ left: 20, top: 66, text: '次级文字 textSecondary', style: { fontSize: 13, fillStyle: ICE.token('ui.colors.textSecondary') } }), false);
+        const button = new W.ICEButton({ left: 20, top: 96, text: '按钮', width: 96, height: 32 });
+        panel.addChild(button, false);
+        // painter 型组件：颜色是**运行期**从主题读的（`ICEWidget.theme()`），不是样式槽里的引用
+        const avatar = new W.ICEAvatar({ left: 24, top: 152, text: 'A', size: 56 });
+        panel.addChild(avatar, false);
+        const skeleton = new W.ICESkeleton({ left: 100, top: 160, width: 200, height: 40 });
+        panel.addChild(skeleton, false);
+        const list = new W.ICEList({
+          left: 20,
+          top: 224,
+          width: 300,
+          height: 160,
+          items: [
+            { key: 'a', label: '第一行' },
+            { key: 'b', label: '第二行' },
+            { key: 'c', label: '第三行' },
+          ],
+        });
+        list.setSelectedKeys(['b']);
+        panel.addChild(list, false);
+        return { button, avatar, skeleton, list };
+      };
+
+      const pageParts = fillPanel(pagePanel);
+      const darkParts = fillPanel(darkPanel);
+
+      root.addChild(heading('局部主题作用域：左边跟随页面，右边固定深色', 24, 24), false);
+      root.addChild(pagePanel, false);
+      root.addChild(darkPanel, false);
+      ice.addChild(root);
+
+      window.__scope = { ice, root, pagePanel, darkPanel, pageParts, darkParts };
+    </script>
+  </body>
+</html>

@@ -359,3 +359,4 @@ ICE 内核的移动类事件为了性能不会在 mousemove 时做全量命中�
 | `hasTheme(name: string)` | `boolean` |  |
 | `getThemeNames()` | `string[]` | 已注册的主题名（内置 + 自定义）。 |
 | `getTheme()` | `ICEThemeTokens` |  |
+| `getThemeTokens(name?: string)` | `ICEThemeTokens` | 按名字取一套主题 token（**不改当前主题**）。 |

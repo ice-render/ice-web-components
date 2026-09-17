@@ -1,5 +1,6 @@
 import { iceUIManager } from './ICEManager';
 import type { ICEThemeTokens } from '../theme/ICETheme';
+import type { ICEThemePatch } from 'ice-render';
 
 /**
  * UI 主题 → 引擎主题 的桥。
@@ -135,4 +136,37 @@ export function applyThemeToEngine(ice: any, tokens?: ICEThemeTokens): any {
    */
   iceUIManager.trackEngine(ice);
   return ice;
+}
+
+/**
+ * **局部主题作用域**：给一棵子树单独指定主题（分屏大屏、暗底面板里嵌一张亮底卡片）。
+ *
+ * 机制在引擎：任何组件的 `props.theme` 都是一份主题补丁，`themeOf()` 会沿祖先链由外向内合并，
+ * 并按「主题版本 + 参与作用域的组件身份」缓存 —— 所以作用域是**每帧零重算**的。
+ *
+ * ```ts
+ * import { ICEPanel, themeScope } from 'ice-web-components';
+ *
+ * // 整页浅色，这一块固定深色（画面卡片区这么用）
+ * new ICEPanel({ theme: themeScope('dark'), … });
+ * // 也可以直接给一套 token：themeScope(ICE_XP_THEME)
+ * ```
+ *
+ * 补丁里带两样东西，缺一样都会出现"半生效"：
+ * - `semantic.ui`：**整份** UI token 树 —— 本库所有 `token('ui.colors.x')` 引用的查表目标
+ *   （引擎 paint 时解析），也是库内 `ICEWidget.theme()` 读到的那一份。圆角 / 字体 / 控件尺寸
+ *   都在它里面（`ui.radius` / `ui.font` / `ui.control`），所以作用域里的控件不会"矮半头"；
+ * - `toEngineThemePatch()` 那层：引擎自己画的交互外壳（选中框 / 手柄 / 引导线 / 阴影 + 语义色）。
+ *
+ * ⚠️ 与 `iceUIManager.setTheme()` 的关系：作用域是**声明式的自己那套**，页面换主题时它**不跟着变**
+ * （要跟着变就别声明作用域）。这正是"分区用不同主题"的语义。
+ *
+ * @param theme 已注册的主题名（`'light'` / `'dark'` / 自己 `registerTheme()` 的），或一套 token
+ */
+export function themeScope(theme: string | ICEThemeTokens): ICEThemePatch {
+  const tokens = typeof theme === 'string' ? iceUIManager.getThemeTokens(theme) : theme;
+  const patch: any = toEngineThemePatch(tokens);
+  // `mergeThemes()` 把 `semantic` 与其它键分开处理 —— 两半都要带上，见上面的说明
+  patch.semantic = { ui: tokens };
+  return patch;
 }

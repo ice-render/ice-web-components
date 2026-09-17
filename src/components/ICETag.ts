@@ -83,8 +83,8 @@ export class ICETag extends ICEWidget {
     const hoverFill =
       this.variant === 'solid'
         ? // 状态色表现在返回的是**主题引用**（那样才能热切换），派生计算前先解析成色值
-          this.__mix('#ffffff', resolveColorValue(this.statusColors.solid), 0.85)
-        : this.__mix(resolveColorValue(token('ui.colors.surface')), resolveColorValue(this.statusColors.background), 0.55);
+          this.__mix('#ffffff', resolveColorValue(this.statusColors.solid, '', this), 0.85)
+        : this.__mix(resolveColorValue(token('ui.colors.surface'), '', this), resolveColorValue(this.statusColors.background, '', this), 0.55);
     this.setState({
       style: {
         ...this.state.style,

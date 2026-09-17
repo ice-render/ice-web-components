@@ -19,7 +19,7 @@ export function resolvedStyleColor(
 ): string {
   const raw = node && node.state && node.state.style ? node.state.style[key] : undefined;
   if (raw === undefined || raw === null) return fallback;
-  const theme = node && node.ice && typeof node.ice.getTheme === 'function' ? node.ice.getTheme() : undefined;
+  const theme = effectiveThemeOf(node);
   let resolved = theme ? resolveThemeValue(raw, theme) : raw;
   if (resolved === raw && resolved !== null && typeof resolved === 'object') {
     /**
@@ -36,17 +36,46 @@ export function resolvedStyleColor(
 }
 
 /**
+ * 取节点**生效**的引擎主题：优先 `themeOf()`（含祖先链上的局部作用域），退回实例主题。
+ *
+ * 为什么不能直接用 `node.ice.getTheme()`：那是**实例主题**，不含 `props.theme` 作用域。
+ * 局部主题（`theme: themeScope('dark')`）下两者不同 —— 引擎按 `themeOf()` 画，读数却按实例主题解，
+ * 就会出现"明明画的是深色、读数说浅色"。**读数接口必须和画笔看同一份主题**。
+ *
+ * 没挂到引擎上的节点（单测 / 构造期）返回 `null`，调用方走各自的兜底。
+ */
+function effectiveThemeOf(node: any): any {
+  if (!node) return null;
+  const ice = node.ice;
+  if (!ice) return null;
+  /**
+   * 只有**带着本库 token 树**的主题才算数（`semantic.ui` 由 `applyThemeToEngine()` 打进去）。
+   *
+   * 不加这一条会踩两种坑：① 单测里的假 ICE 实例没有打过主题 → `themeOf()` 给的是**引擎默认主题**，
+   * 查 `ui.colors.*` 查不到，读数变成空串；② 应用只 `new ICE()` 还没调 `applyThemeToEngine()`
+   * 的窗口期同理。这两种情况都退回"当前 UI 主题"，与 `ICEWidget.theme()` 的兜底一致。
+   */
+  const scoped = typeof node.themeOf === 'function' ? node.themeOf() : null;
+  if (scoped && scoped.semantic && scoped.semantic.ui) return scoped;
+  const instance = typeof ice.getTheme === 'function' ? ice.getTheme() : null;
+  if (instance && instance.semantic && instance.semantic.ui) return instance;
+  return null;
+}
+
+/**
  * 把"可能是主题引用的色值"解析成**字符串**（派生计算 `mix` / `shade` / alpha 用得上）。
  *
  * 引用在 paint 时由引擎解析，但凡是**算**出来的颜色都必须先拿到字符串 ——
  * 所以做混色前先过这一道（`getStatusColors()` 返回的就是引用）。
  */
-export function resolveColorValue(value: any, fallback = ''): string {
+export function resolveColorValue(value: any, fallback = '', node?: any): string {
   if (typeof value === 'string') return value;
   const path =
     value && typeof value === 'object' && typeof value.$token === 'string' ? String(value.$token) : null;
   if (!path) return fallback;
-  const resolved = tokenValue(path, { semantic: { ui: iceUIManager.getTheme() } } as any);
+  const scoped = node ? effectiveThemeOf(node) : null;
+  const theme = scoped && scoped.semantic && scoped.semantic.ui ? scoped : ({ semantic: { ui: iceUIManager.getTheme() } } as any);
+  const resolved = tokenValue(path, theme);
   return resolved === undefined || resolved === null ? fallback : String(resolved);
 }
 

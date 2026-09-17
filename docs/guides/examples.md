@@ -15,6 +15,7 @@ npx serve .
 | [`admin.html`](../../examples/admin.html) | 后台管理（6 页业务闭环） | 布局外壳、表格、表单、浮层、分栏、日历、引导… |
 | [`workbench.html`](../../examples/workbench.html) | 客服工单工作台（三栏高频操作） | `ICESplitter`、`ICEList`、`ICEComment`、`ICETimeline`… |
 | [`custom-component.html`](../../examples/custom-component.html) | 自己写组件并接进体系 | `ICEWidget` + 表单/焦点/主题约定 |
+| [`theme-scope.html`](../../examples/theme-scope.html) | 局部主题作用域（浅色页面里嵌深色面板、反向同理） | `themeScope()` + `props.theme` 作用域链，painter 型组件也跟随 |
 | [`windows-xp.html`](../../examples/windows-xp.html) | 全屏 Windows XP 桌面（好玩的那一个） | `ICEWindow`、`ICEIconTile` + 几乎全套组件 |
 | [`arcade.html`](../../examples/arcade.html) | ICE Arcade 掌机（小游戏合集：俄罗斯方块 + 贪吃蛇 + 2048 + CHIP-8 虚拟机） | `ICETetrisModel` / `ICESnakeModel` / `ICE2048Model` / `ICEChip8Model`（纯逻辑）+ 自绘棋盘/HUD，键盘全接管 |
 | [`pixel-editor.html`](../../examples/pixel-editor.html) | 像素画板（画 / 撤销 / 导出 PNG、SVG） | `ICEPixelModel` + `ICEHistoryModel`（纯逻辑）+ 单节点自绘画布，导出走模型 |

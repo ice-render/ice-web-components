@@ -174,11 +174,25 @@ export class ICEManager {
   }
 
   public getTheme(): ICEThemeTokens {
-    const base = this.themes.get(this.themeName) || ICE_LIGHT_THEME;
+    return this.getThemeTokens(this.themeName);
+  }
+
+  /**
+   * 按名字取一套主题 token（**不改当前主题**）。
+   *
+   * 用途：`themeScope('dark')` —— 给某个子树单独指定主题时，要拿到"那套"而不是"当前这套"。
+   * 名字没注册过时回退到当前主题（比抛异常好用：URL 上写错一个词不该白屏）。
+   *
+   * 密度（紧凑模式）是**全局 UI 模式**，所以这里和 `getTheme()` 走同一套换算 ——
+   * 否则紧密模式下嵌一块面板，那块面板的控件会比外面高一头。
+   */
+  public getThemeTokens(name?: string): ICEThemeTokens {
+    const key = typeof name === 'string' && this.themes.has(name) ? name : this.themeName;
+    const base = this.themes.get(key) || ICE_LIGHT_THEME;
     if (this.density === 'default') {
       return base;
     }
-    const cacheKey = `${this.themeName}:${this.density}`;
+    const cacheKey = `${key}:${this.density}`;
     const cached = this.densityCache.get(cacheKey);
     if (cached) {
       return cached;
