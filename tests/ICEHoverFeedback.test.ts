@@ -10,7 +10,7 @@ import { ICEMenu, ICEMenuItem } from '../src/components/ICEMenu';
 import { ICETree } from '../src/components/ICETree';
 import { ICECollapse } from '../src/components/ICECollapse';
 import { iceUIManager } from '../src/core/ICEManager';
-import { readHovered } from '../src/util/ICEStyle';
+import { readHovered, resolvedStyleColor } from '../src/util/ICEStyle';
 
 const theme = iceUIManager.getTheme();
 
@@ -32,13 +32,15 @@ describe('悬停反馈', () => {
       data: [{ a: '1' }, { a: '2' }],
     });
     const row = table.childNodes[1] as any; // [0] 是表头
-    const before = row.state.style.fillStyle;
+    // 底色断言一律走"读画出来的颜色"：样式槽里存的是主题引用（热切换用），
+    // 直接比 `state.style.fillStyle` 拿到的是 `{$token}` 对象。
+    const before = resolvedStyleColor(row, 'fillStyle');
     row.setHovered(true);
-    const hovered = row.state.style.fillStyle;
+    const hovered = resolvedStyleColor(row, 'fillStyle');
     expect(hovered).not.toBe(before);
     expect(hovered).toBe(theme.colors.disabled);
     row.setHovered(false);
-    expect(row.state.style.fillStyle).toBe(before);
+    expect(resolvedStyleColor(row, 'fillStyle')).toBe(before);
   });
 
   it('菜单项：悬停换底色（选中项保持选中底色）', () => {
@@ -48,21 +50,21 @@ describe('悬停反馈', () => {
     ];
     const menu = new ICEMenu({ items, width: 200, selectedKey: 'a' });
     const panelB = menu.getItemNode('b') as any;
-    expect(panelB.state.style.fillStyle).toBe('rgba(0,0,0,0)');
+    expect(resolvedStyleColor(panelB, 'fillStyle')).toBe('rgba(0,0,0,0)');
     panelB.setHovered(true);
-    expect(panelB.state.style.fillStyle).toBe(theme.colors.background);
+    expect(resolvedStyleColor(panelB, 'fillStyle')).toBe(theme.colors.background);
     panelB.setHovered(false);
-    expect(panelB.state.style.fillStyle).toBe('rgba(0,0,0,0)');
+    expect(resolvedStyleColor(panelB, 'fillStyle')).toBe('rgba(0,0,0,0)');
   });
 
   it('树行：悬停换底色', () => {
     const tree = new ICETree({ width: 220, nodes: [{ key: 'a', label: 'A' }] });
     const row = tree.getRowNode('a') as any;
-    const before = row.state.style.fillStyle;
+    const before = resolvedStyleColor(row, 'fillStyle');
     row.setHovered(true);
-    expect(row.state.style.fillStyle).toBe(theme.colors.background);
+    expect(resolvedStyleColor(row, 'fillStyle')).toBe(theme.colors.background);
     row.setHovered(false);
-    expect(row.state.style.fillStyle).toBe(before);
+    expect(resolvedStyleColor(row, 'fillStyle')).toBe(before);
   });
 
   it('折叠标题：悬停换底色；展开时箭头是 ▾', () => {
@@ -70,9 +72,9 @@ describe('悬停反馈', () => {
     expect(collapse.getHeaderNode('a')).not.toBeNull();
     const header = collapse.childNodes[0] as any;
     header.setHovered(true);
-    expect(header.state.style.fillStyle).toBe(theme.colors.disabled);
+    expect(resolvedStyleColor(header, 'fillStyle')).toBe(theme.colors.disabled);
     header.setHovered(false);
-    expect(header.state.style.fillStyle).toBe(theme.colors.background);
+    expect(resolvedStyleColor(header, 'fillStyle')).toBe(theme.colors.background);
 
     // 展开后重绘：标题行的第一个子节点是方向箭头
     collapse.setActiveKeys(['a']);

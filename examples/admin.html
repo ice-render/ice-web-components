@@ -31,8 +31,8 @@
 
       const toast = (text, type = 'success') => W.ICEMessage.show(ice, text, { type });
       const notify = (title, description, type = 'success') => W.ICENotification.open(ice, { title, description, type });
-      const heading = (text) => new W.ICELabel({ text, style: { fontSize: 15, fontWeight: '600', fillStyle: theme.colors.text } });
-      const note = (text) => new W.ICELabel({ text, style: { fontSize: 12, fillStyle: theme.colors.textSecondary } });
+      const heading = (text) => new W.ICELabel({ text, style: { fontSize: 15, fontWeight: '600', fillStyle: ICE.token('ui.colors.text') } });
+      const note = (text) => new W.ICELabel({ text, style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') } });
       const box = (width, height) => new W.ICEWidget({ width, height, fill: false, stroke: false, interactive: false });
       /**
        * 把一组组件装进一张带标题的卡片（卡片内用同一套流式布局）。
@@ -260,7 +260,7 @@
         width: 1552,
         height: 952,
         radius: 12,
-        style: { fillStyle: '#f8f9fa', strokeStyle: theme.colors.border, shadow: 'lg' },
+        style: { fillStyle: '#f8f9fa', strokeStyle: ICE.token('ui.colors.border'), shadow: 'lg' },
       });
 
       const sidebar = new W.ICEPanel({
@@ -270,13 +270,13 @@
         width: 264,
         height: 952,
         radius: 12,
-        style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border },
+        style: { fillStyle: ICE.token('ui.colors.surface'), strokeStyle: ICE.token('ui.colors.border') },
       });
       const brand = new W.ICELabel({
         left: 28,
         top: 26,
         text: 'ICE Shop',
-        style: { fontSize: 22, fontWeight: '700', fillStyle: theme.colors.primary },
+        style: { fontSize: 22, fontWeight: '700', fillStyle: ICE.token('ui.colors.primary') },
       });
 
       const pages = {}; // 先声明，menu 的回调里要用
@@ -303,7 +303,7 @@
           { key: 'settings', label: '设置', iconPath: 'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6' },
         ],
         selectedKey: 'dashboard',
-        style: { fillStyle: theme.colors.surface },
+        style: { fillStyle: ICE.token('ui.colors.surface') },
         onSelect: (item) => {
           if (item.key.startsWith('orders-')) {
             orderState.status = item.key.replace('orders-', '');
@@ -324,13 +324,13 @@
         left: 64,
         top: 880,
         text: 'Felix Morgan',
-        style: { fontSize: 14, fontWeight: '600', fillStyle: theme.colors.text },
+        style: { fontSize: 14, fontWeight: '600', fillStyle: ICE.token('ui.colors.text') },
       });
       const sidebarRole = new W.ICELabel({
         left: 64,
         top: 900,
         text: 'Administrator',
-        style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+        style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') },
       });
       sidebar.addChildren([brand, menu, sidebarSep, sidebarAvatar, sidebarName, sidebarRole]);
 
@@ -341,16 +341,16 @@
         width: 1288,
         height: 64,
         radius: 0,
-        style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border },
+        style: { fillStyle: ICE.token('ui.colors.surface'), strokeStyle: ICE.token('ui.colors.border') },
       });
-      const hamburger = new W.ICEIcon({ id: 'hamburger', left: 22, top: 20, size: 24, icon: '☰', color: theme.colors.textSecondary });
+      const hamburger = new W.ICEIcon({ id: 'hamburger', left: 22, top: 20, size: 24, icon: '☰', color: ICE.token('ui.colors.textSecondary') });
       const pageTitle = new W.ICELabel({
         left: 56,
         top: 8,
         height: 26,
         verticalAlign: 'middle',
         text: '仪表盘',
-        style: { fontSize: 18, fontWeight: '600', fillStyle: theme.colors.text },
+        style: { fontSize: 18, fontWeight: '600', fillStyle: ICE.token('ui.colors.text') },
       });
       // 面包屑：跟着当前页面走（首页 › 当前页），点「首页」回仪表盘
       const breadcrumb = new W.ICEBreadcrumb({
@@ -384,7 +384,7 @@
           toast('已按客户筛选：' + value, 'info');
         },
       });
-      const bellIcon = new W.ICEIcon({ id: 'bell', left: 1180, top: 20, size: 24, icon: '🔔', color: theme.colors.textSecondary });
+      const bellIcon = new W.ICEIcon({ id: 'bell', left: 1180, top: 20, size: 24, icon: '🔔', color: ICE.token('ui.colors.textSecondary') });
       const bellDot = new W.ICEBadge({ id: 'bell-dot', left: 1196, top: 16, dot: true, dotSize: 10 });
       const headerSep = new W.ICESeparator({ left: 1220, top: 16, width: 1, height: 32 });
       const headerAvatar = new W.ICEAvatar({ id: 'header-avatar', left: 1240, top: 12, text: 'FM', size: 40 });
@@ -479,9 +479,9 @@
           width: 360,
           height: 150,
           slides: [
-            ['01 · 秋季新品', theme.colors.primary],
-            ['02 · 会员日', theme.colors.success],
-            ['03 · 清仓专场', theme.colors.warning],
+            ['01 · 秋季新品', ICE.token('ui.colors.primary')],
+            ['02 · 会员日', ICE.token('ui.colors.success')],
+            ['03 · 清仓专场', ICE.token('ui.colors.warning')],
           ].map(([text, bg]) => {
             const slide = new W.ICEWidget({ width: 360, height: 150, radius: theme.radius.md, fill: true, stroke: false, style: { fillStyle: bg } });
             slide.addChild(
@@ -514,7 +514,7 @@
         meters.forEach(([label, value], i) => {
           const top = 40 + i * 30;
           meterNodes.push(
-            new W.ICELabel({ left: 16, top, height: 18, verticalAlign: 'middle', text: label, style: { fontSize: 12, fillStyle: theme.colors.textSecondary } }),
+            new W.ICELabel({ left: 16, top, height: 18, verticalAlign: 'middle', text: label, style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') } }),
             new W.ICEProgressBar({ left: 16, top: top + 18, width: 248, value, height: 8 }),
           );
         });
@@ -523,9 +523,9 @@
         const pushSwitch = new W.ICESwitch({ left: 216, top: 190, width: 44, height: 22, selected: false });
         statusCard.addChildren([
           new W.ICESeparator({ left: 16, top: 140, width: 248, height: 1 }),
-          new W.ICELabel({ left: 16, top: 150, height: 22, verticalAlign: 'middle', text: 'Email 通知', style: { fontSize: 12, fillStyle: theme.colors.textSecondary } }),
+          new W.ICELabel({ left: 16, top: 150, height: 22, verticalAlign: 'middle', text: 'Email 通知', style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') } }),
           emailSwitch,
-          new W.ICELabel({ left: 16, top: 184, height: 22, verticalAlign: 'middle', text: 'Push 通知', style: { fontSize: 12, fillStyle: theme.colors.textSecondary } }),
+          new W.ICELabel({ left: 16, top: 184, height: 22, verticalAlign: 'middle', text: 'Push 通知', style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') } }),
           pushSwitch,
         ], { align: 'top' });
         emailSwitch.on('change', () => toast(emailSwitch.isSelected() ? '已开启 Email 通知' : '已关闭 Email 通知', 'info'));
@@ -539,10 +539,10 @@
           max: 5,
           avatars: [
             { text: 'AT' },
-            { text: 'LC', backgroundColor: theme.colors.success },
-            { text: 'MR', backgroundColor: theme.colors.warning },
-            { text: 'NW', backgroundColor: theme.colors.info },
-            { text: 'EB', backgroundColor: theme.colors.error },
+            { text: 'LC', backgroundColor: ICE.token('ui.colors.success') },
+            { text: 'MR', backgroundColor: ICE.token('ui.colors.warning') },
+            { text: 'NW', backgroundColor: ICE.token('ui.colors.info') },
+            { text: 'EB', backgroundColor: ICE.token('ui.colors.error') },
             { text: 'KS' },
           ],
         });
@@ -558,10 +558,10 @@
         teamViewAll.on('click', () => showPage('customers'));
         teamCard.addChildren([
           teamGroup,
-          new W.ICELabel({ left: 16, top: 96, text: '共同维护 6 位成员', style: { fontSize: 12, fillStyle: theme.colors.textSecondary } }),
+          new W.ICELabel({ left: 16, top: 96, text: '共同维护 6 位成员', style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') } }),
           teamViewAll,
           new W.ICESeparator({ left: 16, top: 148, width: 248, height: 1 }),
-          new W.ICELabel({ left: 16, top: 158, text: '近 7 天处理 1,204 单', style: { fontSize: 12, fillStyle: theme.colors.textSecondary } }),
+          new W.ICELabel({ left: 16, top: 158, text: '近 7 天处理 1,204 单', style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') } }),
         ], { align: 'top' });
 
         const quickCard = new W.ICECard({ left: 0, top: 0, width: 280, height: 150, title: 'Quick Actions' });
@@ -594,7 +594,7 @@
               height: 12,
               verticalAlign: 'middle',
               text: String(label),
-              style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+              style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') },
             }),
             new W.ICEProgressBar({ left: 100, top: top + 1, width: 448, value: Number(value), height: 10 }),
           );
@@ -620,7 +620,7 @@
             top: 0,
             width: 268,
             text: '倒计时归零时会自动提醒一次。',
-            style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+            style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') },
           }),
         );
 
@@ -675,12 +675,12 @@
           top: 50,
           width: 552,
           text: '水印组件盖在卡片上，用于「草稿 / 内部资料」这类需要一眼看出的场景；它不参与交互，不会挡住下面的点击。',
-          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+          style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') },
         });
         boardInner.addChild(boardHint, false);
         boardInner.addChildren([
           new W.ICEProgressBar({ left: 16, top: 92, width: 248, value: 62, height: 10 }),
-          new W.ICELabel({ left: 16, top: 112, text: '上新完成度 62%', style: { fontSize: 12, fillStyle: theme.colors.textSecondary } }),
+          new W.ICELabel({ left: 16, top: 112, text: '上新完成度 62%', style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') } }),
           new W.ICETag({ left: 280, top: 92, width: 72, height: 24, text: '草稿', status: 'warning' }),
           new W.ICEButton({ left: 16, top: 148, width: 120, height: 32, text: '提交审核', size: 'small' }),
         ], { align: 'top' });
@@ -734,7 +734,7 @@
                 align: 'right',
                 verticalAlign: 'middle',
                 text: money(Number(value)),
-                style: { fontSize: 14, fillStyle: theme.colors.text },
+                style: { fontSize: 14, fillStyle: ICE.token('ui.colors.text') },
               }),
           },
           (() => {
@@ -833,7 +833,7 @@
                       height: 18,
                       verticalAlign: 'middle',
                       text,
-                      style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+                      style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') },
                     });
                   const detail = new W.ICEButton({
                     left: ctx.width - 140,
@@ -963,7 +963,7 @@
           height: 18,
           verticalAlign: 'middle',
           text: '金额：$0 – $4,000',
-          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+          style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') },
         });
         const regionGroup = new W.ICECheckboxGroup({
           left: 0,
@@ -1000,7 +1000,7 @@
           height: 22,
           verticalAlign: 'middle',
           text: '只看异常单',
-          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+          style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') },
         });
         const clearAdvanced = () => {
           amountRange.setRangeValue([0, 4000]);
@@ -1043,7 +1043,7 @@
             openOrderDrawer(row);
           },
         });
-        const total = new W.ICELabel({ left: 0, top: 0, text: '', style: { fontSize: 12, fillStyle: theme.colors.textSecondary } });
+        const total = new W.ICELabel({ left: 0, top: 0, text: '', style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') } });
         const pagination = new W.ICEPagination({
           left: 0,
           top: 0,
@@ -1087,7 +1087,7 @@
           height: 32,
           verticalAlign: 'middle',
           text: '未选中任何订单',
-          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+          style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') },
         });
         const bulkShip = new W.ICEButton({ left: 0, top: 0, width: 104, height: 32, text: '批量发货' });
         const bulkExport = new W.ICEButton({ left: 0, top: 0, width: 104, height: 32, text: '导出所选', variant: 'default' });
@@ -1277,7 +1277,7 @@
               width: 380,
               items: [
                 { title: '订单创建', time: row.date + ' 09:12', description: row.customer + ' 提交订单' },
-                { title: '支付成功', time: row.date + ' 09:14', color: theme.colors.success },
+                { title: '支付成功', time: row.date + ' 09:14', color: ICE.token('ui.colors.success') },
                 { title: '仓库拣货', time: row.date + ' 14:02' },
               ],
             });
@@ -1387,7 +1387,7 @@
                 top: 356,
                 width: 380,
                 text: '提交时会先跑同步校验，再做异步唯一性校验。',
-                style: { fontSize: 12, fillStyle: theme.colors.textTertiary },
+                style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textTertiary') },
               }),
               false,
             );
@@ -1449,12 +1449,12 @@
           top: 0,
           width: 300,
           columns: 6,
-          value: theme.colors.primary,
+          value: ICE.token('ui.colors.primary'),
           onChange: (color) => {
             state.productColor && setDynamicText(state.productColor, '主题色：' + color);
           },
         });
-        const colorLabel = new W.ICELabel({ left: 0, top: 0, height: 18, verticalAlign: 'middle', text: '主题色：' + theme.colors.primary, style: { fontSize: 12, fillStyle: theme.colors.textSecondary } });
+        const colorLabel = new W.ICELabel({ left: 0, top: 0, height: 18, verticalAlign: 'middle', text: '主题色：' + theme.colors.primary, style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') } });
         state.productColor = colorLabel;
 
         const category = new W.ICECascader({
@@ -1518,12 +1518,12 @@
         });
         previewCard.addChildren([
           previewImage,
-          new W.ICELabel({ left: 152, top: 48, width: 130, text: '秋季基础 T 恤', style: { fontSize: 14, fontWeight: '600', fillStyle: theme.colors.text } }),
-          new W.ICELabel({ left: 152, top: 70, width: 130, text: '¥129.00', style: { fontSize: 13, fillStyle: theme.colors.error } }),
+          new W.ICELabel({ left: 152, top: 48, width: 130, text: '秋季基础 T 恤', style: { fontSize: 14, fontWeight: '600', fillStyle: ICE.token('ui.colors.text') } }),
+          new W.ICELabel({ left: 152, top: 70, width: 130, text: '¥129.00', style: { fontSize: 13, fillStyle: ICE.token('ui.colors.error') } }),
           new W.ICETag({ left: 152, top: 96, width: 64, height: 22, text: '热销', status: 'success' }),
           new W.ICETag({ left: 222, top: 96, width: 64, height: 22, text: '新品', status: 'primary', variant: 'soft' }),
           new W.ICEBadge({ left: 152, top: 132, dot: true, dotSize: 10 }),
-          new W.ICELabel({ left: 170, top: 128, text: '库存充足', style: { fontSize: 12, fillStyle: theme.colors.textSecondary } }),
+          new W.ICELabel({ left: 170, top: 128, text: '库存充足', style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') } }),
         ], { align: 'top' });
 
         const offlineButton = new W.ICEButton({ left: 0, top: 0, width: 120, height: 32, text: '下架商品', danger: true });
@@ -1556,7 +1556,7 @@
           height: 18,
           verticalAlign: 'middle',
           text: '折扣：8.5 折',
-          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+          style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') },
         });
         const discountSlider = new W.ICESlider({
           left: 0,
@@ -1676,7 +1676,7 @@
         const activitiesOf = (customer) => [
           { title: '下单完成', time: customer.last + ' 09:12', description: customer.spend + ' · ' + customer.region },
           { title: '咨询售后', time: '09-09 20:41', description: '询问换货流程' },
-          { title: '升级会员', time: '08-28 11:05', color: theme.colors.success, description: customer.level },
+          { title: '升级会员', time: '08-28 11:05', color: ICE.token('ui.colors.success'), description: customer.level },
         ];
         const nameOf = (key) => (CUSTOMERS.find((item) => item.key === key) || CUSTOMERS[0]).name;
 
@@ -1793,7 +1793,7 @@
             top: 0,
             width: 288,
             text: '基于最近 200 条评价（4.6 / 5）',
-            style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+            style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') },
           }),
         );
         const customerTags = new W.ICECheckboxGroup({
@@ -1897,8 +1897,8 @@
         // 注意 addChildren 收的是数组（不是变参）
         previewBlock.addChildren([
           new W.ICEAvatar({ left: 0, top: 0, text: 'FM', size: 56 }),
-          new W.ICELabel({ left: 72, top: 6, width: 220, height: 22, text: 'Felix Morgan', style: { fontSize: 16, fontWeight: '600', fillStyle: theme.colors.text } }),
-          new W.ICELabel({ left: 72, top: 32, text: 'Administrator · 华东组', style: { fontSize: 12, fillStyle: theme.colors.textSecondary } }),
+          new W.ICELabel({ left: 72, top: 6, width: 220, height: 22, text: 'Felix Morgan', style: { fontSize: 16, fontWeight: '600', fillStyle: ICE.token('ui.colors.text') } }),
+          new W.ICELabel({ left: 72, top: 32, text: 'Administrator · 华东组', style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') } }),
           new W.ICETag({ left: 72, top: 56, width: 72, height: 22, text: '管理员', status: 'primary' }),
           new W.ICETag({ left: 152, top: 56, width: 88, height: 22, text: '两步验证', status: 'success', variant: 'soft' }),
           new W.ICESeparator({ left: 0, top: 96, width: 516, height: 1 }),
@@ -2246,7 +2246,7 @@
           setDynamicText(progressLabel, `履约进度 ${row.progress}%（${row.stage}）`);
           track.setItems([
             { title: '订单创建', time: '09-12 09:12', description: row.customer + ' 提交订单' },
-            { title: '支付完成', time: '09-12 09:15', color: theme.colors.success, description: money(row.amount) },
+            { title: '支付完成', time: '09-12 09:15', color: ICE.token('ui.colors.success'), description: money(row.amount) },
             { title: '仓库拣货', time: '09-12 14:02', description: row.stage },
           ]);
         };

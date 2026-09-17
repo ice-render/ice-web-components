@@ -242,7 +242,8 @@ const typography = await page.evaluate(() => {
   const paragraph = window.__result.typographyParagraph;
   const link = window.__result.typographyLink;
   link.setHovered(true);
-  const hoverColor = link.getLabelNodes()[0].childNodes[0].state.style.fillStyle;
+  // 样式槽里存的是**主题引用**（热切换用）→ 读"画出来的颜色"，不要读原始引用对象
+  const hoverColor = window.ICEWEB.resolvedStyleColor(link.getLabelNodes()[0].childNodes[0], 'fillStyle');
   link.setHovered(false);
   return {
     titleSize: title.getFontSize(),

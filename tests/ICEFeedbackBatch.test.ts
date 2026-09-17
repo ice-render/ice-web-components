@@ -5,6 +5,7 @@ import { ICEResult } from '../src/components/ICEResult';
 import { ICERate } from '../src/components/ICERate';
 import { ICESpin } from '../src/components/ICESpin';
 import { ICESteps } from '../src/components/ICESteps';
+import { resolvedStyleColor } from '../src/util/ICEStyle';
 
 function textsOf(node: any): string[] {
   const out: string[] = [];
@@ -90,7 +91,8 @@ describe('ICESteps', () => {
     expect(texts).toContain('完成');
     expect(texts).toContain('✓'); // 已完成的步骤显示对勾
     expect(steps.getCurrent()).toBe(1);
-    expect(String(steps.getStepNode(1)!.state.style.fillStyle)).toMatch(/^#/);
+    // 样式槽里存的是主题引用 → 用"读画出来的颜色"的口径比对
+    expect(resolvedStyleColor(steps.getStepNode(1)!, 'fillStyle')).toMatch(/^#/);
   });
 
   it('setCurrent 夹取范围并更新节点状态', () => {

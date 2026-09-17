@@ -356,11 +356,11 @@ export class ICEDatePicker extends ICEWidget {
     const theme = iceUIManager.getTheme();
     const width = Number(this.state.width) || 200;
     const height = Number(this.state.height) || 32;
-    const borderColor = this.validateStatus === 'error' ? theme.colors.error : theme.colors.border;
+    const borderColor = this.validateStatus === 'error' ? token('ui.colors.error') : token('ui.colors.border');
     this.setState({
       style: {
         ...this.state.style,
-        fillStyle: this.disabled ? theme.colors.disabled : theme.colors.surface,
+        fillStyle: this.disabled ? token('ui.colors.disabled') : token('ui.colors.surface'),
         strokeStyle: borderColor,
       },
     });
@@ -374,7 +374,7 @@ export class ICEDatePicker extends ICEWidget {
       height,
       verticalAlign: 'middle',
       text,
-      style: { fontSize: 13, fillStyle: this.value ? theme.colors.text : theme.colors.textTertiary },
+      style: { fontSize: 13, fillStyle: this.value ? token('ui.colors.text') : token('ui.colors.textTertiary') },
     });
     this.addChild(this.fieldLabel, false);
     this.addChild(
@@ -512,9 +512,9 @@ export class ICEDatePicker extends ICEWidget {
         interactive: true,
         style: {
           fillStyle: cell.isSelected
-            ? theme.colors.primary
+            ? token('ui.colors.primary')
             : cell.isToday
-            ? theme.colors.primaryBg
+            ? token('ui.colors.primaryBg')
             : 'rgba(0,0,0,0)',
         },
       });
@@ -531,10 +531,10 @@ export class ICEDatePicker extends ICEWidget {
           style: {
             fontSize: 12,
             fillStyle: cell.isSelected
-              ? theme.colors.primaryText
+              ? token('ui.colors.primaryText')
               : cell.inMonth
-              ? theme.colors.text
-              : theme.colors.textDisabled,
+              ? token('ui.colors.text')
+              : token('ui.colors.textDisabled'),
           },
         }),
         false,

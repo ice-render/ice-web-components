@@ -948,7 +948,8 @@ await custom.mouse.click(customRect.x + submit.l + submit.w / 2, customRect.y + 
 await custom.waitForTimeout(420);
 const formState = await custom.evaluate(() => ({
   error: window.__result.form.getModel().getError('stock'),
-  stroke: window.__result.metricInForm.state.style.strokeStyle,
+  // 样式槽里存的是**主题引用**（热切换用）→ 读"画出来的颜色"
+  stroke: window.ICEWEB.resolvedStyleColor(window.__result.metricInForm, 'strokeStyle'),
 }));
 check('自定义组件：表单错误态标红', !!formState.error && formState.stroke === '#dc3545', String(formState.error));
 check('自定义组件示例页无 console error', customErrors.length === 0, customErrors.slice(0, 3).join(' | '));

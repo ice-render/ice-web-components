@@ -61,7 +61,7 @@ export class ICESpin extends ICEWidget {
       width: size,
       height: size,
       style: {
-        strokeStyle: props.color || theme.colors.primary,
+        strokeStyle: props.color || token('ui.colors.primary'),
         lineWidth: Math.max(2, Math.round(size / 10)),
         lineCap: 'round',
         fillStyle: 'rgba(0,0,0,0)',

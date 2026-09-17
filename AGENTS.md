@@ -16,8 +16,33 @@
 
 ## 门禁
 
-- `npm run verify`：types:check → jest（192 suites / 1356 用例，2026-09-17 实测）→ build → docs（API 生成 + 链接检查）
-- `npm run verify:full`：verify + `test:e2e`（9 个合成示例页逐页断言无 console/pageerror、画布内容像素占比达标）
+- `npm run verify`：types:check → jest（196 suites / 1421 用例，2026-09-17 实测）→ build → docs（API 生成 + 链接检查）
+- `npm run verify:full`：verify + `test:e2e`（13 个：9 个合成示例页逐页断言无 console/pageerror、2 个热切换、1 个主题覆盖）
+  + `qa:all`（8 套真机 QA）+ `qa:perf`
+
+## 取色铁律（2026-09-17 确立）
+
+**组件样式槽里放主题引用，不要在构造期把 token 抄成字面量。**
+
+```ts
+style: { fillStyle: token('ui.colors.text') }        // ✔ paint 时解析，换主题跟着走
+style: { fillStyle: iceUIManager.getTheme().colors.text }  // ✘ 冻在构造那一刻
+```
+
+规则与边界：
+
+- **`paint` 回调例外**：那里的 `theme` 是引擎每帧传进来的参数，本来就跟主题走；而且
+  `ctx.fillStyle` 必须拿到**字符串**。所以 `paint*` 方法 / `({ ctx, theme })` 解构参数里照常写 `theme.colors.x`。
+- **要参与运算**（`mix` / `shade` / alpha / 拼 CSS）先把引用**解析成字符串**：`resolveColorValue(...)`；
+  读数接口一律用 `resolvedStyleColor(node, key)`（直接 `String(style.fillStyle)` 会拿到 `[object Object]`）。
+- **内容色不算主题色**：调色板数据、图片底色这类"换主题不该变"的色，节点上打 `__themeConstant = true`
+  （见 `ICEColorPicker` 的色块），覆盖测试会跳过它。
+
+两道门禁各管一头，**别只看源码数字**：
+
+- `tests/theme-refs.test.ts`：源码侧棘轮，按文件记预算，只许减（当前只剩 9 处，全在 `paint` 回调里）；
+- `e2e/theme-coverage.spec.ts`：真机侧，逐节点比对 `resolvedStyleColor()` 切主题前后变没变，
+  **可疑字面量必须为 0** + 换色节点数不许回退。2026-09-17 迁移前后实测 **306 → 1195**（有色节点 1456 个）。
 
 ## 布局铁律（2026-09-15 确立，五条）
 

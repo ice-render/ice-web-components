@@ -643,8 +643,13 @@ A compact **Bootstrap 5-style** token set (see `ICE_LIGHT_THEME` / `ICE_DARK_THE
 ```ts
 import { iceUIManager } from 'ice-web-components';
 
-iceUIManager.setTheme('dark'); // components read tokens when they are created
+iceUIManager.setTheme('dark'); // hot-swaps: component styles hold theme refs, resolved at paint time
 ```
+
+Component styles store **theme references** (`token('ui.colors.text')`, from the engine
+`ice-render`) rather than copying colours at construction time — so switching themes does
+**not** require rebuilding the component tree. App code that computes derived colours
+(`mix` / `shade` / alpha) reads the current theme in `ICEWidget.onThemeChange()`.
 
 Status chips default to Bootstrap’s solid `.text-bg-*` look (white text, black text
 on the light `warning` / `info` colours). Pass `variant: 'soft'` for the subtle

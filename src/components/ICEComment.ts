@@ -77,7 +77,7 @@ export class ICEComment extends ICEWidget {
       fill: true,
       stroke: false,
       interactive: false,
-      style: { fillStyle: props.avatarColor || theme.colors.primary },
+      style: { fillStyle: props.avatarColor || token('ui.colors.primary') },
     });
     avatar.addChild(
       new ICELabel({

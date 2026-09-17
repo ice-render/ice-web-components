@@ -3,7 +3,7 @@ import { ICELabel } from './ICELabel';
 import { ICERadioButton } from './ICERadioButton';
 import { iceUIManager } from '../core/ICEManager';
 import { estimateTextWidth } from '../util/ICEStyle';
-import { ICEBoxLayout } from 'ice-render';
+import { ICEBoxLayout, token } from 'ice-render';
 
 /**
  * 单选组：一组互斥选项，整行可点，值是选项的 `value`。
@@ -294,7 +294,7 @@ export class ICERadioGroup extends ICEWidget {
         style: {
           fontSize: this.fontSize,
           fontFamily: theme.font.family,
-          fillStyle: option.disabled ? theme.colors.textDisabled : theme.colors.text,
+          fillStyle: option.disabled ? token('ui.colors.textDisabled') : token('ui.colors.text'),
         },
       });
       item.addChild(radio, false);

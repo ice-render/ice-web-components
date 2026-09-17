@@ -73,7 +73,7 @@
             width: 500,
             height: 26,
             text: 'ICE-DOS Terminal',
-            style: { fontSize: 18, fontWeight: '700', fillStyle: theme.colors.text },
+            style: { fontSize: 18, fontWeight: '700', fillStyle: ICE.token('ui.colors.text') },
           }),
         );
 
@@ -232,7 +232,7 @@
           height: 20,
           text: 'TAB 补全   ↑↓ 历史   Ctrl+L 清屏   EXIT 退出   ·   试试 DIR / CD GAMES / TYPE README.TXT / TREE / FORMAT C:',
           verticalAlign: 'middle',
-          style: { fontSize: 12, fontFamily: '"Courier New", monospace', fillStyle: theme.colors.textSecondary },
+          style: { fontSize: 12, fontFamily: '"Courier New", monospace', fillStyle: ICE.token('ui.colors.textSecondary') },
         });
         hintPanel.addChild(hintText, false);
         ice.addChild(hintPanel);

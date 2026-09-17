@@ -130,7 +130,7 @@ export class ICETimeline extends ICEWidget {
         fill: true,
         stroke: false,
         interactive: false,
-        style: { fillStyle: item.color || theme.colors.primary },
+        style: { fillStyle: item.color || token('ui.colors.primary') },
       });
       row.addChild(dot, false);
       this.dots.push(dot);

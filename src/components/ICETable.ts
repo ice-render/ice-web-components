@@ -607,7 +607,7 @@ export class ICETable extends ICEWidget {
         'hoverchange',
         (evt: any) => {
           row.setState({
-            style: { ...row.state.style, fillStyle: readHovered(evt) ? theme.colors.background : 'rgba(0,0,0,0)' },
+            style: { ...row.state.style, fillStyle: readHovered(evt) ? token('ui.colors.background') : 'rgba(0,0,0,0)' },
           });
         },
         this,
@@ -2143,7 +2143,7 @@ export class ICETable extends ICEWidget {
       width: panelWidth === undefined ? Number(this.state.width) || 0 : panelWidth,
       height: this.rowHeight,
       style: {
-        fillStyle: rowIndex % 2 === 0 ? theme.colors.surface : theme.colors.background,
+        fillStyle: rowIndex % 2 === 0 ? token('ui.colors.surface') : token('ui.colors.background'),
       },
     });
     parent.addChild(panel, false);
@@ -2247,7 +2247,7 @@ export class ICETable extends ICEWidget {
       'hoverchange',
       (evt: any) => {
         toggle.setState({
-          style: { ...toggle.state.style, fillStyle: readHovered(evt) ? theme.colors.background : 'rgba(0,0,0,0)' },
+          style: { ...toggle.state.style, fillStyle: readHovered(evt) ? token('ui.colors.background') : 'rgba(0,0,0,0)' },
         });
       },
       this,
@@ -2292,7 +2292,7 @@ export class ICETable extends ICEWidget {
       'hoverchange',
       (evt: any) => {
         toggle.setState({
-          style: { ...toggle.state.style, fillStyle: readHovered(evt) ? theme.colors.background : 'rgba(0,0,0,0)' },
+          style: { ...toggle.state.style, fillStyle: readHovered(evt) ? token('ui.colors.background') : 'rgba(0,0,0,0)' },
         });
       },
       this,
@@ -2393,7 +2393,7 @@ export class ICETable extends ICEWidget {
         width: 1,
         height: cellHeight,
         text: value,
-        fillStyle: header ? theme.colors.textSecondary : theme.colors.text,
+        fillStyle: header ? token('ui.colors.textSecondary') : token('ui.colors.text'),
         fontFamily: theme.font.family,
         fontSize: header ? theme.font.sizeSmall : theme.font.size,
         fontWeight: header ? theme.font.weightSemibold : theme.font.weightNormal,
@@ -2442,7 +2442,7 @@ export class ICETable extends ICEWidget {
         width: size,
         height: size,
         text: active ? '●' : '▾',
-        fillStyle: active ? theme.colors.primary : theme.colors.textTertiary,
+        fillStyle: active ? token('ui.colors.primary') : token('ui.colors.textTertiary'),
         fontFamily: theme.font.family,
         fontSize: 11,
         align: 'center',
@@ -2455,7 +2455,7 @@ export class ICETable extends ICEWidget {
       'hoverchange',
       (evt: any) => {
         glyph.setState({
-          style: { ...glyph.state.style, fillStyle: readHovered(evt) ? theme.colors.background : 'rgba(0,0,0,0)' },
+          style: { ...glyph.state.style, fillStyle: readHovered(evt) ? token('ui.colors.background') : 'rgba(0,0,0,0)' },
         });
       },
       this,
@@ -3030,12 +3030,12 @@ export class ICETable extends ICEWidget {
       panel.setState({
         style: {
           fillStyle: selected
-            ? theme.colors.primaryBg
+            ? token('ui.colors.primaryBg')
             : hovered
-              ? theme.colors.disabled
+              ? token('ui.colors.disabled')
               : index % 2 === 0
-                ? theme.colors.surface
-                : theme.colors.background,
+                ? token('ui.colors.surface')
+                : token('ui.colors.background'),
         },
       });
       const checkbox = this.selectionNodes[index];

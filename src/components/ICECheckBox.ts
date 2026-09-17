@@ -41,8 +41,8 @@ export class ICECheckBox extends ICEWidget {
       height: boxSize,
       radius: theme.radius.xs,
       style: {
-        fillStyle: selected ? theme.colors.primary : theme.colors.surface,
-        strokeStyle: selected ? theme.colors.primary : theme.colors.borderSecondary,
+        fillStyle: selected ? token('ui.colors.primary') : token('ui.colors.surface'),
+        strokeStyle: selected ? token('ui.colors.primary') : token('ui.colors.borderSecondary'),
         lineWidth: theme.control.lineWidth,
       },
     });
@@ -129,12 +129,12 @@ export class ICECheckBox extends ICEWidget {
       style: {
         fillStyle: selected
           ? this.hovered
-            ? theme.colors.primaryHover
-            : theme.colors.primary
+            ? token('ui.colors.primaryHover')
+            : token('ui.colors.primary')
           : this.hovered
-          ? theme.colors.primaryBg
-          : theme.colors.surface,
-        strokeStyle: selected || this.hovered ? theme.colors.primary : theme.colors.borderSecondary,
+          ? token('ui.colors.primaryBg')
+          : token('ui.colors.surface'),
+        strokeStyle: selected || this.hovered ? token('ui.colors.primary') : token('ui.colors.borderSecondary'),
         lineWidth: theme.control.lineWidth,
       },
     });

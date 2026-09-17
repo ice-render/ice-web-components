@@ -229,7 +229,8 @@ describe('ice-web-components component behavior', () => {
       expect(tabs.getActiveIndex()).toBe(2);
       const activeButton = tabs.childNodes[2] as ICEButton;
       expect(statusColor(activeButton, 'fillStyle')).toBe(ICE_LIGHT_THEME.colors.primary);
-      expect(activeButton.childNodes[0].state.style.fillStyle).toBe(ICE_LIGHT_THEME.colors.primaryText);
+      // 文字节点存的是**主题引用**（热切换用），所以断言走"读画出来的颜色"的口径
+      expect(statusColor(activeButton.childNodes[0], 'fillStyle')).toBe(ICE_LIGHT_THEME.colors.primaryText);
     });
 
     it('positions box layout children with gaps', () => {

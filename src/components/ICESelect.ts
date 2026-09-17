@@ -404,11 +404,11 @@ export class ICESelect extends ICEWidget {
     const width = Number(this.state.width) || 200;
     const height = Number(this.state.height) || 32;
     const borderColor =
-      this.validateStatus === 'error' ? theme.colors.error : this.disabled ? theme.colors.borderSecondary : theme.colors.border;
+      this.validateStatus === 'error' ? token('ui.colors.error') : this.disabled ? token('ui.colors.borderSecondary') : token('ui.colors.border');
     this.setState({
       style: {
         ...this.state.style,
-        fillStyle: this.disabled ? theme.colors.disabled : theme.colors.surface,
+        fillStyle: this.disabled ? token('ui.colors.disabled') : token('ui.colors.surface'),
         strokeStyle: borderColor,
       },
     });
@@ -440,7 +440,7 @@ export class ICESelect extends ICEWidget {
       text: label || this.placeholder,
       style: {
         fontSize: 13,
-        fillStyle: label ? theme.colors.text : theme.colors.textTertiary,
+        fillStyle: label ? token('ui.colors.text') : token('ui.colors.textTertiary'),
       },
     });
     this.addChild(this.fieldLabel, false);
@@ -607,7 +607,7 @@ export class ICESelect extends ICEWidget {
           height: searchHeight,
           verticalAlign: 'middle',
           text: this.query ? this.query + '|' : '搜索…',
-          style: { fontSize: 12, fillStyle: this.query ? theme.colors.text : theme.colors.textTertiary },
+          style: { fontSize: 12, fillStyle: this.query ? token('ui.colors.text') : token('ui.colors.textTertiary') },
         }),
         false,
       );
@@ -708,15 +708,15 @@ export class ICESelect extends ICEWidget {
       fill: true,
       stroke: false,
       style: {
-        fillStyle: selected ? theme.colors.primaryBg : active ? theme.colors.background : 'rgba(0,0,0,0)',
+        fillStyle: selected ? token('ui.colors.primaryBg') : active ? token('ui.colors.background') : 'rgba(0,0,0,0)',
       },
     });
     row.setState({ interactive: !option.disabled });
     const color = option.disabled
-      ? theme.colors.textDisabled
+      ? token('ui.colors.textDisabled')
       : selected
-      ? theme.colors.primary
-      : theme.colors.text;
+      ? token('ui.colors.primary')
+      : token('ui.colors.text');
     row.addChild(
       new ICELabel({
         interactive: false,

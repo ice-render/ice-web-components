@@ -35,8 +35,8 @@ export class ICESwitch extends ICEWidget {
       height,
       radius: height / 2,
       style: {
-        fillStyle: selected ? theme.colors.primary : theme.colors.borderSecondary,
-        strokeStyle: selected ? theme.colors.primary : theme.colors.borderSecondary,
+        fillStyle: selected ? token('ui.colors.primary') : token('ui.colors.borderSecondary'),
+        strokeStyle: selected ? token('ui.colors.primary') : token('ui.colors.borderSecondary'),
         lineWidth: theme.control.lineWidth,
       },
     });
@@ -107,18 +107,18 @@ export class ICESwitch extends ICEWidget {
       style: {
         fillStyle: selected
           ? this.hovered
-            ? theme.colors.primaryHover
-            : theme.colors.primary
+            ? token('ui.colors.primaryHover')
+            : token('ui.colors.primary')
           : this.hovered
-          ? theme.colors.primaryBorder
-          : theme.colors.borderSecondary,
+          ? token('ui.colors.primaryBorder')
+          : token('ui.colors.borderSecondary'),
         strokeStyle: selected
           ? this.hovered
-            ? theme.colors.primaryHover
-            : theme.colors.primary
+            ? token('ui.colors.primaryHover')
+            : token('ui.colors.primary')
           : this.hovered
-          ? theme.colors.primaryBorder
-          : theme.colors.borderSecondary,
+          ? token('ui.colors.primaryBorder')
+          : token('ui.colors.borderSecondary'),
         lineWidth: theme.control.lineWidth,
       },
     });

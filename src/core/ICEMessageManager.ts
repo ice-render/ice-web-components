@@ -4,7 +4,7 @@ import { ICEPanel } from '../components/ICEPanel';
 import { ICEButton } from '../components/ICEButton';
 import { iceUIManager } from './ICEManager';
 import { fadeOut, slideIn, ICEEasing, ICEFrameDriver } from '../util/ICEAnimation';
-import { token } from 'ice-render';
+import { token, type ICEThemeTokenRef } from 'ice-render';
 
 /**
  * 全局提示（Message / Notification）。
@@ -390,13 +390,13 @@ export class ICEMessageManager {
     (node.childNodes || []).forEach((child: any) => this.__raiseSubtree(child, zIndex));
   }
 
-  private __typeColor(type?: ICEMessageType): string {
+  private __typeColor(type?: ICEMessageType): string | ICEThemeTokenRef {
     const theme = iceUIManager.getTheme();
-    if (type === 'success') return theme.colors.success;
-    if (type === 'warning') return theme.colors.warning;
-    if (type === 'error') return theme.colors.error;
-    if (type === 'loading') return theme.colors.primary;
-    return theme.colors.info;
+    if (type === 'success') return token('ui.colors.success');
+    if (type === 'warning') return token('ui.colors.warning');
+    if (type === 'error') return token('ui.colors.error');
+    if (type === 'loading') return token('ui.colors.primary');
+    return token('ui.colors.info');
   }
 
   private __typeIcon(type?: ICEMessageType): string {

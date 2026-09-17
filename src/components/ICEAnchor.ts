@@ -207,14 +207,14 @@ export class ICEAnchor extends ICEWidget {
       const bar = this.barNodes[index];
       const label = this.labelNodes[index];
       if (bar) {
-        bar.setState({ style: { ...bar.state.style, fillStyle: active ? theme.colors.primary : 'rgba(0,0,0,0)' } });
+        bar.setState({ style: { ...bar.state.style, fillStyle: active ? token('ui.colors.primary') : 'rgba(0,0,0,0)' } });
       }
       const textNode = label && label.childNodes[0];
       if (textNode) {
         textNode.setState({
           style: {
             ...textNode.state.style,
-            fillStyle: active ? theme.colors.primary : theme.colors.textSecondary,
+            fillStyle: active ? token('ui.colors.primary') : token('ui.colors.textSecondary'),
           },
         });
       }

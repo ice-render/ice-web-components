@@ -444,7 +444,7 @@ export class ICECalendar extends ICEWidget {
         stroke: isToday && !selected,
         radius: theme.radius.sm,
         style: {
-          fillStyle: selected ? theme.colors.primary : 'rgba(0,0,0,0)',
+          fillStyle: selected ? token('ui.colors.primary') : 'rgba(0,0,0,0)',
           strokeStyle: token('ui.colors.primary'),
           lineWidth: 1,
         },
@@ -461,10 +461,10 @@ export class ICECalendar extends ICEWidget {
         style: {
           fontSize: 13,
           fillStyle: selected
-            ? theme.colors.primaryText
+            ? token('ui.colors.primaryText')
             : cell.inMonth
-              ? theme.colors.text
-              : theme.colors.textDisabled,
+              ? token('ui.colors.text')
+              : token('ui.colors.textDisabled'),
         },
       });
       node.addChild(label, false);

@@ -327,7 +327,7 @@ export class ICETreeSelect extends ICEWidget {
         height: searchHeight,
         verticalAlign: 'middle',
         text: this.query ? this.query + '|' : '搜索部门…',
-        style: { fontSize: 12, fillStyle: this.query ? theme.colors.text : theme.colors.textTertiary },
+        style: { fontSize: 12, fillStyle: this.query ? token('ui.colors.text') : token('ui.colors.textTertiary') },
       });
       panel.addChild(this.searchRow, false);
     }
@@ -465,11 +465,11 @@ export class ICETreeSelect extends ICEWidget {
     const theme = iceUIManager.getTheme();
     const width = Number(this.state.width) || 220;
     const height = Number(this.state.height) || 32;
-    const borderColor = this.validateStatus === 'error' ? theme.colors.error : theme.colors.border;
+    const borderColor = this.validateStatus === 'error' ? token('ui.colors.error') : token('ui.colors.border');
     this.setState({
       style: {
         ...this.state.style,
-        fillStyle: this.disabled ? theme.colors.disabled : theme.colors.surface,
+        fillStyle: this.disabled ? token('ui.colors.disabled') : token('ui.colors.surface'),
         strokeStyle: borderColor,
       },
     });
@@ -488,7 +488,7 @@ export class ICETreeSelect extends ICEWidget {
       height,
       verticalAlign: 'middle',
       text: label,
-      style: { fontSize: 13, fillStyle: labels.length ? theme.colors.text : theme.colors.textTertiary },
+      style: { fontSize: 13, fillStyle: labels.length ? token('ui.colors.text') : token('ui.colors.textTertiary') },
     });
     this.addChild(this.fieldLabel, false);
     this.addChild(

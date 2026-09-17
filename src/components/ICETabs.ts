@@ -556,14 +556,14 @@ export class ICETabs extends ICEContainer {
         style: isCard
           ? {
               ...button.state.style,
-              fillStyle: active ? theme.colors.surface : 'rgba(0,0,0,0)',
-              strokeStyle: active ? theme.colors.border : 'rgba(0,0,0,0)',
+              fillStyle: active ? token('ui.colors.surface') : 'rgba(0,0,0,0)',
+              strokeStyle: active ? token('ui.colors.border') : 'rgba(0,0,0,0)',
               shadow: active ? theme.shadows.sm : undefined,
             }
           : {
               ...button.state.style,
-              fillStyle: active ? theme.colors.primary : theme.colors.surface,
-              strokeStyle: active ? theme.colors.primary : theme.colors.border,
+              fillStyle: active ? token('ui.colors.primary') : token('ui.colors.surface'),
+              strokeStyle: active ? token('ui.colors.primary') : token('ui.colors.border'),
               ...(active ? theme.shadows.sm : {}),
             },
       });
@@ -572,7 +572,7 @@ export class ICETabs extends ICEContainer {
       if (label && label.setState) {
         label.setState({
           style: {
-            fillStyle: active ? theme.colors.primaryText : theme.colors.text,
+            fillStyle: active ? token('ui.colors.primaryText') : token('ui.colors.text'),
             fontFamily: theme.font.family,
             fontSize: theme.font.size,
             fontWeight: theme.font.weightMedium,

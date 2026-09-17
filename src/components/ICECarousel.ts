@@ -270,7 +270,7 @@ export class ICECarousel extends ICEWidget {
       dot.setState({
         style: {
           ...dot.state.style,
-          fillStyle: active ? theme.colors.primary : theme.colors.borderSecondary,
+          fillStyle: active ? token('ui.colors.primary') : token('ui.colors.borderSecondary'),
         },
       });
     });
@@ -362,7 +362,7 @@ export class ICECarousel extends ICEWidget {
           radius: DOT_SIZE / 2,
           fill: true,
           stroke: false,
-          style: { fillStyle: index === this.index ? theme.colors.primary : theme.colors.borderSecondary },
+          style: { fillStyle: index === this.index ? token('ui.colors.primary') : token('ui.colors.borderSecondary') },
         });
         dot.on('click', () => this.goTo(index));
         this.addChild(dot, false);

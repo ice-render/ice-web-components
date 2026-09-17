@@ -106,7 +106,7 @@ export class ICESteps extends ICEWidget {
         stroke: false,
         radius: theme.radius.sm,
         style: {
-          fillStyle: active ? theme.colors.primaryBg : 'rgba(0,0,0,0)',
+          fillStyle: active ? token('ui.colors.primaryBg') : 'rgba(0,0,0,0)',
         },
       });
       const circle = new ICEWidget({
@@ -119,7 +119,7 @@ export class ICESteps extends ICEWidget {
         stroke: false,
         interactive: false,
         style: {
-          fillStyle: finished ? theme.colors.primary : active ? theme.colors.primary : theme.colors.disabled,
+          fillStyle: finished ? token('ui.colors.primary') : active ? token('ui.colors.primary') : token('ui.colors.disabled'),
         },
       });
       circle.addChild(
@@ -153,7 +153,7 @@ export class ICESteps extends ICEWidget {
           style: {
             fontSize: 13,
             fontWeight: active ? '600' : '400',
-            fillStyle: active ? theme.colors.primary : theme.colors.text,
+            fillStyle: active ? token('ui.colors.primary') : token('ui.colors.text'),
           },
         }),
         false,
@@ -184,7 +184,7 @@ export class ICESteps extends ICEWidget {
             fill: true,
             stroke: false,
             interactive: false,
-            style: { fillStyle: finished ? theme.colors.primary : theme.colors.borderSecondary },
+            style: { fillStyle: finished ? token('ui.colors.primary') : token('ui.colors.borderSecondary') },
           }),
           false,
         );

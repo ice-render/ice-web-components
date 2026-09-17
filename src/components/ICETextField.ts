@@ -1,7 +1,7 @@
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { ICEButton } from './ICEButton';
-import { createTextNode } from '../util/ICEStyle';
+import { createTextNode, resolveColorValue } from '../util/ICEStyle';
 import { ICENativeInput } from '../util/ICENativeInput';
 import { token } from 'ice-render';
 
@@ -69,7 +69,7 @@ export class ICETextField extends ICEWidget {
       width: Math.max(0, width - theme.spacing.sm * 2),
       height,
       text: value || placeholder,
-      fillStyle: value ? theme.colors.text : theme.colors.textTertiary,
+      fillStyle: value ? token('ui.colors.text') : token('ui.colors.textTertiary'),
       fontFamily: theme.font.family,
       fontSize: theme.font.size,
       fontWeight: theme.font.weightNormal,
@@ -285,7 +285,9 @@ export class ICETextField extends ICEWidget {
       value: this.value,
       font: `${theme.font.weightNormal} ${theme.font.size}px ${theme.font.family}`,
       // 掩码时把原生光标藏掉（它按真实字符定位、会和 • 的落点错开），改由 canvas 的 `|` 当光标
-      caretColor: masked ? 'transparent' : theme.colors.text,
+      // 原生替身的光标色写进的是 **DOM**（`element.style.caretColor`），只吃字符串 ——
+      // 所以这里把主题引用解析成当前主题的色值，而不是把引用对象塞给 DOM。
+      caretColor: masked ? 'transparent' : resolveColorValue(token('ui.colors.text')),
       maxLength: this.maxLength,
       multiline: this.allowNewline,
       onInput: (value) => this.__applyNativeValue(value),
@@ -446,10 +448,10 @@ export class ICETextField extends ICEWidget {
     const theme = iceUIManager.getTheme();
     const borderColor =
       this.validateStatus === 'error'
-        ? theme.colors.error
+        ? token('ui.colors.error')
         : this.focused
-        ? theme.colors.focusRing
-        : theme.colors.border;
+        ? token('ui.colors.focusRing')
+        : token('ui.colors.border');
     this.setState({
       style: {
         ...this.state.style,
@@ -491,14 +493,16 @@ export class ICETextField extends ICEWidget {
     // 掩码状态可能在聚焦期间变化（密码框切明文 / 掩码）：同步替身的光标颜色 ——
     // 否则会出现「原生光标被藏掉、canvas 光标又被抑制」→ 一个光标都没有。
     const masked = this.__isMaskedDisplay();
-    if (this.nativeInput) this.nativeInput.setCaretColor(masked ? 'transparent' : theme.colors.text);
+    if (this.nativeInput) {
+      this.nativeInput.setCaretColor(masked ? 'transparent' : resolveColorValue(token('ui.colors.text')));
+    }
     // 光标占位：只在「没有原生替身」（Node / 小程序 / 未聚焦）或「掩码显示」时画 canvas 的 `|`。
     // 非掩码且已挂替身时用原生光标（box 已对齐到文本盒，位置正确）—— 两个都画就会出现两个错位的光标。
     const showCanvasCaret = this.focused && !!display && (!this.nativeInput || masked);
     this.textNode.setText(showCanvasCaret ? `${display}|` : text);
     this.textNode.setState({
       style: {
-        fillStyle: this.value ? theme.colors.text : theme.colors.textTertiary,
+        fillStyle: this.value ? token('ui.colors.text') : token('ui.colors.textTertiary'),
         fontFamily: theme.font.family,
         fontSize: theme.font.size,
         fontWeight: theme.font.weightNormal,

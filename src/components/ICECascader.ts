@@ -354,11 +354,11 @@ export class ICECascader extends ICEWidget {
     const theme = iceUIManager.getTheme();
     const width = Number(this.state.width) || 220;
     const height = Number(this.state.height) || 32;
-    const borderColor = this.validateStatus === 'error' ? theme.colors.error : theme.colors.border;
+    const borderColor = this.validateStatus === 'error' ? token('ui.colors.error') : token('ui.colors.border');
     this.setState({
       style: {
         ...this.state.style,
-        fillStyle: this.disabled ? theme.colors.disabled : theme.colors.surface,
+        fillStyle: this.disabled ? token('ui.colors.disabled') : token('ui.colors.surface'),
         strokeStyle: borderColor,
       },
     });
@@ -373,7 +373,7 @@ export class ICECascader extends ICEWidget {
       height,
       verticalAlign: 'middle',
       text,
-      style: { fontSize: 13, fillStyle: path.length ? theme.colors.text : theme.colors.textTertiary },
+      style: { fontSize: 13, fillStyle: path.length ? token('ui.colors.text') : token('ui.colors.textTertiary') },
     });
     this.addChild(this.fieldLabel, false);
     this.addChild(
@@ -452,7 +452,7 @@ export class ICECascader extends ICEWidget {
           radius: theme.radius.sm,
           fill: true,
           stroke: false,
-          style: { fillStyle: selected ? theme.colors.primaryBg : 'transparent' },
+          style: { fillStyle: selected ? token('ui.colors.primaryBg') : 'transparent' },
         });
         row.addChild(
           new ICELabel({
@@ -466,10 +466,10 @@ export class ICECascader extends ICEWidget {
             style: {
               fontSize: 13,
               fillStyle: node.disabled
-                ? theme.colors.textDisabled
+                ? token('ui.colors.textDisabled')
                 : selected
-                  ? theme.colors.primary
-                  : theme.colors.text,
+                  ? token('ui.colors.primary')
+                  : token('ui.colors.text'),
             },
           }),
           false,

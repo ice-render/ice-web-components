@@ -81,10 +81,10 @@ export class ICEProgressBar extends ICEWidget {
     });
     const color =
       props.status === 'success'
-        ? theme.colors.success
+        ? token('ui.colors.success')
         : props.status === 'error'
-          ? theme.colors.error
-          : props.color || theme.colors.primary;
+          ? token('ui.colors.error')
+          : props.color || token('ui.colors.primary');
 
     if (circle) {
       const diameter = Math.min(Number(this.state.width) || size, Number(this.state.height) || size);

@@ -225,7 +225,7 @@ export class ICETransfer extends ICEWidget {
     const theme = iceUIManager.getTheme();
     const width = Number(this.state.width) || 420;
     const height = Number(this.state.height) || 220;
-    const borderColor = this.validateStatus === 'error' ? theme.colors.error : theme.colors.border;
+    const borderColor = this.validateStatus === 'error' ? token('ui.colors.error') : token('ui.colors.border');
     this.setState({
       style: { ...this.state.style, fillStyle: token('ui.colors.surface'), strokeStyle: borderColor },
     });
@@ -352,7 +352,7 @@ export class ICETransfer extends ICEWidget {
       height: this.rowHeight,
       fill: true,
       stroke: false,
-      style: { fillStyle: checked ? theme.colors.primaryBg : 'transparent' },
+      style: { fillStyle: checked ? token('ui.colors.primaryBg') : 'transparent' },
     });
     // 勾选框：纯展示，命中留给整行（interactive:false 避免抢走点击）
     const box = new ICEWidget({
@@ -365,12 +365,12 @@ export class ICETransfer extends ICEWidget {
       stroke: true,
       interactive: false,
       style: {
-        fillStyle: checked ? theme.colors.primary : theme.colors.surface,
+        fillStyle: checked ? token('ui.colors.primary') : token('ui.colors.surface'),
         strokeStyle: item.disabled
-          ? theme.colors.disabled
+          ? token('ui.colors.disabled')
           : checked
-            ? theme.colors.primary
-            : theme.colors.border,
+            ? token('ui.colors.primary')
+            : token('ui.colors.border'),
       },
     });
     if (checked) {
@@ -401,7 +401,7 @@ export class ICETransfer extends ICEWidget {
         text: item.title,
         style: {
           fontSize: 13,
-          fillStyle: item.disabled ? theme.colors.textDisabled : theme.colors.text,
+          fillStyle: item.disabled ? token('ui.colors.textDisabled') : token('ui.colors.text'),
         },
       }),
       false,
@@ -420,8 +420,8 @@ export class ICETransfer extends ICEWidget {
       fill: true,
       stroke: true,
       style: {
-        fillStyle: enabled ? theme.colors.surface : theme.colors.background,
-        strokeStyle: enabled ? theme.colors.border : theme.colors.disabled,
+        fillStyle: enabled ? token('ui.colors.surface') : token('ui.colors.background'),
+        strokeStyle: enabled ? token('ui.colors.border') : token('ui.colors.disabled'),
       },
     });
     button.addChild(
@@ -434,7 +434,7 @@ export class ICETransfer extends ICEWidget {
         align: 'center',
         verticalAlign: 'middle',
         text,
-        style: { fontSize: 14, fillStyle: enabled ? theme.colors.text : theme.colors.textDisabled },
+        style: { fontSize: 14, fillStyle: enabled ? token('ui.colors.text') : token('ui.colors.textDisabled') },
       }),
       false,
     );

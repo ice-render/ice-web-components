@@ -35,9 +35,9 @@
 
       const toast = (text, type = 'success') => W.ICEMessage.show(ice, text, { type });
       const notify = (title, description, type = 'success') => W.ICENotification.open(ice, { title, description, type });
-      const note = (text) => new W.ICELabel({ text, style: { fontSize: 12, fillStyle: theme.colors.textSecondary } });
+      const note = (text) => new W.ICELabel({ text, style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') } });
       const heading = (text) =>
-        new W.ICELabel({ text, style: { fontSize: 15, fontWeight: '600', fillStyle: theme.colors.text } });
+        new W.ICELabel({ text, style: { fontSize: 15, fontWeight: '600', fillStyle: ICE.token('ui.colors.text') } });
       const row = (gap, ...nodes) => {
         let x = 0;
         nodes.forEach((n) => {
@@ -86,8 +86,8 @@
           ],
           history: [
             { title: '创建工单', time: '09:12', description: '渠道：天猫' },
-            { title: '转派客服', time: '09:14', color: theme.colors.warning, description: '小林 接单' },
-            { title: '催促仓库', time: '09:20', color: theme.colors.success, description: '顺丰 加急' },
+            { title: '转派客服', time: '09:14', color: ICE.token('ui.colors.warning'), description: '小林 接单' },
+            { title: '催促仓库', time: '09:20', color: ICE.token('ui.colors.success'), description: '顺丰 加急' },
           ],
           tags: ['物流', '加急'],
           satisfaction: 4,
@@ -145,7 +145,7 @@
         width: 1400,
         height: 880,
         radius: 12,
-        style: { fillStyle: '#f8f9fa', strokeStyle: theme.colors.border, shadow: 'lg' },
+        style: { fillStyle: '#f8f9fa', strokeStyle: ICE.token('ui.colors.border'), shadow: 'lg' },
       });
 
       const header = new W.ICEPanel({
@@ -155,7 +155,7 @@
         width: 1400,
         height: 64,
         radius: 12,
-        style: { fillStyle: theme.colors.surface, strokeStyle: theme.colors.border },
+        style: { fillStyle: ICE.token('ui.colors.surface'), strokeStyle: ICE.token('ui.colors.border') },
       });
       const brand = new W.ICELabel({
         left: 24,
@@ -163,7 +163,7 @@
         height: 64,
         verticalAlign: 'middle',
         text: 'ICE 客服工作台',
-        style: { fontSize: 18, fontWeight: '700', fillStyle: theme.colors.primary },
+        style: { fontSize: 18, fontWeight: '700', fillStyle: ICE.token('ui.colors.primary') },
       });
       const agentStatus = new W.ICESegmented({
         id: 'agent-status',
@@ -229,7 +229,7 @@
         description: '这个筛选下没有工单',
       });
       const queueSkeleton = new W.ICESkeleton({ left: 16, top: 16, width: 268, rows: 4, title: true, active: true });
-      const leftPanel = new W.ICEPanel({ left: 0, top: 0, width: 340, height: 720, style: { fillStyle: theme.colors.surface } });
+      const leftPanel = new W.ICEPanel({ left: 0, top: 0, width: 340, height: 720, style: { fillStyle: ICE.token('ui.colors.surface') } });
       leftPanel.addChildren([queueFilter, queueHint, queueList, queueEmpty, queueSkeleton]);
       leftPanel.childNodes.forEach((child) => raise(child, (Number(leftPanel.state.zIndex) || 0) + 1));
       queueFilter.setState({ left: 16, top: 16 });
@@ -275,7 +275,7 @@
         ],
         onChange: (values) => toast(`标签：${values.join('、') || '（空）'}`, 'info'),
       });
-      const centerPanel = new W.ICEPanel({ left: 0, top: 0, width: 640, height: 720, style: { fillStyle: theme.colors.surface } });
+      const centerPanel = new W.ICEPanel({ left: 0, top: 0, width: 640, height: 720, style: { fillStyle: ICE.token('ui.colors.surface') } });
       centerPanel.addChildren([conversationScroll, replyInput, quickReplies, sendButton, attach, tagGroup]);
       centerPanel.childNodes.forEach((child) => raise(child, (Number(centerPanel.state.zIndex) || 0) + 1));
       conversationScroll.setState({ left: 16, top: 16 });
@@ -286,7 +286,7 @@
       tagGroup.setState({ left: 332, top: 598 });
 
       /* ------------------------------ 右：客户档案 ------------------------------ */
-      const customerTitle = new W.ICELabel({ text: '', style: { fontSize: 16, fontWeight: '600', fillStyle: theme.colors.text } });
+      const customerTitle = new W.ICELabel({ text: '', style: { fontSize: 16, fontWeight: '600', fillStyle: ICE.token('ui.colors.text') } });
       const customerTags = row(6, new W.ICETag({ left: 0, top: 0, width: 62, height: 22, text: 'VIP', status: 'primary' }), new W.ICETag({ left: 0, top: 0, width: 74, height: 22, text: '天猫', status: 'success', variant: 'soft' }));
       const customerInfo = new W.ICEDescriptions({ left: 0, top: 0, width: 340, column: 1, items: [] });
       const satisfaction = new W.ICERate({ id: 'satisfaction', left: 0, top: 0, count: 5, value: 4, onChange: (v) => toast(`满意度：${v} 星`, 'info') });
@@ -301,7 +301,7 @@
           { key: 'size', title: '尺码对照表', content: 'M/L/XL 对应胸围 96/100/104' },
         ],
       });
-      const rightPanel = new W.ICEPanel({ left: 0, top: 0, width: 380, height: 720, style: { fillStyle: theme.colors.surface } });
+      const rightPanel = new W.ICEPanel({ left: 0, top: 0, width: 380, height: 720, style: { fillStyle: ICE.token('ui.colors.surface') } });
       const rightInner = new W.ICEWidget({ left: 20, top: 20, width: 340, height: 660, fill: false, stroke: false });
       const rightNodes = [
         customerTitle,

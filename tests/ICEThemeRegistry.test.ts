@@ -11,6 +11,7 @@
 import { ICEButton } from '../src/components/ICEButton';
 import { iceUIManager } from '../src/core/ICEManager';
 import { ICE_LIGHT_THEME, ICE_XP_THEME } from '../src/theme/ICETheme';
+import { resolvedStyleColor } from '../src/util/ICEStyle';
 
 describe('主题注册', () => {
   afterEach(() => {
@@ -39,13 +40,15 @@ describe('主题注册', () => {
     expect(iceUIManager.getTheme()).toBe(ICE_LIGHT_THEME);
   });
 
-  it('组件构造时读取当前主题（XP 主题下默认按钮用 XP 的选择蓝）', () => {
+  it('组件取色跟随当前主题（XP 主题下默认按钮用 XP 的选择蓝；切回浅色时同一个按钮跟着换）', () => {
     iceUIManager.registerTheme('xp', ICE_XP_THEME).setTheme('xp');
     const xpButton = new ICEButton({ text: '确定', width: 80, height: 24 });
+    expect(resolvedStyleColor(xpButton, 'fillStyle')).toBe(ICE_XP_THEME.colors.primary);
     iceUIManager.setTheme('light');
     const lightButton = new ICEButton({ text: '确定', width: 80, height: 24 });
-    expect(xpButton.state.style.fillStyle).not.toBe(lightButton.state.style.fillStyle);
-    expect(xpButton.state.style.fillStyle).toBe(ICE_XP_THEME.colors.primary);
-    expect(lightButton.state.style.fillStyle).toBe(ICE_LIGHT_THEME.colors.primary);
+    expect(lightButton.state.style.fillStyle).not.toBe(undefined);
+    expect(resolvedStyleColor(lightButton, 'fillStyle')).toBe(ICE_LIGHT_THEME.colors.primary);
+    // 样式槽里存的是**主题引用**（不是构造期抄下来的字面量）→ 老按钮在换主题后也变
+    expect(resolvedStyleColor(xpButton, 'fillStyle')).toBe(ICE_LIGHT_THEME.colors.primary);
   });
 });

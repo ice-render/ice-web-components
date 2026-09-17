@@ -67,8 +67,8 @@ export class ICEStatCard extends ICEPanel {
      * 图标压在 `primaryBg` 这块**浅底小方块**上 —— 按 §1.1 的表，浅底上的文字/字形要用
      * `*TextEmphasis` 那一档（`primary` 是填充色，压在 `primaryBg` 上实测只有 2.2:1 左右）。
      */
-    const iconColor = props.iconColor || theme.colors.primaryTextEmphasis;
-    const iconBg = props.iconBg || theme.colors.primaryBg;
+    const iconColor = props.iconColor || token('ui.colors.primaryTextEmphasis');
+    const iconBg = props.iconBg || token('ui.colors.primaryBg');
     const trendType = props.trendType || 'success';
     const trend = props.trend === undefined ? '' : String(props.trend);
 

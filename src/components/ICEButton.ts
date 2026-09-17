@@ -1,3 +1,4 @@
+import { token, type ICEThemeTokenRef } from 'ice-render';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { centerTextNode } from '../util/ICEStyle';
@@ -37,8 +38,8 @@ function styleFor(
   }
 
   if (variant === 'default') {
-    const border = active || hovered ? (danger ? theme.colors.error : theme.colors.primary) : theme.colors.border;
-    const fill = enabled ? theme.colors.surface : theme.colors.disabled;
+    const border = active || hovered ? (danger ? token('ui.colors.error') : token('ui.colors.primary')) : token('ui.colors.border');
+    const fill = enabled ? token('ui.colors.surface') : token('ui.colors.disabled');
     return {
       fill: true,
       stroke: true,
@@ -49,14 +50,14 @@ function styleFor(
   }
 
   const fill = danger
-    ? theme.colors.error
+    ? token('ui.colors.error')
     : active
-    ? theme.colors.primaryActive
+    ? token('ui.colors.primaryActive')
     : hovered
-    ? theme.colors.primaryHover
+    ? token('ui.colors.primaryHover')
     : enabled
-    ? theme.colors.primary
-    : theme.colors.disabled;
+    ? token('ui.colors.primary')
+    : token('ui.colors.disabled');
   return {
     fill: true,
     stroke: true,
@@ -66,12 +67,18 @@ function styleFor(
   };
 }
 
-function textColor(theme: any, variant: ICEButtonVariant, danger: boolean, enabled: boolean, hovered = false): string {
-  if (variant === 'primary') return theme.colors.primaryText;
-  if (danger) return theme.colors.error;
-  if (variant === 'text' || variant === 'link') return hovered ? theme.colors.primaryHover : theme.colors.primary;
-  if (!enabled) return theme.colors.textDisabled;
-  return hovered ? theme.colors.primary : theme.colors.text;
+function textColor(
+  theme: any,
+  variant: ICEButtonVariant,
+  danger: boolean,
+  enabled: boolean,
+  hovered = false,
+): string | ICEThemeTokenRef {
+  if (variant === 'primary') return token('ui.colors.primaryText');
+  if (danger) return token('ui.colors.error');
+  if (variant === 'text' || variant === 'link') return hovered ? token('ui.colors.primaryHover') : token('ui.colors.primary');
+  if (!enabled) return token('ui.colors.textDisabled');
+  return hovered ? token('ui.colors.primary') : token('ui.colors.text');
 }
 
 /**

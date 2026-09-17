@@ -375,7 +375,7 @@ export class ICEAutoComplete extends ICEWidget {
         radius: theme.radius.sm,
         fill: true,
         stroke: false,
-        style: { fillStyle: active ? theme.colors.background : 'rgba(0,0,0,0)' },
+        style: { fillStyle: active ? token('ui.colors.background') : 'rgba(0,0,0,0)' },
       });
       row.setState({ interactive: true });
       row.on('click', () => this.__pick(option));

@@ -48,12 +48,12 @@ export class ICEResult extends ICEWidget {
     const status = props.status || 'info';
     const statusColor =
       status === 'success'
-        ? theme.colors.success
+        ? token('ui.colors.success')
         : status === 'error'
-        ? theme.colors.error
+        ? token('ui.colors.error')
         : status === 'warning'
-        ? theme.colors.warning
-        : theme.colors.info;
+        ? token('ui.colors.warning')
+        : token('ui.colors.info');
     const statusIcon = status === 'success' ? '✓' : status === 'error' ? '✕' : status === 'warning' ? '!' : 'ℹ';
 
     this.iconLabel = new ICELabel({

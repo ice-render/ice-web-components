@@ -46,7 +46,8 @@ export class ICEDescriptions extends ICEWidget {
       width,
       height: rows * itemHeight + 8,
       radius: iceUIManager.getTheme().radius.md,
-      style: { fillStyle: iceUIManager.getTheme().colors.surface, strokeStyle: iceUIManager.getTheme().colors.border },
+      // 主题**引用**（不是构造期抄下来的字面量）：换主题时跟着走，见 `ICEThemeBridge`
+      style: { fillStyle: token('ui.colors.surface'), strokeStyle: token('ui.colors.border') },
     });
     this.items = (props.items || []).slice();
     this.column = column;

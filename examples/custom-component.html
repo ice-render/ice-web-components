@@ -56,8 +56,8 @@
             height: props.height ?? 88,
             radius: theme.radius.md,
             style: {
-              fillStyle: theme.colors.surface,
-              strokeStyle: theme.colors.border,
+              fillStyle: ICE.token('ui.colors.surface'),
+              strokeStyle: ICE.token('ui.colors.border'),
               lineWidth: theme.control.lineWidth,
             },
           });
@@ -115,7 +115,7 @@
         __applyHoverState() {
           const theme = W.iceUIManager.getTheme();
           this.setState({
-            style: { ...this.state.style, strokeStyle: this.hovered ? theme.colors.primary : this.borderColor() },
+            style: { ...this.state.style, strokeStyle: this.hovered ? ICE.token('ui.colors.primary') : this.borderColor() },
           });
         }
 
@@ -125,7 +125,7 @@
           this.setState({
             style: {
               ...this.state.style,
-              strokeStyle: this.validateStatus === 'error' ? theme.colors.error : this.borderColor(),
+              strokeStyle: this.validateStatus === 'error' ? ICE.token('ui.colors.error') : this.borderColor(),
               lineWidth: this.validateStatus === 'error' ? theme.control.lineWidthFocused : theme.control.lineWidth,
             },
           });
@@ -134,7 +134,7 @@
 
         borderColor() {
           const theme = W.iceUIManager.getTheme();
-          return this.enabled ? theme.colors.border : theme.colors.disabled;
+          return this.enabled ? ICE.token('ui.colors.border') : ICE.token('ui.colors.disabled');
         }
 
         clamp(value) {
@@ -175,8 +175,8 @@
           this.setState({
             style: {
               ...this.state.style,
-              fillStyle: this.enabled ? theme.colors.surface : theme.colors.disabled,
-              strokeStyle: this.validateStatus === 'error' ? theme.colors.error : this.borderColor(),
+              fillStyle: this.enabled ? ICE.token('ui.colors.surface') : ICE.token('ui.colors.disabled'),
+              strokeStyle: this.validateStatus === 'error' ? ICE.token('ui.colors.error') : this.borderColor(),
             },
           });
           // 装饰节点一律 interactive: false，否则会抢走整块的点击
@@ -203,7 +203,7 @@
               height: 16,
               verticalAlign: 'middle',
               text: this.labelText,
-              style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+              style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') },
             }),
             false,
           );
@@ -227,7 +227,7 @@
               height: 14,
               verticalAlign: 'middle',
               text: '点击 +1 · 聚焦后 ↑/↓ 调整',
-              style: { fontSize: 11, fillStyle: theme.colors.textTertiary },
+              style: { fontSize: 11, fillStyle: ICE.token('ui.colors.textTertiary') },
             }),
             false,
           );

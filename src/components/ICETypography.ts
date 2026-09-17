@@ -1,7 +1,8 @@
+import { token, type ICEThemeTokenRef } from 'ice-render';
 import { ICEWidget } from '../core/ICEWidget';
 import { ICELabel } from './ICELabel';
 import { iceUIManager } from '../core/ICEManager';
-import { estimateTextWidth } from '../util/ICEStyle';
+import { estimateTextWidth, resolveColorValue } from '../util/ICEStyle';
 
 /**
  * 按宽度把文本切成若干行，超出部分用 `…` 收尾。
@@ -168,7 +169,9 @@ export class ICETypography extends ICEWidget {
   }
 
   public getTextColor(): string {
-    return this.__color();
+    // 公开读数接口只给**字符串**：`__color()` 现在可能返回主题引用（热切换用），
+    // 这里解析成当前主题下的实际色值（见 `ICEStyle.resolveColorValue`）。
+    return resolveColorValue(this.__color());
   }
 
   public getLabelNodes(): ICELabel[] {
@@ -187,14 +190,14 @@ export class ICETypography extends ICEWidget {
     return this;
   }
 
-  private __color(): string {
+  private __color(): string | ICEThemeTokenRef {
     const theme = iceUIManager.getTheme();
-    if (this.type === 'secondary') return theme.colors.textSecondary;
-    if (this.type === 'success') return theme.colors.success;
-    if (this.type === 'warning') return theme.colors.warningTextEmphasis;
-    if (this.type === 'danger') return theme.colors.error;
-    if (this.type === 'primary') return theme.colors.primary;
-    return this.variant === 'link' ? theme.colors.primary : theme.colors.text;
+    if (this.type === 'secondary') return token('ui.colors.textSecondary');
+    if (this.type === 'success') return token('ui.colors.success');
+    if (this.type === 'warning') return token('ui.colors.warningTextEmphasis');
+    if (this.type === 'danger') return token('ui.colors.error');
+    if (this.type === 'primary') return token('ui.colors.primary');
+    return this.variant === 'link' ? token('ui.colors.primary') : token('ui.colors.text');
   }
 
   protected __applyHoverState(): void {
@@ -202,7 +205,7 @@ export class ICETypography extends ICEWidget {
       return;
     }
     const theme = iceUIManager.getTheme();
-    const color = this.hovered ? theme.colors.primaryHover : this.__color();
+    const color = this.hovered ? token('ui.colors.primaryHover') : this.__color();
     this.labelNodes.forEach((node) => {
       const textNode = node.childNodes[0];
       if (textNode) {

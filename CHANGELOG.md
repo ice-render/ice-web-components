@@ -7,6 +7,60 @@
 
 > 下一个版本发布前，改动在这里累积。
 
+## [1.17.0] - 2026-09-17
+
+### 变更
+
+- **构造期取色扫尾：316 处迁成主题引用，库内"进样式槽的取色"清零。** 1.16.0 之后还剩
+  325 处 `theme.colors.x`（条件取色 / 状态色表 / 派生色），它们**冻在构造那一刻**，
+  换主题时"面板深了、按钮和文字还是浅色"。
+
+  这一轮的判据不是源码计数，而是**真机逐节点比对**（新增 `e2e/theme-coverage.spec.ts`）：
+  同一棵组件树 `setTheme('light') → setTheme('dark')`，逐节点读 `resolvedStyleColor()`。
+
+  | gallery.html（同一棵树、1456 个有色节点） | 换色 | 未换 |
+  |---|---|---|
+  | 迁移前 | 306 | **1150** |
+  | 迁移后 | **1195** | 249（其中 135 是"两套主题同色"的引用，本就不该变） |
+
+  剩下未换的 126 个也都是**与该主题无关的常量色**：实底上的黑/白字（`getStatusColors().onSolid`）、
+  引擎 `DEFAULT_PROPS.style` 的遗产默认值（`fill:false` 的节点根本不画）、图片/数据 URI。
+
+- **示例页也迁了（172 处）**：`examples/*.html` 是应用层抄写样板，原来也是构造期取色 ——
+  切主题时示例页自己不变，等于"文档教了错的写法"。现在除 `renderItem` / painter 回调
+  与字符串拼接外，全部改成 `ICE.token('ui.colors.x')`。
+
+### 修复
+
+- **两处源码棘轮数不到的漏网**（真机覆盖测试抓出来的）：`ICEDescriptions` 与 `ICETree`
+  用的是 `iceUIManager.getTheme().colors.x`，绕过了按 `theme.colors.` 统计的预算表。
+  已迁成引用，**预算表的正则也补上了这一形态**。
+- `ICEColorPicker` 的调色板色块打上 `__themeConstant = true`：那是**内容色**
+  （`__defaultPalette()` 的数据），换主题本就不该变；不打标记会被覆盖测试当成
+  "没跟上的 text 档位"（`#212529` = 浅色 `text`）误报。
+
+### 文档
+
+- `docs/guides/theming.md` 里"组件在**构造时**读一次 token / 想热切换就重建组件树"的说法
+  是 1.15.0 之前的旧口径，已改；新增"`token()` 从 `ice-render` 取（本包导出集合与引擎零重叠）"、
+  "`paint` 回调是例外"、"派生色用 `resolveColorValue()` + `onThemeChange()`"三处说明。
+- `AGENTS.md` 新增「取色铁律」：写法、例外、两道门禁各管什么。
+- `README.md` / `docs/guides/custom-components.md` 同步。
+
+### 棘轮
+
+- `tests/theme-refs.test.ts`：预算 **325 处 / 52 个文件 → 9 处 / 3 个文件**，
+  且这 9 处全在 `paint` 回调里（`ICEList` 5 / `ICEAvatar` 3 / `ICESkeleton` 1）——
+  那里的 `theme` 是引擎每帧传的参数，`ctx.fillStyle` 又必须拿字符串，是**唯一不能写成引用的形态**。
+- 新增 `e2e/theme-coverage.spec.ts`：可疑字面量必须为 0 + 换色节点数不许回退。
+
+### 回归
+
+- `verify:full`：types / jest **196 suites · 1421 用例** / build / docs / qa-counts /
+  真机 e2e **13/13** / **qa:all 8/8** / qa:perf 全在预算内。
+- 真机 QA 同步修了三处"读原始引用对象当颜色"的断言（`qa-gallery` 的链接悬停色、
+  `qa-admin` 的表单错误态描边）—— 改成 `resolvedStyleColor()` 的既有口径。
+
 ## [1.16.0] - 2026-09-17
 
 ### 变更

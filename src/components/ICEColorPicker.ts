@@ -194,11 +194,11 @@ export class ICEColorPicker extends ICEWidget {
     const theme = iceUIManager.getTheme();
     this.removeChildren([...this.childNodes]);
     this.cells = [];
-    const borderColor = this.validateStatus === 'error' ? theme.colors.error : theme.colors.border;
+    const borderColor = this.validateStatus === 'error' ? token('ui.colors.error') : token('ui.colors.border');
     this.setState({
       style: {
         ...this.state.style,
-        fillStyle: this.disabled ? theme.colors.disabled : theme.colors.surface,
+        fillStyle: this.disabled ? token('ui.colors.disabled') : token('ui.colors.surface'),
         strokeStyle: borderColor,
       },
     });
@@ -215,13 +215,12 @@ export class ICEColorPicker extends ICEWidget {
         interactive: !this.disabled,
         style: {
           fillStyle: token('ui.colors.surface'),
-          strokeStyle: selected ? theme.colors.primary : borderColor,
+          strokeStyle: selected ? token('ui.colors.primary') : borderColor,
           lineWidth: selected ? 2 : 1,
         },
       });
       // 内层色块只负责显示颜色，interactive:false 避免抢走外层点击。
-      cell.addChild(
-        new ICEWidget({
+      const swatch = new ICEWidget({
           left: 3,
           top: 3,
           width: Math.max(0, this.swatchSize - 6),
@@ -231,9 +230,14 @@ export class ICEColorPicker extends ICEWidget {
           stroke: false,
           interactive: false,
           style: { fillStyle: color },
-        }),
-        false,
-      );
+        });
+      /**
+       * 色块里涂的是**内容色**（调色板数据，见 `__defaultPalette()`），不是主题档位 ——
+       * 换主题时它**不该**变。打这个标记，`e2e/theme-coverage.spec.ts` 就会跳过它，
+       * 否则 `#212529`（Bootstrap gray-900）会被当成"没跟上的 text 档位"误报。
+       */
+      (swatch as any).__themeConstant = true;
+      cell.addChild(swatch, false);
       cell.on('click', () => this.__pick(color));
       this.addChild(cell, false);
       this.cells.push(cell);

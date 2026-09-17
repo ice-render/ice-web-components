@@ -1,3 +1,4 @@
+import { token } from 'ice-render';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { centerTextNode } from '../util/ICEStyle';
@@ -21,7 +22,7 @@ export class ICEIcon extends ICEWidget {
     this.textNode = centerTextNode(props.icon || props.text || '★', theme, size, size, {
       fontSize: size,
       fontWeight: theme.font.weightNormal,
-      fillStyle: props.color || theme.colors.text,
+      fillStyle: props.color || token('ui.colors.text'),
     });
     this.addChild(this.textNode, false);
   }

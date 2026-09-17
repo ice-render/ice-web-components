@@ -2,7 +2,7 @@ import { ICEWidget } from '../core/ICEWidget';
 import { ICELabel } from './ICELabel';
 import { iceUIManager } from '../core/ICEManager';
 import { estimateTextWidth } from '../util/ICEStyle';
-import { ICEFlowLayout, token } from 'ice-render';
+import { ICEFlowLayout, token, type ICEThemeTokenRef } from 'ice-render';
 
 /**
  * 面包屑：一行「路径 + 分隔符」，最后一项是当前页。
@@ -44,8 +44,9 @@ type ICEDisplayedCrumb = { item: ICEBreadcrumbItem; index: number; ellipsis?: bo
 class ICEBreadcrumbItemNode extends ICEWidget {
   private label: ICELabel;
   private textNode: any;
-  private restColor: string;
-  private hoverColor: string;
+  /** 色值可能是字面量，也可能是**主题引用**（跟随热切换，见 `ICEThemeBridge`） */
+  private restColor: string | ICEThemeTokenRef;
+  private hoverColor: string | ICEThemeTokenRef;
 
   constructor(props: {
     /** 位置由父级（面包屑的流式布局）给；单独使用时可以显式传 */
@@ -55,7 +56,7 @@ class ICEBreadcrumbItemNode extends ICEWidget {
     height: number;
     text: string;
     fontSize: number;
-    fillStyle: string;
+    fillStyle: string | ICEThemeTokenRef;
     fontWeight: string;
     clickable: boolean;
   }) {
@@ -71,7 +72,7 @@ class ICEBreadcrumbItemNode extends ICEWidget {
       focusable: false,
     });
     this.restColor = props.fillStyle;
-    this.hoverColor = theme.colors.primary;
+    this.hoverColor = token('ui.colors.primary');
     // label 与节点同盒：verticalAlign:'middle' 是相对整行居中，而不是相对文字小盒
     this.label = new ICELabel({
       interactive: false,
@@ -242,10 +243,10 @@ export class ICEBreadcrumb extends ICEWidget {
         text,
         fontSize: this.fontSize,
         fillStyle: disabled
-          ? theme.colors.textDisabled
+          ? token('ui.colors.textDisabled')
           : isCurrent
-            ? theme.colors.text
-            : theme.colors.textSecondary,
+            ? token('ui.colors.text')
+            : token('ui.colors.textSecondary'),
         fontWeight: isCurrent ? theme.font.weightSemibold : theme.font.weightNormal,
         clickable: !isCurrent && !disabled,
       });

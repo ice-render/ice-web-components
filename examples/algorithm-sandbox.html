@@ -77,7 +77,7 @@
             width: 460,
             height: 30,
             text: 'ICE Algorithm Sandbox',
-            style: { fontSize: 22, fontWeight: '700', fillStyle: theme.colors.text },
+            style: { fontSize: 22, fontWeight: '700', fillStyle: ICE.token('ui.colors.text') },
           }),
         );
         const subtitle = new W.ICELabel({
@@ -87,7 +87,7 @@
           width: 700,
           height: 20,
           text: '先把算法跑完录成轨迹，再按时间回放 —— 算法与渲染完全解耦',
-          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+          style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') },
         });
         ice.addChild(subtitle);
 
@@ -128,7 +128,7 @@
           width: 136,
           height: 18,
           text: '算法 ALGORITHM',
-          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+          style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') },
         });
         sideLeft.addChild(algoCaption, false);
         ice.addChild(sideLeft);
@@ -169,7 +169,7 @@
           width: 136,
           height: 18,
           text: '数据 DATA',
-          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+          style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') },
         });
         sideLeft.addChild(dataCaption, false);
         const dataList = new W.ICEWidget({ left: 16, top: 296, width: 136, height: 3 * 32 + 2 * 8, fill: false, stroke: false, interactive: false });
@@ -207,7 +207,7 @@
           width: 136,
           height: 66,
           text: '空格 播放/暂停\n← → 单步\n1-5 切算法\n寻路模式：拖动画画墙',
-          style: { fontSize: 12, fillStyle: theme.colors.textTertiary },
+          style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textTertiary') },
         });
         sideLeft.addChild(hintLabel, false);
 
@@ -222,7 +222,7 @@
           width: 300,
           height: 20,
           text: '画布 STAGE',
-          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+          style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') },
         });
         stage.addChild(stageCaption, false);
         ice.addChild(stage);
@@ -309,7 +309,7 @@
           width: 300,
           height: 20,
           text: '统计 STATS',
-          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+          style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') },
         });
         sideRight.addChild(statCaption, false);
         ice.addChild(sideRight);
@@ -344,7 +344,7 @@
             height: 22,
             text: label,
             verticalAlign: 'middle',
-            style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+            style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') },
           });
           const value = new W.ICELabel({
             id: `algo-stat-${key}`,
@@ -353,7 +353,7 @@
             height: 22,
             text: '—',
             verticalAlign: 'middle',
-            style: { fontSize: 12, fontFamily: '"Courier New", monospace', fillStyle: theme.colors.text },
+            style: { fontSize: 12, fontFamily: '"Courier New", monospace', fillStyle: ICE.token('ui.colors.text') },
           });
           row.addChild(caption, false);
           row.addChild(value, false);
@@ -405,7 +405,7 @@
           width: 120,
           height: 20,
           text: '速度 SPEED',
-          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+          style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') },
         });
         sideRight.addChild(speedCaption, false);
         /** 速度档按钮行（三档等宽、间距 8）。 */
@@ -445,7 +445,7 @@
           width: 368,
           height: 100,
           text: '',
-          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+          style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') },
         });
         sideRight.addChild(mazeHint, false);
 
@@ -461,7 +461,7 @@
           height: 24,
           text: '',
           verticalAlign: 'middle',
-          style: { fontSize: 12, fontFamily: '"Courier New", monospace', fillStyle: theme.colors.textSecondary },
+          style: { fontSize: 12, fontFamily: '"Courier New", monospace', fillStyle: ICE.token('ui.colors.textSecondary') },
         });
         statusBar.addChild(statusText, false);
         ice.addChild(statusBar);

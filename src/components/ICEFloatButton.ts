@@ -1,7 +1,7 @@
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 import { centerTextNode, resolvedStyleColor } from '../util/ICEStyle';
-import { token } from 'ice-render';
+import { token, type ICEThemeTokenRef } from 'ice-render';
 
 /**
  * 悬浮操作按钮：一个圆形主按钮，点击展开一组子按钮。
@@ -65,7 +65,7 @@ export class ICEFloatButton extends ICEWidget {
       width: size,
       height: size,
       style: {
-        fillStyle: props.type === 'default' ? theme.colors.surface : theme.colors.primary,
+        fillStyle: props.type === 'default' ? token('ui.colors.surface') : token('ui.colors.primary'),
         strokeStyle: token('ui.colors.border'),
         ...theme.shadows.md,
       },
@@ -145,17 +145,17 @@ export class ICEFloatButton extends ICEWidget {
 
   protected __applyHoverState(): void {
     const theme = iceUIManager.getTheme();
-    const base = this.type === 'default' ? theme.colors.surface : theme.colors.primary;
-    const hover = this.type === 'default' ? theme.colors.background : theme.colors.primaryHover;
+    const base = this.type === 'default' ? token('ui.colors.surface') : token('ui.colors.primary');
+    const hover = this.type === 'default' ? token('ui.colors.background') : token('ui.colors.primaryHover');
     this.setState({
       style: { ...this.state.style, fillStyle: this.hovered ? hover : base },
     });
     this.revalidate();
   }
 
-  private __iconColor(): string {
+  private __iconColor(): string | ICEThemeTokenRef {
     const theme = iceUIManager.getTheme();
-    return this.type === 'default' ? theme.colors.text : theme.colors.primaryText;
+    return this.type === 'default' ? token('ui.colors.text') : token('ui.colors.primaryText');
   }
 
   /** 子按钮只建一次，显隐靠 display（引擎的不可见组件不参与命中）。 */

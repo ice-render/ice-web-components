@@ -351,7 +351,7 @@ export class ICESlider extends ICEWidget {
     const theme = iceUIManager.getTheme();
     const active = this.hovered || (this.dragging && this.activeThumb === which);
     return {
-      fillStyle: active ? theme.colors.primaryHover : theme.colors.primary,
+      fillStyle: active ? token('ui.colors.primaryHover') : token('ui.colors.primary'),
       strokeStyle: token('ui.colors.surface'),
       lineWidth: theme.control.lineWidth + (active ? 2 : 1),
       ...theme.shadows.sm,
@@ -436,7 +436,7 @@ export class ICESlider extends ICEWidget {
     const radius = thumbSize / 2;
     const fillLeft =
       (this.range && this.rangeValue ? this.__travel(width) * this.__ratio(this.rangeValue[0]) : 0) + radius;
-    const fillColor = this.hovered ? theme.colors.primaryHover : theme.colors.primary;
+    const fillColor = this.hovered ? token('ui.colors.primaryHover') : token('ui.colors.primary');
     this.fill.setState({
       left: fillLeft,
       width: this.__fillWidth(width),

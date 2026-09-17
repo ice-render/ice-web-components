@@ -231,11 +231,17 @@ this.__handle.close();
 ## 七、用主题与状态色
 
 ```ts
-const theme = iceUIManager.getTheme();               // 构造时取一次
+import { token } from 'ice-render';                  // 主题引用是**引擎**的东西，本包不重复导出
+
+// 样式槽里放**引用**（paint 时解析）→ 换主题不用重建组件：
+style: { fillStyle: token('ui.colors.text') }
+
+const theme = iceUIManager.getTheme();               // 要算派生色时才读当前主题（用 resolveColorValue 化成字符串）
 const colors = getStatusColors(theme, this.status);  // { background, border, text, strong, solid, onSolid }
 ```
 
 * 浅底上的文字用 `strong`（`*-text-emphasis`），白底上的用 `text`，实底用 `solid` + `onSolid`；
+* `getStatusColors()` 返回的除 `onSolid` 外**都是主题引用** —— 参与 `mix` / `shade` / 拼 CSS 前先 `resolveColorValue()`；
 * 需要按文字算容器宽度时用 `estimateTextWidth(text, fontSize)`（中文按 1em，别用 `length * 0.62`）；
 * 文本节点可以直接用 `createTextNode({ text, width, align, verticalAlign, … })` 生成。
 

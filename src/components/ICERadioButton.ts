@@ -37,7 +37,7 @@ export class ICERadioButton extends ICEWidget {
       radius: outerRadius,
       style: {
         fillStyle: token('ui.colors.surface'),
-        strokeStyle: selected ? theme.colors.primary : theme.colors.borderSecondary,
+        strokeStyle: selected ? token('ui.colors.primary') : token('ui.colors.borderSecondary'),
         lineWidth: theme.control.lineWidth,
       },
     });
@@ -46,8 +46,8 @@ export class ICERadioButton extends ICEWidget {
       top: outerTop + outerSize / 2 - innerRadius,
       radius: innerRadius,
       style: {
-        fillStyle: selected ? theme.colors.primary : 'transparent',
-        strokeStyle: selected ? theme.colors.primary : 'transparent',
+        fillStyle: selected ? token('ui.colors.primary') : 'transparent',
+        strokeStyle: selected ? token('ui.colors.primary') : 'transparent',
       },
     });
     this.addChild(this.outer, false);
@@ -129,15 +129,15 @@ export class ICERadioButton extends ICEWidget {
     const selected = this.model.isSelected();
     this.outer.setState({
       style: {
-        fillStyle: this.hovered && !selected ? theme.colors.primaryBg : theme.colors.surface,
-        strokeStyle: selected || this.hovered ? theme.colors.primary : theme.colors.borderSecondary,
+        fillStyle: this.hovered && !selected ? token('ui.colors.primaryBg') : token('ui.colors.surface'),
+        strokeStyle: selected || this.hovered ? token('ui.colors.primary') : token('ui.colors.borderSecondary'),
         lineWidth: theme.control.lineWidth,
       },
     });
     this.inner.setState({
       style: {
-        fillStyle: selected ? (this.hovered ? theme.colors.primaryHover : theme.colors.primary) : 'transparent',
-        strokeStyle: selected ? (this.hovered ? theme.colors.primaryHover : theme.colors.primary) : 'transparent',
+        fillStyle: selected ? (this.hovered ? token('ui.colors.primaryHover') : token('ui.colors.primary')) : 'transparent',
+        strokeStyle: selected ? (this.hovered ? token('ui.colors.primaryHover') : token('ui.colors.primary')) : 'transparent',
       },
     });
     this.revalidate();

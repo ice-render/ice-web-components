@@ -333,11 +333,11 @@ export class ICETimePicker extends ICEWidget {
     const theme = iceUIManager.getTheme();
     const width = Number(this.state.width) || 160;
     const height = Number(this.state.height) || 32;
-    const borderColor = this.validateStatus === 'error' ? theme.colors.error : theme.colors.border;
+    const borderColor = this.validateStatus === 'error' ? token('ui.colors.error') : token('ui.colors.border');
     this.setState({
       style: {
         ...this.state.style,
-        fillStyle: this.disabled ? theme.colors.disabled : theme.colors.surface,
+        fillStyle: this.disabled ? token('ui.colors.disabled') : token('ui.colors.surface'),
         strokeStyle: borderColor,
       },
     });
@@ -350,7 +350,7 @@ export class ICETimePicker extends ICEWidget {
       height,
       verticalAlign: 'middle',
       text: this.value || this.placeholder,
-      style: { fontSize: 13, fillStyle: this.value ? theme.colors.text : theme.colors.textTertiary },
+      style: { fontSize: 13, fillStyle: this.value ? token('ui.colors.text') : token('ui.colors.textTertiary') },
     });
     this.addChild(this.fieldLabel, false);
     this.addChild(
@@ -413,7 +413,7 @@ export class ICETimePicker extends ICEWidget {
           radius: theme.radius.sm,
           fill: true,
           stroke: false,
-          style: { fillStyle: selected ? theme.colors.primaryBg : 'transparent' },
+          style: { fillStyle: selected ? token('ui.colors.primaryBg') : 'transparent' },
         });
         row.addChild(
           new ICELabel({
@@ -428,7 +428,7 @@ export class ICETimePicker extends ICEWidget {
             style: {
               fontSize: 13,
               fontWeight: selected ? '600' : '400',
-              fillStyle: selected ? theme.colors.primary : theme.colors.text,
+              fillStyle: selected ? token('ui.colors.primary') : token('ui.colors.text'),
             },
           }),
           false,

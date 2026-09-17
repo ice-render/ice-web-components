@@ -265,7 +265,7 @@ export class ICETree extends ICEWidget {
     if (!row || row.node.disabled) return;
     const theme = iceUIManager.getTheme();
     const indicator = new ICEWidget({ left: 0, top: 0, width: Number(this.content.state.width) || 0, height: 2, fill: true, stroke: false, display: false, interactive: false, style: { fillStyle: token('ui.colors.primary') } });
-    const highlight = new ICEWidget({ left: 0, top: 0, width: Number(this.content.state.width) || 0, height: this.itemHeight, radius: 3, fill: true, stroke: false, display: false, interactive: false, style: { fillStyle: iceUIManager.getTheme().colors.primaryBg } });
+    const highlight = new ICEWidget({ left: 0, top: 0, width: Number(this.content.state.width) || 0, height: this.itemHeight, radius: 3, fill: true, stroke: false, display: false, interactive: false, style: { fillStyle: token('ui.colors.primaryBg') } });
     this.content.addChild(highlight, false);
     this.content.addChild(indicator, false);
     this.dragState = { key: row.node.key, target: null, indicator, highlight };
@@ -521,7 +521,7 @@ export class ICETree extends ICEWidget {
         stroke: false,
         interactive: !row.node.disabled,
         style: {
-          fillStyle: selected ? theme.colors.primaryBg : active ? theme.colors.background : 'rgba(0,0,0,0)',
+          fillStyle: selected ? token('ui.colors.primaryBg') : active ? token('ui.colors.background') : 'rgba(0,0,0,0)',
         },
       });
       const indent = 6 + row.depth * this.indent;
@@ -549,10 +549,10 @@ export class ICETree extends ICEWidget {
           style: {
             fontSize: 13,
             fillStyle: row.node.disabled
-              ? theme.colors.textDisabled
+              ? token('ui.colors.textDisabled')
               : selected
-              ? theme.colors.primary
-              : theme.colors.text,
+              ? token('ui.colors.primary')
+              : token('ui.colors.text'),
           },
         }),
         false,
@@ -570,9 +570,9 @@ export class ICETree extends ICEWidget {
             style: {
               ...node.state.style,
               fillStyle: selected
-                ? theme.colors.primaryBg
+                ? token('ui.colors.primaryBg')
                 : hovered || active
-                  ? theme.colors.background
+                  ? token('ui.colors.background')
                   : 'rgba(0,0,0,0)',
             },
           });

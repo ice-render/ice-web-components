@@ -240,17 +240,17 @@ export class ICEDropdown {
         fill: true,
         stroke: false,
         style: {
-          fillStyle: selected ? theme.colors.primaryBg : active ? theme.colors.background : 'rgba(0,0,0,0)',
+          fillStyle: selected ? token('ui.colors.primaryBg') : active ? token('ui.colors.background') : 'rgba(0,0,0,0)',
         },
       });
       row.setState({ interactive: !item.disabled });
       const color = item.disabled
-        ? theme.colors.textDisabled
+        ? token('ui.colors.textDisabled')
         : item.danger
-        ? theme.colors.error
+        ? token('ui.colors.error')
         : selected
-        ? theme.colors.primary
-        : theme.colors.text;
+        ? token('ui.colors.primary')
+        : token('ui.colors.text');
       row.addChild(
         new ICELabel({
           interactive: false,

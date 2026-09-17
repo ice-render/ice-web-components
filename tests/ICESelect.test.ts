@@ -10,6 +10,7 @@
  */
 import { ICESelect } from '../src/components/ICESelect';
 import { ICEOverlayManager } from '../src/core/ICEOverlayManager';
+import { resolvedStyleColor } from '../src/util/ICEStyle';
 
 function makeICE() {
   const handlers: Record<string, Array<{ handler: any; ctx: any }>> = {};
@@ -156,7 +157,8 @@ describe('ICESelect', () => {
     expect(select.getFormValue()).toBe('beijing');
     expect(select.getFieldLabel()).toBe('北京');
     select.setValidateStatus('error');
-    expect(String(select.state.style.strokeStyle)).toMatch(/^#/);
+    // 样式槽里存的是主题引用 → 用"读画出来的颜色"的口径比对
+    expect(resolvedStyleColor(select, 'strokeStyle')).toMatch(/^#/);
     expect(select.isFocusable()).toBe(true);
   });
 });

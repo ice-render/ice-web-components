@@ -10,6 +10,7 @@
 import { ICEButton } from '../src/components/ICEButton';
 import { ICEDropdown } from '../src/components/ICEDropdown';
 import { ICEOverlayManager } from '../src/core/ICEOverlayManager';
+import { resolvedStyleColor } from '../src/util/ICEStyle';
 
 function makeICE() {
   const handlers: Record<string, Array<{ handler: any; ctx: any }>> = {};
@@ -114,7 +115,8 @@ describe('ICEDropdown', () => {
     // 高亮项的文字变成 primary 色
     const node = dropdown.getItemNode(3)!;
     const label = (node.childNodes || []).find((child: any) => child.state && child.state.text === '选项 D');
-    expect(String(label.state.style.fillStyle)).toMatch(/^#/);
+    // 样式槽里存的是主题引用 → 用"读画出来的颜色"的口径比对
+    expect(resolvedStyleColor(label, 'fillStyle')).toMatch(/^#/);
     dropdown.destroy();
   });
 

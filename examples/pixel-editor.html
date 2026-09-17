@@ -101,7 +101,7 @@
           width: 420,
           height: 30,
           text: 'ICE Pixel Studio',
-          style: { fontSize: 22, fontWeight: '700', fillStyle: theme.colors.text },
+          style: { fontSize: 22, fontWeight: '700', fillStyle: ICE.token('ui.colors.text') },
         });
         const subtitle = new W.ICELabel({
           interactive: false,
@@ -110,7 +110,7 @@
           width: 640,
           height: 20,
           text: '像素画板 · 一格一格画，撤销重做，导出 PNG / SVG',
-          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+          style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') },
         });
         ice.addChild(title);
         ice.addChild(subtitle);
@@ -125,7 +125,7 @@
           width: 140,
           height: 18,
           text: '工具 TOOLS',
-          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+          style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') },
         });
         const toolHint = new W.ICELabel({
           interactive: false,
@@ -134,7 +134,7 @@
           width: 136,
           height: 20,
           text: '',
-          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+          style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') },
         });
         const shortcutHint = new W.ICELabel({
           interactive: false,
@@ -143,7 +143,7 @@
           width: 136,
           height: 20,
           text: '快捷键',
-          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+          style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') },
         });
         /** 快捷键说明：4 行等距文字 —— 行距交给 BoxLayout，别再写 `top: 380 + index * 24`。 */
         const SHORTCUT_ROWS = ['1-5 切工具', 'Ctrl+Z 撤销', 'Ctrl+Y 重做', '画布上可拖动'];
@@ -163,7 +163,7 @@
               width: 136,
               height: 20,
               text,
-              style: { fontSize: 12, fontFamily: '"Courier New", monospace', fillStyle: theme.colors.textTertiary },
+              style: { fontSize: 12, fontFamily: '"Courier New", monospace', fillStyle: ICE.token('ui.colors.textTertiary') },
             }),
         );
         toolPanel.addChild(toolCaption, false);
@@ -216,7 +216,7 @@
           width: 300,
           height: 20,
           text: '画板 CANVAS',
-          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+          style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') },
         });
         boardPanel.addChild(boardCaption, false);
         ice.addChild(boardPanel);
@@ -227,7 +227,7 @@
           PALETTE.forEach((color, index) => {
             palette[`c${index}`] = {
               fillStyle: color,
-              strokeStyle: theme.colors.borderSecondary,
+              strokeStyle: ICE.token('ui.colors.borderSecondary'),
               lineWidth: 1,
               radius: 0,
             };
@@ -253,7 +253,7 @@
           palette: boardPalette(),
           fill: true,
           stroke: true,
-          style: { fillStyle: '#ffffff', strokeStyle: theme.colors.border, lineWidth: 1 },
+          style: { fillStyle: '#ffffff', strokeStyle: ICE.token('ui.colors.border'), lineWidth: 1 },
         });
         boardPanel.addChild(board, false);
         const boardPreview = new W.ICELabel({
@@ -263,7 +263,7 @@
           width: 528,
           height: 18,
           text: '',
-          style: { fontSize: 12, fontFamily: '"Courier New", monospace', fillStyle: theme.colors.textSecondary },
+          style: { fontSize: 12, fontFamily: '"Courier New", monospace', fillStyle: ICE.token('ui.colors.textSecondary') },
         });
         boardPanel.addChild(boardPreview, false);
 
@@ -277,7 +277,7 @@
           width: 300,
           height: 20,
           text: '颜色 COLORS',
-          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+          style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') },
         });
         sidePanel.addChild(colorCaption, false);
 
@@ -285,7 +285,7 @@
         const SWATCH_CELL = 56;
         const swatchPalette = {};
         PALETTE.forEach((color, index) => {
-          swatchPalette[`s${index}`] = { fillStyle: color, strokeStyle: theme.colors.border, lineWidth: 1, radius: 6 };
+          swatchPalette[`s${index}`] = { fillStyle: color, strokeStyle: ICE.token('ui.colors.border'), lineWidth: 1, radius: 6 };
         });
         const swatches = new W.ICETileMap({
           id: 'pixel-swatches',
@@ -299,7 +299,7 @@
           palette: swatchPalette,
           fill: false,
           stroke: false,
-          highlightColor: theme.colors.primary,
+          highlightColor: ICE.token('ui.colors.primary'),
         });
         swatches.setTiles(PALETTE.map((_color, index) => `s${index}`));
         swatches.on('cellclick', (evt) => {
@@ -315,7 +315,7 @@
           width: 300,
           height: 20,
           text: '状态 STATUS',
-          style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+          style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') },
         });
         sidePanel.addChild(statusCaption, false);
 
@@ -354,7 +354,7 @@
             height: 22,
             text: label,
             verticalAlign: 'middle',
-            style: { fontSize: 12, fillStyle: theme.colors.textSecondary },
+            style: { fontSize: 12, fillStyle: ICE.token('ui.colors.textSecondary') },
           });
           const value = new W.ICELabel({
             id: `pixel-status-${key}`,
@@ -363,7 +363,7 @@
             height: 22,
             text: '—',
             verticalAlign: 'middle',
-            style: { fontSize: 12, fontFamily: '"Courier New", monospace', fillStyle: theme.colors.text },
+            style: { fontSize: 12, fontFamily: '"Courier New", monospace', fillStyle: ICE.token('ui.colors.text') },
           });
           row.addChild(caption, false);
           row.addChild(value, false);
@@ -458,7 +458,7 @@
           height: 24,
           text: '',
           verticalAlign: 'middle',
-          style: { fontSize: 12, fontFamily: '"Courier New", monospace', fillStyle: theme.colors.textSecondary },
+          style: { fontSize: 12, fontFamily: '"Courier New", monospace', fillStyle: ICE.token('ui.colors.textSecondary') },
         });
         statusBar.addChild(statusText, false);
         ice.addChild(statusBar);
@@ -484,7 +484,7 @@
         const renderSwatchHighlight = () => {
           const row = Math.floor(state.color / 6);
           const col = state.color % 6;
-          swatches.setHighlights([{ row, col, strokeStyle: theme.colors.primary, lineWidth: 3, radius: 8 }]);
+          swatches.setHighlights([{ row, col, strokeStyle: ICE.token('ui.colors.primary'), lineWidth: 3, radius: 8 }]);
         };
 
         const refresh = () => {
@@ -594,7 +594,7 @@
 
         const showPreview = (cells) => {
           board.setHighlights(
-            cells.map(([row, col]) => ({ row, col, fillStyle: 'rgba(13, 110, 253, 0.35)', strokeStyle: theme.colors.primary, lineWidth: 1 })),
+            cells.map(([row, col]) => ({ row, col, fillStyle: 'rgba(13, 110, 253, 0.35)', strokeStyle: ICE.token('ui.colors.primary'), lineWidth: 1 })),
           );
         };
 

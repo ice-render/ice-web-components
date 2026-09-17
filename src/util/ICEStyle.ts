@@ -195,7 +195,7 @@ export function getStatusColors(theme: ICEThemeTokens, status: ICEStatusColor = 
     };
   }
   return {
-    background: theme.colors.surface,
+    background: token('ui.colors.surface'),
     border: token('ui.colors.border'),
     text: token('ui.colors.textSecondary'),
     strong: token('ui.colors.text'),
@@ -280,7 +280,7 @@ export function centerTextNode(
     top: 0,
     width,
     height,
-    fillStyle: options.fillStyle ?? theme.colors.text,
+    fillStyle: options.fillStyle ?? token('ui.colors.text'),
     fontFamily: theme.font.family,
     fontSize: options.fontSize ?? theme.font.size,
     fontWeight: options.fontWeight ?? theme.font.weightNormal,

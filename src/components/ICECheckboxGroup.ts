@@ -3,7 +3,7 @@ import { ICECheckBox } from './ICECheckBox';
 import { ICELabel } from './ICELabel';
 import { iceUIManager } from '../core/ICEManager';
 import { estimateTextWidth } from '../util/ICEStyle';
-import { ICEBoxLayout } from 'ice-render';
+import { ICEBoxLayout, token } from 'ice-render';
 
 /**
  * 多选组：一组可多选的选项，值是 `string[]`（按选项顺序）。
@@ -310,7 +310,7 @@ export class ICECheckboxGroup extends ICEWidget {
         style: {
           fontSize: this.fontSize,
           fontFamily: theme.font.family,
-          fillStyle: option.disabled ? theme.colors.textDisabled : theme.colors.text,
+          fillStyle: option.disabled ? token('ui.colors.textDisabled') : token('ui.colors.text'),
         },
       });
       item.addChild(checkbox, false);

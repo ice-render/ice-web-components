@@ -198,11 +198,11 @@ export class ICEInputNumber extends ICEWidget {
     this.removeChildren([...this.childNodes]);
     const width = Number(this.state.width) || 140;
     const height = Number(this.state.height) || 32;
-    const borderColor = this.validateStatus === 'error' ? theme.colors.error : theme.colors.border;
+    const borderColor = this.validateStatus === 'error' ? token('ui.colors.error') : token('ui.colors.border');
     this.setState({
       style: {
         ...this.state.style,
-        fillStyle: this.disabled ? theme.colors.disabled : theme.colors.surface,
+        fillStyle: this.disabled ? token('ui.colors.disabled') : token('ui.colors.surface'),
         strokeStyle: borderColor,
       },
     });
@@ -240,7 +240,7 @@ export class ICEInputNumber extends ICEWidget {
       text: this.__format(this.currentValue),
       style: {
         fontSize: 13,
-        fillStyle: this.disabled ? theme.colors.textDisabled : theme.colors.text,
+        fillStyle: this.disabled ? token('ui.colors.textDisabled') : token('ui.colors.text'),
       },
     });
     if (this.disabled) {

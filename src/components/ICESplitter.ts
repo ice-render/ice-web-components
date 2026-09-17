@@ -36,7 +36,7 @@ class ICESplitterDivider extends ICEWidget {
     this.setState({
       style: {
         ...this.state.style,
-        fillStyle: this.active || this.hovered ? theme.colors.primary : theme.colors.border,
+        fillStyle: this.active || this.hovered ? token('ui.colors.primary') : token('ui.colors.border'),
       },
     });
   }

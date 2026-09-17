@@ -1,6 +1,6 @@
 import { ICEContainer } from '../core/ICEContainer';
 import { iceUIManager } from '../core/ICEManager';
-import { ICEBorderLayout } from 'ice-render';
+import { ICEBorderLayout, token, type ICEThemeTokenRef } from 'ice-render';
 
 /**
  * 布局骨架：顶栏 / 侧栏 / 内容 / 页脚。
@@ -56,7 +56,8 @@ export class ICELayout extends ICEContainer {
   private siderWidth: number;
   private siderPosition: 'left' | 'right';
   private siderVisible = true;
-  private background: string;
+  /** 页面底色：字面量或**主题引用**（引用跟随热切换） */
+  private background: string | ICEThemeTokenRef;
 
   constructor(props: ICELayoutOptions = {}) {
     const theme = iceUIManager.getTheme();
@@ -66,13 +67,13 @@ export class ICELayout extends ICEContainer {
       stroke: false,
       width: props.width ?? 640,
       height: props.height ?? 400,
-      style: { fillStyle: props.background || theme.colors.background, ...(props.style || {}) },
+      style: { fillStyle: props.background || token('ui.colors.background'), ...(props.style || {}) },
     });
     this.headerHeight = Math.max(0, Math.floor(Number(props.headerHeight) || 56));
     this.footerHeight = Math.max(0, Math.floor(Number(props.footerHeight) || 44));
     this.siderWidth = Math.max(0, Math.floor(Number(props.siderWidth) || 220));
     this.siderPosition = props.siderPosition === 'right' ? 'right' : 'left';
-    this.background = props.background || theme.colors.background;
+    this.background = props.background || token('ui.colors.background');
     // 版式交给引擎：五区布局按 Swing 的 BorderLayout 口径摆位置（north/south 先在竖直方向切，
     // west/east 再在中间带切，center 吃剩下的），本组件只声明"哪个节点是哪个区"。
     this.setLayout(new ICEBorderLayout({ gap: 0 }));

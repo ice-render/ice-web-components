@@ -147,7 +147,7 @@ export class ICECollapse extends ICEWidget {
         (evt: any) => {
           const hovered = readHovered(evt);
           header.setState({
-            style: { ...header.state.style, fillStyle: hovered ? theme.colors.disabled : theme.colors.background },
+            style: { ...header.state.style, fillStyle: hovered ? token('ui.colors.disabled') : token('ui.colors.background') },
           });
         },
         this,
@@ -164,7 +164,7 @@ export class ICECollapse extends ICEWidget {
           style: {
             fontSize: 13,
             fontWeight: '600',
-            fillStyle: item.disabled ? theme.colors.textDisabled : theme.colors.text,
+            fillStyle: item.disabled ? token('ui.colors.textDisabled') : token('ui.colors.text'),
           },
         }),
         false,

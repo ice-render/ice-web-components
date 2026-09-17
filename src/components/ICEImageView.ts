@@ -1,4 +1,4 @@
-import { ICEImage as EngineImage } from 'ice-render';
+import { ICEImage as EngineImage, token } from 'ice-render';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 
@@ -56,7 +56,7 @@ export class ICEImageView extends ICEWidget {
       top: props.top,
       width,
       height,
-      style: { fillStyle: props.placeholder || theme.colors.borderSecondary },
+      style: { fillStyle: props.placeholder || token('ui.colors.borderSecondary') },
     });
     this.src = props.src ?? '';
     this.fit = props.fit || 'fill';

@@ -1,4 +1,4 @@
-import { ICEPath } from 'ice-render';
+import { ICEPath, token } from 'ice-render';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
 
@@ -68,7 +68,7 @@ export class ICESvgIcon extends ICEWidget {
       pathData: props.d || props.path || '',
       viewBox: props.viewBox || 24,
       style: {
-        strokeStyle: props.color || theme.colors.text,
+        strokeStyle: props.color || token('ui.colors.text'),
         lineWidth: props.strokeWidth || 1.6,
         fillStyle: 'none',
         ...(props.style || {}),

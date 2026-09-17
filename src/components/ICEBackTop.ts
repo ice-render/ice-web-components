@@ -88,7 +88,7 @@ export class ICEBackTop extends ICEWidget {
     this.setState({
       style: {
         ...this.state.style,
-        fillStyle: this.hovered ? theme.colors.primaryHover : theme.colors.primary,
+        fillStyle: this.hovered ? token('ui.colors.primaryHover') : token('ui.colors.primary'),
       },
     });
     this.revalidate();

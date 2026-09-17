@@ -1,7 +1,7 @@
 import { ICELabel } from './ICELabel';
 import { ICEWidget } from '../core/ICEWidget';
 import { iceUIManager } from '../core/ICEManager';
-import { ICEBoxLayout } from 'ice-render';
+import { ICEBoxLayout, token, type ICEThemeTokenRef } from 'ice-render';
 
 /**
  * 评分：N 颗星，点击设置分值、悬停预览、键盘 ←/→ 调整。
@@ -25,7 +25,8 @@ export class ICERate extends ICEWidget {
   private preview = 0;
   private disabled: boolean;
   private size: number;
-  private color: string;
+  /** 选中星星的颜色：字面量或**主题引用**（引用跟随热切换） */
+  private color: string | ICEThemeTokenRef;
   private starNodes: ICEWidget[] = [];
   private onChange: ((value: number) => void) | null;
   private running = false;
@@ -48,7 +49,7 @@ export class ICERate extends ICEWidget {
     this.value = Math.min(count, Math.max(0, Number(props.value) || 0));
     this.disabled = props.disabled === true;
     this.size = size;
-    this.color = props.color || theme.colors.warning;
+    this.color = props.color || token('ui.colors.warning');
     this.onChange = typeof props.onChange === 'function' ? props.onChange : null;
     this.focusable = !this.disabled;
     // 星星是一行等距子项（size + 4）→ 横向 BoxLayout；命中仍按 `(size + 4)` 的节距反查序号
@@ -197,7 +198,7 @@ export class ICERate extends ICEWidget {
           align: 'center',
           verticalAlign: 'middle',
           text: on ? '★' : '☆',
-          style: { fontSize: this.size - 4, fillStyle: on ? this.color : theme.colors.disabled },
+          style: { fontSize: this.size - 4, fillStyle: on ? this.color : token('ui.colors.disabled') },
         }),
         false,
       );

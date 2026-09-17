@@ -1,7 +1,7 @@
 # 主题与配色
 
 主题就是一张普通对象：`src/theme/ICETheme.ts` 里的 `ICE_LIGHT_THEME` / `ICE_DARK_THEME`。
-`iceUIManager`（`ICEManager` 单例）持有“当前用哪套”，组件在**构造时**读一次。
+`iceUIManager`（`ICEManager` 单例）持有"当前用哪套"。
 
 ```ts
 import { iceUIManager } from 'ice-web-components';
@@ -11,8 +11,15 @@ const theme = iceUIManager.getTheme();
 theme.colors.primary;              // '#0d6efd'
 ```
 
-> ⚠️ 组件是**构造时**取色的：`setTheme` 之后新建的组件才会用新主题。需要热切换就重建组件树
-> （示例页的做法是切页/重建；`ICEMessage`/`ICEModal` 这类每次打开都新建的组件天然跟随）。
+> ✅ **组件样式槽里放的是"主题引用"**（`token('ui.colors.text')`），引擎在 **paint 时**解析 ——
+> 所以 `setTheme()` 之后**不用重建组件树**，下一帧就是新色。见第七节。
+>
+> `token()` 是**引擎**（`ice-render`）的东西，本包不再导出同名的（两边导出集合保持零重叠，
+> 见 `tests/exports.unique.test.ts`）—— 应用里同时装两个包时，从 `ice-render` 取：
+>
+> ```ts
+> import { token } from 'ice-render';
+> ```
 
 ## 一、token 分组
 
@@ -78,17 +85,18 @@ flowchart TD
 * `text`：状态**实色**，用在白底上（统计卡的涨跌数字、图标）；
 * `*TextEmphasis`：`*-text-emphasis` 深色档，用在 subtle 浅底上（Alert 标题、Tag/Badge 文字）。
 
-`getStatusColors(theme, status)` 会把一组都给你：
+`getStatusColors(theme, status)` 会把一组都给你 —— 除了 `onSolid`，**每个值都是主题引用**
+（热切换要的就是这个），要参与运算先 `resolveColorValue(...)` 解析成字符串：
 
 ```ts
 const colors = getStatusColors(theme, 'warning');
 // {
-//   background: '#fff3cd',  // subtle 底
-//   border:     '#ffe69c',
-//   text:       '#ffc107',  // 白底上用
-//   strong:     '#664d03',  // 浅底上用（Alert / Tag 文字）
-//   solid:      '#ffc107',  // 实底填充（.text-bg-*）
-//   onSolid:    '#000000',  // 实底上的文字：亮色配黑字
+//   background: {$token:'ui.colors.warningBg'},      // subtle 底（引用）
+//   border:     {$token:'ui.colors.warningBorder'},
+//   text:       {$token:'ui.colors.warning'},        // 白底上用
+//   strong:     {$token:'ui.colors.warningTextEmphasis'},  // 浅底上用（Alert / Tag 文字）
+//   solid:      {$token:'ui.colors.warning'},        // 实底填充（.text-bg-*）
+//   onSolid:    '#000000',                           // 实底上的文字：**字面量**（亮底配黑字，与主题无关）
 // }
 ```
 
@@ -144,7 +152,6 @@ ICE_LIGHT_THEME.colors.primaryBorder = '#c4b5fd';
 ```ts
 import { ICE_XP_THEME, iceUIManager } from 'ice-web-components';
 
-// 先注册 + 切主题，再创建组件（组件在构造时读一次主题）
 iceUIManager.registerTheme('xp', ICE_XP_THEME).setTheme('xp');
 ```
 
@@ -153,9 +160,15 @@ iceUIManager.registerTheme('xp', ICE_XP_THEME).setTheme('xp');
 - 库内置了 `ICE_XP_THEME`（Windows XP 经典：Luna 蓝 `#316ac5` + 米灰控件面 `#ece9d8`、
   小圆角、紧凑控件尺寸），`examples/windows-xp.html` 就是靠它整体换肤的。
 
-> 想热切换主题就重建组件 —— 组件只在构造时读一次 token（这是刻意的：绘制阶段零 token 查表）。
+> 注册完再 `setTheme('xp')` 即可 —— 已经建好的组件下一帧就换（样式槽里是引用，见第七节）。
 
 ## 六、焦点色
+
+`colors.focusRing`（浅色 `#3d8bfd` / 深色 `#6ea8fe`）用于**焦点环**与**输入框聚焦边框**。
+
+浅色那档原来是 Bootstrap 的 `#86b7fe`，压在白底上只有 **2.06:1** —— 一个**几乎看不见的**
+聚焦提示；改成 `#3d8bfd`（3.33:1）才够非文本 UI 部件的 3:1。这条是 2026-09-17 的对比度体检
+（`tests/theme-contrast.test.ts`）量出来的。
 
 ## 七、热切换（2026-09-17 起支持，不用重建组件树）
 
@@ -171,7 +184,7 @@ iceUIManager.setTheme('dark');      // ② 换主题：广播到所有登记过�
 ```
 
 原理是引擎的**主题引用**（`src/theme/ICETheme.ts` ④）：样式里的 `token('ui.colors.text')` 是
-**paint 时**解析的，所以换主题只要"改表 + 标脏"。库内**直接进样式槽**的 238 处已经全部改成这种写法
+**paint 时**解析的，所以换主题只要"改表 + 标脏"。库内进样式槽的取色（**554 处**）已经全部改成这种写法
 （真机判据：`e2e/theme-hot-switch.spec.ts` —— 同一棵组件树、画面指纹变化、颜色换成新主题那一档）。
 
 ### 7.1 三件东西各管什么
@@ -184,28 +197,38 @@ iceUIManager.setTheme('dark');      // ② 换主题：广播到所有登记过�
 
 ### 7.2 什么时候还需要 `onThemeChange()`
 
-只有**算出来的颜色**才需要 —— 它们没法写成一条引用：
+只有**算出来的颜色**（`mix` / `shade` / alpha）才需要 —— 它们没法写成一条引用，
+得在钩子里**重新算一遍**（先 `resolveColorValue()` 把引用化成字符串再算）：
 
 ```ts
 class Fancy extends ICEWidget {
   protected onThemeChange(): void {
     const theme = iceUIManager.getTheme();
-    // 派生色：混色 / 压暗 / 加透明度 / 按状态查表
-    this.setState({ style: { ...this.state.style, fillStyle: shade(theme.colors.primary, -0.35) } });
+    // 派生色：混色 / 压暗 / 加透明度 / 按状态查表（先用 resolveColorValue 解析成字符串）
+    this.setState({
+      style: { ...this.state.style, fillStyle: shade(resolveColorValue(token('ui.colors.primary')), -0.35) },
+    });
   }
 }
 ```
 
 直接用 token 的地方**不要**实现它（引擎会自己重画，重复设置只是白费）。
 
+> **`paint` 回调是例外**：那里的 `theme` 是引擎**每帧传进来的参数**，本来就跟主题走；
+> 而且 `ctx.fillStyle` 必须拿到**字符串**，塞引用反而画不出来。所以 painter / `renderItem`
+> 这类回调里照常写 `theme.colors.x`（库内剩的 9 处就是它们，见 7.3）。
+
 ### 7.3 迁移进度与棘轮（别让新代码走回头路）
 
-`tests/theme-refs.test.ts` 按文件记了"构造期取色"的**预算**（当前 **354 处 / 52 个文件**，
-集中在 `ICEStyle.ts`（状态色表）、`ICEMenu`、`ICEDateRangePicker`、`ICEButton` 这些派生色多的地方）：
-某个文件用量涨了会红；降下来不登记也会红（棘轮只进不退）。
+两道门禁各管一头，**别只看源码数字**：
+
+| 门禁 | 看什么 | 当前 |
+|---|---|---|
+| `tests/theme-refs.test.ts` | 源码侧"构造期取色"的**预算**，按文件记用户名；涨了红、降了不登记也红 | **9 处 / 3 个文件**（全是 `paint` 回调：`ICEList` 5 / `ICEAvatar` 3 / `ICESkeleton` 1） |
+| `e2e/theme-coverage.spec.ts` | 真机侧：逐节点比对 `resolvedStyleColor()` 切主题前后变没变 | 可疑字面量 **0**；换色节点 **1195 / 1456**（迁移前只有 306） |
+
+真机那道的判据是"**画出来的颜色**"，不是源码里的计数 —— 2026-09-17 就是它抓出了两处漏网的
+（`ICEDescriptions` / `ICETree` 用了 `iceUIManager.getTheme().colors.x`，源码棘轮当时数不到）。
 
 自己写组件时：**颜色能写成 `token('ui.colors.x')` 就写成引用** —— 那样热切换、多实例主题、
 暗色适配三件事一起解决；确实要算的（`mix` / `shade` / alpha）再加 `onThemeChange()`。
-
-`colors.focusRing`（浅色 `#86b7fe` / 深色 `#6ea8fe`）用于**焦点环**与**输入框聚焦边框** ——
-浅蓝而不是主色，是 Bootstrap 的取值。

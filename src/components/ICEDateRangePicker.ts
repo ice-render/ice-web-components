@@ -582,11 +582,11 @@ export class ICEDateRangePicker extends ICEWidget {
     const theme = iceUIManager.getTheme();
     const width = Number(this.state.width) || 240;
     const height = Number(this.state.height) || 32;
-    const borderColor = this.validateStatus === 'error' ? theme.colors.error : theme.colors.border;
+    const borderColor = this.validateStatus === 'error' ? token('ui.colors.error') : token('ui.colors.border');
     this.setState({
       style: {
         ...this.state.style,
-        fillStyle: this.disabled ? theme.colors.disabled : theme.colors.surface,
+        fillStyle: this.disabled ? token('ui.colors.disabled') : token('ui.colors.surface'),
         strokeStyle: borderColor,
       },
     });
@@ -603,7 +603,7 @@ export class ICEDateRangePicker extends ICEWidget {
       height,
       verticalAlign: 'middle',
       text: startText || this.placeholder[0],
-      style: { fontSize: 13, fillStyle: startText ? theme.colors.text : theme.colors.textTertiary },
+      style: { fontSize: 13, fillStyle: startText ? token('ui.colors.text') : token('ui.colors.textTertiary') },
     });
     this.endLabel = new ICELabel({
       interactive: false,
@@ -613,7 +613,7 @@ export class ICEDateRangePicker extends ICEWidget {
       height,
       verticalAlign: 'middle',
       text: endText || this.placeholder[1],
-      style: { fontSize: 13, fillStyle: endText ? theme.colors.text : theme.colors.textTertiary },
+      style: { fontSize: 13, fillStyle: endText ? token('ui.colors.text') : token('ui.colors.textTertiary') },
     });
     this.addChild(this.startLabel, false);
     this.addChild(
@@ -718,7 +718,7 @@ export class ICEDateRangePicker extends ICEWidget {
         'hoverchange',
         (evt: any) => {
           node.setState({
-            style: { ...node.state.style, fillStyle: readHovered(evt) ? theme.colors.disabled : theme.colors.background },
+            style: { ...node.state.style, fillStyle: readHovered(evt) ? token('ui.colors.disabled') : token('ui.colors.background') },
           });
         },
         this,
@@ -751,9 +751,9 @@ export class ICEDateRangePicker extends ICEWidget {
       const col = index % 7;
       const isEndpoint = cell.isRangeStart || cell.isRangeEnd;
       const fillStyle = isEndpoint
-        ? theme.colors.primary
+        ? token('ui.colors.primary')
         : cell.inRange
-        ? theme.colors.primaryBg
+        ? token('ui.colors.primaryBg')
         : 'rgba(0,0,0,0)';
       const node = new ICEWidget({
         left: layout.calendar.left + CALENDAR_INNER_PADDING + col * this.cellSize,
@@ -783,10 +783,10 @@ export class ICEDateRangePicker extends ICEWidget {
           style: {
             fontSize: 12,
             fillStyle: isEndpoint
-              ? theme.colors.primaryText
+              ? token('ui.colors.primaryText')
               : cell.inMonth
-              ? theme.colors.text
-              : theme.colors.textDisabled,
+              ? token('ui.colors.text')
+              : token('ui.colors.textDisabled'),
           },
         }),
         false,
@@ -799,7 +799,7 @@ export class ICEDateRangePicker extends ICEWidget {
             return;
           }
           node.setState({
-            style: { ...node.state.style, fillStyle: readHovered(evt) ? theme.colors.background : 'rgba(0,0,0,0)' },
+            style: { ...node.state.style, fillStyle: readHovered(evt) ? token('ui.colors.background') : 'rgba(0,0,0,0)' },
           });
         },
         this,
@@ -860,7 +860,7 @@ export class ICEDateRangePicker extends ICEWidget {
       'hoverchange',
       (evt: any) => {
         clear.setState({
-          style: { ...clear.state.style, fillStyle: readHovered(evt) ? theme.colors.disabled : theme.colors.background },
+          style: { ...clear.state.style, fillStyle: readHovered(evt) ? token('ui.colors.disabled') : token('ui.colors.background') },
         });
       },
       this,
@@ -887,7 +887,7 @@ export class ICEDateRangePicker extends ICEWidget {
         fill: true,
         stroke: false,
         interactive: true,
-        style: { fillStyle: isActive ? theme.colors.primaryBg : 'rgba(0,0,0,0)' },
+        style: { fillStyle: isActive ? token('ui.colors.primaryBg') : 'rgba(0,0,0,0)' },
       });
       node.addChild(
         new ICELabel({
@@ -901,7 +901,7 @@ export class ICEDateRangePicker extends ICEWidget {
           style: {
             fontSize: 12,
             fontWeight: isActive ? '600' : '400',
-            fillStyle: isActive ? theme.colors.primary : theme.colors.textSecondary,
+            fillStyle: isActive ? token('ui.colors.primary') : token('ui.colors.textSecondary'),
           },
         }),
         false,
@@ -921,7 +921,7 @@ export class ICEDateRangePicker extends ICEWidget {
             return;
           }
           node.setState({
-            style: { ...node.state.style, fillStyle: readHovered(evt) ? theme.colors.background : 'rgba(0,0,0,0)' },
+            style: { ...node.state.style, fillStyle: readHovered(evt) ? token('ui.colors.background') : 'rgba(0,0,0,0)' },
           });
         },
         this,

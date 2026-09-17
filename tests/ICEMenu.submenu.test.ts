@@ -9,6 +9,7 @@
  */
 import { ICEMenu, ICEMenuItem } from '../src/components/ICEMenu';
 import { iceUIManager } from '../src/core/ICEManager';
+import { resolvedStyleColor } from '../src/util/ICEStyle';
 
 const items: ICEMenuItem[] = [
   { key: 'new', label: 'New' },
@@ -134,12 +135,13 @@ describe('ICEMenu 子菜单', () => {
     const theme = iceUIManager.getTheme();
     const child = menu.getItemNode('pdf')!;
     const childLabel = child.childNodes[0] as any;
-    expect(child.state.style.fillStyle).toBe(theme.colors.primaryBg);
-    expect(childLabel.state.style.fillStyle).toBe(theme.colors.primary);
+    // 样式槽里存的是主题引用 → 用"读画出来的颜色"的口径比对
+    expect(resolvedStyleColor(child, 'fillStyle')).toBe(theme.colors.primaryBg);
+    expect(resolvedStyleColor(childLabel, 'fillStyle')).toBe(theme.colors.primary);
 
     const parent = menu.getItemNode('export')!;
     const parentLabel = parent.childNodes[0] as any;
-    expect(parentLabel.state.style.fillStyle).toBe(theme.colors.primary);
+    expect(resolvedStyleColor(parentLabel, 'fillStyle')).toBe(theme.colors.primary);
     expect(parent.state.style.fillStyle).not.toBe(theme.colors.primaryBg);
   });
 });

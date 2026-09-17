@@ -675,15 +675,15 @@ export class ICEUpload extends ICEWidget {
       style: {
         // 有文件悬在上方时给个明确的高亮：拖放最怕「不知道松手会发生什么」
         fillStyle: this.disabled
-          ? theme.colors.disabled
+          ? token('ui.colors.disabled')
           : this.dragOver
-          ? theme.colors.primaryBg
-          : theme.colors.background,
+          ? token('ui.colors.primaryBg')
+          : token('ui.colors.background'),
         strokeStyle: this.disabled
-          ? theme.colors.borderSecondary
+          ? token('ui.colors.borderSecondary')
           : this.dragOver
-          ? theme.colors.primary
-          : theme.colors.border,
+          ? token('ui.colors.primary')
+          : token('ui.colors.border'),
       },
     });
     const zoneWidth = Math.max(0, width - 6);
@@ -700,7 +700,7 @@ export class ICEUpload extends ICEWidget {
         text: '＋',
         style: {
           fontSize: 20,
-          fillStyle: this.disabled ? theme.colors.textDisabled : theme.colors.textSecondary,
+          fillStyle: this.disabled ? token('ui.colors.textDisabled') : token('ui.colors.textSecondary'),
         },
       }),
       false,
@@ -717,7 +717,7 @@ export class ICEUpload extends ICEWidget {
         text: this.text,
         style: {
           fontSize: 13,
-          fillStyle: this.disabled ? theme.colors.textDisabled : theme.colors.text,
+          fillStyle: this.disabled ? token('ui.colors.textDisabled') : token('ui.colors.text'),
         },
       }),
       false,
@@ -772,7 +772,7 @@ export class ICEUpload extends ICEWidget {
         height: this.rowHeight,
         fill: true,
         stroke: false,
-        style: { fillStyle: index % 2 === 0 ? theme.colors.surface : theme.colors.background },
+        style: { fillStyle: index % 2 === 0 ? token('ui.colors.surface') : token('ui.colors.background') },
       });
       const sizeText = file.size ? `（${this.formatFileSize(file.size)}）` : '';
       const progress = typeof file.progress === 'number' ? file.progress : null;

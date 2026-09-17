@@ -538,7 +538,7 @@ export class ICEMenu extends ICEContainer {
         radius: theme.radius.sm,
         fill: true,
         stroke: false,
-        style: { fillStyle: child.key === this.selectedKey ? theme.colors.primaryBg : 'rgba(0,0,0,0)' },
+        style: { fillStyle: child.key === this.selectedKey ? token('ui.colors.primaryBg') : 'rgba(0,0,0,0)' },
       });
       row.addChild(
         createTextNode({
@@ -547,7 +547,7 @@ export class ICEMenu extends ICEContainer {
           width: width - theme.spacing.md * 2,
           height: this.itemHeight,
           text: child.label,
-          fillStyle: child.key === this.selectedKey ? theme.colors.primary : theme.colors.text,
+          fillStyle: child.key === this.selectedKey ? token('ui.colors.primary') : token('ui.colors.text'),
           fontFamily: theme.font.family,
           fontSize: theme.font.size,
           fontWeight: theme.font.weightNormal,
@@ -813,7 +813,7 @@ export class ICEMenu extends ICEContainer {
         height: this.itemHeight,
         radius: theme.radius.md,
         style: {
-          fillStyle: item.key === this.selectedKey ? theme.colors.primaryBg : 'rgba(0,0,0,0)',
+          fillStyle: item.key === this.selectedKey ? token('ui.colors.primaryBg') : 'rgba(0,0,0,0)',
         },
       });
       this.addChild(panel, false);
@@ -841,7 +841,7 @@ export class ICEMenu extends ICEContainer {
           top: Math.round((this.itemHeight - 18) / 2),
           size: 18,
           d: item.iconPath,
-          color: item.key === this.selectedKey ? theme.colors.primary : theme.colors.textSecondary,
+          color: item.key === this.selectedKey ? token('ui.colors.primary') : token('ui.colors.textSecondary'),
           strokeWidth: 1.6,
         });
         panel.addChild(icon, false);
@@ -854,7 +854,7 @@ export class ICEMenu extends ICEContainer {
             width: 24,
             height: this.itemHeight,
             text: item.icon,
-            fillStyle: item.key === this.selectedKey ? theme.colors.primary : theme.colors.textSecondary,
+            fillStyle: item.key === this.selectedKey ? token('ui.colors.primary') : token('ui.colors.textSecondary'),
             fontFamily: theme.font.family,
             fontSize: theme.font.sizeLarge,
             fontWeight: theme.font.weightNormal,
@@ -876,7 +876,7 @@ export class ICEMenu extends ICEContainer {
           width: Math.max(0, width - labelLeft - theme.spacing.sm - indent),
           height: this.itemHeight,
           text: item.label,
-          fillStyle: item.key === this.selectedKey ? theme.colors.primary : theme.colors.text,
+          fillStyle: item.key === this.selectedKey ? token('ui.colors.primary') : token('ui.colors.text'),
           fontFamily: theme.font.family,
           fontSize: theme.font.size,
           fontWeight: item.key === this.selectedKey ? theme.font.weightSemibold : theme.font.weightNormal,
@@ -980,7 +980,7 @@ export class ICEMenu extends ICEContainer {
           top: Math.round((this.itemHeight - 18) / 2),
           size: 18,
           d: item.iconPath,
-          color: item.key === this.selectedKey ? theme.colors.primary : theme.colors.textSecondary,
+          color: item.key === this.selectedKey ? token('ui.colors.primary') : token('ui.colors.textSecondary'),
           strokeWidth: 1.6,
         });
         panel.addChild(icon, false);
@@ -993,7 +993,7 @@ export class ICEMenu extends ICEContainer {
             width: iconWidth,
             height: this.itemHeight,
             text: item.icon,
-            fillStyle: item.key === this.selectedKey ? theme.colors.primary : theme.colors.textSecondary,
+            fillStyle: item.key === this.selectedKey ? token('ui.colors.primary') : token('ui.colors.textSecondary'),
             fontFamily: theme.font.family,
             fontSize: theme.font.sizeLarge,
             fontWeight: theme.font.weightNormal,
@@ -1014,7 +1014,7 @@ export class ICEMenu extends ICEContainer {
             width: Math.max(0, itemWidth - contentLeft - iconWidth - 16),
             height: this.itemHeight,
             text: item.label,
-            fillStyle: item.key === this.selectedKey ? theme.colors.primary : theme.colors.text,
+            fillStyle: item.key === this.selectedKey ? token('ui.colors.primary') : token('ui.colors.text'),
             fontFamily: theme.font.family,
             fontSize: theme.font.size,
             fontWeight: item.key === this.selectedKey ? theme.font.weightSemibold : theme.font.weightNormal,
@@ -1117,7 +1117,7 @@ export class ICEMenu extends ICEContainer {
         const hovered = item === this.hoverKey;
         panel.setState({
           style: {
-            fillStyle: active ? theme.colors.primaryBg : hovered ? theme.colors.background : 'rgba(0,0,0,0)',
+            fillStyle: active ? token('ui.colors.primaryBg') : hovered ? token('ui.colors.background') : 'rgba(0,0,0,0)',
           },
         });
       });
@@ -1132,20 +1132,20 @@ export class ICEMenu extends ICEContainer {
       const inActivePath = !!this.rows[index] && ancestors.indexOf(this.rows[index].item.key) !== -1;
       panel.setState({
         style: {
-          fillStyle: active ? theme.colors.primaryBg : hovered ? theme.colors.background : 'rgba(0,0,0,0)',
+          fillStyle: active ? token('ui.colors.primaryBg') : hovered ? token('ui.colors.background') : 'rgba(0,0,0,0)',
         },
       });
       (panel.childNodes || []).forEach((label: any) => {
         label.setState({
           style: {
             ...label.state.style,
-            fillStyle: active || inActivePath ? theme.colors.primary : theme.colors.text,
+            fillStyle: active || inActivePath ? token('ui.colors.primary') : token('ui.colors.text'),
           },
         });
       });
       const icon = this.itemIcons[index];
       if (icon && typeof icon.setColor === 'function') {
-        icon.setColor(active || inActivePath ? theme.colors.primary : theme.colors.textSecondary);
+        icon.setColor(active || inActivePath ? token('ui.colors.primary') : token('ui.colors.textSecondary'));
       }
     });
     this.revalidate();
