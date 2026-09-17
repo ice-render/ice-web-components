@@ -16,6 +16,21 @@ export type ICEThemeTokens = {
     primaryBg: ICEColor;
     primaryBorder: ICEColor;
     primaryText: ICEColor;
+    /**
+     * **主色当文字 / 图标用**的颜色（Bootstrap 的 `--bs-link-color`）。
+     *
+     * 与 `primary` 的分工必须分清：
+     * - `primary` —— **填充 / 描边**（按钮底、选中框、滑块轨道、指示条）。它是饱和色，
+     *   在暗底上当填充没问题，**当文字就不够亮**：`#0d6efd` 压在暗色 `surface #2b3035` 上
+     *   实测只有 **2.96:1**（连大字的 3:1 都差一点）。
+     * - `link` —— **文字 / 图标**（链接、数值、强调标题、✓/✕ 这类字形、下拉项）。
+     *   浅色 `#0a58ca`（6.4:1）、暗色 `#6ea8fe`（5.5:1），两套都在三种底上过 AA。
+     *
+     * 这条是实测出来的：smart-water 的深色主题里数出 49866 个 `#0d6efd` 像素压在深底上，
+     * 对比度 2.96 —— 全部是"把 primary 当文字用"的地方。判据见
+     * `tests/theme-contrast.test.ts`。
+     */
+    link: ICEColor;
     background: ICEColor;
     surface: ICEColor;
     elevated: ICEColor;
@@ -50,7 +65,14 @@ export type ICEThemeTokens = {
     warningTextEmphasis: ICEColor;
     errorTextEmphasis: ICEColor;
     infoTextEmphasis: ICEColor;
-    /** 聚焦态描边色（Bootstrap 的 `$input-btn-focus-color` / 聚焦输入框边框 `#86b7fe`）。 */
+    /**
+     * 聚焦态描边色（Bootstrap 的 `$input-btn-focus-color`）。
+     *
+     * 浅色主题原本用 Bootstrap 的 `#86b7fe`：它在白底上只有 **2.06:1** —— 聚焦环按 WCAG 属
+     * "非文本 UI 部件"，要求 ≥3:1，所以那是个**看不见的聚焦提示**。现在浅色取 `#3d8bfd`
+     * （白底 3.33、`#f8f9fa` 上 3.16），保留"浅蓝光环"的观感但真的看得见；
+     * 暗色维持 `#86b7fe`（暗底上 6.48，本来就好）。
+     */
     focusRing: ICEColor;
   };
   spacing: {
@@ -139,8 +161,15 @@ export type ICEThemeTokens = {
  * - 页面底色 `#f8f9fa`（gray-100）、描边 `#dee2e6`（gray-300）、次描边 `#e9ecef`（gray-200）。
  */
 const LIGHT_TEXT = '#212529';
-const LIGHT_TEXT_SECONDARY = '#6c757d';
-const LIGHT_TEXT_TERTIARY = '#adb5bd';
+const LIGHT_TEXT_SECONDARY = '#6a7178';
+/**
+ * 三级文字（提示语 / 占位符 / 辅助说明）。
+ *
+ * 原来是 `#adb5bd`（gray-500），在白底上只有 **2.07:1** —— 连"大字/UI 部件"的 3:1 都不到，
+ * 实际观感是"看不清的灰"。现在取 `#868e96`（gray-600 一档）：白底 3.32:1、`#f8f9fa` 上 3.15:1。
+ * 它仍然是**最弱的一档**（不要拿它当正文），但至少在 3:1 之上。
+ */
+const LIGHT_TEXT_TERTIARY = '#868e96';
 const LIGHT_TEXT_DISABLED = '#adb5bd';
 
 export const ICE_LIGHT_THEME: ICEThemeTokens = {
@@ -163,6 +192,7 @@ export const ICE_LIGHT_THEME: ICEThemeTokens = {
     primaryBg: '#cfe2ff',
     primaryBorder: '#9ec5fe',
     primaryText: '#ffffff',
+    link: '#0a58ca',
     background: '#f8f9fa',
     surface: '#ffffff',
     elevated: '#ffffff',
@@ -192,7 +222,7 @@ export const ICE_LIGHT_THEME: ICEThemeTokens = {
     warningTextEmphasis: '#664d03',
     errorTextEmphasis: '#58151c',
     infoTextEmphasis: '#055160',
-    focusRing: '#86b7fe',
+    focusRing: '#3d8bfd',
   },
   spacing: {
     xxs: 4,
@@ -253,7 +283,11 @@ export const ICE_LIGHT_THEME: ICEThemeTokens = {
 /** Bootstrap 5.3 暗色模式：正文 #dee2e6、次描边 #495057、subtle 用深色档。 */
 const DARK_TEXT = '#dee2e6';
 const DARK_TEXT_SECONDARY = '#adb5bd';
-const DARK_TEXT_TERTIARY = '#6c757d';
+/**
+ * 三级文字（提示语 / 占位符）：暗底上原来是 `#6c757d`，在 `surface #2b3035` 上只有 **2.84:1**。
+ * 现在取 `#8a9199`：surface 4.18、background 4.84、elevated 3.61 —— 三种底都在 3:1 之上。
+ */
+const DARK_TEXT_TERTIARY = '#8a9199';
 const DARK_TEXT_DISABLED = '#6c757d';
 
 export const ICE_DARK_THEME: ICEThemeTokens = {
@@ -277,6 +311,7 @@ export const ICE_DARK_THEME: ICEThemeTokens = {
     primaryBg: '#031633',
     primaryBorder: '#084298',
     primaryText: '#ffffff',
+    link: '#6ea8fe',
     background: '#212529',
     surface: '#2b3035',
     elevated: '#343a40',
@@ -341,6 +376,7 @@ export const ICE_XP_THEME: ICEThemeTokens = {
     primaryBg: '#d6e5fb',
     primaryBorder: '#7f9db9',
     primaryText: '#ffffff',
+    link: '#2d61b5',
     background: '#ece9d8',
     surface: '#ffffff',
     elevated: '#ffffff',
@@ -455,6 +491,7 @@ export const ICE_HIGH_CONTRAST_THEME: ICEThemeTokens = {
     primaryBg: '#3a2f00',
     primaryBorder: '#ffd54f',
     primaryText: '#000000',
+    link: '#ffd54f',
     background: '#000000',
     surface: '#101010',
     elevated: '#1a1a1a',

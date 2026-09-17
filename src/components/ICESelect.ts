@@ -500,7 +500,7 @@ export class ICESelect extends ICEWidget {
           height: tagHeight,
           verticalAlign: 'middle',
           text: item.label,
-          style: { fontSize: 12, fillStyle: theme.colors.primary },
+          style: { fontSize: 12, fillStyle: theme.colors.link },
         }),
         false,
       );
@@ -523,7 +523,7 @@ export class ICESelect extends ICEWidget {
           align: 'center',
           verticalAlign: 'middle',
           text: '✕',
-          style: { fontSize: 10, fillStyle: theme.colors.primary },
+          style: { fontSize: 10, fillStyle: theme.colors.link },
         }),
         false,
       );
@@ -638,7 +638,7 @@ export class ICESelect extends ICEWidget {
           height: this.optionHeight,
           verticalAlign: 'middle',
           text: `创建「${trimmed}」`,
-          style: { fontSize: 13, fillStyle: theme.colors.primary },
+          style: { fontSize: 13, fillStyle: theme.colors.link },
         }),
         false,
       );
@@ -738,7 +738,7 @@ export class ICESelect extends ICEWidget {
           height: this.optionHeight,
           verticalAlign: 'middle',
           text: '✓',
-          style: { fontSize: 12, fillStyle: theme.colors.primary },
+          style: { fontSize: 12, fillStyle: theme.colors.link },
         }),
         false,
       );

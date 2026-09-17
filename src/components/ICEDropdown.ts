@@ -272,7 +272,8 @@ export class ICEDropdown {
             height: itemHeight,
             verticalAlign: 'middle',
             text: '✓',
-            style: { fontSize: 12, fillStyle: theme.colors.primary },
+            // 勾选标记是**文字/图标**，用 `link`（那档在暗底上也过 AA）；`primary` 留给填充 / 描边
+            style: { fontSize: 12, fillStyle: theme.colors.link },
           }),
           false,
         );
