@@ -8,8 +8,10 @@ export type ICEShadowTokens = {
   shadowOffsetY: number;
 };
 
-export type ICEThemeTokens = {
-  colors: {
+/**
+ * 颜色 token 表。**应用可以往里加自己的颜色** —— 见 `ICECustomColorTokens`（声明合并）。
+ */
+export interface ICEColorTokens {
     primary: ICEColor;
     primaryHover: ICEColor;
     primaryActive: ICEColor;
@@ -74,7 +76,38 @@ export type ICEThemeTokens = {
      * 暗色维持 `#86b7fe`（暗底上 6.48，本来就好）。
      */
     focusRing: ICEColor;
-  };
+}
+
+/**
+ * **自定义颜色 token 的声明合并入口**（应用侧扩展用）。
+ *
+ * 为什么需要它：颜色 token 表是**契约**，直接加索引签名（`[k: string]: string`）会让
+ * `colors.texxt` 这类拼写错误也编译通过 —— 等于把类型检查关掉。声明合并两头都要：
+ * 既能加自己的 token，又保留已知 token 的拼写检查。
+ *
+ * ```ts
+ * // 应用侧（放在自己的 .d.ts / 入口文件里）
+ * declare module 'ice-web-components' {
+ *   interface ICECustomColorTokens {
+ *     'brand-custom': string;
+ *   }
+ * }
+ *
+ * // 之后就能这么用（类型上也知道它存在）
+ * iceUIManager.registerTheme('brand', {
+ *   ...ICE_LIGHT_THEME,
+ *   colors: { ...ICE_LIGHT_THEME.colors, 'brand-custom': '#123456' },
+ * });
+ * style: { fillStyle: token('ui.colors.brand-custom') }
+ * ```
+ *
+ * 取值路径走 `tokenValue()` 的通用查表（按 `.` 拆段），所以自定义 token 与内置 token
+ * 在**运行时完全等价**：热切换、主题作用域、`resolveColorValue()` 全都认。
+ */
+export interface ICECustomColorTokens {}
+
+export type ICEThemeTokens = {
+  colors: ICEColorTokens & Partial<ICECustomColorTokens>;
   spacing: {
     xxs: number;
     xs: number;

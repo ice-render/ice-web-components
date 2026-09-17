@@ -7,6 +7,26 @@
 
 > 下一个版本发布前，改动在这里累积。
 
+## [1.19.0] - 2026-09-17
+
+### 新增
+
+- **自定义 token 的类型开口**：新增 `interface ICECustomColorTokens`（空的、供**声明合并**）+
+  把颜色表抽成 `ICEColorTokens`，`colors` 的类型变成 `ICEColorTokens & Partial<ICECustomColorTokens>`。
+  应用侧 `declare module 'ice-web-components' { interface ICECustomColorTokens { 'brand-custom': string } }`
+  之后就能给自己的主题加颜色 token，**且不牺牲拼写检查**（实测：`primray` 仍报 TS2561 并提示
+  "Did you mean 'primary'?"）。为什么不直接加索引签名：那等于把类型检查关掉。
+  运行时四条路径全认：`token('ui.colors.brand-custom')` 查表、`--ice-color-brand-custom` CSS 变量、
+  `themeScope()` 作用域、热切换。回归：`tests/theme-custom-tokens.test.ts`（5 条）。
+
+### 变更
+
+- 依赖引擎 `^2.14.0`。新增的「引擎主题写入契约」（基座 vs 命名补丁）见
+  `docs/guides/theming.md` 第十节 —— **领域库用 `setThemePatch`，不要用 `setTheme`**。
+- 文档新增 `docs/guides/theming.md` 第九/十节（自定义 token、谁写引擎主题）；
+  `AGENTS.md` 补两条：引擎主题写入契约、**应用层不要"把主题对象存下来"**
+  （实测反例：smart-water 符号图例 253 个节点切主题后一个颜色都没变）。
+
 ## [1.18.1] - 2026-09-17
 
 ### 变更

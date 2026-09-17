@@ -272,3 +272,49 @@ flowchart TD
 
 真机判据：`e2e/theme-scope.spec.ts`（同一个组件分别放进有/无作用域的两块面板，读**画布像素**确认
 分属两套主题；切页面主题时只有无作用域那块变），样板页 `examples/theme-scope.html`。
+
+## 九、自己加 token（应用扩展）
+
+token 表是**契约**，不是封闭集合：应用可以往里加自己的颜色，而且**四条路径全认**
+（查表 / CSS 变量 / 主题作用域 / 热切换）—— 因为它们都走同一套按路径查制的通用逻辑。
+
+先声明（类型上也要知道它存在），再加：
+
+```ts
+// ① 声明合并（放自己的 .d.ts / 入口文件）
+declare module 'ice-web-components' {
+  interface ICECustomColorTokens {
+    'brand-custom': string;
+  }
+}
+
+// ② 注册一套带自定义 token 的主题
+iceUIManager.registerTheme('brand', {
+  ...ICE_LIGHT_THEME,
+  colors: { ...ICE_LIGHT_THEME.colors, 'brand-custom': '#123456' },
+});
+
+// ③ 用起来与内置 token 完全一样
+style: { fillStyle: token('ui.colors.brand-custom') }
+```
+
+- **为什么不直接给 `colors` 加索引签名**：那样 `colors.texxt` 这种拼写错误也会编译通过
+  （等于把类型检查关掉）。声明合并两头都要：**加得进去，也仍然报错拼写**（实测：`primray`
+  报 TS2561 并提示"Did you mean 'primary'?"）。
+- **CSS 变量自动生成**：`--ice-color-brand-custom`（`themeCssVariables()` 遍历 `colors` 的所有键）。
+- 判据：`tests/theme-custom-tokens.test.ts`。
+
+## 十、谁写引擎主题（契约，引擎 2.14 起）
+
+一个画布上可能有**两个来源**都在写引擎主题：UI 主题（本库的 `applyThemeToEngine`）和领域主题
+（图表的调色板、设计器的外壳）。引擎 2.14 起把它们分成**两层**，谁写哪层是定死的：
+
+| 层 | 谁写 | 怎么写 |
+|---|---|---|
+| **基座** | UI 主题 / 应用 | `applyThemeToEngine(ice)`（内部就是 `ice.setTheme()`） |
+| **命名补丁** | **领域库** | `ice.setThemePatch('ice-chart', patch)` / `clearThemePatch(id)` |
+
+合成顺序固定为 `基座 → 命名补丁`，所以：**调用顺序无关**、**互不覆盖**；换 UI 主题时领域补丁
+**自动重放**。以前两边都直接改实例主题，胜负取决于谁后写 —— 换 UI 主题会把图表主题抹掉，反之亦然。
+
+应用层不需要碰 `setThemePatch`（那是库的活）；**领域库不要再调 `setTheme` / `setChrome`**。

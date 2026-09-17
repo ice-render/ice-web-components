@@ -56,6 +56,25 @@ style: { fillStyle: iceUIManager.getTheme().colors.text }  // ✘ 冻在构造�
 - 库内读主题一律走 `ICEWidget.theme()`（已接作用域）；`e2e/theme-scope.spec.ts` 就是钉这个的
   —— 它一度只做了一半（引用色跟随、painter 与派生色不跟随），单测全绿也照样漏。
 
+## 引擎主题的写入契约（引擎 2.14 起）
+
+| 层 | 谁写 | 怎么写 |
+|---|---|---|
+| 基座 | 本库的 `applyThemeToEngine(ice)`（UI 主题）/ 应用 | `ice.setTheme(...)` |
+| 命名补丁 | **领域库**（图表调色板、设计器外壳） | `ice.setThemePatch('ice-chart', patch)` |
+
+合成顺序固定 `基座 → 命名补丁`：**调用顺序无关、互不覆盖**，换 UI 主题时领域补丁自动重放。
+领域库**不要**再调 `setTheme` / `setChrome`；应用**不要**调 `setThemePatch`。
+
+## 应用层不要"把主题对象存下来"
+
+应用里最典型的漏网写法是 **构造期 `const theme = iceUIManager.getTheme()` 然后存进字段 / 上下文**：
+它在热切换下**静默失效**（实测：smart-water 的符号图例 253 个节点切主题后一个颜色都没变）。
+
+规则：**样式槽里放 `token('ui.colors.x')`**；确实要在运行期算（`mix` / `shade` / 拼 CSS）就用
+`resolveColorValue(...)` / `resolvedStyleColor(...)` 现取现算。要手动请求重绘用 `ice.requestRepaint()`，
+**不要写 `ice.dirty = true`**。
+
 ## 布局铁律（2026-09-15 确立，五条）
 
 引擎的布局机制（`ICELayoutManager` + `setLayout`）是**唯一**的排布入口。历史教训：2026-09-15 之前
