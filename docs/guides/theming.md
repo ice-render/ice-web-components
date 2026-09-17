@@ -192,7 +192,7 @@ iceUIManager.setTheme('dark');      // ② 换主题：广播到所有登记过�
 | 件 | 作用 | 谁调 |
 |---|---|---|
 | `applyThemeToEngine(ice)` | 把 UI token 树（`semantic.ui`）+ 语义色 + 交互外壳打进**这个引擎实例** | 应用（每个 `new ICE()` 一次）。**忘了也不要紧**：组件挂载时会按主题版本号兜底补一次 |
-| `iceUIManager.setTheme(name)` | 换主题 + **广播**到所有登记过的实例 + 通知订阅者 | 应用（切主题时一次） |
+| `iceUIManager.setTheme(name)` | 换主题 + **广播**到所有登记过的实例 + 通知订阅者。`applyThemeToCss()` 会把它写到 `<html data-ice-theme>` —— ⚠️ 值是**注册名**（应用自定义的 `ice-dark` 这类会带前缀），所以 CSS 里按**后缀**匹配：`html[data-ice-theme$='dark']`；写 `='dark'` 永远不命中 | 应用（切主题时一次） |
 | `ICEWidget.onThemeChange()` | 派生色组件的重算钩子（挂载时订阅、卸载时退订） | 组件自己（**只有算出来的颜色才需要**） |
 | `themeScope('dark')` | **局部**主题：给一棵子树单独一套（不影响整页） | 应用（分屏 / 暗底嵌亮卡片时，写在容器的 `theme` 上）。见第八节 |
 
