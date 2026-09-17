@@ -600,7 +600,15 @@
       /* ============================ 窗口系统 ============================ */
       const iconLayer = new W.ICEWidget({ left: 0, top: 0, width: SCREEN_W, height: DESKTOP_H, fill: false, stroke: false, interactive: false });
       desktop.addChild(iconLayer, false);
-      const windowLayer = new W.ICEWidget({ left: 0, top: 0, width: SCREEN_W, height: DESKTOP_H, fill: false, stroke: false });
+      /**
+       * ⚠️ `interactive: false` 不能漏：这是**全屏**容器，做成可命中就会把下面整层（图标、
+       * 壁纸的"点空白取消选中"）全吞掉。
+       *
+       * 以前漏了也不出事 —— 那时渲染/命中是**全局按 zIndex** 排序，`windowLayer` 的构造序号
+       * 比图标小，图标压在它上面。引擎 2.13.0 改成「树序 + 兄弟按 zIndex」之后，**后加的兄弟
+       * 就在上面**：这个漏掉的 `interactive` 立刻表现为"点图标没反应"（qa:xp 抓到的）。
+       */
+      const windowLayer = new W.ICEWidget({ left: 0, top: 0, width: SCREEN_W, height: DESKTOP_H, fill: false, stroke: false, interactive: false });
       desktop.addChild(windowLayer, false);
 
       let topZ = 100;

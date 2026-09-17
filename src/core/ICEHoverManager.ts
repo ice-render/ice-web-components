@@ -109,24 +109,52 @@ export class ICEHoverManager {
       return null;
     }
     const [wx, wy] = ice.screenToWorld(this.lastX, this.lastY);
-    const candidates: any[] = [];
-    const collect = (nodes: any[]) => {
+    /**
+     * hover 高亮必须命中**最上层**的可悬停组件，而"最上层"就是**绘制顺序的最后**那个：
+     * 引擎 v2.13.0 起是「树序（先父后子）+ 兄弟按 zIndex」，且**工具层整体在组件层之上**
+     * （见引擎 AGENTS「渲染顺序铁律」）。所以这里直接用渲染队列，不再自己按 zIndex 全局排序 ——
+     * 全局排序会把深层节点的 zIndex 拿来跟祖先的兄弟比，出现「高亮了一个被盖住的组件」。
+     *
+     * 只扫 `childNodes` 也不行：鼠标会 hover 穿透遮罩，落到被挡住的组件上。
+     */
+    const collect = (nodes: any[], out: any[]) => {
       for (const node of nodes || []) {
         if (node && typeof node.setHovered === 'function' && node.state && node.state.interactive) {
-          candidates.push(node);
+          out.push(node);
         }
         if (node && node.childNodes && node.childNodes.length) {
-          collect(node.childNodes);
+          collect(node.childNodes, out);
         }
       }
     };
-    // 工具层（浮层 / 遮罩 / 控制面板）在组件层之上：一起参与候选，靠 zIndex 排序决出最上层。
-    // 只扫 childNodes 会让鼠标 hover 穿透遮罩，落到被挡住的组件上。
-    collect(ice.childNodes || []);
-    collect(ice.toolNodes || []);
-    candidates.sort((a, b) => (a.state.zIndex || 0) - (b.state.zIndex || 0));
+    const renderer: any = ice.renderer;
+    let ordered: any[];
+    if (renderer && typeof renderer.getOrderedQueues === 'function') {
+      // 快路径：与渲染/命中同一个队列（组件层在前、工具层在后 = 由下到上）。
+      // ⚠️ 队列**已经是展平**的，不要再递归 childNodes —— 那会把后代重复收一遍。
+      const q = renderer.getOrderedQueues();
+      const hoverable = (n: any) => n && typeof n.setHovered === 'function' && n.state && n.state.interactive;
+      ordered = (q.components || []).filter(hoverable).concat((q.tools || []).filter(hoverable));
+    } else {
+      // 回退（headless / 未 init 的夹具）：按同一语义自己走一遍
+      const byZ = (nodes: any[]) =>
+        (nodes || []).slice().sort((a: any, b: any) => (a.state.zIndex || 0) - (b.state.zIndex || 0));
+      const walk = (nodes: any[], out: any[]) => {
+        for (const node of byZ(nodes)) {
+          if (node && typeof node.setHovered === 'function' && node.state && node.state.interactive) {
+            out.push(node);
+          }
+          if (node && node.childNodes && node.childNodes.length) {
+            walk(node.childNodes, out);
+          }
+        }
+      };
+      ordered = [];
+      walk(ice.childNodes || [], ordered);
+      walk(ice.toolNodes || [], ordered);
+    }
     let found: any = null;
-    for (const component of candidates) {
+    for (const component of ordered) {
       if (component.containsPoint && component.containsPoint(wx, wy)) {
         found = component;
       }
