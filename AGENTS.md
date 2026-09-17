@@ -57,6 +57,23 @@
 参考：[`docs/guides/layout.md`](./docs/guides/layout.md)（选型与坐标来源）、
 [`docs/guides/custom-components.md`](./docs/guides/custom-components.md)（painter 契约）。
 
+## 成员顺序（2026-09-17 定）
+
+家族的应用层（各仓的页面 / 示例页）按这个顺序排类成员，正则 `S*T*F*C*(A|M)*`：
+
+```
+static 常量/字段  →  static 方法  →  实例字段  →  构造函数  →  访问器 / 实例方法
+```
+
+**本仓是组件库，`src/` 不强制这条** —— 2026-09-17 体检里有 8 个组件类偏离，形态都很单一：
+`private static __countText()` / `__iconOf()` / `__defaultPalette()` 这类**静态小助手紧挨着
+它唯一的调用者**。这正是 Google Java Style §3.4.2 说的"每种顺序都讲得通、维护者能解释"
+那类顺序；该指南同时明确说成员顺序"**没有唯一正确的配方**"，Google 的 TypeScript 指南对
+顺序**完全沉默**（全文 "ordering" 出现 0 次）。
+
+所以：**新代码照契约写（静态的都在最前）；存量不搬迁** —— 代价不对称，而且 **TS 里字段的
+声明顺序是有语义的**（初始化按声明顺序执行 + 影响 V8 的 class shape），为排版挪字段不划算。
+
 ## 家族级事实来源
 
 引擎仓的 `AGENTS.md`（`../ice-render/AGENTS.md`）汇总了跨仓铁律（渲染/序列化/事件/i18n 边界/动画等），
