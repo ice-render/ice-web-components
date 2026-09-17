@@ -14,6 +14,7 @@
 | `getSelectedKey()` | `string \| null` |  |
 | `getVisibleItems()` | `ICEMenuItem[]` | 可见行（展开状态下的扁平列表）。 |
 | `getItemNode(key: string)` | `any` |  |
+| `setItemLabel(key: string, text: string)` | `this` | 改某一项（含子项）的**文案**，并就地重画本组件。 |
 | `isExpanded(key: string)` | `boolean` |  |
 | `toggleExpand(key: string)` | `this` |  |
 | `setExpandedKeys(keys: string[])` | `this` |  |

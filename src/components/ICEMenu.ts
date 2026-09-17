@@ -186,6 +186,25 @@ export class ICEMenu extends ICEContainer {
     return this.itemNodes.get(key) || null;
   }
 
+  /**
+   * 改某一项（含子项）的**文案**，并就地重画本组件。
+   *
+   * 为什么需要：菜单项的文案在运行期常常会变 —— "当前主题是深色 ✓"、未读数、按上下文变的标签。
+   * 没有这个入口，调用方只能去 poke 内部节点（`getItemNode()` 拿到的行容器里找那个 ICELabel），
+   * 而那既脆弱又漏状态（子项**没展开时根本没有节点**，poke 不到，展开后又按旧文案重建 —— 2026-09-17
+   * 做热切换时撞上的就是这个）。这里改的是 `items` 本身，所以"展开时重建"也拿到新文案。
+   *
+   * 重画的是**本菜单自己的行**，与一次 resize 同量级；不需要重建外层应用树。
+   */
+  public setItemLabel(key: string, text: string): this {
+    const item = this.__findItem(this.items, key);
+    if (!item || item.label === text) return this;
+    item.label = text;
+    this.__render();
+    if (this.ice) this.ice.dirty = true;
+    return this;
+  }
+
   public isExpanded(key: string): boolean {
     return this.expanded.has(key);
   }
