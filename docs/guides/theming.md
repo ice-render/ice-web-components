@@ -317,4 +317,10 @@ style: { fillStyle: token('ui.colors.brand-custom') }
 合成顺序固定为 `基座 → 命名补丁`，所以：**调用顺序无关**、**互不覆盖**；换 UI 主题时领域补丁
 **自动重放**。以前两边都直接改实例主题，胜负取决于谁后写 —— 换 UI 主题会把图表主题抹掉，反之亦然。
 
-应用层不需要碰 `setThemePatch`（那是库的活）；**领域库不要再调 `setTheme` / `setChrome`**。
+优先级是**定死**的：`setTheme` / `setChrome` 在**最底层**，命名补丁在它之上（按注册顺序叠加）。
+两条推论：
+
+- **领域库不要再调 `setTheme` / `setChrome`**（那是基座，别人的地盘）；
+- **应用要覆盖某个库的 token，得写自己的补丁**：`ice.setThemePatch('host', { … })`，
+  注册在那个库之后即可（同 id 再注册是替换）。用 `setChrome` 是**压不住**补丁的 —— 它在最底层。
+  要整个撤掉某个库的外壳：`ice.clearThemePatch('ice-designer')`。
