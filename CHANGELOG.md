@@ -7,6 +7,20 @@
 
 > 下一个版本发布前，改动在这里累积。
 
+## [1.19.2] - 2026-09-18
+
+### 文档
+
+- **写明 `stretch` 的作用边界**：`ICEForm` 的 `ICEBoxLayout({ align: 'stretch' })` 拉的是
+  **表单项**（`ICEFormItem`），**不是表单里的控件** —— 控件的位置与尺寸由 `ICEFormItem` 按
+  `control.state.width` 摆（缺省 200），父布局只摆位置、不缩放子组件（引擎的既有契约，
+  与 Swing `Container.setLayout` 一致）。
+
+  于是只写 `stretch` 时同一张表单里的控件宽度仍会各不相同（`ICETextField` 200 /
+  `ICEInputNumber` 140 / `ICEButton` 112），症状是"画出来了、但右边空掉一大截"，**且不报错**。
+  这条以前只能从源码读出来（`docs/guides/layout.md` 与 `ICEForm` 的类文档都补了说明，
+  含"要让控件跟着容器变宽该怎么做"）。**不含功能变更。**
+
 ## [1.19.1] - 2026-09-17
 
 ### 修复
