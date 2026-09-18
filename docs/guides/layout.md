@@ -34,6 +34,15 @@ panel.setLayout(new ICEBoxLayout({ axis: 'y', gap: 12, align: 'stretch' })); // 
 | `ICEPagination` | `ICEBoxLayout(axis x)` | 页码窗口、高度（含 8px 下边距） |
 | `ICEFormItem`（复合叶子） | 自持 `ICEFormItemLayout` | 形态（水平/垂直）、标签宽、行高与间距 |
 
+⚠️ **`stretch` 拉的是"子项"，不是"子项里的控件"**（2026-09-18 补）：`ICEForm` 的
+`stretch` 把每个 `ICEFormItem` 撑到表单宽度，但控件的位置与尺寸由 `ICEFormItem`
+按 `control.state.width` 摆（缺省 200）—— 父布局只摆位置、不缩放子组件（引擎的既有契约，
+与 Swing 的 `Container.setLayout` 一致）。所以只写 `stretch` 时，同一张表单里的控件
+宽度仍会各不相同（`ICETextField` 200 / `ICEInputNumber` 140 / `ICEButton` 112），
+症状是"画出来了、但右边空掉一大截"，**不报错**。
+要让控件跟着容器变宽，显式给控件宽度，或在宿主层于容器尺寸变化时整棵树重新对齐
+（`ice-web-components-dsl` 的 `setWidth()` 就是这个角色，见其 README §8.1）。
+
 其余三个**组件级**排布工具仍是各自的语义（引擎布局器没有对应能力）：
 
 ```ts

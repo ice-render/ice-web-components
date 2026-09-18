@@ -10,6 +10,14 @@ import { ICEBoxLayout } from 'ice-render';
  * `stretch` 就是 Swing BoxLayout 的默认口径）；本组件只保留一条自己的策略：
  * **高度等于内容高度**（`doLayout()` 之后同步一次）。
  *
+ * ⚠️ **`stretch` 拉的是表单项，不是表单项里的控件**（踩过，症状是"画出来了、但右边空掉一大截"）：
+ * `stretch` 把每个 `ICEFormItem` 撑到表单宽度，而控件的位置与尺寸由 `ICEFormItem` 按
+ * `control.state.width` 摆（缺省 200）—— 父布局只摆位置、不缩放子组件，这是引擎的既有契约。
+ * 于是"控件宽度不一"（`ICETextField` 200 / `ICEInputNumber` 140 / `ICEButton` 112）
+ * 是**每个控件自己的属性**，不会因为外层写了 `stretch` 而统一。
+ * 想让控件跟着表单变宽，要么显式给控件宽度，要么用 `ice-web-components-dsl` 那类
+ * "容器尺寸变化时整棵树重新对齐"的宿主层（见该仓 README §8.1）。
+ *
  * - 值与校验都在 `ICEFormModel` 里（纯逻辑），ICEForm 负责「控件 ⇄ 模型」同步与错误渲染；
  * - 控件触发 `change` → 写回模型并按 validateTrigger 校验 → 模型通知 → 表单项更新错误显示；
  * - `submit()` 校验通过才回调 `onSubmit`（回调拿到当前值快照）。
