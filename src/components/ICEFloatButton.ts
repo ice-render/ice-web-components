@@ -86,7 +86,20 @@ export class ICEFloatButton extends ICEWidget {
     });
     this.addChild(this.iconNode, false);
     this.__renderItems();
-    this.on('click', () => this.toggle());
+    /**
+     * 只在**点按钮本体**时展开/收起。
+     *
+     * ⚠️ 引擎 2026-09 起事件沿组件树冒泡：子项（`node`）的点击会冒泡到这里。
+     * 子项的处理本来就是"回调 + 自动收起"（见 `__renderItems`），如果再被这里 toggle 一次，
+     * 就会"点完一项菜单又弹回来"（实测复现）。守卫 `evt.target === this` 在新旧引擎上都成立
+     * （`target` 恒为命中组件；旧引擎没有冒泡，这里根本收不到子项的点击）。
+     */
+    this.on('click', (evt: any) => {
+      if (evt && evt.target && evt.target !== this) {
+        return;
+      }
+      this.toggle();
+    });
   }
 
   public isExpanded(): boolean {

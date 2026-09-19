@@ -245,8 +245,17 @@ export class ICESelect extends ICEWidget {
     return this.isOpen() ? this.close() : this.open();
   }
 
-  private __onClick(): void {
+  private __onClick(evt?: any): void {
     if (this.disabled) {
+      return;
+    }
+    /**
+     * ⚠️ 引擎 2026-09 起事件沿组件树冒泡：子节点（标签 chip 上的删除叉、字段文本等）的点击
+     * 会冒泡到这里。不隔离的话，"点删除叉移除一个标签"会顺带把下拉打开（实测口子）。
+     * 守卫 `evt.target === this` 在新旧引擎上都成立，也**保持旧行为**：
+     * 旧引擎本来就只有点到选择器本体才会 toggle。
+     */
+    if (evt && evt.target && evt.target !== this) {
       return;
     }
     this.toggle();

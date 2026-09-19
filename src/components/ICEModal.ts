@@ -333,7 +333,18 @@ export class ICEModal {
       stroke: false,
       style: { fillStyle: 'rgba(0, 0, 0, 0.5)' },
     });
-    mask.on('click', () => {
+    /**
+     * 只在**点遮罩背景本身**时关闭。
+     *
+     * ⚠️ 引擎 2026-09 起事件沿组件树冒泡：对话框是遮罩的子节点，点对话框里的任何东西
+     * （标题 / 正文 / 按钮）都会冒泡到这里。不加守卫就会"点按钮顺带把模态关了"。
+     * 守卫在新旧引擎上都成立；对话框自己那条 `stopPropagation()`（见 `__createDialog`）
+     * 在旧引擎上会抛异常，这条守卫正好补上那层保险。
+     */
+    mask.on('click', (evt: any) => {
+      if (evt && evt.target && evt.target !== mask) {
+        return;
+      }
       if (this.options.maskClosable !== false) {
         this.close('mask');
       }

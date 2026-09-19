@@ -118,7 +118,18 @@ export class ICEImagePreview {
       stroke: false,
       style: { fillStyle: 'rgba(0, 0, 0, 0.85)' },
     });
-    mask.on('click', () => {
+    /**
+     * 只在**点遮罩背景本身**时关闭。
+     *
+     * ⚠️ 引擎 2026-09 起事件沿组件树冒泡：工具栏按钮（放大/旋转/翻页）与图片都在遮罩的子树里，
+     * 它们的点击会冒泡到这里 —— 不加守卫就会"点一下旋转，预览直接关了"（实测复现：
+     * QA 里"工具栏放大 + 旋转 + 翻页"变成 `{index:0, zoom:1.25, rotation:0}`）。
+     * 守卫在新旧引擎上都成立（旧引擎没有冒泡，这里只收得到点遮罩本体的点击）。
+     */
+    mask.on('click', (evt: any) => {
+      if (evt && evt.target && evt.target !== mask) {
+        return;
+      }
       if (this.options.maskClosable !== false) {
         this.close('mask');
       }
