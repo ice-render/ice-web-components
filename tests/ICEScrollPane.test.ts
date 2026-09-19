@@ -131,15 +131,19 @@ describe('ICEScrollPane', () => {
     expect(Math.round(pane.getScrollbarThumb().state.top)).toBeGreaterThan(0);
   });
 
-  it('内容比视口早创建时，内容子树被抬到视口之上（引擎按全局 zIndex 排序渲染）', () => {
+  it('内容比视口早创建时，内容子树被抬到视口之上（引擎按「树序 + 兄弟按 zIndex」渲染）', () => {
     // 先造内容、后造视口 —— 常见的组装顺序，不处理的话视口背景会盖住内容
     const content = makeRows(100);
     const pane = new ICEScrollPane({ width: 200, height: 60 });
     pane.setContent(content);
 
-    const paneZ = Number(pane.state.zIndex) || 0;
-    expect(Number(content.state.zIndex)).toBeGreaterThan(paneZ);
-    expect(Number(content.childNodes[0].state.zIndex)).toBe(Number(content.state.zIndex));
-    expect(Number(pane.getScrollbarThumb().state.zIndex || pane.getScrollbarThumb().parentNode.state.zIndex)).toBeGreaterThan(paneZ);
+    // 默认 zIndex 是 'auto'（排序当 0）——比较时一律先折成数字，`Number('auto')` 是 NaN 会静默失配
+    const zOf = (c: any) => Number(c && c.state && c.state.zIndex) || 0;
+    const paneZ = zOf(pane);
+    expect(zOf(content)).toBeGreaterThan(paneZ);
+    expect(zOf(content.childNodes[0])).toBe(zOf(content));
+    // 滑块自己没钉 zIndex（默认 'auto'）时，按它父级（轨道，被抬到 +2）判定
+    const thumb = pane.getScrollbarThumb();
+    expect(zOf(thumb) || zOf(thumb.parentNode)).toBeGreaterThan(paneZ);
   });
 });

@@ -138,7 +138,7 @@ export class ICEHoverManager {
     } else {
       // 回退（headless / 未 init 的夹具）：按同一语义自己走一遍
       const byZ = (nodes: any[]) =>
-        (nodes || []).slice().sort((a: any, b: any) => (a.state.zIndex || 0) - (b.state.zIndex || 0));
+        (nodes || []).slice().sort((a: any, b: any) => (Number(a.state.zIndex) || 0) - (Number(b.state.zIndex) || 0));
       const walk = (nodes: any[], out: any[]) => {
         for (const node of byZ(nodes)) {
           if (node && typeof node.setHovered === 'function' && node.state && node.state.interactive) {

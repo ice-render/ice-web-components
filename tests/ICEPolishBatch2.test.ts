@@ -8,7 +8,7 @@ import { ICELabel } from '../src/components/ICELabel';
 import { ICETabs } from '../src/components/ICETabs';
 
 describe('ICECard extra 插槽', () => {
-  it('工厂形式：节点创建在卡片之后（zIndex 高于卡片），右对齐到内边距', () => {
+  it('工厂形式：节点被抬到卡片之上（zIndex 高于卡片），右对齐到内边距', () => {
     const card = new ICECard({
       title: 'T',
       width: 300,
@@ -17,7 +17,8 @@ describe('ICECard extra 插槽', () => {
     });
     const extra = card.getExtraNode();
     expect(extra).not.toBeNull();
-    expect(Number(extra!.state.zIndex)).toBeGreaterThan(Number(card.state.zIndex));
+    // 默认 zIndex 是 'auto'（排序当 0）——比较时一律先折成数字
+    expect(Number(extra!.state.zIndex) || 0).toBeGreaterThan(Number(card.state.zIndex) || 0);
     expect(Number(extra!.state.left)).toBe(300 - 16 - 40);
   });
 
@@ -25,7 +26,7 @@ describe('ICECard extra 插槽', () => {
     const node = new ICELabel({ text: 'x', width: 30, height: 14 });
     const card = new ICECard({ title: 'T', width: 200, height: 100, extra: node });
     expect(card.getExtraNode()).toBe(node);
-    expect(Number(node.state.zIndex)).toBeGreaterThan(Number(card.state.zIndex));
+    expect(Number(node.state.zIndex) || 0).toBeGreaterThan(Number(card.state.zIndex) || 0);
   });
 
   it('setExtra 替换；不传则没有 extra', () => {

@@ -50,7 +50,7 @@ describe('ICEAffix', () => {
     expect(affix.isPinned()).toBe(false);
     expect(affix.getBaseTop()).toBe(240);
     expect(screenTop(affix)).toBe(250); // pane.top(10) + contentBox.top(0) + 240
-    expect(affix.state.zIndex).toBe(affix.getBaseZIndex());
+    expect(Number(affix.state.zIndex) || 0).toBe(affix.getBaseZIndex());
   });
 
   it('滚过阈值就吸顶：贴在「视口顶 + offsetTop」上，并抬到最上层', () => {
@@ -77,7 +77,7 @@ describe('ICEAffix', () => {
     pane.setScroll(0, 0);
     expect(affix.isPinned()).toBe(false);
     expect(screenTop(affix)).toBe(250);
-    expect(affix.state.zIndex).toBe(affix.getBaseZIndex());
+    expect(Number(affix.state.zIndex) || 0).toBe(affix.getBaseZIndex());
   });
 
   it('offsetTop 决定吸顶时距视口顶多远（顶部有固定头时用）', () => {
