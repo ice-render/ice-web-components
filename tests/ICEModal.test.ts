@@ -113,8 +113,20 @@ describe('ICEModal', () => {
     const mask = modal.getMask()!;
     expect([mask.state.width, mask.state.height]).toEqual([800, 600]);
     expect(mask.state.interactive).toBe(true);
-    // 引擎按 zIndex 命中/渲染：遮罩创建得比场景组件晚，zIndex 更高 → 挡住它
-    expect(Number(mask.state.zIndex) > Number(sceneButton.state.zIndex)).toBe(true);
+    /**
+     * 「遮罩在场景组件之上」的**真实机制**是**层**，不是 zIndex 的大小：遮罩挂在浮层容器里，
+     * 而浮层容器经 `ice.addTool()` 挂到**工具层** —— 引擎规定「工具层整体画在组件层之上」，
+     * 所以无论场景组件的 zIndex 是多少，遮罩都在它上面。
+     *
+     * 旧断言比的是"遮罩创建得更晚 → zIndex 更大"（默认 zIndex 曾经是构造顺序计数器）；
+     * ice-render 2026-09-19 起默认 `zIndex` 是 `0`（CSS 的 `z-index: auto` 那一档），
+     * 这条代理关系不存在了，所以改成直接断言**层归属**。
+     */
+    const layer = overlays.getLayer();
+    expect(ice.toolNodes).toContain(layer);
+    expect(layer.childNodes).toContain(mask);
+    expect(ice.childNodes).not.toContain(mask); // 遮罩不在组件层，组件层的 zIndex 影响不到它
+    expect(ice.childNodes).toContain(sceneButton);
     modal.close();
   });
 
