@@ -3,7 +3,7 @@ import { iceUIManager } from '../core/ICEManager';
 import { ICEButton } from './ICEButton';
 import { createTextNode, resolveColorValue } from '../util/ICEStyle';
 import { ICENativeInput } from '../util/ICENativeInput';
-import { token } from 'ice-render';
+import { token, ICE_EVENT_NAME_CONSTS } from 'ice-render';
 
 /**
  * 单行文本输入：聚焦边框、错误态、表单取值约定与键盘输入；
@@ -157,7 +157,7 @@ export class ICETextField extends ICEWidget {
     super.afterAddHandler();
     this.__bindGlobalEvents();
     // 组件被移出场景时收起替身，别在 DOM 里留一个孤儿 input
-    this.once('AFTER_REMOVE', () => this.__unmountNativeInput(), this);
+    this.once(ICE_EVENT_NAME_CONSTS.AFTER_REMOVE, () => this.__unmountNativeInput(), this);
   }
 
   private __bindGlobalEvents(): void {

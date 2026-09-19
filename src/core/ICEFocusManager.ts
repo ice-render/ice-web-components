@@ -2,7 +2,7 @@ import { ICEWidget } from './ICEWidget';
 import { iceUIManager } from './ICEManager';
 import { getICEWorldBox } from '../util/ICEWorldBox';
 import { getICEOverlayManager } from './ICEOverlayManager';
-import { token } from 'ice-render';
+import { token, ICE_EVENT_NAME_CONSTS } from 'ice-render';
 
 /** node 是否在 ancestor 子树内（含自身）。 */
 function isDescendantOf(node: any, ancestor: any): boolean {
@@ -274,9 +274,9 @@ export class ICEFocusManager {
       return;
     }
     if (on) {
-      component.on('AFTER_MOVE', this.__onFocusedMoved, this);
+      component.on(ICE_EVENT_NAME_CONSTS.AFTER_MOVE, this.__onFocusedMoved, this);
     } else {
-      component.off('AFTER_MOVE', this.__onFocusedMoved, this);
+      component.off(ICE_EVENT_NAME_CONSTS.AFTER_MOVE, this.__onFocusedMoved, this);
     }
   }
 
