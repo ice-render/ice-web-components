@@ -747,7 +747,7 @@ panel.setLayout(new ICEFlowLayout({ gap: 8 }));
   typing, `input` / `compositionend` write the value back, and `change` / form binding
   keep working. So Chinese / Japanese / Korean input works, paste works, and the caret
   is a real DOM caret — the canvas still draws every pixel (the element is invisible).
-  In a runtime without `document` (Node / mini-program) it degrades to the old
+  In a runtime without `document` (Node / headless) it degrades to the old
   per-key `keydown` path. Pressing Enter emits `submit` on single-line fields.
 
 ## 11. Development

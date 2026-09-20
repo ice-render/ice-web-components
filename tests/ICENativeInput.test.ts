@@ -13,7 +13,7 @@
  * - `input` 与 `compositionend` 都回写（IME 走后者），`maxLength` 生效；
  * - Enter / Escape 触发回调；**组字中（`isComposing`）的 Enter 不算提交**；多行模式 Enter 换行；
  * - `blur` 触发回调；`unmount()` 摘掉元素，重复卸载安全；
- * - **没有 document（Node / 小程序）时 mount 是空操作**，不抛异常 —— 组件库据此降级回 keydown。
+ * - **没有 document（Node / headless）时 mount 是空操作**，不抛异常 —— 组件库据此降级回 keydown。
  */
 import { ICENativeInput } from '../src/util/ICENativeInput';
 

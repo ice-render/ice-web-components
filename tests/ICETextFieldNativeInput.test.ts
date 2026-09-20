@@ -7,7 +7,7 @@
  *   （表单取值、校验都还是同一套契约）；**同值不重复触发**；
  * - 挂载期间 canvas 的 `keydown` 路径要让路，避免同一个字符进两次；
  * - `maxLength` 依然生效；密码框的掩码显示不变（掩码是画布侧的事）；
- * - **没有 document 时（Node / 小程序）不挂载**，老老实实走原来的 keydown 路径（回归保护）。
+ * - **没有 document 时（Node / headless）不挂载**，老老实实走原来的 keydown 路径（回归保护）。
  */
 import { ICEPasswordField } from '../src/components/ICEPasswordField';
 import { ICETextArea } from '../src/components/ICETextArea';
@@ -252,7 +252,7 @@ describe('ICETextField：光标对齐（替身 box = 文本盒 + 只留一个光
     expect(field.getFieldText()).toBe('abc'); // 不再有 `|`
   });
 
-  it('没有替身（Node / 小程序）时仍画 canvas 的 `|`（老兜底不丢）', () => {
+  it('没有替身（Node / headless）时仍画 canvas 的 `|`（老兜底不丢）', () => {
     const field = new ICETextField({ width: 200, value: 'abc' });
     const ice: any = { dirty: false, root: {}, canvasEl: null, evtBus: { on() {}, off() {} } };
     attach(field, { ice } as any);

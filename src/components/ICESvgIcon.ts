@@ -18,7 +18,7 @@ class ICESvgPath extends ICEPath {
 
   protected createPathObject(): any {
     if (typeof (globalThis as any).Path2D !== 'function') {
-      this.path2D = { _isPolyfill: true, _commands: [] };
+      this.path2D = { _commands: [] };
       return this.path2D;
     }
     const source = new (globalThis as any).Path2D(this.pathData);

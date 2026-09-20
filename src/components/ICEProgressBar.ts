@@ -28,7 +28,7 @@ class ICEProgressRing extends ICEPath {
     const path =
       typeof (globalThis as any).Path2D === 'function'
         ? new (globalThis as any).Path2D()
-        : { _isPolyfill: true, _commands: [] };
+        : { _commands: [] };
     const sweep = Math.max(0, Math.min(1, Number(this.state.sweep)));
     if (typeof path.arc === 'function') {
       if (this.state.full === true) {

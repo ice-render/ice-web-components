@@ -68,7 +68,7 @@ describe('减少动效开关', () => {
     expect(isICEReducedMotion()).toBe(false);
   });
 
-  it('运行时没有 matchMedia 也不炸（老引擎 / 小程序）', () => {
+  it('运行时没有 matchMedia 也不炸（老引擎 / 老浏览器）', () => {
     expect(isICEReducedMotion()).toBe(false);
     expect(resolveICEAnimationDuration(200)).toBe(200);
   });
