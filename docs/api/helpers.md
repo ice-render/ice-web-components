@@ -16,7 +16,7 @@ attachTooltip(ice: any, target: any, options: ICETooltipOptions): ICETooltip
 
 - `input`：普通输入（打字、粘贴、删除）
 - `compositionend`：输入法组字结束（中文/日文/韩文走这条）
-- `Enter` / `Escape` / `blur`：交给组件决定（提交、取消、收尾） 元素是透明的（文字透明、背景透明、无边框），**画面仍然由 canvas 画**，元素只提供光标与输入法。 没有 `document` 的运行时（Node / 小程序）里 `mount()` 是空操作，组件据此降级回 keydown 输入。
+- `Enter` / `Escape` / `blur`：交给组件决定（提交、取消、收尾） 元素是透明的（文字透明、背景透明、无边框），**画面仍然由 canvas 画**，元素只提供光标与输入法。 没有 `document` 的运行时（Node / headless）里 `mount()` 是空操作，组件据此降级回 keydown 输入。
 
 源码：[`src/util/ICENativeInput.ts`](../../src/util/ICENativeInput.ts)
 

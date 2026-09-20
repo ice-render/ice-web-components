@@ -232,7 +232,7 @@ export class ICETextField extends ICEWidget {
   /**
    * 挂载原生输入替身（见 `ICENativeInput`）。
    *
-   * 只在浏览器环境挂：没有 `document`（Node / 小程序）时直接返回，输入走原来的 keydown 路径。
+   * 只在浏览器环境挂：没有 `document`（Node / headless）时直接返回，输入走原来的 keydown 路径。
    * 组件的包围盒在「还没渲染过」（单测）时拿不到，这里兜底成 (0,0) —— 定位不准也只影响
    * 光标的落点，不影响输入本身。
    */
@@ -496,7 +496,7 @@ export class ICETextField extends ICEWidget {
     if (this.nativeInput) {
       this.nativeInput.setCaretColor(masked ? 'transparent' : resolveColorValue(token('ui.colors.text'), '', this));
     }
-    // 光标占位：只在「没有原生替身」（Node / 小程序 / 未聚焦）或「掩码显示」时画 canvas 的 `|`。
+    // 光标占位：只在「没有原生替身」（Node / headless / 未聚焦）或「掩码显示」时画 canvas 的 `|`。
     // 非掩码且已挂替身时用原生光标（box 已对齐到文本盒，位置正确）—— 两个都画就会出现两个错位的光标。
     const showCanvasCaret = this.focused && !!display && (!this.nativeInput || masked);
     this.textNode.setText(showCanvasCaret ? `${display}|` : text);

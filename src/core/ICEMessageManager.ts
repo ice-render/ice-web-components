@@ -147,7 +147,7 @@ export class ICEMessageManager {
     try {
       const probe = new ICELabel({ text, style: { fontSize } });
       const width = Number(probe.state && probe.state.width) || 0;
-      // 构造期还没有 canvas ctx，`ICEText` 走 DOM 兜底测量；在无 DOM 量测的运行时（jsdom / 小程序）
+      // 构造期还没有 canvas ctx，`ICEText` 走 DOM 兜底测量；在无 DOM 量测的运行时（jsdom / headless）
       // 拿到的会是包装盒的默认值（10）—— 小于一个字号就当作"没量出来"，走下面的粗估。
       // 真实浏览器里这条分支给出的是按同一套字体量出来的宽度，比按字数估准得多。
       if (width >= fontSize) return width;

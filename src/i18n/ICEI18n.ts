@@ -36,7 +36,7 @@ export const ICE_DEFAULT_WEEK_START = 1;
  *
  * - `override` 合法（0..6）时优先用它 —— 调用方可以硬指定（例如固定周一开头的排班表）；
  * - 否则按**语言**推导：`Intl.Locale(tag).weekInfo.firstDay`（1=周一 … 7=周日）→ 转换成 0..6；
- * - 语言未注册 / 运行时没有 `Intl.Locale` 或 `weekInfo`（老引擎、部分小程序）→ 兜底周一。
+ * - 语言未注册 / 运行时没有 `Intl.Locale` 或 `weekInfo`（老引擎、旧浏览器）→ 兜底周一。
  *
  * 这是「排版/日历语义」而不是词条：引擎不持 locale，组件层按自己的语言（`props.locale` 或
  * 当前语言）推导即可，不引入全局状态。

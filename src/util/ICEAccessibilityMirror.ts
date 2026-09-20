@@ -193,7 +193,7 @@ export function mountICEAccessibilityMirror(ice: any, options: ICEA11yMirrorOpti
       mounted = false;
     },
   };
-  // 首次挂载：没有 document（Node / 小程序）时保持空操作，不抛异常
+  // 首次挂载：没有 document（Node / headless）时保持空操作，不抛异常
   if (doc && doc.body && typeof doc.createElement === 'function') {
     mounted = true;
     build();

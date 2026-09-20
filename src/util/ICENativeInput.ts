@@ -12,7 +12,7 @@
  *
  * 元素是透明的（文字透明、背景透明、无边框），**画面仍然由 canvas 画**，元素只提供光标与输入法。
  *
- * 没有 `document` 的运行时（Node / 小程序）里 `mount()` 是空操作，组件据此降级回 keydown 输入。
+ * 没有 `document` 的运行时（Node / headless）里 `mount()` 是空操作，组件据此降级回 keydown 输入。
  */
 
 export interface ICENativeInputBox {
