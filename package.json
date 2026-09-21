@@ -37,6 +37,7 @@
     "docs:check": "node scripts/check-docs.mjs",
     "docs": "npm run docs:api && npm run docs:check",
     "verify": "npm run types:check && npm test && npm run build && npm run docs && node scripts/lib/qa-counts.mjs --check",
+    "prepublishOnly": "npm run verify",
     "test:e2e": "npm run build && playwright test",
     "verify:full": "npm run verify && npm run test:e2e && npm run qa:all && npm run qa:perf"
   },
