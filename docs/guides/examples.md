@@ -49,7 +49,7 @@ flowchart LR
 
 * 布局是 **cluster + 货架**（每个簇是一个容器节点，簇内保持局部坐标、整体平移），
   排布交给引擎：簇区 `ICEFlowLayout({ pack: 'first-fit' })`、版块与整页 `ICEBoxLayout(axis:'y')`。
-  思路与代码骨架见[画布内布局](./layout.md#三簇-货架流式布局引擎布局器版)；
+  思路与代码骨架见[画布内布局](./layout.md#三簇--货架流式布局引擎布局器版)；
 * 加新组件时：在对应 `sections` 里加一项、给它一个 `id`，然后在
   `scripts/qa-gallery.mjs` 里补一条断言即可。
 
